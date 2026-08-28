@@ -144,6 +144,9 @@ Cuando llegue el momento, se debera definir:
 - Estrategia de rollback.
 - Logs y monitoreo.
 
+Para la continuacion manual en Ubuntu por PuTTY, ver
+[Runbook para manana: Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md).
+
 ## Exposicion sugerida
 
 Idea central para explicar en clase:

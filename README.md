@@ -114,6 +114,8 @@ Documentos principales:
 - [Plan de trabajo](docs/inventario-modular/plan-de-trabajo.md)
 - [Versionado Git](docs/inventario-modular/versionado-git.md)
 - [CI/CD](docs/inventario-modular/ci-cd.md)
+- [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
+- [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 
 ## Repositorios
 

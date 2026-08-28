@@ -28,6 +28,8 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Plan de trabajo](./plan-de-trabajo.md)
 - [Versionado Git](./versionado-git.md)
 - [CI/CD](./ci-cd.md)
+- [Cierre de jornada Windows](./cierre-jornada-windows.md)
+- [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
 
 ## Alcance inicial

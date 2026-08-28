@@ -16,6 +16,8 @@ Tareas:
 - Crear repositorio GitLab. Completado.
 - Crear repositorio GitHub. Completado por Gustavo.
 - Subir rama `primeros-pasos` a GitHub. Completado por Gustavo.
+- Documentar cierre de jornada Windows. Completado.
+- Documentar runbook Ubuntu por PuTTY para manana. Completado.
 
 Resultado esperado:
 
@@ -142,6 +144,9 @@ Ver tambien: [Versionado Git](./versionado-git.md).
 ## Proxima accion recomendada
 
 El entorno documentado para estos pasos es Windows con MySQL local.
+
+Para continuar en el trabajo, seguir
+[Runbook para manana: Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md).
 
 Si Maven no aparece en una PowerShell nueva, verificar que el Path de usuario tenga:
 
