@@ -645,3 +645,68 @@ git clone --branch primeros-pasos git@gitlab.com:gustavoeliasm/inventario-modula
 
 Nota de seguridad: la clave privada `~/.ssh/id_ed25519_gitlab` no debe compartirse ni
 guardarse en el repositorio.
+
+### 2026-08-28 - Documentacion subida a GitLab y GitHub
+
+Despues de documentar la preparacion Ubuntu por SSH, se reviso el cambio local antes de
+subirlo:
+
+```powershell
+git status --short --branch
+git diff --check
+git diff -- docs\inventario-modular\runbook-manana-ubuntu-putty.md
+```
+
+Controles realizados:
+
+- El cambio tocaba solamente este runbook.
+- `git diff --check` no reporto errores de espacios.
+- No se detectaron secretos reales en el diff. Solo habia menciones documentales a
+  `secretos`, `token` y placeholders.
+
+Se creo el commit:
+
+```powershell
+git add docs\inventario-modular\runbook-manana-ubuntu-putty.md
+git commit -m "docs: documenta preparacion Ubuntu por SSH"
+```
+
+Commit generado:
+
+```text
+bf98ff9 docs: documenta preparacion Ubuntu por SSH
+```
+
+El commit se subio a los dos repositorios configurados:
+
+```powershell
+git push origin primeros-pasos
+git push github primeros-pasos
+```
+
+Resultado:
+
+```text
+GitLab origin: 9f57390..bf98ff9 primeros-pasos -> primeros-pasos
+GitHub github: 9f57390..bf98ff9 primeros-pasos -> primeros-pasos
+```
+
+Estado final verificado:
+
+```text
+bf98ff9 (HEAD -> primeros-pasos, origin/primeros-pasos, origin/HEAD, github/primeros-pasos)
+```
+
+Nota de identidad Git:
+
+- Git aviso que uso automaticamente `Gustavo Murad <gmurad@podjudsp.local>` como autor
+  del commit.
+- No bloquea el trabajo, pero si se quiere otra identidad en futuros commits conviene
+  configurar `user.name` y `user.email` antes de seguir documentando o implementando.
+
+Punto CI/CD abierto:
+
+- El push a GitLab deberia disparar el pipeline de la rama `primeros-pasos`.
+- Revisar en GitLab: **Build -> Pipelines**.
+- Confirmar que pasen las etapas `validar` y `construir`.
+- Si el pipeline falla, registrar el error antes de continuar con la instalacion Ubuntu.
