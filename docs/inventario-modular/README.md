@@ -27,6 +27,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Requerimientos del sistema](./requerimientos-sistema.md)
 - [Plan de trabajo](./plan-de-trabajo.md)
 - [Versionado Git](./versionado-git.md)
+- [CI/CD](./ci-cd.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
 
 ## Alcance inicial

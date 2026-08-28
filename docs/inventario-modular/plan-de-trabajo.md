@@ -33,11 +33,13 @@ Tareas:
 - Configurar perfiles `local`, `test` y futuro `prod`.
 - Configurar conexion MySQL local.
 - Configurar Flyway.
+- Configurar pipeline CI en GitLab para tests y artefacto `.jar`.
 
 Resultado esperado:
 
 - `mvn test` funciona.
 - `mvn spring-boot:run` inicia localmente.
+- GitLab CI ejecuta tests y genera un `.jar`.
 - No hay dependencia con produccion.
 
 ## Fase 2: Modelo de seguridad modular

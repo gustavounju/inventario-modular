@@ -103,6 +103,7 @@ Documentos principales:
 - [Requerimientos del sistema](docs/inventario-modular/requerimientos-sistema.md)
 - [Plan de trabajo](docs/inventario-modular/plan-de-trabajo.md)
 - [Versionado Git](docs/inventario-modular/versionado-git.md)
+- [CI/CD](docs/inventario-modular/ci-cd.md)
 
 ## Repositorios
 
