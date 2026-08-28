@@ -10,6 +10,11 @@ Inventario Modular Java en el servidor Ubuntu o en una ubicacion separada autori
 No reemplaza el inventario actual. No toca la base `inventario_prod`. No reinicia servicios
 existentes.
 
+Dato importante de infraestructura: la base MySQL del trabajo no esta en el mismo servidor
+Ubuntu donde va a correr la aplicacion. La base esta en el servidor separado
+`10.15.0.62`.
+Por eso, en el servidor Ubuntu de la app no se debe asumir `localhost` para MySQL.
+
 ## Reglas de seguridad
 
 Antes de ejecutar comandos en PuTTY:
@@ -42,11 +47,12 @@ Secuencia completa esperada para manana:
 4. Clonar desde GitLab la rama `primeros-pasos`.
 5. Verificar o instalar Java 21.
 6. Compilar con Maven Wrapper.
-7. Crear una base MySQL nueva llamada `inventario_modular`.
-8. Crear un usuario MySQL propio para la aplicacion.
-9. Configurar variables locales sin commitear secretos.
-10. Probar el `.jar` solo como laboratorio.
-11. Revisar el pipeline de CI/CD en GitLab.
+7. Confirmar conectividad desde el servidor Ubuntu de la app hacia MySQL en `10.15.0.62`.
+8. Crear una base MySQL nueva llamada `inventario_modular` en `10.15.0.62`, si el DBA/admin lo autoriza.
+9. Crear un usuario MySQL propio para la aplicacion, autorizado desde el servidor Ubuntu de la app.
+10. Configurar variables locales sin commitear secretos.
+11. Probar el `.jar` solo como laboratorio.
+12. Revisar el pipeline de CI/CD en GitLab.
 
 GitHub no es el origen operativo para instalar en Ubuntu. GitHub queda como copia de
 seguridad y practica de versionado.
@@ -64,7 +70,10 @@ pwd
 ```
 
 Si el usuario no tiene permisos para `sudo`, pedir a un administrador que ejecute los
-pasos que crean carpetas en `/opt`, instalan paquetes o crean base/usuario MySQL.
+pasos que crean carpetas en `/opt` o instalan paquetes.
+
+La creacion de base/usuario MySQL probablemente no se hace en este Ubuntu, sino en el
+servidor de base `10.15.0.62` o por el DBA/admin responsable de ese servidor.
 
 ## Paso 1.1: Confirmar que no se esta tocando el sistema viejo
 
@@ -222,21 +231,55 @@ Importante:
 
 - No usar `inventario_prod`.
 - No modificar tablas del inventario actual.
-- No correr migraciones contra una base remota sin autorizacion.
+- No correr migraciones contra `10.15.0.62` sin autorizacion.
+- No asumir que MySQL esta en `localhost`; para el trabajo la base esta en `10.15.0.62`.
 
-Antes de crear la base, entrar a MySQL con el usuario administrador que corresponda:
+### Paso 6.0: Confirmar conectividad hacia `10.15.0.62`
+
+Desde el servidor Ubuntu de la aplicacion:
+
+```bash
+ping -c 4 10.15.0.62
+```
+
+Luego probar el puerto MySQL:
+
+```bash
+nc -vz 10.15.0.62 3306
+```
+
+Si `nc` no esta instalado, usar esta prueba alternativa:
+
+```bash
+timeout 5 bash -c '</dev/tcp/10.15.0.62/3306' && echo "MySQL alcanzable" || echo "No conecta"
+```
+
+Si no conecta, no seguir con la prueba de la app. Hay que confirmar con el administrador:
+
+- Confirmacion de que `10.15.0.62` es la IP correcta del servidor MySQL.
+- Puerto MySQL, normalmente `3306`.
+- Firewall entre el servidor Ubuntu de la app y `10.15.0.62`.
+- Usuario MySQL permitido desde la IP del servidor Ubuntu de la app.
+
+### Paso 6.1: Crear la base en el servidor correcto
+
+La base se crea en `10.15.0.62`, no necesariamente desde el Ubuntu de la aplicacion.
+
+Si se esta conectado directamente al servidor de base `10.15.0.62` por consola autorizada:
 
 ```bash
 sudo mysql
 ```
 
-o, si el administrador entrega usuario y clave:
+Si el administrador autoriza conectarse remotamente desde el servidor Ubuntu de la app:
 
 ```bash
-mysql -u root -p
+mysql -h 10.15.0.62 -u root -p
 ```
 
-Si se autoriza crear una base de laboratorio en MySQL del servidor:
+Si el DBA/admin entrega otro usuario administrador, reemplazar `root` por ese usuario.
+
+Crear solamente la base nueva:
 
 ```sql
 CREATE DATABASE IF NOT EXISTS inventario_modular
@@ -259,14 +302,20 @@ DROP DATABASE inventario_modular;
 
 Los comandos `DROP` no forman parte de la instalacion inicial.
 
-## Paso 6.1: Crear usuario MySQL de la aplicacion
+## Paso 6.2: Crear usuario MySQL de la aplicacion
 
 La aplicacion no debe conectarse como `root`.
+
+Como la app corre en otro servidor, el usuario MySQL debe quedar autorizado desde el
+servidor Ubuntu de la aplicacion, no desde `localhost`.
+
+Primero identificar o pedir al administrador la IP/nombre del servidor Ubuntu donde correra
+la app. En el ejemplo se usa el placeholder `IP_DEL_SERVIDOR_APP`.
 
 Crear usuario propio:
 
 ```sql
-CREATE USER IF NOT EXISTS 'inventario_modular_app'@'localhost'
+CREATE USER IF NOT EXISTS 'inventario_modular_app'@'IP_DEL_SERVIDOR_APP'
   IDENTIFIED BY 'CAMBIAR_EN_EL_SERVIDOR';
 ```
 
@@ -274,14 +323,14 @@ Dar permisos solo sobre la base nueva:
 
 ```sql
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
-  ON inventario_modular.* TO 'inventario_modular_app'@'localhost';
+  ON inventario_modular.* TO 'inventario_modular_app'@'IP_DEL_SERVIDOR_APP';
 FLUSH PRIVILEGES;
 ```
 
 Verificar permisos:
 
 ```sql
-SHOW GRANTS FOR 'inventario_modular_app'@'localhost';
+SHOW GRANTS FOR 'inventario_modular_app'@'IP_DEL_SERVIDOR_APP';
 ```
 
 Salir:
@@ -299,14 +348,17 @@ Bloque SQL completo para copiar si esta autorizado:
 CREATE DATABASE IF NOT EXISTS inventario_modular
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'inventario_modular_app'@'localhost'
+CREATE USER IF NOT EXISTS 'inventario_modular_app'@'IP_DEL_SERVIDOR_APP'
   IDENTIFIED BY 'CAMBIAR_EN_EL_SERVIDOR';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
-  ON inventario_modular.* TO 'inventario_modular_app'@'localhost';
+  ON inventario_modular.* TO 'inventario_modular_app'@'IP_DEL_SERVIDOR_APP';
 FLUSH PRIVILEGES;
 ```
 
 No commitear esa clave. No pegarla en documentacion.
+
+Evitar `'inventario_modular_app'@'%'` salvo que el DBA/admin lo decida explicitamente.
+Es mas seguro autorizar solo la IP o nombre del servidor Ubuntu de la aplicacion.
 
 ## Paso 7: Configuracion local del servidor
 
@@ -315,7 +367,7 @@ La configuracion real debe quedar fuera de git.
 Variables esperadas:
 
 ```bash
-export INVENTARIO_DB_URL="jdbc:mysql://127.0.0.1:3306/inventario_modular"
+export INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular"
 export INVENTARIO_DB_USER="inventario_modular_app"
 export INVENTARIO_DB_PASSWORD="CAMBIAR_EN_EL_SERVIDOR"
 export INVENTARIO_LDAP_URL="ldap://SERVIDOR_AD:389"
@@ -344,14 +396,14 @@ java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
 ```
 
 Si la app intenta conectar a MySQL y faltan variables, puede fallar. Eso es esperable hasta
-crear la base y configurar credenciales locales.
+crear la base en `10.15.0.62`, autorizar el usuario y configurar credenciales locales.
 
 No crear servicio systemd todavia. No tocar nginx todavia.
 
 Si se ejecuta con variables en la misma linea:
 
 ```bash
-INVENTARIO_DB_URL="jdbc:mysql://127.0.0.1:3306/inventario_modular" \
+INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
 INVENTARIO_DB_USER="inventario_modular_app" \
 INVENTARIO_DB_PASSWORD="CAMBIAR_EN_EL_SERVIDOR" \
 java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
@@ -411,5 +463,6 @@ Se considera exitoso si:
 - Java 21 queda disponible en Ubuntu.
 - `sh ./mvnw --batch-mode test` termina con `BUILD SUCCESS`.
 - `sh ./mvnw --batch-mode -DskipTests package` genera el `.jar`.
+- El servidor Ubuntu alcanza `10.15.0.62:3306`, o queda registrado que falta habilitar red/firewall.
 - Se puede ver el pipeline en GitLab.
 - No se toca el inventario actual ni la base `inventario_prod`.

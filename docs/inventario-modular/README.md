@@ -15,7 +15,9 @@ modulos y para exponer una futura app movil sin rehacer el backend.
 Inventario Modular se disena como una aplicacion **API-first**:
 
 - Backend Java con Spring Boot.
-- Base de datos MySQL local nueva en desarrollo: `inventario_modular`.
+- Base de datos MySQL nueva para desarrollo/laboratorio: `inventario_modular`.
+- En Windows puede usarse MySQL local; en el trabajo la base esta en el servidor separado
+  `10.15.0.62`.
 - Autenticacion contra Active Directory.
 - Autorizacion propia en MySQL mediante usuarios, roles, permisos y modulos.
 - Cliente web administrativo solo cuando sea necesario.
@@ -49,3 +51,16 @@ seguridad y modularidad:
 Active Directory confirma identidad. Inventario Modular decide autorizacion.
 
 El sistema no guarda claves del dominio.
+
+## Topologia de base de datos
+
+Para estudiar y desarrollar en casa se puede usar MySQL local. Para la instalacion de
+laboratorio en el trabajo, el servidor Ubuntu de la aplicacion y el servidor MySQL son
+distintos:
+
+```text
+Servidor Ubuntu de aplicacion -> 10.15.0.62:3306 -> inventario_modular
+```
+
+Por eso el runbook de Ubuntu configura `INVENTARIO_DB_URL` apuntando a `10.15.0.62`, no
+a `127.0.0.1`.

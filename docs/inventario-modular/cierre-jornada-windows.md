@@ -143,7 +143,7 @@ Todavia no hay despliegue automatico a produccion.
 
 ## Estado de base de datos
 
-La base definida para desarrollo es:
+La base definida para desarrollo/laboratorio es:
 
 ```text
 inventario_modular
@@ -155,10 +155,18 @@ En Windows se verifico que MySQL local escucha en:
 127.0.0.1:3306
 ```
 
+Eso corresponde solo al entorno de casa/desarrollo. En el trabajo, la base MySQL esta en
+otro servidor con IP `10.15.0.62`, por lo que el servidor Ubuntu de la aplicacion debe usar:
+
+```text
+jdbc:mysql://10.15.0.62:3306/inventario_modular
+```
+
 Pendiente:
 
 - Crear la base local si todavia no existe.
-- Definir usuario local de MySQL para la app.
+- Crear la base en `10.15.0.62` solo si el DBA/admin lo autoriza.
+- Definir usuario MySQL para la app, autorizado desde la IP/host del servidor Ubuntu.
 - Crear migraciones Flyway iniciales.
 
 ## Regla de remotos

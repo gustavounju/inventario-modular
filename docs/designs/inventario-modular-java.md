@@ -19,6 +19,7 @@ heredado ni decisiones tecnicas que no funcionaron.
 - Nombre de producto: Inventario Modular
 - Carpeta sugerida: `inventario-modular`
 - Base de datos local de desarrollo: `inventario_modular`
+- Servidor MySQL del trabajo: `10.15.0.62`
 
 ## Decision de stack
 
@@ -92,10 +93,12 @@ Usuario ingresa usuario/clave
 
 1. La nueva app arranca en Java desde cero, en un directorio limpio.
 2. Produccion queda totalmente fuera durante esta primera etapa.
-3. Se crea una base local nueva llamada `inventario_modular`.
-4. El primer nucleo a construir es usuarios, roles, permisos, modulos y login con Active
+3. Se crea una base local nueva llamada `inventario_modular` para desarrollo.
+4. En el trabajo, la aplicacion Java correra en un servidor Ubuntu separado y se conectara
+   a MySQL en `10.15.0.62`.
+5. El primer nucleo a construir es usuarios, roles, permisos, modulos y login con Active
    Directory.
-5. La base vieja se conserva como referencia y futura fuente de migracion, no como modelo
+6. La base vieja se conserva como referencia y futura fuente de migracion, no como modelo
    estructural obligatorio.
 
 ## Primer alcance recomendado
@@ -126,6 +129,7 @@ Fuera de alcance inicial:
 - Rol modificado mientras el usuario tiene sesion abierta.
 - Intento de acceder por URL directa a un modulo oculto.
 - Error de conexion a MySQL local.
+- Error de red/firewall hacia MySQL remoto `10.15.0.62`.
 
 ## Plan de tests pendiente
 
@@ -143,7 +147,8 @@ Al momento de esta decision, la maquina tenia Java 8 en PATH y no tenia `mvn` ni
 en PATH. Se instalo JDK 21 con `winget install EclipseAdoptium.Temurin.21.JDK`.
 El paquete `Apache.Maven` no existe en el catalogo local de winget, por lo que Maven debe
 instalarse con `choco install maven -y` o manualmente desde Apache Maven. MySQL local
-responde en `127.0.0.1:3306`.
+responde en `127.0.0.1:3306` para desarrollo en Windows. En el trabajo, MySQL esta en
+otro servidor: `10.15.0.62`.
 
 Ver tambien:
 

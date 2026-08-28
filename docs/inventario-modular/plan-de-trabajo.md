@@ -11,8 +11,10 @@ Tareas:
 - Instalar JDK 21 LTS. Completado.
 - Instalar Maven. Completado mediante instalacion local de usuario.
 - Verificar Java y Maven en PATH. Completado en la sesion actual.
-- Verificar MySQL local. Completado.
-- Crear base local MySQL `inventario_modular`.
+- Verificar MySQL local en Windows. Completado.
+- Crear base local MySQL `inventario_modular` para desarrollo.
+- Preparar base `inventario_modular` en el servidor MySQL separado `10.15.0.62` para
+  laboratorio/trabajo, solo con autorizacion del DBA/admin.
 - Crear repositorio GitLab. Completado.
 - Crear repositorio GitHub. Completado por Gustavo.
 - Subir rama `primeros-pasos` a GitHub. Completado por Gustavo.
@@ -33,7 +35,8 @@ Tareas:
 - Crear proyecto Spring Boot.
 - Configurar estructura de paquetes.
 - Configurar perfiles `local`, `test` y futuro `prod`.
-- Configurar conexion MySQL local.
+- Configurar conexion MySQL local para Windows.
+- Configurar conexion MySQL remota para Ubuntu usando `10.15.0.62`.
 - Configurar Flyway.
 - Configurar pipeline CI en GitLab para tests y artefacto `.jar`.
 
@@ -121,6 +124,7 @@ Tareas futuras:
 
 - Configuracion real de Active Directory incompleta o cambiante.
 - Diferencias entre red de casa y red del trabajo.
+- Base MySQL del trabajo ubicada en otro servidor (`10.15.0.62`), no en el Ubuntu de la app.
 - Permisos institucionales para consultar AD.
 - Instaladores bloqueados por politicas del trabajo.
 - Intentar migrar demasiados modulos antes de cerrar seguridad.
@@ -143,7 +147,8 @@ Ver tambien: [Versionado Git](./versionado-git.md).
 
 ## Proxima accion recomendada
 
-El entorno documentado para estos pasos es Windows con MySQL local.
+El entorno documentado para estos pasos es Windows con MySQL local. En el trabajo, el
+servidor Ubuntu de la aplicacion debe conectarse al servidor MySQL separado `10.15.0.62`.
 
 Para continuar en el trabajo, seguir
 [Runbook para manana: Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md).
@@ -162,5 +167,6 @@ java -version
 mvn -version
 ```
 
-Si ambos comandos funcionan, crear la base local MySQL `inventario_modular` y continuar
-con las migraciones Flyway iniciales.
+Si ambos comandos funcionan, crear la base local MySQL `inventario_modular` para
+desarrollo y continuar con las migraciones Flyway iniciales. Para Ubuntu/trabajo, seguir
+el runbook y no asumir MySQL local.

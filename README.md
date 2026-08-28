@@ -8,12 +8,16 @@ Judicial San Pedro.
 Esta instalacion y este repositorio estan documentados para **Windows** como entorno de
 desarrollo inicial.
 
-La base de datos de desarrollo es **MySQL local**, separada de cualquier base de
-produccion:
+La base de datos de desarrollo en Windows puede ser **MySQL local**, separada de cualquier
+base de produccion:
 
 ```text
 inventario_modular
 ```
+
+En el entorno del trabajo, la base MySQL no esta en el mismo servidor Ubuntu de la
+aplicacion. Debe apuntar al servidor separado `10.15.0.62`, con permisos otorgados al
+host/IP del servidor de aplicacion.
 
 ## Enfoque
 
@@ -93,15 +97,17 @@ Ejecutar app:
 mvn spring-boot:run
 ```
 
-## Base de datos local
+## Base de datos
 
-La base local de desarrollo sera:
+La base de desarrollo/local y la futura base de laboratorio en el trabajo se llaman:
 
 ```text
 inventario_modular
 ```
 
-Produccion queda fuera de esta primera etapa.
+En Windows puede correr contra MySQL local para estudiar y probar. En el trabajo, la app
+Ubuntu debe conectarse a MySQL en `10.15.0.62`, no a `localhost`. Produccion queda fuera
+de esta primera etapa.
 
 ## Documentacion
 

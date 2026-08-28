@@ -38,6 +38,8 @@ Motivo:
 - Produccion queda fuera durante el inicio.
 - Cualquier despliegue real debe ser controlado y reversible.
 - Primero necesitamos seguridad, base local y pruebas confiables.
+- La base MySQL del trabajo esta en `10.15.0.62`, separada del servidor de aplicacion, y
+  no debe ser tocada por CI sin una politica formal de despliegue.
 
 ## Pipeline inicial en GitLab
 
@@ -112,6 +114,10 @@ mvn -DskipTests package
 
 El CI hace lo mismo, pero en un entorno limpio de GitLab.
 
+El CI inicial no se conecta a MySQL real ni a `10.15.0.62`. Su trabajo es demostrar que el
+codigo compila, que los tests pasan y que se genera un `.jar`. La conexion a base real
+queda para pruebas controladas en el servidor Ubuntu o en un ambiente staging autorizado.
+
 Si `mvn` no aparece en PowerShell, usar Maven por ruta completa:
 
 ```powershell
@@ -140,6 +146,7 @@ Cuando llegue el momento, se debera definir:
 - Ruta de instalacion.
 - Variables de entorno.
 - Conexion segura a MySQL.
+- Host real de base de datos: `10.15.0.62`.
 - Configuracion LDAP/Active Directory.
 - Estrategia de rollback.
 - Logs y monitoreo.

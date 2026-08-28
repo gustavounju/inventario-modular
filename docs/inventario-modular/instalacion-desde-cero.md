@@ -6,6 +6,9 @@ Esta guia no describe una instalacion Linux ni una instalacion de produccion. El
 es una maquina Windows de desarrollo, con MySQL local y sin conexion a la base remota del
 Centro Judicial.
 
+Para la instalacion en el trabajo por Ubuntu/PuTTY, consultar el runbook correspondiente:
+la aplicacion correra en un servidor Ubuntu separado y MySQL estara en `10.15.0.62`.
+
 ## Estado actual observado
 
 En la maquina de desarrollo se detecto:
@@ -15,6 +18,7 @@ En la maquina de desarrollo se detecto:
 - Maven instalado localmente en el perfil del usuario.
 - Cliente `mysql` no disponible en PATH.
 - MySQL local escuchando en `127.0.0.1:3306`.
+- Servidor MySQL del trabajo separado en `10.15.0.62`.
 - `winget` disponible.
 - Chocolatey disponible.
 
