@@ -32,6 +32,25 @@ Dejar el proyecto clonado desde GitLab en una carpeta nueva y comprobar:
 
 No se busca dejarlo en produccion.
 
+## Resumen ejecutivo desde cero
+
+Secuencia completa esperada para manana:
+
+1. Entrar al Ubuntu por PuTTY.
+2. Verificar usuario, host y carpeta actual.
+3. Crear una carpeta nueva separada: `/opt/inventario-modular`.
+4. Clonar desde GitLab la rama `primeros-pasos`.
+5. Verificar o instalar Java 21.
+6. Compilar con Maven Wrapper.
+7. Crear una base MySQL nueva llamada `inventario_modular`.
+8. Crear un usuario MySQL propio para la aplicacion.
+9. Configurar variables locales sin commitear secretos.
+10. Probar el `.jar` solo como laboratorio.
+11. Revisar el pipeline de CI/CD en GitLab.
+
+GitHub no es el origen operativo para instalar en Ubuntu. GitHub queda como copia de
+seguridad y practica de versionado.
+
 ## Paso 1: Conectar por PuTTY
 
 Conectarse al servidor Ubuntu usando la sesion habitual de PuTTY.
@@ -43,6 +62,24 @@ whoami
 hostname
 pwd
 ```
+
+Si el usuario no tiene permisos para `sudo`, pedir a un administrador que ejecute los
+pasos que crean carpetas en `/opt`, instalan paquetes o crean base/usuario MySQL.
+
+## Paso 1.1: Confirmar que no se esta tocando el sistema viejo
+
+Antes de crear nada:
+
+```bash
+pwd
+ls -ld /opt/inventario /opt/inventario-modular 2>/dev/null
+```
+
+Regla:
+
+- `/opt/inventario` pertenece al sistema actual.
+- `/opt/inventario-modular` sera el nuevo laboratorio Java.
+- No ejecutar comandos de prueba dentro de `/opt/inventario`.
 
 ## Paso 2: Elegir carpeta separada
 
@@ -65,6 +102,12 @@ sudo mkdir -p /opt/inventario-modular
 sudo chown "$USER":"$USER" /opt/inventario-modular
 ```
 
+Si ya existe y no se sabe que contiene, no borrarla. Revisar primero:
+
+```bash
+ls -la /opt/inventario-modular
+```
+
 ## Paso 3: Clonar desde GitLab
 
 Entrar a `/opt`:
@@ -77,6 +120,13 @@ Clonar la rama `primeros-pasos` desde GitLab:
 
 ```bash
 git clone --branch primeros-pasos https://gitlab.com/gustavoeliasm/inventario-modular.git inventario-modular
+```
+
+Si la carpeta `/opt/inventario-modular` ya fue creada vacia en el paso anterior, usar:
+
+```bash
+cd /opt/inventario-modular
+git clone --branch primeros-pasos https://gitlab.com/gustavoeliasm/inventario-modular.git .
 ```
 
 Entrar al proyecto:
@@ -113,6 +163,8 @@ Comando orientativo para Ubuntu/Debian, solo si esta autorizado:
 sudo apt update
 sudo apt install -y openjdk-21-jdk
 ```
+
+Este paso requiere permisos de administrador en Ubuntu.
 
 Verificar de nuevo:
 
@@ -155,6 +207,9 @@ Artefacto esperado:
 target/inventario-modular-0.0.1-SNAPSHOT.jar
 ```
 
+Si el wrapper falla por permisos de ejecucion, usar siempre `sh ./mvnw ...` como esta
+documentado. No hace falta ejecutar `chmod +x` para esta prueba.
+
 ## Paso 6: Base de datos
 
 La base definida para el nuevo sistema es:
@@ -169,21 +224,83 @@ Importante:
 - No modificar tablas del inventario actual.
 - No correr migraciones contra una base remota sin autorizacion.
 
+Antes de crear la base, entrar a MySQL con el usuario administrador que corresponda:
+
+```bash
+sudo mysql
+```
+
+o, si el administrador entrega usuario y clave:
+
+```bash
+mysql -u root -p
+```
+
 Si se autoriza crear una base de laboratorio en MySQL del servidor:
 
 ```sql
-CREATE DATABASE inventario_modular
+CREATE DATABASE IF NOT EXISTS inventario_modular
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 ```
 
-Tambien debe definirse un usuario propio para la app, con permisos limitados solo sobre
-esa base. No usar root para la aplicacion.
-
-Ejemplo orientativo para DBA o entorno local autorizado:
+Si se quiere verificar antes de crear:
 
 ```sql
-CREATE USER 'inventario_modular_app'@'localhost' IDENTIFIED BY 'CAMBIAR_EN_EL_SERVIDOR';
+SHOW DATABASES LIKE 'inventario_modular';
+```
+
+No usar:
+
+```sql
+DROP DATABASE inventario_prod;
+DROP DATABASE inventario_modular;
+```
+
+Los comandos `DROP` no forman parte de la instalacion inicial.
+
+## Paso 6.1: Crear usuario MySQL de la aplicacion
+
+La aplicacion no debe conectarse como `root`.
+
+Crear usuario propio:
+
+```sql
+CREATE USER IF NOT EXISTS 'inventario_modular_app'@'localhost'
+  IDENTIFIED BY 'CAMBIAR_EN_EL_SERVIDOR';
+```
+
+Dar permisos solo sobre la base nueva:
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
+  ON inventario_modular.* TO 'inventario_modular_app'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Verificar permisos:
+
+```sql
+SHOW GRANTS FOR 'inventario_modular_app'@'localhost';
+```
+
+Salir:
+
+```sql
+EXIT;
+```
+
+> Nota: reemplazar `CAMBIAR_EN_EL_SERVIDOR` por una clave real solo en la terminal del
+> servidor. No escribir esa clave en git, documentacion, chat ni capturas.
+
+Bloque SQL completo para copiar si esta autorizado:
+
+```sql
+CREATE DATABASE IF NOT EXISTS inventario_modular
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'inventario_modular_app'@'localhost'
+  IDENTIFIED BY 'CAMBIAR_EN_EL_SERVIDOR';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
   ON inventario_modular.* TO 'inventario_modular_app'@'localhost';
 FLUSH PRIVILEGES;
@@ -208,6 +325,16 @@ export INVENTARIO_LDAP_BASE_DN="DC=ejemplo,DC=local"
 
 Todavia falta confirmar los datos reales de Active Directory.
 
+Para una prueba temporal en la misma sesion PuTTY, las variables se pueden exportar a mano.
+Para una configuracion persistente futura, conviene usar un archivo fuera del repositorio,
+por ejemplo:
+
+```text
+/etc/inventario-modular/inventario-modular.env
+```
+
+No crear este archivo como paso obligatorio todavia si solo se esta haciendo laboratorio.
+
 ## Paso 8: Prueba manual sin servicio systemd
 
 Solo para laboratorio, se puede probar el `.jar` sin instalar servicio:
@@ -220,6 +347,17 @@ Si la app intenta conectar a MySQL y faltan variables, puede fallar. Eso es espe
 crear la base y configurar credenciales locales.
 
 No crear servicio systemd todavia. No tocar nginx todavia.
+
+Si se ejecuta con variables en la misma linea:
+
+```bash
+INVENTARIO_DB_URL="jdbc:mysql://127.0.0.1:3306/inventario_modular" \
+INVENTARIO_DB_USER="inventario_modular_app" \
+INVENTARIO_DB_PASSWORD="CAMBIAR_EN_EL_SERVIDOR" \
+java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+Esto sigue siendo una prueba manual, no un despliegue productivo.
 
 ## Paso 9: Ver CI/CD en GitLab
 
