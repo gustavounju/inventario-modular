@@ -469,9 +469,13 @@ export INVENTARIO_DB_PASSWORD="CAMBIAR_EN_EL_SERVIDOR"
 export INVENTARIO_LDAP_URL="ldap://SERVIDOR_AD:389"
 export INVENTARIO_LDAP_DOMAIN="DOMINIO"
 export INVENTARIO_LDAP_BASE_DN="DC=ejemplo,DC=local"
+export INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName"
+export INVENTARIO_LDAP_FUERO_ATTRIBUTE="department"
 ```
 
-Todavia falta confirmar los datos reales de Active Directory.
+Todavia falta confirmar los datos reales de Active Directory y el atributo exacto donde
+esta cargado el fuero. Se usa `department` como valor inicial porque es un atributo comun,
+pero puede ser otro segun el esquema real del dominio.
 
 Para una prueba temporal en la misma sesion PuTTY, las variables se pueden exportar a mano.
 Para una configuracion persistente futura, conviene usar un archivo fuera del repositorio,
@@ -1349,3 +1353,112 @@ java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
 
 Motivo: el perfil local intenta conectar a MySQL. Antes de arrancar la app en Ubuntu hay
 que confirmar la base `inventario_modular`, usuario, permisos y variables `INVENTARIO_*`.
+
+### 2026-08-28 - Login Active Directory solo lectura
+
+Se agrego una primera integracion de autenticacion con Active Directory para Inventario
+Modular.
+
+Alcance de esta entrega:
+
+- `/admin` deja de ser publico y requiere login.
+- Spring Security mantiene `/`, `/css/**` y `/api/v1/sistema/estado` publicos.
+- Si `INVENTARIO_LDAP_ENABLED=true`, la app usa Active Directory como proveedor de
+  autenticacion.
+- La app solo lee atributos del usuario autenticado; no escribe ni modifica Active
+  Directory.
+- El panel inicial muestra usuario/cuenta, nombre visible y fuero.
+- El atributo de nombre visible es configurable con
+  `INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE`.
+- El atributo de fuero es configurable con `INVENTARIO_LDAP_FUERO_ATTRIBUTE`.
+- Valor inicial sugerido para fuero: `department`, pendiente de confirmar contra el AD real.
+
+Archivos principales agregados o modificados:
+
+```text
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/InventarioModularApplication.java
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/config/ActiveDirectoryProperties.java
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/config/SecurityConfig.java
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/security/ActiveDirectoryUserDetails.java
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/security/ActiveDirectoryUserDetailsContextMapper.java
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/AdminController.java
+src/main/resources/application-local.properties
+src/main/resources/templates/admin/index.html
+src/main/resources/static/css/admin.css
+src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/security/ActiveDirectoryUserDetailsContextMapperTests.java
+src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/SystemStatusControllerTests.java
+src/test/resources/application-test.properties
+```
+
+Validacion local en Windows:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+$env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+.\mvnw.cmd --batch-mode test
+.\mvnw.cmd --batch-mode -DskipTests package
+```
+
+Resultado:
+
+```text
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+target\inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+Comandos para actualizar Ubuntu por PuTTY despues del push a GitLab:
+
+```bash
+cd /opt/inventario-modular
+git status
+git pull origin primeros-pasos
+git log --oneline -5
+sh ./mvnw --batch-mode test
+sh ./mvnw --batch-mode -DskipTests package
+ls -lh target/*.jar
+```
+
+Explicacion de los comandos:
+
+- `cd /opt/inventario-modular` entra al nuevo proyecto, no al sistema viejo.
+- `git status` confirma que el servidor no tenga cambios locales pendientes.
+- `git pull origin primeros-pasos` trae desde GitLab el commit validado.
+- `git log --oneline -5` permite comprobar que llego el commit esperado.
+- `sh ./mvnw --batch-mode test` ejecuta las pruebas tambien en Ubuntu.
+- `sh ./mvnw --batch-mode -DskipTests package` genera el `.jar`.
+- `ls -lh target/*.jar` confirma que el artefacto existe.
+
+Variables necesarias para una prueba manual con MySQL remoto y AD activo:
+
+```bash
+INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_USER="inventario_modular_app" \
+INVENTARIO_DB_PASSWORD="CLAVE_REAL_SOLO_EN_SERVIDOR" \
+INVENTARIO_LDAP_ENABLED="true" \
+INVENTARIO_LDAP_URL="ldap://SERVIDOR_AD:389" \
+INVENTARIO_LDAP_DOMAIN="DOMINIO" \
+INVENTARIO_LDAP_BASE_DN="DC=ejemplo,DC=local" \
+INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName" \
+INVENTARIO_LDAP_FUERO_ATTRIBUTE="department" \
+INVENTARIO_SERVER_PORT="8081" \
+java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+No escribir claves reales en git, README, capturas compartidas ni commits. Si alguna clave
+quedo expuesta durante laboratorio, conviene rotarla antes de usar el sistema de forma
+estable.
+
+Nota HTTPS:
+
+- El sistema viejo seguia entrando por HTTPS.
+- Esta entrega no toca nginx, certificados ni systemd.
+- Primero se valida login AD por HTTP interno en `8081`.
+- Despues se planifica HTTPS con reverse proxy en una etapa separada.
+
+Nota CI/CD:
+
+- Al subir este commit a GitLab se activa el pipeline.
+- Ese pipeline debe correr tests y construir el `.jar`.
+- Todavia no despliega automaticamente en Ubuntu ni toca la base remota.

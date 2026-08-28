@@ -62,6 +62,33 @@ h1 {
 	box-shadow: 0 0 0 5px rgba(46, 160, 67, 0.16);
 }
 
+.identity-grid {
+	display: grid;
+	gap: 14px;
+	margin: 28px 0 0;
+	padding: 22px 0 0;
+	border-top: 1px solid #e6ebf0;
+}
+
+.identity-grid div {
+	display: grid;
+	gap: 4px;
+}
+
+.identity-grid dt {
+	color: #5e7184;
+	font-size: 0.82rem;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.identity-grid dd {
+	margin: 0;
+	font-size: 1.05rem;
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+
 .version {
 	margin: 24px 0 0;
 	color: #5e7184;

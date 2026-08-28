@@ -104,6 +104,10 @@ http://localhost:8081/admin
 http://localhost:8081/api/v1/sistema/estado
 ```
 
+`/admin` requiere autenticacion. En laboratorio local, si Active Directory no esta
+activado, Spring Security muestra el formulario de login y genera un usuario temporal de
+desarrollo. En Ubuntu, la autenticacion prevista es contra Active Directory.
+
 El inventario viejo entraba por HTTPS. En Inventario Modular, durante laboratorio, la app
 Spring Boot corre por HTTP interno y queda preparada para recibir HTTPS delante mediante
 nginx/reverse proxy cuando se defina el despliegue real. No instalar nginx ni systemd para
@@ -120,6 +124,31 @@ inventario_modular
 En Windows puede correr contra MySQL local para estudiar y probar. En el trabajo, la app
 Ubuntu debe conectarse a MySQL en `10.15.0.62`, no a `localhost`. Produccion queda fuera
 de esta primera etapa.
+
+## Active Directory
+
+La primera integracion de seguridad autentica usuarios contra Active Directory en modo
+solo lectura. La app no crea, modifica ni borra usuarios del dominio.
+
+Variables previstas fuera de git:
+
+```text
+INVENTARIO_LDAP_ENABLED=true
+INVENTARIO_LDAP_URL=ldap://SERVIDOR_AD:389
+INVENTARIO_LDAP_DOMAIN=DOMINIO
+INVENTARIO_LDAP_BASE_DN=DC=ejemplo,DC=local
+INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE=displayName
+INVENTARIO_LDAP_FUERO_ATTRIBUTE=department
+```
+
+Al iniciar sesion, el panel `/admin` muestra:
+
+- Usuario/cuenta usada para autenticarse.
+- Nombre visible traido del atributo `displayName`.
+- Fuero traido del atributo configurable `INVENTARIO_LDAP_FUERO_ATTRIBUTE`.
+
+Antes de activar AD en Ubuntu hay que confirmar con Sistemas/AD los valores reales de
+dominio, base DN y el atributo exacto donde esta cargado el fuero.
 
 ## Documentacion
 
@@ -151,6 +180,6 @@ La rama inicial `primeros-pasos` ya fue subida a ambos remotos.
 Para subir a GitHub los commits que el asistente ya subio a GitLab:
 
 ```powershell
-cd "G:\unju2025\google gravity\inventario-modular"
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
 git push github primeros-pasos
 ```

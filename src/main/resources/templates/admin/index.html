@@ -15,6 +15,20 @@
 				<span class="status-dot" aria-hidden="true"></span>
 				<span>Sistema operativo</span>
 			</div>
+			<dl class="identity-grid" aria-label="Usuario autenticado">
+				<div>
+					<dt>Usuario</dt>
+					<dd th:text="${displayName}">Gustavo Elias Murad</dd>
+				</div>
+				<div>
+					<dt>Cuenta</dt>
+					<dd th:text="${username}">gmurad</dd>
+				</div>
+				<div>
+					<dt>Fuero</dt>
+					<dd th:text="${fuero}">Informatica</dd>
+				</div>
+			</dl>
 			<p class="version">Version <span th:text="${version}">0.0.1-SNAPSHOT</span></p>
 		</section>
 	</main>

@@ -107,7 +107,7 @@ Gustavo o el asistente hacen cambios
 Antes de subir cambios, se puede validar localmente:
 
 ```powershell
-cd "G:\unju2025\google gravity\inventario-modular"
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
 mvn test
 mvn -DskipTests package
 ```
@@ -121,7 +121,7 @@ queda para pruebas controladas en el servidor Ubuntu o en un ambiente staging au
 Si `mvn` no aparece en PowerShell, usar Maven por ruta completa:
 
 ```powershell
-cd "G:\unju2025\google gravity\inventario-modular"
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
 & "$env:USERPROFILE\tools\apache-maven-3.9.16\bin\mvn.cmd" test
 ```
 
