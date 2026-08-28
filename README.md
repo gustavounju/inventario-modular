@@ -77,6 +77,16 @@ Ejecutar tests:
 mvn test
 ```
 
+Si `mvn` no aparece o Maven usa Java 8:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
+$env:Path = "$env:JAVA_HOME\bin;$env:USERPROFILE\tools\apache-maven-3.9.16\bin;$env:Path"
+mvn test
+```
+
+`BUILD SUCCESS` es una salida de Maven, no un comando.
+
 Ejecutar app:
 
 ```powershell

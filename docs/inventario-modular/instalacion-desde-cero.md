@@ -104,6 +104,22 @@ mvn -version
 
 Debe aparecer Maven 3.9.x o superior.
 
+Si `mvn` no aparece en una PowerShell nueva, usar la ruta completa:
+
+```powershell
+& "$env:USERPROFILE\tools\apache-maven-3.9.16\bin\mvn.cmd" -version
+```
+
+Si Maven aparece pero muestra Java 8, configurar Java 21 en la terminal actual:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
+$env:Path = "$env:JAVA_HOME\bin;$env:USERPROFILE\tools\apache-maven-3.9.16\bin;$env:Path"
+mvn -version
+```
+
+La salida correcta debe decir `Java version: 21.0.12.1` o superior dentro de Java 21.
+
 Salida verificada en esta maquina:
 
 ```text
@@ -229,6 +245,23 @@ mvn spring-boot:run
 ```
 
 El sistema debe iniciar localmente sin conectarse a produccion.
+
+## Nota sobre salidas de consola
+
+`BUILD SUCCESS` no es un comando para escribir en PowerShell. Es una salida que Maven
+muestra cuando un comando termino correctamente.
+
+Ejemplo:
+
+```powershell
+mvn test
+```
+
+Salida esperada al final:
+
+```text
+BUILD SUCCESS
+```
 
 ## Pendiente antes de implementar
 

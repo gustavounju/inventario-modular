@@ -112,6 +112,23 @@ mvn -DskipTests package
 
 El CI hace lo mismo, pero en un entorno limpio de GitLab.
 
+Si `mvn` no aparece en PowerShell, usar Maven por ruta completa:
+
+```powershell
+cd "G:\unju2025\google gravity\inventario-modular"
+& "$env:USERPROFILE\tools\apache-maven-3.9.16\bin\mvn.cmd" test
+```
+
+Si Maven aparece pero toma Java 8, configurar Java 21 en esa terminal:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
+$env:Path = "$env:JAVA_HOME\bin;$env:USERPROFILE\tools\apache-maven-3.9.16\bin;$env:Path"
+mvn test
+```
+
+`BUILD SUCCESS` es una salida esperada de Maven, no un comando.
+
 ## Despliegue futuro
 
 La etapa de despliegue todavia no se automatiza.
