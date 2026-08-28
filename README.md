@@ -152,6 +152,11 @@ Al iniciar sesion, el panel `/admin` muestra:
 Antes de activar AD en Ubuntu hay que confirmar con Sistemas/AD los valores reales de
 dominio, base DN y el atributo exacto donde esta cargado el fuero.
 
+Guia tecnica:
+
+- [Login Active Directory](docs/inventario-modular/login-active-directory.md)
+- [ADR-004: Login Active Directory solo lectura](docs/decisions/ADR-004-login-active-directory-solo-lectura.md)
+
 ## Documentacion
 
 La documentacion del estudio inicial esta en `docs/inventario-modular`.
@@ -163,6 +168,7 @@ Documentos principales:
 - [Plan de trabajo](docs/inventario-modular/plan-de-trabajo.md)
 - [Versionado Git](docs/inventario-modular/versionado-git.md)
 - [CI/CD](docs/inventario-modular/ci-cd.md)
+- [Login Active Directory](docs/inventario-modular/login-active-directory.md)
 - [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 

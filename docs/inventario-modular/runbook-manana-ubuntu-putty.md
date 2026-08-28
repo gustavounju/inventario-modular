@@ -1508,3 +1508,94 @@ sh ./mvnw --batch-mode test
 sh ./mvnw --batch-mode -DskipTests package
 ls -lh target/*.jar
 ```
+
+### 2026-08-28 - Datos reales AD y diagnostico de puerto 8081
+
+Se confirmo la configuracion real de Active Directory leyendo solo variables no secretas
+del `.env` del sistema viejo.
+
+Comando usado en PuTTY, dentro de `/opt/inventario`:
+
+```bash
+printf "\n[AD sin mostrar claves]\n"
+grep -E '^(AUTH_MODE|AD_SERVER|AD_DOMAIN|AD_BASE_DN|AD_USE_SSL|AD_CONNECT_TIMEOUT|AD_SUPERUSERS)=' .env 2>/dev/null
+
+printf "\n[AD usuarios de sincronizacion, clave ocultada]\n"
+grep -E '^(AD_SYNC_USER)=' .env 2>/dev/null
+grep -E '^(AD_SYNC_PASSWORD)=' .env 2>/dev/null | sed 's/=.*/=******** OCULTA ********/'
+```
+
+Resultado util:
+
+```text
+AD_SERVER=10.15.0.41
+AD_DOMAIN=podjudsp.local
+AD_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
+AD_USE_SSL=false
+AD_CONNECT_TIMEOUT=5
+AD_SUPERUSERS=gmurad
+```
+
+Nota: en el `.env` viejo aparecian algunas variables AD repetidas. Para esta documentacion
+se toma el ultimo valor efectivo observado para `AD_BASE_DN`.
+
+Equivalencia para Inventario Modular:
+
+```bash
+INVENTARIO_LDAP_ENABLED="true"
+INVENTARIO_LDAP_URL="ldap://10.15.0.41:389"
+INVENTARIO_LDAP_DOMAIN="podjudsp.local"
+INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"
+INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName"
+INVENTARIO_LDAP_FUERO_ATTRIBUTE="department"
+```
+
+Tambien se diagnostico por que no cargaba:
+
+```text
+http://10.15.2.251:8081/
+```
+
+El navegador mostro `ERR_CONNECTION_REFUSED`. Se verifico:
+
+```bash
+cd /opt/inventario-modular
+ps -ef | grep '[j]ava'
+ss -ltnp | grep ':8081' || echo "Nada escuchando en 8081"
+```
+
+Resultado:
+
+```text
+No habia procesos Java.
+Nada escuchando en 8081.
+```
+
+Conclusion: el `.jar` existia, pero la app no estaba levantada. Para probar por navegador
+primero hay que ejecutar manualmente:
+
+```bash
+cd /opt/inventario-modular
+
+INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_USER="inventario_modular_app" \
+INVENTARIO_DB_PASSWORD="CLAVE_REAL_MYSQL" \
+INVENTARIO_LDAP_ENABLED="true" \
+INVENTARIO_LDAP_URL="ldap://10.15.0.41:389" \
+INVENTARIO_LDAP_DOMAIN="podjudsp.local" \
+INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local" \
+INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName" \
+INVENTARIO_LDAP_FUERO_ATTRIBUTE="department" \
+INVENTARIO_SERVER_PORT="8081" \
+java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+La terminal queda ocupada mientras la app corre. Si vuelve al prompt, hay que leer el error
+de consola antes de seguir.
+
+Documentacion tecnica agregada:
+
+```text
+docs/inventario-modular/login-active-directory.md
+docs/decisions/ADR-004-login-active-directory-solo-lectura.md
+```
