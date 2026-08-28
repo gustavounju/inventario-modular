@@ -109,3 +109,10 @@ Decision de trabajo:
 - Desde esta decision, los commits nuevos se escriben en español latino.
 
 La rama inicial `primeros-pasos` ya fue subida a ambos remotos.
+
+Para subir a GitHub los commits que el asistente ya subio a GitLab:
+
+```powershell
+cd "G:\unju2025\google gravity\inventario-modular"
+git push github primeros-pasos
+```

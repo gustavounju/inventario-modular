@@ -268,7 +268,15 @@ Decision de operacion:
 Comando usado para subir a GitHub:
 
 ```powershell
+cd "G:\unju2025\google gravity\inventario-modular"
 git push -u github primeros-pasos
+```
+
+Para subir commits posteriores a GitHub, desde cualquier PowerShell:
+
+```powershell
+cd "G:\unju2025\google gravity\inventario-modular"
+git push github primeros-pasos
 ```
 
 Salida esperada cuando sube correctamente:

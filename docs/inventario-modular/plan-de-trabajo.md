@@ -128,6 +128,13 @@ Tareas futuras:
 - Los commits nuevos deben escribirse en español latino.
 - GitLab y GitHub deben quedar con la misma rama `primeros-pasos` y los mismos commits.
 
+Comando de sincronizacion manual hacia GitHub:
+
+```powershell
+cd "G:\unju2025\google gravity\inventario-modular"
+git push github primeros-pasos
+```
+
 ## Proxima accion recomendada
 
 El entorno documentado para estos pasos es Windows con MySQL local.
