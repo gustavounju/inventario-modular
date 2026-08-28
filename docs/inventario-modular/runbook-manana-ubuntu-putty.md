@@ -57,6 +57,51 @@ Secuencia completa esperada para manana:
 GitHub no es el origen operativo para instalar en Ubuntu. GitHub queda como copia de
 seguridad y practica de versionado.
 
+## Estado preparado antes de continuar
+
+Acciones ya verificadas el 2026-08-28:
+
+- Se creo una copia local en Windows en:
+
+```text
+C:\Users\gmurad\Documents\ChatGPT\inventario-modular
+```
+
+- La copia local quedo en rama `primeros-pasos`.
+- Los remotos locales quedaron alineados con la decision del proyecto:
+
+```text
+origin -> https://gitlab.com/gustavoeliasm/inventario-modular.git
+github -> https://github.com/gustavounju/inventario-modular.git
+```
+
+- En Windows se verifico Java 21 con `JAVA_HOME` apuntando temporalmente a:
+
+```text
+C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot
+```
+
+- Se ejecuto `.\mvnw.cmd --batch-mode test` y termino con `BUILD SUCCESS`.
+- Se ejecuto `.\mvnw.cmd --batch-mode -DskipTests package` y genero:
+
+```text
+target\inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+- El `.jar` local generado midio aproximadamente 67 MB.
+- El estado de Git quedo limpio antes de documentar esta bitacora.
+
+## Aviso permanente sobre CI/CD
+
+Cada vez que durante la instalacion aparezca una oportunidad concreta para revisar,
+explicar o mejorar CI/CD, hay que avisarlo antes de seguir. Puntos obligatorios:
+
+- Despues de clonar desde GitLab, revisar `.gitlab-ci.yml`.
+- Despues de confirmar el ultimo commit, revisar en GitLab `Build -> Pipelines`.
+- Confirmar que las etapas esperadas sean `validar` y `construir`.
+- Confirmar que `validar` corre tests y que `construir` genera el `.jar`.
+- No agregar secretos ni conexiones a MySQL real en CI sin una politica formal.
+
 ## Paso 1: Conectar por PuTTY
 
 Conectarse al servidor Ubuntu usando la sesion habitual de PuTTY.
@@ -152,6 +197,57 @@ git log --oneline -5
 ```
 
 El ultimo commit esperado debe coincidir con el ultimo subido a GitLab.
+
+### Paso 3.1: Acceso SSH a GitLab desde el servidor Ubuntu
+
+Si el clone por HTTPS pide usuario y clave, recordar que GitLab no acepta la clave normal
+de la cuenta para operaciones Git por HTTPS. Para el servidor Ubuntu conviene usar SSH con
+una clave propia del servidor, o un Personal Access Token si se decide mantener HTTPS.
+
+Accion realizada el 2026-08-28 en `serverinventario`:
+
+- Se confirmo que el servidor podia llegar a `gitlab.com`.
+- Se acepto la huella ED25519 de `gitlab.com` en `~/.ssh/known_hosts`.
+- El intento `ssh -T git@gitlab.com` fallo con `Permission denied (publickey)`, porque el
+  usuario `administrador` todavia no tenia una clave autorizada en GitLab.
+- Se genero una clave SSH ED25519 para GitLab en:
+
+```text
+~/.ssh/id_ed25519_gitlab
+~/.ssh/id_ed25519_gitlab.pub
+```
+
+Comando usado:
+
+```bash
+ssh-keygen -t ed25519 -C "serverinventario gitlab inventario-modular" -f ~/.ssh/id_ed25519_gitlab
+```
+
+La clave publica debe agregarse en GitLab, dentro de **User Settings -> SSH Keys**. La
+clave privada `~/.ssh/id_ed25519_gitlab` no debe mostrarse, copiarse al repo ni compartirse.
+
+Despues de agregar la clave publica en GitLab, configurar SSH para que use esa clave con
+`gitlab.com`:
+
+```bash
+cat > ~/.ssh/config <<'EOF'
+Host gitlab.com
+  HostName gitlab.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_gitlab
+  IdentitiesOnly yes
+EOF
+
+chmod 600 ~/.ssh/config
+ssh -T git@gitlab.com
+```
+
+Si GitLab responde con un mensaje de bienvenida, clonar con la URL SSH:
+
+```bash
+cd /opt/inventario-modular
+git clone --branch primeros-pasos git@gitlab.com:gustavoeliasm/inventario-modular.git .
+```
 
 ## Paso 4: Verificar Java
 
@@ -466,3 +562,86 @@ Se considera exitoso si:
 - El servidor Ubuntu alcanza `10.15.0.62:3306`, o queda registrado que falta habilitar red/firewall.
 - Se puede ver el pipeline en GitLab.
 - No se toca el inventario actual ni la base `inventario_prod`.
+
+## Bitacora de instalacion en Ubuntu
+
+### 2026-08-28 - Preparacion inicial por PuTTY
+
+Sesion observada:
+
+```text
+usuario: administrador
+host: serverinventario
+carpeta inicial: /home/administrador
+```
+
+Verificaciones realizadas:
+
+- `/opt/inventario` existe y pertenece al sistema actual. No se debe usar para esta prueba.
+- `/opt/inventario-modular` no existia al iniciar.
+- Se creo `/opt/inventario-modular` como carpeta separada para laboratorio:
+
+```bash
+sudo mkdir -p /opt/inventario-modular
+sudo chown "$USER":"$USER" /opt/inventario-modular
+```
+
+Resultado:
+
+```text
+drwxr-xr-x 2 administrador administrador 4096 ago 28 08:13 /opt/inventario-modular
+```
+
+Intento de clone por HTTPS:
+
+```bash
+cd /opt/inventario-modular
+git clone --branch primeros-pasos https://gitlab.com/gustavoeliasm/inventario-modular.git .
+```
+
+Resultado:
+
+- GitLab pidio usuario y clave.
+- La autenticacion fallo con `HTTP Basic: Access denied`.
+- Se decidio mantener GitLab como origen obligatorio y configurar SSH en lugar de clonar
+  desde GitHub.
+
+Verificacion SSH:
+
+```bash
+ls -la ~/.ssh
+ssh -T git@gitlab.com
+```
+
+Resultado:
+
+- Existia `~/.ssh`, pero no habia clave privada autorizada para GitLab.
+- Se acepto la huella ED25519 de `gitlab.com`.
+- GitLab respondio `Permission denied (publickey)`.
+
+Clave SSH generada para GitLab:
+
+```bash
+ssh-keygen -t ed25519 -C "serverinventario gitlab inventario-modular" -f ~/.ssh/id_ed25519_gitlab
+```
+
+Clave publica mostrada para cargar en GitLab:
+
+```text
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKfSYO8vUF30k7YNuxFAcK1EMbHgMtnd/mhrWiWYO5Qz serverinventario gitlab inventario-modular
+```
+
+Pendiente inmediato:
+
+1. Agregar la clave publica en GitLab, en **User Settings -> SSH Keys**.
+2. Crear `~/.ssh/config` para usar `~/.ssh/id_ed25519_gitlab` con `gitlab.com`.
+3. Probar `ssh -T git@gitlab.com`.
+4. Si la prueba responde bienvenida de GitLab, clonar con:
+
+```bash
+cd /opt/inventario-modular
+git clone --branch primeros-pasos git@gitlab.com:gustavoeliasm/inventario-modular.git .
+```
+
+Nota de seguridad: la clave privada `~/.ssh/id_ed25519_gitlab` no debe compartirse ni
+guardarse en el repositorio.
