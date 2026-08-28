@@ -1,5 +1,8 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import java.util.List;
+import java.util.Map;
+
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,6 +36,7 @@ public class AdminController {
 		model.addAttribute("username", username(userDetails));
 		model.addAttribute("displayName", displayName(userDetails));
 		model.addAttribute("fuero", fuero(userDetails));
+		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));
 		return "admin/index";
 	}
 
@@ -52,5 +56,12 @@ public class AdminController {
 			return activeDirectoryUser.getFuero();
 		}
 		return "Sin fuero informado";
+	}
+
+	private Map<String, List<String>> activeDirectoryAttributes(UserDetails userDetails) {
+		if (userDetails instanceof ActiveDirectoryUserDetails activeDirectoryUser) {
+			return activeDirectoryUser.getAttributes();
+		}
+		return Map.of();
 	}
 }

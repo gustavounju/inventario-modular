@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.config.ActiveDirectoryProperties;
+import javax.naming.directory.BasicAttribute;
+import javax.naming.directory.BasicAttributes;
 import org.junit.jupiter.api.Test;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.DirContextOperations;
@@ -22,6 +24,12 @@ class ActiveDirectoryUserDetailsContextMapperTests {
 		DirContextOperations context = mock(DirContextOperations.class);
 		when(context.getStringAttribute("displayName")).thenReturn("Gustavo Elias Murad");
 		when(context.getStringAttribute("department")).thenReturn("Penal");
+		BasicAttributes attributes = new BasicAttributes();
+		attributes.put(new BasicAttribute("displayName", "Gustavo Elias Murad"));
+		attributes.put(new BasicAttribute("department", "Penal"));
+		attributes.put(new BasicAttribute("mail", "gmurad@podjudsp.local"));
+		attributes.put(new BasicAttribute("pwdLastSet", "133000000000000000"));
+		when(context.getAttributes()).thenReturn(attributes);
 
 		ActiveDirectoryUserDetailsContextMapper mapper =
 				new ActiveDirectoryUserDetailsContextMapper(properties);
@@ -34,12 +42,18 @@ class ActiveDirectoryUserDetailsContextMapperTests {
 		assertThat(userDetails.getUsername()).isEqualTo("gmurad");
 		assertThat(userDetails.getDisplayName()).isEqualTo("Gustavo Elias Murad");
 		assertThat(userDetails.getFuero()).isEqualTo("Penal");
+		assertThat(userDetails.getAttributes())
+			.containsEntry("displayName", List.of("Gustavo Elias Murad"))
+			.containsEntry("department", List.of("Penal"))
+			.containsEntry("mail", List.of("gmurad@podjudsp.local"))
+			.doesNotContainKey("pwdLastSet");
 	}
 
 	@Test
 	void usesSafeFallbacksWhenActiveDirectoryAttributesAreEmpty() {
 		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
 		DirContextOperations context = mock(DirContextOperations.class);
+		when(context.getAttributes()).thenReturn(new BasicAttributes());
 
 		ActiveDirectoryUserDetailsContextMapper mapper =
 				new ActiveDirectoryUserDetailsContextMapper(properties);

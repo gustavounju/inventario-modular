@@ -9,8 +9,16 @@
 <body>
 	<main class="shell">
 		<section class="status-panel" aria-labelledby="system-title">
-			<p class="eyebrow">Centro Judicial San Pedro</p>
-			<h1 id="system-title" th:text="${applicationName}">Inventario Modular</h1>
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Centro Judicial San Pedro</p>
+					<h1 id="system-title" th:text="${applicationName}">Inventario Modular</h1>
+				</div>
+				<form class="logout-form" th:action="@{/logout}" method="post">
+					<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+					<button type="submit">Salir</button>
+				</form>
+			</header>
 			<div class="status-row">
 				<span class="status-dot" aria-hidden="true"></span>
 				<span>Sistema operativo</span>
@@ -29,6 +37,18 @@
 					<dd th:text="${fuero}">Informatica</dd>
 				</div>
 			</dl>
+			<section class="attributes-section" aria-labelledby="ad-attributes-title">
+				<h2 id="ad-attributes-title">Datos recibidos desde Active Directory</h2>
+				<p class="empty-state" th:if="${#maps.isEmpty(adAttributes)}">
+					Sin atributos AD para mostrar en esta sesion.
+				</p>
+				<div class="attributes-table" th:if="${!#maps.isEmpty(adAttributes)}">
+					<div class="attribute-row" th:each="attribute : ${adAttributes}">
+						<div class="attribute-name" th:text="${attribute.key}">displayName</div>
+						<div class="attribute-value" th:text="${#strings.listJoin(attribute.value, ', ')}">Gustavo Elias Murad</div>
+					</div>
+				</div>
+			</section>
 			<p class="version">Version <span th:text="${version}">0.0.1-SNAPSHOT</span></p>
 		</section>
 	</main>

@@ -146,6 +146,8 @@ Al iniciar sesion, el panel `/admin` muestra:
 - Usuario/cuenta usada para autenticarse.
 - Nombre visible traido del atributo `displayName`.
 - Fuero traido del atributo configurable `INVENTARIO_LDAP_FUERO_ATTRIBUTE`.
+- Tabla de atributos no sensibles recibidos desde AD durante el login.
+- Boton `Salir`, conectado al logout de Spring Security.
 
 Antes de activar AD en Ubuntu hay que confirmar con Sistemas/AD los valores reales de
 dominio, base DN y el atributo exacto donde esta cargado el fuero.

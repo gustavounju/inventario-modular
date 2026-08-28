@@ -1372,6 +1372,9 @@ Alcance de esta entrega:
   `INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE`.
 - El atributo de fuero es configurable con `INVENTARIO_LDAP_FUERO_ATTRIBUTE`.
 - Valor inicial sugerido para fuero: `department`, pendiente de confirmar contra el AD real.
+- Se agrego un boton `Salir` para cerrar la sesion usando el logout de Spring Security.
+- Se agrego una tabla de atributos no sensibles recibidos desde AD durante el login para
+  poder inspeccionar que esta entregando realmente el dominio.
 
 Archivos principales agregados o modificados:
 
@@ -1462,3 +1465,46 @@ Nota CI/CD:
 - Al subir este commit a GitLab se activa el pipeline.
 - Ese pipeline debe correr tests y construir el `.jar`.
 - Todavia no despliega automaticamente en Ubuntu ni toca la base remota.
+
+### 2026-08-28 - Boton salir y atributos visibles desde AD
+
+Se amplio la pantalla `/admin` para que, despues del login Active Directory, permita ver
+mas informacion de diagnostico del usuario autenticado.
+
+Cambios:
+
+- Boton `Salir` en el panel principal.
+- Logout via `POST /logout`, gestionado por Spring Security.
+- Tabla `Datos recibidos desde Active Directory`.
+- La tabla muestra los atributos no vacios recibidos en el contexto LDAP.
+- Se ocultan atributos de cuenta que no aportan a la pantalla y pueden ser sensibles, como
+  datos de expiracion, bloqueo o ultimos inicios de sesion.
+
+Validacion local:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+$env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+.\mvnw.cmd --batch-mode test
+.\mvnw.cmd --batch-mode -DskipTests package
+```
+
+Resultado:
+
+```text
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Cuando este commit llegue al servidor Ubuntu, los comandos de actualizacion siguen siendo:
+
+```bash
+cd /opt/inventario-modular
+git status
+git pull origin primeros-pasos
+git log --oneline -5
+sh ./mvnw --batch-mode test
+sh ./mvnw --batch-mode -DskipTests package
+ls -lh target/*.jar
+```
