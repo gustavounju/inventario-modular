@@ -37,6 +37,12 @@ java -version
 mvn -version
 ```
 
+En esta maquina, Maven quedo instalado localmente en:
+
+```text
+C:\Users\Gustavo\tools\apache-maven-3.9.16
+```
+
 Ejecutar tests:
 
 ```powershell
@@ -62,3 +68,14 @@ Produccion queda fuera de esta primera etapa.
 ## Documentacion
 
 La documentacion del estudio inicial esta en `docs/inventario-modular`.
+
+## Repositorios
+
+- GitLab: `https://gitlab.com/gustavoeliasm/inventario-modular`
+- GitHub esperado: `https://github.com/gustavounju/inventario-modular`
+
+GitHub queda pendiente de autenticacion con GitHub CLI:
+
+```powershell
+gh auth login
+```

@@ -6,8 +6,9 @@ Guia para preparar una maquina Windows de desarrollo para Inventario Modular Jav
 
 En la maquina de desarrollo se detecto:
 
-- Java actual en PATH: OpenJDK 8 de Red Hat.
-- Maven no disponible en PATH.
+- Java inicial en PATH: OpenJDK 8 de Red Hat.
+- JDK 21 instalado correctamente con winget.
+- Maven instalado localmente en el perfil del usuario.
 - Cliente `mysql` no disponible en PATH.
 - MySQL local escuchando en `127.0.0.1:3306`.
 - `winget` disponible.
@@ -47,12 +48,46 @@ Debe aparecer Java 21.
 
 ## Paso 2: Instalar Maven
 
+### Intento con Chocolatey
+
 El comando `winget install Apache.Maven` no funciono en esta maquina porque `winget` no
 encontro un paquete coincidente. Como Chocolatey si esta instalado y el paquete `maven`
 existe, el comando recomendado es:
 
 ```powershell
 choco install maven -y
+```
+
+En esta maquina, Chocolatey fallo porque PowerShell no estaba ejecutandose como
+administrador y no pudo escribir en:
+
+```text
+C:\ProgramData\chocolatey\lib-bad
+```
+
+Ese error no significa que Maven sea incorrecto. Significa que esa instalacion necesita
+PowerShell como administrador o una instalacion local sin privilegios.
+
+### Instalacion local sin administrador
+
+Se instalo Maven de forma local en el perfil del usuario:
+
+```text
+C:\Users\Gustavo\tools\apache-maven-3.9.16
+```
+
+Variables de usuario configuradas:
+
+```text
+JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot
+MAVEN_HOME=C:\Users\Gustavo\tools\apache-maven-3.9.16
+```
+
+Entradas agregadas al Path de usuario:
+
+```text
+C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot\bin
+C:\Users\Gustavo\tools\apache-maven-3.9.16\bin
 ```
 
 Despues de instalar, cerrar y abrir PowerShell.
@@ -64,6 +99,15 @@ mvn -version
 ```
 
 Debe aparecer Maven 3.9.x o superior.
+
+Salida verificada en esta maquina:
+
+```text
+openjdk version "21.0.12.1" 2026-08-18 LTS
+Apache Maven 3.9.16
+Maven home: C:\Users\Gustavo\tools\apache-maven-3.9.16
+Java version: 21.0.12.1
+```
 
 ## Alternativa si Chocolatey esta bloqueado
 
@@ -189,3 +233,32 @@ El sistema debe iniciar localmente sin conectarse a produccion.
 - Definir usuario administrador inicial.
 - Crear migraciones Flyway iniciales.
 - Crear pruebas de login y autorizacion.
+
+## Repositorios remotos
+
+El proyecto nuevo debe vivir como repositorio propio, no como rama del inventario viejo.
+
+Repositorio GitLab creado:
+
+```text
+https://gitlab.com/gustavoeliasm/inventario-modular
+```
+
+Rama inicial:
+
+```text
+primeros-pasos
+```
+
+Repositorio GitHub esperado:
+
+```text
+https://github.com/gustavounju/inventario-modular
+```
+
+Estado GitHub:
+
+- GitHub CLI instalado.
+- Falta iniciar sesion con `gh auth login`.
+- El push a GitHub falla hasta que el repositorio exista o se pueda crear con una sesion
+  autenticada.

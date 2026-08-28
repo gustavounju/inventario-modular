@@ -4,15 +4,17 @@ Plan inicial para construir Inventario Modular Java desde cero.
 
 ## Fase 0: Preparacion del entorno
 
-Estado: en curso.
+Estado: en curso, parcialmente completada.
 
 Tareas:
 
-- Instalar JDK 21 LTS.
-- Instalar Maven.
-- Verificar Java y Maven en PATH.
-- Verificar MySQL local.
+- Instalar JDK 21 LTS. Completado.
+- Instalar Maven. Completado mediante instalacion local de usuario.
+- Verificar Java y Maven en PATH. Completado en la sesion actual.
+- Verificar MySQL local. Completado.
 - Crear base local `inventario_modular`.
+- Crear repositorio GitLab. Completado.
+- Crear repositorio GitHub. Pendiente de login/autenticacion.
 
 Resultado esperado:
 
@@ -118,10 +120,11 @@ Tareas futuras:
 
 ## Proxima accion recomendada
 
-Instalar Maven con:
+Si Maven no aparece en una PowerShell nueva, verificar que el Path de usuario tenga:
 
-```powershell
-choco install maven -y
+```text
+C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot\bin
+C:\Users\Gustavo\tools\apache-maven-3.9.16\bin
 ```
 
 Luego verificar:
@@ -131,5 +134,5 @@ java -version
 mvn -version
 ```
 
-Si ambos comandos funcionan, crear la base local `inventario_modular` y generar el
-proyecto Spring Boot limpio.
+Si ambos comandos funcionan, crear la base local `inventario_modular` y continuar con las
+migraciones Flyway iniciales.
