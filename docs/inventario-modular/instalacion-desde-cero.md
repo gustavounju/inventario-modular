@@ -1,6 +1,10 @@
 # Instalacion Desde Cero
 
-Guia para preparar una maquina Windows de desarrollo para Inventario Modular Java.
+Guia para preparar una maquina **Windows** de desarrollo para Inventario Modular Java.
+
+Esta guia no describe una instalacion Linux ni una instalacion de produccion. El alcance
+es una maquina Windows de desarrollo, con MySQL local y sin conexion a la base remota del
+Centro Judicial.
 
 ## Estado actual observado
 
@@ -155,7 +159,7 @@ TcpTestSucceeded : True
 
 ## Paso 4: Crear base local nueva
 
-Produccion queda fuera. La primera base es local de desarrollo.
+Produccion queda fuera. La primera base es local de desarrollo y debe estar en MySQL.
 
 Nombre de base:
 
@@ -250,15 +254,43 @@ Rama inicial:
 primeros-pasos
 ```
 
-Repositorio GitHub esperado:
+Repositorio GitHub:
 
 ```text
 https://github.com/gustavounju/inventario-modular
 ```
 
-Estado GitHub:
+Decision de operacion:
 
-- GitHub CLI instalado.
-- Falta iniciar sesion con `gh auth login`.
-- El push a GitHub falla hasta que el repositorio exista o se pueda crear con una sesion
-  autenticada.
+- GitLab puede ser gestionado automaticamente por el asistente.
+- GitHub lo gestiona Gustavo por comandos para practicar versionado.
+
+Comando usado para subir a GitHub:
+
+```powershell
+git push -u github primeros-pasos
+```
+
+Salida esperada cuando sube correctamente:
+
+```text
+[new branch]      primeros-pasos -> primeros-pasos
+branch 'primeros-pasos' set up to track 'github/primeros-pasos'
+```
+
+## Nota de aprendizaje GitHub CLI
+
+Si se ejecuta:
+
+```powershell
+gh repo create gustavounju/inventario-modular --private --source . --push
+```
+
+y GitHub responde:
+
+```text
+GraphQL: Name already exists on this account (createRepository)
+```
+
+significa que el repositorio ya existe en esa cuenta. En ese caso no se debe crear de
+nuevo; corresponde usar `git push` hacia el remoto existente.

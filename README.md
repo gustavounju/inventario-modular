@@ -3,6 +3,18 @@
 Sistema modular de inventario en Java para el Departamento de Informatica del Centro
 Judicial San Pedro.
 
+## Entorno objetivo inicial
+
+Esta instalacion y este repositorio estan documentados para **Windows** como entorno de
+desarrollo inicial.
+
+La base de datos de desarrollo es **MySQL local**, separada de cualquier base de
+produccion:
+
+```text
+inventario_modular
+```
+
 ## Enfoque
 
 Inventario Modular nace como un backend **API-first** preparado para una futura app movil.
@@ -72,10 +84,11 @@ La documentacion del estudio inicial esta en `docs/inventario-modular`.
 ## Repositorios
 
 - GitLab: `https://gitlab.com/gustavoeliasm/inventario-modular`
-- GitHub esperado: `https://github.com/gustavounju/inventario-modular`
+- GitHub: `https://github.com/gustavounju/inventario-modular`
 
-GitHub queda pendiente de autenticacion con GitHub CLI:
+Decision de trabajo:
 
-```powershell
-gh auth login
-```
+- GitLab lo puede gestionar el asistente de forma automatica cuando haga falta.
+- GitHub lo gestiona Gustavo por comandos para practicar versionado.
+
+La rama inicial `primeros-pasos` ya fue subida a ambos remotos.

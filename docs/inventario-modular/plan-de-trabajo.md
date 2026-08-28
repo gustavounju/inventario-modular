@@ -12,9 +12,10 @@ Tareas:
 - Instalar Maven. Completado mediante instalacion local de usuario.
 - Verificar Java y Maven en PATH. Completado en la sesion actual.
 - Verificar MySQL local. Completado.
-- Crear base local `inventario_modular`.
+- Crear base local MySQL `inventario_modular`.
 - Crear repositorio GitLab. Completado.
-- Crear repositorio GitHub. Pendiente de login/autenticacion.
+- Crear repositorio GitHub. Completado por Gustavo.
+- Subir rama `primeros-pasos` a GitHub. Completado por Gustavo.
 
 Resultado esperado:
 
@@ -120,6 +121,8 @@ Tareas futuras:
 
 ## Proxima accion recomendada
 
+El entorno documentado para estos pasos es Windows con MySQL local.
+
 Si Maven no aparece en una PowerShell nueva, verificar que el Path de usuario tenga:
 
 ```text
@@ -134,5 +137,5 @@ java -version
 mvn -version
 ```
 
-Si ambos comandos funcionan, crear la base local `inventario_modular` y continuar con las
-migraciones Flyway iniciales.
+Si ambos comandos funcionan, crear la base local MySQL `inventario_modular` y continuar
+con las migraciones Flyway iniciales.
