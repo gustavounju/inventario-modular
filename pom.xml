@@ -8,7 +8,7 @@
 		<version>4.0.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>ar.gob.jujuy</groupId>
+	<groupId>ar.gov.justiciajujuy.sanpedro</groupId>
 	<artifactId>inventario-modular</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Inventario Modular</name>

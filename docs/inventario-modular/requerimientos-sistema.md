@@ -9,6 +9,30 @@ La prioridad no es tener una web responsive para tecnicos. La prioridad es que e
 exponga una API estable para que una app movil futura pueda usar las mismas reglas de
 negocio, seguridad y permisos.
 
+## Organizacion institucional
+
+El sistema pertenece al Poder Judicial de Jujuy y toma como referencia institucional el
+dominio publico:
+
+```text
+justiciajujuy.gov.ar
+```
+
+Como la instalacion inicial corresponde a San Pedro de Jujuy, el paquete Java base queda:
+
+```java
+ar.gov.justiciajujuy.sanpedro.inventario
+```
+
+La carpeta equivalente es:
+
+```text
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario
+```
+
+Se usa `gov` y no `gob` porque la convencion Java invierte el dominio real de la
+organizacion.
+
 ## Usuarios principales
 
 - Administrador del sistema.

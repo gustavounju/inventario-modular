@@ -32,6 +32,22 @@ principal de las reglas de negocio.
 - LDAP / Active Directory
 - Thymeleaf para panel administrativo minimo
 
+## Paquete Java
+
+La estructura base del codigo sigue el dominio institucional
+`justiciajujuy.gov.ar`, invertido segun la convencion Java, y agrega la sede San Pedro
+porque esta instalacion corresponde a San Pedro de Jujuy:
+
+```text
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario
+```
+
+Paquete base:
+
+```java
+ar.gov.justiciajujuy.sanpedro.inventario
+```
+
 ## Rama inicial
 
 La rama de arranque del proyecto es:
@@ -90,5 +106,6 @@ Decision de trabajo:
 
 - GitLab lo puede gestionar el asistente de forma automatica cuando haga falta.
 - GitHub lo gestiona Gustavo por comandos para practicar versionado.
+- Desde esta decision, los commits nuevos se escriben en español latino.
 
 La rama inicial `primeros-pasos` ya fue subida a ambos remotos.

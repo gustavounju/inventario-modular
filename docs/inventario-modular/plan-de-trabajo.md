@@ -20,6 +20,8 @@ Tareas:
 Resultado esperado:
 
 - La maquina puede compilar y ejecutar proyectos Spring Boot modernos.
+- El paquete Java base queda alineado con `justiciajujuy.gov.ar` y San Pedro:
+  `ar.gov.justiciajujuy.sanpedro.inventario`.
 
 ## Fase 1: Proyecto base
 
@@ -118,6 +120,13 @@ Tareas futuras:
 - Permisos institucionales para consultar AD.
 - Instaladores bloqueados por politicas del trabajo.
 - Intentar migrar demasiados modulos antes de cerrar seguridad.
+
+## Convencion de versionado
+
+- GitLab puede ser gestionado automaticamente por el asistente.
+- GitHub lo gestiona Gustavo por comandos para practicar versionado.
+- Los commits nuevos deben escribirse en español latino.
+- GitLab y GitHub deben quedar con la misma rama `primeros-pasos` y los mismos commits.
 
 ## Proxima accion recomendada
 

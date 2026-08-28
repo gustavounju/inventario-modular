@@ -1,4 +1,4 @@
-package ar.gob.jujuy.inventario;
+package ar.gov.justiciajujuy.sanpedro.inventario;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
