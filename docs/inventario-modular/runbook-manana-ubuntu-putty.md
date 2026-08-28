@@ -965,6 +965,300 @@ Nota CI/CD:
 - Si termina con `BUILD SUCCESS`, queda confirmado que Ubuntu puede ejecutar la misma
   validacion basica que CI.
 
+### 2026-08-28 - Verificacion de base MySQL por phpMyAdmin
+
+Desde el servidor Ubuntu de la aplicacion se confirmo que el cliente MySQL esta instalado:
+
+```bash
+mysql --version
+```
+
+Resultado:
+
+```text
+mysql  Ver 8.0.46-0ubuntu0.24.04.3 for Linux on x86_64 ((Ubuntu))
+```
+
+Se intento conectar al servidor MySQL remoto `10.15.0.62` usando `root` desde el servidor
+de aplicacion `10.15.2.251`:
+
+```bash
+mysql -h 10.15.0.62 -u root -p
+```
+
+Resultado:
+
+```text
+ERROR 1045 (28000): Access denied for user 'root'@'10.15.2.251' (using password: YES)
+```
+
+Interpretacion:
+
+- El servidor MySQL responde por red.
+- El usuario `root` no esta autorizado para entrar remotamente desde `10.15.2.251`.
+- Este bloqueo es correcto desde seguridad; no seguir intentando con `root` remoto.
+
+Luego se informo acceso por navegador a phpMyAdmin:
+
+```text
+http://10.15.0.62/phpmyadmin/db_structure.php?server=1&db=inventario_modular
+```
+
+Conclusion:
+
+- La base `inventario_modular` existe o phpMyAdmin permite llegar a su vista.
+- La creacion/verificacion del usuario de aplicacion debe hacerse desde phpMyAdmin o desde
+  una consola autorizada del servidor MySQL.
+- La aplicacion Java debe usar un usuario propio, por ejemplo
+  `inventario_modular_app` autorizado desde `10.15.2.251`.
+- No registrar contrasenas reales en Git, documentacion, chat ni capturas.
+
+### 2026-08-28 - Usuario MySQL de aplicacion y error 1045
+
+Desde phpMyAdmin se creo o verifico el usuario:
+
+```text
+'inventario_modular_app'@'10.15.2.251'
+```
+
+Tambien se asignaron permisos sobre la base nueva:
+
+```text
+inventario_modular.*
+```
+
+Permisos esperados:
+
+```text
+SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
+```
+
+Luego se probo desde el servidor Ubuntu de la aplicacion:
+
+```bash
+mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+```
+
+Resultado:
+
+```text
+ERROR 1045 (28000): Access denied for user 'inventario_modular_app'@'10.15.2.251' (using password: YES)
+```
+
+Interpretacion:
+
+- La red hacia MySQL funciona.
+- MySQL identifica correctamente al cliente como `10.15.2.251`.
+- El usuario/host existe o fue referenciado correctamente, pero la clave no coincide, el
+  usuario fue creado con otra clave, o `CREATE USER IF NOT EXISTS` no actualizo la clave de
+  un usuario que ya existia.
+
+Accion recomendada en phpMyAdmin, sin registrar la clave real:
+
+```sql
+ALTER USER 'inventario_modular_app'@'10.15.2.251'
+  IDENTIFIED BY 'NUEVA_CLAVE_REAL_SOLO_EN_PHPMYADMIN';
+
+FLUSH PRIVILEGES;
+
+SHOW GRANTS FOR 'inventario_modular_app'@'10.15.2.251';
+```
+
+Despues volver a probar desde PuTTY:
+
+```bash
+mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+```
+
+Nota de seguridad:
+
+- No usar el usuario personal de phpMyAdmin para la aplicacion.
+- No guardar contrasenas reales en el repo, chat, capturas ni `.gitlab-ci.yml`.
+- Si una contrasena real fue compartida por accidente, cambiarla antes de dejar el entorno
+  como estable.
+
+### 2026-08-28 - Clave MySQL de aplicacion actualizada
+
+Desde phpMyAdmin se ejecuto correctamente:
+
+```sql
+ALTER USER 'inventario_modular_app'@'10.15.2.251'
+  IDENTIFIED BY 'NUEVA_CLAVE_REAL_SOLO_EN_PHPMYADMIN';
+
+FLUSH PRIVILEGES;
+
+SHOW GRANTS FOR 'inventario_modular_app'@'10.15.2.251';
+```
+
+Resultado:
+
+- phpMyAdmin informo que las consultas se ejecutaron con exito.
+- `SHOW GRANTS` mostro permisos para `inventario_modular_app` desde `10.15.2.251`.
+- La clave real no se registra en este documento.
+
+Siguiente verificacion desde PuTTY:
+
+```bash
+mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+```
+
+Si conecta, ejecutar:
+
+```sql
+SELECT DATABASE();
+SHOW TABLES;
+EXIT;
+```
+
+### 2026-08-28 - Conexion MySQL verificada desde Ubuntu
+
+Desde PuTTY, en el servidor de aplicacion `serverinventario`, se probo la conexion a la
+base nueva:
+
+```bash
+mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+```
+
+Resultado:
+
+```text
+Welcome to the MySQL monitor.
+Server version: 8.0.42-0ubuntu0.20.04.1 (Ubuntu)
+```
+
+Dentro de MySQL se verifico:
+
+```sql
+SELECT DATABASE();
+SHOW TABLES;
+EXIT;
+```
+
+Resultado:
+
+```text
+DATABASE() = inventario_modular
+SHOW TABLES = Empty set
+```
+
+Interpretacion:
+
+- El servidor Ubuntu de la aplicacion `10.15.2.251` puede conectarse al MySQL
+  `10.15.0.62`.
+- El usuario `inventario_modular_app` funciona desde `10.15.2.251`.
+- La base `inventario_modular` esta creada.
+- La base esta vacia, lo cual es esperable antes de crear migraciones Flyway.
+- No se uso ni se modifico `inventario_prod`.
+
+### 2026-08-28 - Tests Maven ejecutados en Ubuntu
+
+Desde PuTTY se ejecuto:
+
+```bash
+cd /opt/inventario-modular
+sh ./mvnw --batch-mode test
+```
+
+Resultado confirmado:
+
+```text
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+Total time: 13.561 s
+Finished at: 2026-08-28T11:55:34-03:00
+```
+
+Detalles relevantes:
+
+- La prueba corrio con Java `21.0.12`.
+- El perfil activo fue `test`.
+- La base usada por tests fue H2 en memoria:
+
+```text
+jdbc:h2:mem:inventario_modular_test
+```
+
+- Este comando replica en Ubuntu la etapa CI/CD `validar` del pipeline GitLab.
+
+Warnings observados y aceptados para esta etapa:
+
+- Spring Security genero una clave de desarrollo temporal. Esto es normal hasta implementar
+  la autenticacion real con Active Directory y usuarios locales.
+- Mockito aviso sobre carga dinamica de agente en futuras versiones de JDK. No bloquea el
+  build actual.
+
+Siguiente paso recomendado en Ubuntu:
+
+```bash
+cd /opt/inventario-modular
+sh ./mvnw --batch-mode -DskipTests package
+ls -lh target/*.jar
+```
+
+Este paso replica la etapa CI/CD `construir` y confirma que el `.jar` tambien se genera en
+Ubuntu.
+
+### 2026-08-28 - Base lista para probar pagina de inicio
+
+Despues de confirmar la conexion MySQL desde Ubuntu, se definio que ya se puede empezar a
+probar la pagina inicial del nuevo sistema.
+
+Estado confirmado:
+
+- El servidor Ubuntu de aplicacion es `10.15.2.251`.
+- El servidor MySQL es `10.15.0.62`.
+- La base nueva es `inventario_modular`.
+- El usuario de aplicacion es `inventario_modular_app`.
+- La conexion desde Ubuntu hacia MySQL ya fue verificada.
+- La base esta vacia, lo cual es esperable antes de crear migraciones Flyway.
+
+Pagina inicial disponible en la primera base funcional:
+
+```text
+/
+/admin
+/api/v1/sistema/estado
+```
+
+Para laboratorio, la app Java debe correr en HTTP interno y puerto separado:
+
+```text
+http://10.15.2.251:8081/admin
+http://10.15.2.251:8081/api/v1/sistema/estado
+```
+
+Recordatorio importante:
+
+- El sistema viejo entraba por HTTPS.
+- Inventario Modular todavia no debe tocar nginx, certificados ni systemd del sistema viejo.
+- Primero se valida HTTP interno en `8081`.
+- Despues se planifica HTTPS con nginx/reverse proxy en una etapa separada y revisada.
+
+Comando de arranque manual previsto, sin registrar la clave real:
+
+```bash
+INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_USER="inventario_modular_app" \
+INVENTARIO_DB_PASSWORD="CLAVE_REAL_SOLO_EN_SERVIDOR" \
+INVENTARIO_SERVER_PORT="8081" \
+java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+Antes de ejecutar este arranque, debe generarse el `.jar` en Ubuntu:
+
+```bash
+cd /opt/inventario-modular
+sh ./mvnw --batch-mode -DskipTests package
+ls -lh target/*.jar
+```
+
+Nota CI/CD:
+
+- El build local en Windows ya paso.
+- El commit funcional `7e93058` ya fue subido a GitLab.
+- El push a GitLab activo CI/CD; revisar en GitLab que el pipeline del commit `7e93058`
+  quede `Passed` antes de considerar esta base como lista para actualizar Ubuntu.
+
 ### 2026-08-28 - Primera base funcional del nuevo sistema
 
 Se empezo a construir Inventario Modular con una primera entrega pequena y verificable:
