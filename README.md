@@ -169,6 +169,7 @@ Documentos principales:
 - [Versionado Git](docs/inventario-modular/versionado-git.md)
 - [CI/CD](docs/inventario-modular/ci-cd.md)
 - [Login Active Directory](docs/inventario-modular/login-active-directory.md)
+- [Proximo paso funcional](docs/inventario-modular/proximo-paso-funcional.md)
 - [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 

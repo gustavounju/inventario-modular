@@ -1599,3 +1599,162 @@ Documentacion tecnica agregada:
 docs/inventario-modular/login-active-directory.md
 docs/decisions/ADR-004-login-active-directory-solo-lectura.md
 ```
+
+### 2026-08-28 - Servicio systemd para Inventario Modular
+
+Se decidio que Inventario Modular debe levantar automaticamente en Ubuntu, igual que el
+sistema viejo, pero como servicio separado.
+
+Estado observado antes de crear el servicio:
+
+```text
+inventario.service       activo, sistema viejo GOLD, no tocar
+inventario-next.service  activo, SvelteKit en puerto 5173
+inventario-modular       no existia todavia
+```
+
+Puertos observados:
+
+```text
+80    activo
+443   activo
+8080  activo
+5173  activo por inventario-next
+8081  libre para inventario-modular
+```
+
+Archivo de entorno creado fuera de git:
+
+```text
+/etc/inventario-modular/inventario-modular.env
+```
+
+Variables reales configuradas sin documentar la clave:
+
+```text
+INVENTARIO_DB_URL=jdbc:mysql://10.15.0.62:3306/inventario_modular
+INVENTARIO_DB_USER=inventario_modular_app
+INVENTARIO_DB_PASSWORD=******** OCULTA ********
+INVENTARIO_LDAP_ENABLED=true
+INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_DOMAIN=podjudsp.local
+INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
+INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE=displayName
+INVENTARIO_LDAP_FUERO_ATTRIBUTE=department
+INVENTARIO_SERVER_PORT=8081
+```
+
+Permisos del archivo:
+
+```bash
+sudo chown root:root /etc/inventario-modular/inventario-modular.env
+sudo chmod 600 /etc/inventario-modular/inventario-modular.env
+```
+
+Servicio creado:
+
+```text
+/etc/systemd/system/inventario-modular.service
+```
+
+Contenido usado:
+
+```ini
+[Unit]
+Description=Inventario Modular Spring Boot
+After=network.target
+
+[Service]
+Type=simple
+User=administrador
+Group=administrador
+WorkingDirectory=/opt/inventario-modular
+EnvironmentFile=/etc/inventario-modular/inventario-modular.env
+ExecStart=/usr/bin/java -jar /opt/inventario-modular/target/inventario-modular-0.0.1-SNAPSHOT.jar
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Comandos ejecutados para activar el servicio:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable inventario-modular.service
+sudo systemctl start inventario-modular.service
+```
+
+Primer problema encontrado:
+
+```text
+Access denied for user 'inventario_modular_app'@'10.15.2.251' (using password: NO)
+```
+
+Diagnostico:
+
+```text
+La aplicacion estaba leyendo usuario y URL, pero la variable INVENTARIO_DB_PASSWORD estaba
+vacia. Por eso MySQL recibia conexion sin password.
+```
+
+Correccion aplicada:
+
+- Se detuvo solo `inventario-modular.service`.
+- Se actualizo `/etc/inventario-modular/inventario-modular.env`.
+- Se verifico que `INVENTARIO_DB_PASSWORD` tuviera largo mayor que cero, sin mostrar la
+  clave.
+- Se inicio nuevamente `inventario-modular.service`.
+
+Resultado final reportado:
+
+```text
+Funciono.
+```
+
+Conclusion:
+
+- Inventario Modular ya puede quedar levantado automaticamente.
+- El servidor viejo `inventario.service` sigue activo.
+- `inventario-next.service` todavia no debe apagarse hasta confirmar que ya no se usa.
+- HTTPS/nginx todavia no se toca.
+
+Comandos de verificacion utiles:
+
+```bash
+systemctl status inventario-modular.service --no-pager -l
+ss -ltnp | grep ':8081' || echo "Nada escuchando en 8081"
+sudo journalctl -u inventario-modular.service -n 120 --no-pager
+```
+
+URL de laboratorio:
+
+```text
+http://10.15.2.251:8081/
+```
+
+### 2026-08-28 - Proximo paso despues del primer arranque
+
+Con Inventario Modular ya levantando en Ubuntu, se propone el siguiente orden:
+
+```text
+Usuarios y permisos minimos
+  -> Equipos/API de inventario
+  -> Dashboard simple
+  -> Tareas tecnicas
+  -> Stock/componentes
+  -> Actas/reportes
+```
+
+Razon:
+
+- Active Directory ya autentica.
+- Falta que Inventario Modular autorice localmente quien puede entrar y que puede ver.
+- Luego conviene iniciar con Equipos porque es el nucleo del inventario viejo.
+
+Documento de referencia:
+
+```text
+docs/inventario-modular/proximo-paso-funcional.md
+```

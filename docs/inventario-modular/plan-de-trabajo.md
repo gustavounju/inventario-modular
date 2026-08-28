@@ -58,6 +58,8 @@ Resultado esperado:
 
 ## Fase 2: Modelo de seguridad modular
 
+Estado: siguiente fase recomendada.
+
 Tareas:
 
 - Crear tablas de usuarios internos.
@@ -71,16 +73,22 @@ Tareas:
 Resultado esperado:
 
 - El sistema puede representar que modulos ve cada usuario y que acciones puede realizar.
+- Un usuario valido en Active Directory pero no autorizado localmente no puede entrar.
+- El administrador puede habilitar usuarios y modulos de forma controlada.
 
 ## Fase 3: Active Directory
 
+Estado: primera version completada para login y lectura de atributos; pendiente integrarla
+con autorizacion local.
+
 Tareas:
 
-- Configurar LDAP por variables locales.
-- Validar credenciales contra AD.
+- Configurar LDAP por variables locales. Completado.
+- Validar credenciales contra AD. Completado en servidor.
 - Manejar error de AD no disponible.
-- No guardar claves.
-- No loguear claves.
+- No guardar claves. Completado en la primera version.
+- No loguear claves. Completado en la primera version.
+- Mostrar nombre, usuario, fuero y atributos no sensibles desde AD. Completado.
 
 Resultado esperado:
 
@@ -116,9 +124,11 @@ Resultado esperado:
 
 ## Fase 6: Primer modulo funcional
 
-Candidato recomendado: ACTAS o MUEBLES.
+Candidato recomendado actualizado: EQUIPOS.
 
-La decision queda pendiente hasta terminar seguridad y permisos.
+Motivo: Equipos es el nucleo del inventario viejo y alimenta dashboard, tareas, reportes,
+mapas, stock asignado y actas. La decision queda condicionada a cerrar primero usuarios y
+permisos minimos.
 
 ## Fase 7: Migracion progresiva
 
@@ -163,11 +173,20 @@ Ver tambien: [Versionado Git](./versionado-git.md).
 
 ## Proxima accion recomendada
 
-El entorno documentado para estos pasos es Windows con MySQL local. En el trabajo, el
-servidor Ubuntu de la aplicacion debe conectarse al servidor MySQL separado `10.15.0.62`.
+El servidor Ubuntu ya levanta Inventario Modular como servicio `systemd`, con MySQL remoto
+y login AD. La proxima accion recomendada es implementar autorizacion local minima:
 
-Para continuar en el trabajo, seguir
-[Runbook para manana: Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md).
+```text
+AD autentica identidad.
+Inventario Modular autoriza acceso y modulos.
+```
+
+Despues de esa capa, comenzar con el modulo EQUIPOS.
+
+Ver tambien:
+
+- [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
+- [Proximo paso funcional](./proximo-paso-funcional.md)
 
 Si Maven no aparece en una PowerShell nueva, verificar que el Path de usuario tenga:
 
