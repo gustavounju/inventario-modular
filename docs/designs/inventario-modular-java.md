@@ -14,6 +14,21 @@ No se busca solo cambiar de lenguaje. Se busca crear un sistema nuevo, limpio y 
 Java, copiando la logica operativa validada del inventario original sin arrastrar codigo
 heredado ni decisiones tecnicas que no funcionaron.
 
+## Criterio de migracion desde el sistema viejo
+
+El sistema viejo sera tratado como una referencia funcional. Se lo consulta para entender
+que necesita el equipo de Informatica en la practica: pantallas usadas, datos requeridos,
+actas, OVMelos, equipos, patrimonio, stock, reportes y pasos administrativos reales.
+
+No se migrara copiando archivos ni replicando la arquitectura vieja. Cada modulo se va a
+reconstruir en Java con Spring Boot, API, permisos, migraciones de base y pruebas.
+
+La regla de trabajo queda:
+
+```text
+Conservar la logica que funciona. Rehacer la implementacion en Java.
+```
+
 ## Nombre
 
 - Nombre de producto: Inventario Modular
@@ -100,6 +115,8 @@ Usuario ingresa usuario/clave
    Directory.
 6. La base vieja se conserva como referencia y futura fuente de migracion, no como modelo
    estructural obligatorio.
+7. El codigo viejo no se copia al proyecto nuevo; se documentan reglas y se reimplementan
+   en Java.
 
 ## Primer alcance recomendado
 

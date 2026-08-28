@@ -9,6 +9,22 @@ La prioridad no es tener una web responsive para tecnicos. La prioridad es que e
 exponga una API estable para que una app movil futura pueda usar las mismas reglas de
 negocio, seguridad y permisos.
 
+## Relacion con el sistema actual
+
+El sistema actual de inventario no se descarta como conocimiento. Se usa como fuente para
+entender la operacion real: que datos se cargan, que pasos siguen los tecnicos, como se
+generan actas, como se usan OVMelos, que reportes son necesarios y que controles ya estan
+probados por el trabajo diario.
+
+La regla es:
+
+```text
+Copiar logica funcional validada, no copiar codigo heredado.
+```
+
+Inventario Modular debe reconstruir esos comportamientos en Java con una arquitectura
+nueva, modular, auditable y preparada para API/app movil.
+
 ## Organizacion institucional
 
 El sistema pertenece al Poder Judicial de Jujuy y toma como referencia institucional el
@@ -129,6 +145,7 @@ Primer entregable esperado:
 - Reemplazar todavia el inventario original.
 - Implementar app movil nativa.
 - Migrar actas, equipos, muebles, stock o patrimonio.
+- Copiar codigo del inventario viejo directamente al nuevo proyecto Java.
 
 ## Criterios de aceptacion iniciales
 

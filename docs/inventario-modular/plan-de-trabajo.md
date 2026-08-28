@@ -115,10 +115,17 @@ La decision queda pendiente hasta terminar seguridad y permisos.
 
 Tareas futuras:
 
-- Analizar tablas del inventario original.
-- Identificar logica funcional que debe copiarse.
-- Migrar por modulo.
+- Analizar pantallas, tablas y flujos del inventario original.
+- Identificar logica funcional que debe conservarse.
+- Documentar reglas reales antes de implementar cada modulo.
+- Redisenar cada modulo en Java, sin copiar codigo heredado.
 - Mantener sistema original funcionando hasta validar reemplazo.
+
+Resultado esperado:
+
+- El inventario viejo queda como referencia de negocio.
+- El inventario nuevo queda como implementacion limpia en Java.
+- Cada modulo migrado tiene reglas documentadas, permisos definidos y pruebas basicas.
 
 ## Riesgos conocidos
 

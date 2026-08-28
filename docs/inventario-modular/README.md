@@ -33,6 +33,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Cierre de jornada Windows](./cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
+- [Decision sobre inventario viejo como referencia funcional](../decisions/ADR-003-inventario-viejo-como-referencia-funcional.md)
 
 ## Alcance inicial
 
@@ -51,6 +52,18 @@ seguridad y modularidad:
 Active Directory confirma identidad. Inventario Modular decide autorizacion.
 
 El sistema no guarda claves del dominio.
+
+## Relacion con el inventario viejo
+
+El inventario viejo se toma como **referencia funcional**, no como base tecnica.
+
+Esto significa que el nuevo sistema Java debe estudiar y respetar los flujos que ya
+funcionan en la operacion diaria, por ejemplo equipos, actas, OVMelos, patrimonio, stock
+y reportes usados realmente. Pero no debe copiar codigo heredado, estructura desordenada
+ni decisiones tecnicas que dificulten mantener el sistema.
+
+La migracion se hara por modulos: primero se entiende como trabaja hoy el modulo viejo,
+luego se redefine en Java con Spring Boot, permisos, API, migraciones y pruebas.
 
 ## Topologia de base de datos
 
