@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title th:text="${applicationName}">Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell">
+		<section class="status-panel" aria-labelledby="system-title">
+			<p class="eyebrow">Centro Judicial San Pedro</p>
+			<h1 id="system-title" th:text="${applicationName}">Inventario Modular</h1>
+			<div class="status-row">
+				<span class="status-dot" aria-hidden="true"></span>
+				<span>Sistema operativo</span>
+			</div>
+			<p class="version">Version <span th:text="${version}">0.0.1-SNAPSHOT</span></p>
+		</section>
+	</main>
+</body>
+</html>

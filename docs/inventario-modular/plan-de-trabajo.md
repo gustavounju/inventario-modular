@@ -35,15 +35,24 @@ Tareas:
 - Crear proyecto Spring Boot.
 - Configurar estructura de paquetes.
 - Configurar perfiles `local`, `test` y futuro `prod`.
+- Configurar puerto local `8081` mediante `INVENTARIO_SERVER_PORT`, para evitar choque
+  con el inventario viejo.
 - Configurar conexion MySQL local para Windows.
 - Configurar conexion MySQL remota para Ubuntu usando `10.15.0.62`.
 - Configurar Flyway.
 - Configurar pipeline CI en GitLab para tests y artefacto `.jar`.
+- Crear endpoint publico inicial `GET /api/v1/sistema/estado`.
+- Crear entrada web administrativa minima en `/admin`.
+- Redirigir `/` hacia `/admin`.
+- Documentar que HTTPS queda para nginx/reverse proxy en una etapa posterior, porque el
+  sistema viejo entraba por HTTPS.
 
 Resultado esperado:
 
 - `mvn test` funciona.
 - `mvn spring-boot:run` inicia localmente.
+- `/api/v1/sistema/estado` responde estado operativo.
+- `/admin` carga una pantalla minima del sistema.
 - GitLab CI ejecuta tests y genera un `.jar`.
 - No hay dependencia con produccion.
 

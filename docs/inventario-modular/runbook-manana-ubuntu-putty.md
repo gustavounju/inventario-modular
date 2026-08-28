@@ -710,3 +710,348 @@ Punto CI/CD abierto:
 - Revisar en GitLab: **Build -> Pipelines**.
 - Confirmar que pasen las etapas `validar` y `construir`.
 - Si el pipeline falla, registrar el error antes de continuar con la instalacion Ubuntu.
+
+### 2026-08-28 - Practica guiada de push y verificacion CI/CD
+
+Se practico el flujo de Git paso a paso desde PowerShell en Windows para subir una nueva
+documentacion. Hubo una confusion inicial al intentar ejecutar un comando de Windows
+dentro de PuTTY:
+
+```bash
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+```
+
+Resultado en Ubuntu:
+
+```text
+-bash: cd: C:\Users\gmurad\Documents\ChatGPT\inventario-modular: No such file or directory
+```
+
+Aprendizaje registrado:
+
+- PowerShell usa rutas Windows como `C:\Users\...`.
+- PuTTY/Ubuntu usa rutas Linux como `/opt/inventario-modular`.
+- Los commits y pushes de la copia local deben hacerse desde PowerShell en:
+
+```text
+C:\Users\gmurad\Documents\ChatGPT\inventario-modular
+```
+
+Comandos de verificacion ejecutados en PowerShell:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git status --short --branch
+git diff --stat
+git diff --check
+git diff -- docs\inventario-modular\runbook-manana-ubuntu-putty.md
+```
+
+Resultado observado:
+
+- Rama: `primeros-pasos`.
+- Archivo modificado: `docs/inventario-modular/runbook-manana-ubuntu-putty.md`.
+- Cambio: 65 lineas nuevas de documentacion.
+- `git diff --check` no reporto errores.
+- El visor de `git diff` mostro `(END)`; para salir del visor se debe presionar `q`.
+
+Se preparo el archivo para commit:
+
+```powershell
+git add docs\inventario-modular\runbook-manana-ubuntu-putty.md
+git status --short --branch
+```
+
+La salida paso de ` M` a `M ` para el archivo, indicando que quedo en staging.
+
+Se creo el commit:
+
+```powershell
+git commit -m "docs: documenta subida a repositorios"
+```
+
+Commit generado:
+
+```text
+80ae39b docs: documenta subida a repositorios
+```
+
+Git volvio a avisar que uso automaticamente la identidad:
+
+```text
+Gustavo Murad <gmurad@podjudsp.local>
+```
+
+Esto no bloqueo el commit. Queda como mejora futura configurar explicitamente:
+
+```powershell
+git config --global user.name "Gustavo Murad"
+git config --global user.email "CORREO_A_DEFINIR"
+```
+
+Se subio primero a GitLab:
+
+```powershell
+git push origin primeros-pasos
+```
+
+Resultado:
+
+```text
+bf98ff9..80ae39b  primeros-pasos -> primeros-pasos
+```
+
+Se subio despues a GitHub:
+
+```powershell
+git push github primeros-pasos
+```
+
+Resultado:
+
+```text
+bf98ff9..80ae39b  primeros-pasos -> primeros-pasos
+```
+
+Verificacion final local/remota:
+
+```powershell
+git status --short --branch
+git log --oneline -4 --decorate
+git ls-remote origin refs/heads/primeros-pasos
+git ls-remote github refs/heads/primeros-pasos
+```
+
+Resultado confirmado:
+
+```text
+HEAD -> primeros-pasos
+origin/primeros-pasos -> 80ae39b
+github/primeros-pasos -> 80ae39b
+```
+
+Verificacion CI/CD en GitLab:
+
+- Se reviso la pantalla **Build -> Pipelines** del proyecto `inventario-modular`.
+- El pipeline del commit `80ae39b` aparecio en estado `Passed`.
+- Mensaje del commit en GitLab: `docs: documenta subida a repositorios`.
+- Rama: `primeros-pasos`.
+- Duracion observada: `00:01:16`.
+- Stages esperadas: `validar` y `construir`, ambas indicadas como correctas en la vista
+  del pipeline.
+
+Conclusion:
+
+- La documentacion quedo subida a GitLab y GitHub.
+- El pipeline de GitLab paso correctamente para el commit `80ae39b`.
+- Se puede continuar con la instalacion Ubuntu por PuTTY desde el pendiente de SSH a GitLab.
+
+### 2026-08-28 - Clone GitLab e instalacion de Java 21 en Ubuntu
+
+Se configuro correctamente SSH en `serverinventario` para usar la clave local
+`~/.ssh/id_ed25519_gitlab` contra GitLab:
+
+```bash
+cat > ~/.ssh/config <<'EOF'
+Host gitlab.com
+  HostName gitlab.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_gitlab
+  IdentitiesOnly yes
+EOF
+
+chmod 600 ~/.ssh/config
+ssh -T git@gitlab.com
+```
+
+Resultado:
+
+```text
+Welcome to GitLab, @gustavoeliasm!
+```
+
+Con GitLab SSH funcionando, se clono el repositorio desde GitLab en la carpeta separada de
+laboratorio:
+
+```bash
+cd /opt/inventario-modular
+git clone --branch primeros-pasos git@gitlab.com:gustavoeliasm/inventario-modular.git .
+git status
+git log --oneline -5
+```
+
+Resultado confirmado:
+
+```text
+On branch primeros-pasos
+Your branch is up to date with 'origin/primeros-pasos'.
+nothing to commit, working tree clean
+80ae39b (HEAD -> primeros-pasos, origin/primeros-pasos, origin/HEAD) docs: documenta subida a repositorios
+```
+
+Se verifico que la carpeta contenia el proyecto esperado:
+
+```bash
+ls
+```
+
+Resultado:
+
+```text
+docs  mvnw  mvnw.cmd  pom.xml  README.md  src
+```
+
+Aviso CI/CD registrado:
+
+- El servidor Ubuntu quedo apuntando al commit `80ae39b`.
+- Ese commit ya tenia pipeline `Passed` en GitLab.
+- Por lo tanto, la instalacion en Ubuntu partio desde el mismo commit validado por CI.
+
+Luego se verifico Java en Ubuntu:
+
+```bash
+java -version
+javac -version
+```
+
+Resultado inicial:
+
+```text
+Command 'java' not found
+Command 'javac' not found
+```
+
+Se instalo JDK 21 headless con `apt`. Este paso instala paquetes del sistema, pero no toca
+`/opt/inventario`, no toca MySQL y no reinicia el servicio del inventario actual:
+
+```bash
+sudo apt update
+sudo apt install -y openjdk-21-jdk-headless
+java -version
+javac -version
+```
+
+Resultado confirmado:
+
+```text
+openjdk version "21.0.12" 2026-07-21
+OpenJDK Runtime Environment (build 21.0.12+8-1-24.04-Ubuntu)
+OpenJDK 64-Bit Server VM (build 21.0.12+8-1-24.04-Ubuntu, mixed mode, sharing)
+javac 21.0.12
+```
+
+Durante la instalacion aparecio el aviso:
+
+```text
+Service restarts being deferred:
+ systemctl restart systemd-logind.service
+```
+
+Decision tomada:
+
+- No reiniciar servicios del servidor para esta prueba.
+- Continuar con la compilacion del proyecto usando Maven Wrapper.
+
+Siguiente paso previsto:
+
+```bash
+cd /opt/inventario-modular
+sh ./mvnw --batch-mode test
+```
+
+Nota CI/CD:
+
+- Este comando replica en el servidor Ubuntu la etapa `validar` del pipeline GitLab.
+- Si termina con `BUILD SUCCESS`, queda confirmado que Ubuntu puede ejecutar la misma
+  validacion basica que CI.
+
+### 2026-08-28 - Primera base funcional del nuevo sistema
+
+Se empezo a construir Inventario Modular con una primera entrega pequena y verificable:
+
+- Configuracion local de puerto `8081` mediante `INVENTARIO_SERVER_PORT`.
+- Soporte para encabezados de proxy con `server.forward-headers-strategy=framework`.
+- Endpoint publico versionado:
+
+```text
+GET /api/v1/sistema/estado
+```
+
+- Entrada web administrativa minima:
+
+```text
+GET /admin
+```
+
+- Redireccion de `/` hacia `/admin`.
+- Configuracion inicial de seguridad: `/`, `/admin`, `/css/**` y
+  `/api/v1/sistema/estado` quedan publicos por ahora; el resto requiere autenticacion.
+
+Archivos principales agregados o modificados:
+
+```text
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/config/SecurityConfig.java
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/AdminController.java
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/SystemStatusController.java
+src/main/resources/templates/admin/index.html
+src/main/resources/static/css/admin.css
+src/main/resources/application.properties
+src/main/resources/application-local.properties
+src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/SystemStatusControllerTests.java
+```
+
+Validacion local en Windows:
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+.\mvnw.cmd --batch-mode test
+.\mvnw.cmd --batch-mode -DskipTests package
+```
+
+Resultado:
+
+```text
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+target\inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+Nota sobre HTTPS:
+
+- El inventario viejo entraba por HTTPS.
+- En esta primera etapa Inventario Modular no instala nginx ni systemd.
+- La app Java queda preparada para correr HTTP interno en laboratorio y recibir HTTPS mas
+  adelante por nginx/reverse proxy.
+- No reutilizar todavia el puerto ni la configuracion HTTPS del inventario viejo.
+
+Comandos previstos para actualizar el servidor Ubuntu por PuTTY despues de subir el
+commit a GitLab:
+
+```bash
+cd /opt/inventario-modular
+git status
+git pull origin primeros-pasos
+git log --oneline -5
+sh ./mvnw --batch-mode test
+sh ./mvnw --batch-mode -DskipTests package
+ls -lh target/*.jar
+```
+
+Explicacion:
+
+- `git status` confirma que no haya cambios locales en el servidor.
+- `git pull origin primeros-pasos` trae el commit validado desde GitLab.
+- `git log --oneline -5` permite verificar que el commit esperado llego al servidor.
+- `sh ./mvnw --batch-mode test` replica la etapa CI `validar`.
+- `sh ./mvnw --batch-mode -DskipTests package` replica la etapa CI `construir`.
+- `ls -lh target/*.jar` confirma que el artefacto `.jar` existe en Ubuntu.
+
+No ejecutar todavia:
+
+```bash
+java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
+```
+
+Motivo: el perfil local intenta conectar a MySQL. Antes de arrancar la app en Ubuntu hay
+que confirmar la base `inventario_modular`, usuario, permisos y variables `INVENTARIO_*`.

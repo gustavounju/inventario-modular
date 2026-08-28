@@ -78,7 +78,7 @@ C:\Users\Gustavo\tools\apache-maven-3.9.16
 Ejecutar tests:
 
 ```powershell
-mvn test
+.\mvnw.cmd --batch-mode test
 ```
 
 Si `mvn` no aparece o Maven usa Java 8:
@@ -94,8 +94,20 @@ mvn test
 Ejecutar app:
 
 ```powershell
-mvn spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
+
+Por defecto el perfil local usa el puerto `8081` para no chocar con el inventario viejo:
+
+```text
+http://localhost:8081/admin
+http://localhost:8081/api/v1/sistema/estado
+```
+
+El inventario viejo entraba por HTTPS. En Inventario Modular, durante laboratorio, la app
+Spring Boot corre por HTTP interno y queda preparada para recibir HTTPS delante mediante
+nginx/reverse proxy cuando se defina el despliegue real. No instalar nginx ni systemd para
+este laboratorio inicial.
 
 ## Base de datos
 
