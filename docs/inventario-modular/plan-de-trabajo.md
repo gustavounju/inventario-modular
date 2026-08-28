@@ -135,6 +135,8 @@ cd "G:\unju2025\google gravity\inventario-modular"
 git push github primeros-pasos
 ```
 
+Ver tambien: [Versionado Git](./versionado-git.md).
+
 ## Proxima accion recomendada
 
 El entorno documentado para estos pasos es Windows con MySQL local.

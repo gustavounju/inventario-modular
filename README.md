@@ -97,6 +97,13 @@ Produccion queda fuera de esta primera etapa.
 
 La documentacion del estudio inicial esta en `docs/inventario-modular`.
 
+Documentos principales:
+
+- [Instalacion desde cero](docs/inventario-modular/instalacion-desde-cero.md)
+- [Requerimientos del sistema](docs/inventario-modular/requerimientos-sistema.md)
+- [Plan de trabajo](docs/inventario-modular/plan-de-trabajo.md)
+- [Versionado Git](docs/inventario-modular/versionado-git.md)
+
 ## Repositorios
 
 - GitLab: `https://gitlab.com/gustavoeliasm/inventario-modular`
