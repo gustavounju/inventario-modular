@@ -43,28 +43,35 @@ Inventario Modular debe decidir autorizacion.
 Hoy el sistema ya puede validar un usuario de AD, pero falta definir localmente si ese
 usuario puede entrar, que rol tiene y que modulos puede ver.
 
-## Proximo sprint recomendado
+## Primer sprint iniciado: Usuarios y permisos minimos
 
-### Sprint 1: Usuarios y permisos minimos
+Estado: primera capa implementada.
 
 Objetivo:
 
-- Crear tabla de usuarios autorizados.
-- Crear tabla de roles.
-- Crear tabla de modulos.
-- Crear permisos minimos por modulo.
-- Permitir que solo usuarios autorizados localmente entren al panel.
-- Dejar un usuario administrador inicial.
+- Crear tabla de usuarios autorizados. Completado.
+- Crear tabla de roles. Completado.
+- Crear tabla de modulos. Completado.
+- Crear permisos minimos por modulo. Completado.
+- Dejar un usuario administrador inicial. Completado con `admin.local`.
+- Exponer datos de usuario y modulos por API. Completado con `/api/v1/me` y
+  `/api/v1/me/modulos`.
+- Mostrar modulos habilitados en `/admin`. Completado.
+- Permitir que solo usuarios autorizados localmente entren al panel. Pendiente de aplicar
+  despues de cargar un administrador real de dominio.
 
 Resultado esperado:
 
-- Usuario valido en AD pero no autorizado localmente: no entra.
+- Usuario valido en AD pero no autorizado localmente: queda como `Pendiente de
+  autorizacion` y sin modulos.
 - Usuario autorizado: entra y ve sus modulos.
 - Administrador: puede ver todo.
 - No se guardan claves de AD.
 
 Este sprint es pequeno pero muy importante porque evita construir modulos encima de una
 seguridad incompleta.
+
+## Proximo sprint recomendado
 
 ### Sprint 2: Equipos como primer modulo funcional
 

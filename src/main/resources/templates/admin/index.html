@@ -37,6 +37,27 @@
 					<dd th:text="${fuero}">Informatica</dd>
 				</div>
 			</dl>
+			<section class="modules-section" aria-labelledby="modules-title">
+				<div class="section-header">
+					<h2 id="modules-title">Modulos habilitados</h2>
+					<span class="authorization-badge" th:classappend="${authorized} ? ' is-authorized' : ' is-pending'"
+							th:text="${authorized} ? 'Autorizado' : 'Pendiente de autorizacion'">
+						Autorizado
+					</span>
+				</div>
+				<p class="empty-state" th:if="${#lists.isEmpty(modules)}">
+					Este usuario todavia no tiene modulos asignados en Inventario Modular.
+				</p>
+				<div class="modules-grid" th:if="${!#lists.isEmpty(modules)}">
+					<article class="module-card" th:each="module : ${modules}">
+						<h3 th:text="${module.nombre}">Equipos</h3>
+						<p th:text="${module.descripcion}">Inventario tecnico de computadoras.</p>
+						<div class="permission-list" aria-label="Permisos">
+							<span th:each="permission : ${module.permisos}" th:text="${permission}">VER</span>
+						</div>
+					</article>
+				</div>
+			</section>
 			<section class="attributes-section" aria-labelledby="ad-attributes-title">
 				<h2 id="ad-attributes-title">Datos de identidad de la sesion</h2>
 				<p class="empty-state" th:if="${#maps.isEmpty(adAttributes)}">

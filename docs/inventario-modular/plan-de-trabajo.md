@@ -58,23 +58,29 @@ Resultado esperado:
 
 ## Fase 2: Modelo de seguridad modular
 
-Estado: siguiente fase recomendada.
+Estado: primera implementacion completada; administracion visual pendiente.
 
 Tareas:
 
-- Crear tablas de usuarios internos.
-- Crear tablas de roles.
-- Crear tablas de permisos.
-- Crear tablas de modulos.
-- Crear relacion usuario-rol.
-- Crear relacion rol-permiso-modulo.
-- Crear seed inicial de modulos.
+- Crear tablas de usuarios internos. Completado.
+- Crear tablas de roles. Completado.
+- Crear tablas de permisos. Completado.
+- Crear tablas de modulos. Completado.
+- Crear relacion usuario-rol. Completado.
+- Crear relacion rol-permiso-modulo. Completado.
+- Crear seed inicial de modulos. Completado.
+- Crear endpoints `/api/v1/me` y `/api/v1/me/modulos`. Completado.
+- Mostrar modulos habilitados en `/admin`. Completado.
+- Crear pantalla para administrar usuarios y roles. Pendiente.
+- Aplicar bloqueo fino por permiso en cada modulo funcional. Pendiente.
 
 Resultado esperado:
 
 - El sistema puede representar que modulos ve cada usuario y que acciones puede realizar.
-- Un usuario valido en Active Directory pero no autorizado localmente no puede entrar.
-- El administrador puede habilitar usuarios y modulos de forma controlada.
+- Un usuario valido en Active Directory pero no autorizado localmente queda identificado
+  como `Pendiente de autorizacion` y no recibe modulos.
+- El administrador podra habilitar usuarios y modulos de forma controlada cuando se
+  implemente la pantalla de gestion.
 
 ## Fase 3: Active Directory
 
@@ -98,10 +104,10 @@ Resultado esperado:
 
 Tareas:
 
-- Crear API versionada `/api/v1`.
+- Crear API versionada `/api/v1`. En curso.
 - Crear endpoint de login.
-- Crear endpoint de usuario actual.
-- Crear endpoint de modulos permitidos.
+- Crear endpoint de usuario actual. Completado con `GET /api/v1/me`.
+- Crear endpoint de modulos permitidos. Completado con `GET /api/v1/me/modulos`.
 - Crear respuestas 401 y 403 consistentes.
 
 Resultado esperado:

@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -25,6 +26,8 @@ import org.springframework.test.web.servlet.MvcResult;
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Sql(scripts = "/sql/limpiar-seguridad-modular-test.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/sql/seguridad-modular-test.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class LocalAuthenticationConfigTests {
 
 	@Autowired
@@ -45,8 +48,10 @@ class LocalAuthenticationConfigTests {
 
 		mockMvc.perform(get("/admin").session((org.springframework.mock.web.MockHttpSession) login.getRequest().getSession(false)))
 			.andExpect(status().isOk())
-			.andExpect(content().string(containsString("Administrador Local de Prueba")))
-			.andExpect(content().string(containsString("LOCAL_SIMULADO")));
+			.andExpect(content().string(containsString("Administrador Local")))
+			.andExpect(content().string(containsString("LOCAL_SIMULADO")))
+			.andExpect(content().string(containsString("Equipos")))
+			.andExpect(content().string(containsString("Usuarios")));
 	}
 
 	@Test

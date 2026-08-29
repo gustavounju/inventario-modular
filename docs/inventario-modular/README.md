@@ -34,9 +34,11 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
 - [Base de datos local Windows](./base-datos-local-windows.md)
+- [Seguridad modular inicial](./seguridad-modular-inicial.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
 - [Decision sobre inventario viejo como referencia funcional](../decisions/ADR-003-inventario-viejo-como-referencia-funcional.md)
 - [Decision sobre modo local sin dominio](../decisions/ADR-005-modo-local-sin-dominio.md)
+- [Decision sobre autorizacion modular inicial](../decisions/ADR-006-autorizacion-modular-inicial.md)
 
 ## Alcance inicial
 
@@ -49,6 +51,10 @@ seguridad y modularidad:
 4. Modulos activables por usuario/rol.
 5. API protegida que rechaza accesos sin permiso.
 6. Panel minimo para administrar usuarios, roles, permisos y modulos.
+
+Estado actual: ya existe una primera implementacion de usuarios, roles, permisos,
+modulos, seed inicial y endpoints de usuario actual. La administracion visual completa
+de usuarios/roles y el bloqueo fino por permiso quedan como pasos siguientes.
 
 ## Principio rector
 
