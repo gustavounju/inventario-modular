@@ -33,6 +33,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Cierre de jornada Windows](./cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
+- [Incidente login local repetido](./incidente-login-local-repetido.md)
 - [Base de datos local Windows](./base-datos-local-windows.md)
 - [Seguridad modular inicial](./seguridad-modular-inicial.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
@@ -56,6 +57,10 @@ Estado actual: ya existe una primera implementacion de usuarios, roles, permisos
 modulos, seed inicial, endpoints de usuario actual y API administrativa inicial para
 crear usuarios autorizados. La administracion visual completa de usuarios/roles y el
 bloqueo fino por permiso quedan como pasos siguientes.
+
+El modo local de casa ya permite login repetido con `admin.local` sin depender de Active
+Directory. El incidente y su solucion quedaron documentados en
+[Incidente login local repetido](./incidente-login-local-repetido.md).
 
 ## Principio rector
 

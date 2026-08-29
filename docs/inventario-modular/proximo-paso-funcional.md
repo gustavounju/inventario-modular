@@ -45,7 +45,7 @@ usuario puede entrar, que rol tiene y que modulos puede ver.
 
 ## Primer sprint iniciado: Usuarios y permisos minimos
 
-Estado: primera capa implementada.
+Estado: primera capa implementada; falta administracion visual.
 
 Objetivo:
 
@@ -57,8 +57,10 @@ Objetivo:
 - Exponer datos de usuario y modulos por API. Completado con `/api/v1/me` y
   `/api/v1/me/modulos`.
 - Mostrar modulos habilitados en `/admin`. Completado.
+- Login local repetido en Windows/casa. Corregido.
 - Permitir que solo usuarios autorizados localmente entren al panel. Pendiente de aplicar
   despues de cargar un administrador real de dominio.
+- Crear pantalla administrativa para usuarios, roles y modulos. Pendiente.
 
 Resultado esperado:
 
@@ -71,11 +73,35 @@ Resultado esperado:
 Este sprint es pequeno pero muy importante porque evita construir modulos encima de una
 seguridad incompleta.
 
-## Proximo sprint recomendado
+## Proximo sprint recomendado inmediato
 
-### Sprint 2: Equipos como primer modulo funcional
+### Sprint 2: Administracion visual de usuarios, roles y modulos
 
-Despues de cerrar permisos, el primer modulo funcional recomendado es `Equipos`.
+Antes de migrar Equipos conviene terminar la pantalla que permita administrar la seguridad
+modular desde el navegador.
+
+Motivo:
+
+- El sistema ya tiene tablas y API para usuarios, roles, permisos y modulos.
+- Falta una interfaz para que el administrador no dependa de consultas SQL.
+- Cada modulo futuro necesita saber si el usuario puede verlo o administrarlo.
+- La regla debe quedar visible y facil de estudiar: AD autentica, MySQL autoriza.
+
+Primer alcance del sprint:
+
+- Pantalla `/admin/usuarios`.
+- Listado de usuarios autorizados y pendientes.
+- Formulario para crear un usuario autorizado.
+- Selector de rol inicial.
+- Vista de modulos y permisos que recibe cada rol.
+- Tests de controlador y servicio para proteger el flujo.
+
+## Sprint siguiente
+
+### Sprint 3: Equipos como primer modulo funcional
+
+Despues de cerrar la administracion visual de seguridad, el primer modulo funcional
+recomendado es `Equipos`.
 
 Motivo:
 
@@ -116,6 +142,7 @@ limpios de equipos. Primero datos, despues resumen visual.
 
 ```text
 Usuarios y permisos minimos
+  -> Administracion visual de usuarios/roles/modulos
   -> Equipos/API de inventario
   -> Dashboard simple
   -> Tareas tecnicas

@@ -58,7 +58,8 @@ Resultado esperado:
 
 ## Fase 2: Modelo de seguridad modular
 
-Estado: primera implementacion completada; administracion visual pendiente.
+Estado: primera implementacion completada; login local repetido corregido;
+administracion visual pendiente.
 
 Tareas:
 
@@ -73,6 +74,7 @@ Tareas:
 - Crear endpoints administrativos `GET /api/v1/usuarios`, `POST /api/v1/usuarios` y
   `GET /api/v1/roles`. Completado.
 - Mostrar modulos habilitados en `/admin`. Completado.
+- Corregir login local repetido en Windows/casa. Completado.
 - Crear pantalla para administrar usuarios y roles consumiendo la API. Pendiente.
 - Editar roles de usuarios existentes. Pendiente.
 - Aplicar bloqueo fino por permiso en cada modulo funcional. Pendiente.
@@ -184,19 +186,32 @@ Ver tambien: [Versionado Git](./versionado-git.md).
 ## Proxima accion recomendada
 
 El servidor Ubuntu ya levanta Inventario Modular como servicio `systemd`, con MySQL remoto
-y login AD. La proxima accion recomendada es implementar autorizacion local minima:
+y login AD. En Windows/casa ya se puede trabajar con MySQL local y login simulado. La
+proxima accion recomendada es cerrar la administracion visual minima de seguridad:
+
+```text
+Pantalla /admin/usuarios
+-> listar usuarios autorizados
+-> crear usuario autorizado
+-> asignar rol inicial
+-> ver modulos que recibe por rol
+```
+
+Motivo: antes de migrar Equipos, Actas, Muebles o Stock, el administrador debe poder
+decidir desde pantalla que usuario ve que modulo. La regla central sigue siendo:
 
 ```text
 AD autentica identidad.
 Inventario Modular autoriza acceso y modulos.
 ```
 
-Despues de esa capa, comenzar con el modulo EQUIPOS.
+Despues de esa pantalla, comenzar con el modulo EQUIPOS como primer modulo funcional.
 
 Ver tambien:
 
 - [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
 - [Proximo paso funcional](./proximo-paso-funcional.md)
+- [Incidente login local repetido](./incidente-login-local-repetido.md)
 
 Si Maven no aparece en una PowerShell nueva, verificar que el Path de usuario tenga:
 
