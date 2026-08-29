@@ -77,6 +77,9 @@ Se agregaron endpoints pensados para API-first y futura app movil:
 ```text
 GET /api/v1/me
 GET /api/v1/me/modulos
+GET /api/v1/usuarios
+POST /api/v1/usuarios
+GET /api/v1/roles
 ```
 
 `GET /api/v1/me` devuelve:
@@ -92,6 +95,53 @@ GET /api/v1/me/modulos
 
 Estos endpoints son importantes porque la futura app movil podra consumir la misma
 informacion sin depender de la pantalla web.
+
+### Administracion inicial de usuarios por API
+
+Los endpoints de administracion requieren que el usuario autenticado tenga permiso
+`ADMINISTRAR` sobre el modulo `USUARIOS`.
+
+`GET /api/v1/usuarios` devuelve los usuarios cargados localmente en Inventario Modular:
+
+```json
+{
+  "usuarios": [
+    {
+      "id": 1,
+      "username": "admin.local",
+      "nombreVisible": "Administrador Local",
+      "fuero": "Desarrollo local",
+      "activo": true,
+      "roles": ["ADMINISTRADOR"]
+    }
+  ]
+}
+```
+
+`POST /api/v1/usuarios` crea un usuario local autorizado. No recibe clave ni guarda clave
+de dominio.
+
+Ejemplo:
+
+```json
+{
+  "username": "gmurad",
+  "nombreVisible": "Gustavo Elias Murad",
+  "fuero": "Informatica",
+  "activo": true,
+  "roles": ["ADMINISTRADOR"]
+}
+```
+
+`GET /api/v1/roles` devuelve los roles disponibles para que una pantalla futura pueda
+mostrarlos como opciones, sin tener codigos fijos escritos a mano.
+
+Respuestas esperadas:
+
+- `201 Created`: usuario creado correctamente.
+- `403 Forbidden`: el usuario autenticado no puede administrar usuarios.
+- `409 Conflict`: el usuario ya existe.
+- `422 Unprocessable Content`: algun rol solicitado no existe.
 
 ## Pantalla administrativa actual
 
@@ -133,8 +183,9 @@ de usuarios.
 Los siguientes pasos son:
 
 - bloquear acceso a modulos cuando `autorizado = false`;
-- crear pantalla administrativa para usuarios;
-- permitir asignar roles a usuarios de dominio;
+- crear pantalla administrativa para usuarios consumiendo `GET /api/v1/usuarios`,
+  `POST /api/v1/usuarios` y `GET /api/v1/roles`;
+- permitir editar roles de usuarios existentes;
 - permitir activar/desactivar modulos;
 - aplicar permisos en endpoints concretos, por ejemplo `EQUIPOS`;
 - dejar tests de acceso permitido y denegado por modulo.
@@ -145,6 +196,7 @@ Las pruebas relacionadas estan en:
 
 ```text
 src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/CurrentUserControllerTests.java
+src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/UsuarioAdminControllerTests.java
 src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/security/LocalAuthenticationConfigTests.java
 src/test/resources/sql/seguridad-modular-test.sql
 src/test/resources/sql/limpiar-seguridad-modular-test.sql

@@ -53,8 +53,9 @@ seguridad y modularidad:
 6. Panel minimo para administrar usuarios, roles, permisos y modulos.
 
 Estado actual: ya existe una primera implementacion de usuarios, roles, permisos,
-modulos, seed inicial y endpoints de usuario actual. La administracion visual completa
-de usuarios/roles y el bloqueo fino por permiso quedan como pasos siguientes.
+modulos, seed inicial, endpoints de usuario actual y API administrativa inicial para
+crear usuarios autorizados. La administracion visual completa de usuarios/roles y el
+bloqueo fino por permiso quedan como pasos siguientes.
 
 ## Principio rector
 

@@ -80,7 +80,16 @@ public class UsuarioSistema {
 		return roles;
 	}
 
+	public void setActivo(boolean activo) {
+		this.activo = activo;
+	}
+
 	public void agregarRol(Rol rol) {
 		roles.add(rol);
+	}
+
+	public void reemplazarRoles(Set<Rol> roles) {
+		this.roles.clear();
+		this.roles.addAll(roles);
 	}
 }

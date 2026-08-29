@@ -35,6 +35,14 @@ public class AuthorizationService {
 				modulos);
 	}
 
+	@Transactional(readOnly = true)
+	public boolean tienePermiso(UserDetails userDetails, String moduloCodigo, String permisoCodigo) {
+		return obtenerUsuarioActual(userDetails).modulos().stream()
+				.filter(modulo -> modulo.codigo().equalsIgnoreCase(moduloCodigo))
+				.anyMatch(modulo -> modulo.permisos().stream()
+						.anyMatch(permiso -> permiso.equalsIgnoreCase(permisoCodigo)));
+	}
+
 	private List<ModuloAutorizado> obtenerModulos(String username) {
 		/*
 		 * Agrupamos la consulta plana de SQL en objetos por modulo. Asi la API queda

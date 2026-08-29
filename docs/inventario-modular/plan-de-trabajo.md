@@ -70,8 +70,11 @@ Tareas:
 - Crear relacion rol-permiso-modulo. Completado.
 - Crear seed inicial de modulos. Completado.
 - Crear endpoints `/api/v1/me` y `/api/v1/me/modulos`. Completado.
+- Crear endpoints administrativos `GET /api/v1/usuarios`, `POST /api/v1/usuarios` y
+  `GET /api/v1/roles`. Completado.
 - Mostrar modulos habilitados en `/admin`. Completado.
-- Crear pantalla para administrar usuarios y roles. Pendiente.
+- Crear pantalla para administrar usuarios y roles consumiendo la API. Pendiente.
+- Editar roles de usuarios existentes. Pendiente.
 - Aplicar bloqueo fino por permiso en cada modulo funcional. Pendiente.
 
 Resultado esperado:
@@ -108,6 +111,7 @@ Tareas:
 - Crear endpoint de login.
 - Crear endpoint de usuario actual. Completado con `GET /api/v1/me`.
 - Crear endpoint de modulos permitidos. Completado con `GET /api/v1/me/modulos`.
+- Crear endpoints administrativos de usuarios y roles. Completado.
 - Crear respuestas 401 y 403 consistentes.
 
 Resultado esperado:
