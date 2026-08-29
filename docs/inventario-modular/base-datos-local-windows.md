@@ -65,7 +65,27 @@ documentacion.
 
 ## Paso 4: Crear base y usuario local
 
-Dentro de MySQL:
+Opcion recomendada: ejecutar el SQL documentado del proyecto desde MySQL.
+
+```powershell
+cd "G:\unju2025\google gravity\inventario-modular"
+& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
+```
+
+MySQL pedira la clave local de `root`. Esa clave se escribe en la terminal de MySQL, no
+en git ni en este documento.
+
+Dentro de MySQL ejecutar:
+
+```sql
+SOURCE G:/unju2025/google gravity/inventario-modular/docs/inventario-modular/sql/crear-base-local-mysql.sql;
+EXIT;
+```
+
+Alternativa grafica: abrir MySQL Workbench, conectarse como `root`, abrir el archivo
+`docs/inventario-modular/sql/crear-base-local-mysql.sql` y ejecutarlo.
+
+El archivo ejecutado contiene:
 
 ```sql
 CREATE DATABASE IF NOT EXISTS inventario_modular
@@ -119,7 +139,21 @@ EXIT;
 
 ## Paso 7: Variables para ejecutar Spring Boot
 
-En la misma PowerShell donde se va a iniciar la app:
+La configuracion `local` ya trae estos valores por defecto:
+
+```properties
+spring.datasource.url=jdbc:mysql://127.0.0.1:3306/inventario_modular
+spring.datasource.username=inventario_local
+spring.datasource.password=Cambiar_Clave_Local_123!
+```
+
+Por eso, despues de crear la base y el usuario, alcanza con ejecutar:
+
+```powershell
+mvn spring-boot:run
+```
+
+Si se quiere usar otra clave local, en la misma PowerShell donde se va a iniciar la app:
 
 ```powershell
 $env:INVENTARIO_DB_URL = "jdbc:mysql://127.0.0.1:3306/inventario_modular"

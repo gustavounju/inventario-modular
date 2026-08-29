@@ -130,6 +130,35 @@ Usar el perfil `local` cuando ya exista la base `inventario_modular` y el usuari
 mvn spring-boot:run
 ```
 
+Si aparece este error:
+
+```text
+Access denied for user 'inventario_local'@'localhost' (using password: NO)
+```
+
+significa que Spring Boot intento entrar a MySQL sin clave. Actualizar el codigo desde
+GitLab y verificar que `application-local.properties` tenga este valor por defecto:
+
+```properties
+spring.datasource.password=${INVENTARIO_DB_PASSWORD:Cambiar_Clave_Local_123!}
+```
+
+Si aparece:
+
+```text
+Invalid credentials
+```
+
+usar exactamente:
+
+```text
+Usuario: admin.local
+Clave: AdminLocal123!
+```
+
+Tambien verificar que el servidor se haya iniciado con perfil `local` o `casa`, y no con
+una configuracion vieja.
+
 Abrir:
 
 ```text
