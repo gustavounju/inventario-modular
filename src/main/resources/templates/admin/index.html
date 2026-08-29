@@ -38,9 +38,9 @@
 				</div>
 			</dl>
 			<section class="attributes-section" aria-labelledby="ad-attributes-title">
-				<h2 id="ad-attributes-title">Datos recibidos desde Active Directory</h2>
+				<h2 id="ad-attributes-title">Datos de identidad de la sesion</h2>
 				<p class="empty-state" th:if="${#maps.isEmpty(adAttributes)}">
-					Sin atributos AD para mostrar en esta sesion.
+					Sin atributos adicionales para mostrar en esta sesion.
 				</p>
 				<div class="attributes-table" th:if="${!#maps.isEmpty(adAttributes)}">
 					<div class="attribute-row" th:each="attribute : ${adAttributes}">

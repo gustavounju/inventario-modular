@@ -172,6 +172,8 @@ Documentos principales:
 - [Proximo paso funcional](docs/inventario-modular/proximo-paso-funcional.md)
 - [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
+- [Modo local Windows sin dominio](docs/inventario-modular/modo-local-windows-sin-dominio.md)
+- [Base de datos local Windows](docs/inventario-modular/base-datos-local-windows.md)
 
 ## Repositorios
 

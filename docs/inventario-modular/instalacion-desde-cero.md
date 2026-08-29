@@ -201,6 +201,10 @@ CREATE DATABASE inventario_modular
   COLLATE utf8mb4_unicode_ci;
 ```
 
+Para crear tambien el usuario local de la aplicacion, seguir:
+
+- [Base de datos local Windows](./base-datos-local-windows.md)
+
 ## Paso 5: Crear el proyecto Java
 
 El proyecto debe crearse en un directorio limpio:
@@ -237,6 +241,21 @@ inventario.ldap.url=ldap://SERVIDOR_AD:389
 inventario.ldap.domain=DOMINIO
 inventario.ldap.base-dn=DC=ejemplo,DC=local
 ```
+
+Para trabajar desde casa sin dominio real, usar:
+
+```properties
+inventario.ldap.enabled=false
+inventario.local-auth.enabled=true
+inventario.local-auth.username=admin.local
+inventario.local-auth.password=AdminLocal123!
+inventario.local-auth.display-name=Administrador Local
+inventario.local-auth.fuero=Desarrollo local
+```
+
+Ver tambien:
+
+- [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
 
 Las credenciales reales deben quedar fuera de git.
 

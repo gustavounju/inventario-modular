@@ -32,8 +32,11 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [CI/CD](./ci-cd.md)
 - [Cierre de jornada Windows](./cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
+- [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
+- [Base de datos local Windows](./base-datos-local-windows.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
 - [Decision sobre inventario viejo como referencia funcional](../decisions/ADR-003-inventario-viejo-como-referencia-funcional.md)
+- [Decision sobre modo local sin dominio](../decisions/ADR-005-modo-local-sin-dominio.md)
 
 ## Alcance inicial
 
@@ -77,3 +80,16 @@ Servidor Ubuntu de aplicacion -> 10.15.0.62:3306 -> inventario_modular
 
 Por eso el runbook de Ubuntu configura `INVENTARIO_DB_URL` apuntando a `10.15.0.62`, no
 a `127.0.0.1`.
+
+## Modo local de casa
+
+Cuando se trabaja desde casa no hay acceso al dominio real ni al servidor MySQL del
+trabajo. Para ese caso, el perfil `local` usa:
+
+- MySQL local en `127.0.0.1:3306`.
+- Base `inventario_modular`.
+- Login local simulado con `inventario.local-auth.*`.
+- LDAP apagado con `inventario.ldap.enabled=false`.
+
+Ese modo no reemplaza la autenticacion real de Active Directory. Solo permite estudiar,
+desarrollar y probar pantallas en Windows.
