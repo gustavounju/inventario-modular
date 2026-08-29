@@ -139,6 +139,25 @@ EXIT;
 
 ## Paso 7: Variables para ejecutar Spring Boot
 
+Antes de ejecutar Maven, si PowerShell muestra:
+
+```text
+mvn : El termino 'mvn' no se reconoce
+```
+
+cargar Java y Maven en esa terminal:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
+$env:Path = "$env:JAVA_HOME\bin;$env:USERPROFILE\tools\apache-maven-3.9.16\bin;$env:Path"
+```
+
+Verificar:
+
+```powershell
+mvn -version
+```
+
 La configuracion `local` ya trae estos valores por defecto:
 
 ```properties
@@ -162,6 +181,21 @@ $env:INVENTARIO_DB_PASSWORD = "Cambiar_Clave_Local_123!"
 ```
 
 Estas variables viven solo en esa terminal. No se commitean.
+
+## Verificacion realizada en Windows
+
+En la maquina local se confirmo:
+
+```text
+MySQL80: Running
+Base: inventario_modular
+Usuario de app: inventario_local@localhost
+Tablas creadas por Flyway: version 1 - seguridad modular
+Usuarios iniciales: 1
+Modulos iniciales: 9
+Roles iniciales: 5
+Login local: admin.local -> /admin
+```
 
 ## Comandos prohibidos
 
