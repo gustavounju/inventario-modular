@@ -107,4 +107,5 @@ Si MySQL local todavia no esta creado, usar el perfil `casa`:
 mvn spring-boot:run "-Dspring-boot.run.profiles=casa"
 ```
 
-Ese perfil usa una base H2 local en `.local-data/`, ignorada por git.
+Ese perfil usa una base H2 local en `.local-data/`, ignorada por git. La clave local de
+desarrollo es `AdminLocal123`.

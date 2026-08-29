@@ -42,22 +42,27 @@ public class LocalAuthenticationConfig {
 		 * de Spring Security.
 		 */
 		String configuredUsername = properties.getUsername();
-		ActiveDirectoryUserDetails localUser = new ActiveDirectoryUserDetails(
-				properties.getUsername(),
-				passwordEncoder.encode(properties.getPassword()),
-				List.of(
-						new SimpleGrantedAuthority("ROLE_USER"),
-						new SimpleGrantedAuthority("ROLE_ADMIN")),
-				properties.getDisplayName(),
-				properties.getFuero(),
-				Map.of(
-						"modo", List.of("LOCAL_SIMULADO"),
-						"origen", List.of("Windows sin dominio"),
-						"descripcion", List.of("Usuario local para desarrollo")));
+		String encodedPassword = passwordEncoder.encode(properties.getPassword());
 
 		return username -> {
 			if (StringUtils.hasText(username) && configuredUsername.equalsIgnoreCase(username.trim())) {
-				return localUser;
+				/*
+				 * Spring Security borra las credenciales del UserDetails autenticado.
+				 * Por eso devolvemos una instancia nueva en cada busqueda y conservamos
+				 * la clave codificada fuera del objeto que se entrega al framework.
+				 */
+				return new ActiveDirectoryUserDetails(
+						properties.getUsername(),
+						encodedPassword,
+						List.of(
+								new SimpleGrantedAuthority("ROLE_USER"),
+								new SimpleGrantedAuthority("ROLE_ADMIN")),
+						properties.getDisplayName(),
+						properties.getFuero(),
+						Map.of(
+								"modo", List.of("LOCAL_SIMULADO"),
+								"origen", List.of("Windows sin dominio"),
+								"descripcion", List.of("Usuario local para desarrollo")));
 			}
 			throw new UsernameNotFoundException("Usuario local no configurado: " + username);
 		};

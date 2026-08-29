@@ -62,4 +62,24 @@ class LocalAuthenticationConfigTests {
 			.andExpect(status().is3xxRedirection())
 			.andExpect(redirectedUrl("/login?error"));
 	}
+
+	@Test
+	void allowsRepeatedLocalLoginsWithSameCredentials() throws Exception {
+		/*
+		 * Spring Security borra las credenciales del UserDetails autenticado despues
+		 * de cada login. El proveedor local debe devolver una instancia nueva para que
+		 * un primer ingreso correcto no rompa los intentos siguientes.
+		 */
+		mockMvc.perform(formLogin()
+				.user("admin.local")
+				.password("ClaveLocal123!"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrl("/admin"));
+
+		mockMvc.perform(formLogin()
+				.user("admin.local")
+				.password("ClaveLocal123!"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrl("/admin"));
+	}
 }

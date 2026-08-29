@@ -42,7 +42,7 @@ El perfil `local` trae estos valores para estudiar:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123!
+Clave: AdminLocal123
 Nombre visible: Administrador Local
 Fuero: Desarrollo local
 ```
@@ -67,7 +67,7 @@ $env:INVENTARIO_DB_PASSWORD = "Cambiar_Clave_Local_123!"
 $env:INVENTARIO_LDAP_ENABLED = "false"
 $env:INVENTARIO_LOCAL_AUTH_ENABLED = "true"
 $env:INVENTARIO_LOCAL_AUTH_USERNAME = "admin.local"
-$env:INVENTARIO_LOCAL_AUTH_PASSWORD = "AdminLocal123!"
+$env:INVENTARIO_LOCAL_AUTH_PASSWORD = "AdminLocal123"
 $env:INVENTARIO_LOCAL_AUTH_DISPLAY_NAME = "Administrador Local"
 $env:INVENTARIO_LOCAL_AUTH_FUERO = "Desarrollo local"
 ```
@@ -110,7 +110,7 @@ Ingresar:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123!
+Clave: AdminLocal123
 ```
 
 La base local de este modo queda en:
@@ -153,11 +153,16 @@ usar exactamente:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123!
+Clave: AdminLocal123
 ```
 
 Tambien verificar que el servidor se haya iniciado con perfil `local` o `casa`, y no con
 una configuracion vieja.
+
+Nota tecnica: este error tambien puede aparecer si el servidor quedo iniciado con una
+version anterior del codigo local. El login simulado debe crear una identidad nueva en cada
+intento, porque Spring Security borra las credenciales del usuario autenticado despues de un
+ingreso correcto. Si el proceso viejo sigue abierto, detenerlo y volver a iniciar la app.
 
 Abrir:
 
@@ -169,7 +174,7 @@ Ingresar:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123!
+Clave: AdminLocal123
 ```
 
 ## Como esta implementado

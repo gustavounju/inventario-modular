@@ -248,7 +248,7 @@ Para trabajar desde casa sin dominio real, usar:
 inventario.ldap.enabled=false
 inventario.local-auth.enabled=true
 inventario.local-auth.username=admin.local
-inventario.local-auth.password=AdminLocal123!
+inventario.local-auth.password=AdminLocal123
 inventario.local-auth.display-name=Administrador Local
 inventario.local-auth.fuero=Desarrollo local
 ```
