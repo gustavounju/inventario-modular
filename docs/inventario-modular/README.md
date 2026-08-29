@@ -100,3 +100,11 @@ trabajo. Para ese caso, el perfil `local` usa:
 
 Ese modo no reemplaza la autenticacion real de Active Directory. Solo permite estudiar,
 desarrollar y probar pantallas en Windows.
+
+Si MySQL local todavia no esta creado, usar el perfil `casa`:
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=casa"
+```
+
+Ese perfil usa una base H2 local en `.local-data/`, ignorada por git.

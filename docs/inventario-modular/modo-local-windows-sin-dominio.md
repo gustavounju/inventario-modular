@@ -20,6 +20,10 @@ En casa:
 Login local simulado -> usuario configurado en application-local.properties o variables
 ```
 
+Cuando todavia no esta creada la base MySQL local, se puede usar el perfil `casa`.
+Ese perfil levanta una base H2 de archivo dentro de `.local-data/` y permite probar login,
+pantallas y API sin tocar MySQL, Active Directory ni produccion.
+
 ## Regla de seguridad
 
 El modo local solo funciona cuando:
@@ -82,6 +86,46 @@ BUILD SUCCESS
 
 ## Iniciar la app
 
+### Opcion recomendada para casa sin MySQL listo
+
+Usar el perfil `casa`:
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=casa"
+```
+
+Abrir desde la misma PC:
+
+```text
+http://localhost:8081/
+```
+
+O desde otro equipo/celular de la misma red:
+
+```text
+http://192.168.1.8:8081/
+```
+
+Ingresar:
+
+```text
+Usuario: admin.local
+Clave: AdminLocal123!
+```
+
+La base local de este modo queda en:
+
+```text
+.local-data/
+```
+
+Ese directorio esta ignorado por git.
+
+### Opcion con MySQL local
+
+Usar el perfil `local` cuando ya exista la base `inventario_modular` y el usuario
+`inventario_local` tenga clave y permisos.
+
 ```powershell
 mvn spring-boot:run
 ```
@@ -106,12 +150,14 @@ Clave: AdminLocal123!
 - La clave local se codifica con BCrypt al arrancar.
 - La pantalla admin recibe una identidad compatible con la usada por Active Directory.
 - Los atributos mostrados indican que la sesion viene de `LOCAL_SIMULADO`.
+- El perfil `casa` usa `application-casa.properties`, H2 local de archivo y scripts SQL
+  en `src/main/resources/db/casa/`.
 
 ## Que no hace
 
 - No consulta Active Directory.
 - No guarda claves de dominio.
-- No crea usuarios en MySQL.
+- No crea usuarios en MySQL cuando se usa el perfil `casa`, porque ese modo usa H2.
 - No reemplaza el esquema definitivo de usuarios, roles, permisos y modulos.
 - No debe usarse como mecanismo de ingreso productivo.
 
