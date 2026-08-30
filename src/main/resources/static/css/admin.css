@@ -301,6 +301,48 @@ h1 {
 	color: #82071e;
 }
 
+.login-panel {
+	width: min(100%, 440px);
+}
+
+.login-intro {
+	color: #526475;
+	line-height: 1.45;
+	margin: 14px 0 0;
+}
+
+.login-form {
+	display: grid;
+	gap: 16px;
+	margin-top: 26px;
+}
+
+.login-form label {
+	display: grid;
+	gap: 7px;
+}
+
+.login-form label span {
+	color: #415366;
+	font-size: 0.84rem;
+	font-weight: 700;
+}
+
+.login-form input {
+	border: 1px solid #c7d2dd;
+	border-radius: 6px;
+	color: #1d252d;
+	font: inherit;
+	padding: 11px 12px;
+	width: 100%;
+}
+
+.login-form input:focus {
+	border-color: #23405f;
+	box-shadow: 0 0 0 3px rgba(35, 64, 95, 0.14);
+	outline: none;
+}
+
 .management-layout {
 	display: grid;
 	gap: 26px;

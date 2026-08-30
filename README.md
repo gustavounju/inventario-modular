@@ -91,22 +91,31 @@ mvn test
 
 `BUILD SUCCESS` es una salida de Maven, no un comando.
 
-Ejecutar app:
+Ejecutar app en modo casa, sin dominio y con base H2 local de archivo:
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=casa
 ```
 
-Por defecto el perfil local usa el puerto `8081` para no chocar con el inventario viejo:
+Ese modo usa el puerto `8081` para no chocar con el inventario viejo:
 
 ```text
+http://localhost:8081/login
 http://localhost:8081/admin
 http://localhost:8081/api/v1/sistema/estado
 ```
 
-`/admin` requiere autenticacion. En laboratorio local, si Active Directory no esta
-activado, Spring Security muestra el formulario de login y genera un usuario temporal de
-desarrollo. En Ubuntu, la autenticacion prevista es contra Active Directory.
+`/admin` requiere autenticacion. En laboratorio local/casa, si Active Directory no esta
+activado, se ingresa con:
+
+```text
+Usuario: admin.local
+Clave: AdminLocal123
+```
+
+La pantalla `/login` es una vista propia del proyecto para evitar depender de la pagina
+generada por Spring Security. En Ubuntu/trabajo, la autenticacion prevista es contra
+Active Directory y la autorizacion local queda en MySQL.
 
 El inventario viejo entraba por HTTPS. En Inventario Modular, durante laboratorio, la app
 Spring Boot corre por HTTP interno y queda preparada para recibir HTTPS delante mediante
@@ -209,6 +218,7 @@ Documentos principales:
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](docs/inventario-modular/modo-local-windows-sin-dominio.md)
 - [Base de datos local Windows](docs/inventario-modular/base-datos-local-windows.md)
+- [Incidente login local repetido](docs/inventario-modular/incidente-login-local-repetido.md)
 
 ## Repositorios
 

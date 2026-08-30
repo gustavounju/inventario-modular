@@ -57,6 +57,15 @@ class SystemStatusControllerTests {
 	}
 
 	@Test
+	void rendersLoginPageForAnonymousUsers() throws Exception {
+		mockMvc.perform(get("/login"))
+			.andExpect(status().isOk())
+			.andExpect(view().name("login"))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"username\"")))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"password\"")));
+	}
+
+	@Test
 	void rendersAuthenticatedAdminEntryPointWithActiveDirectoryIdentity() throws Exception {
 		ActiveDirectoryUserDetails adUser = new ActiveDirectoryUserDetails(
 				"gmurad",

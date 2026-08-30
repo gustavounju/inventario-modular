@@ -169,3 +169,55 @@ cada busqueda.
 
 Resuelto.
 
+## Verificacion adicional: bucle en `/login`
+
+Fecha: 2026-08-30.
+
+Despues de iniciar el servidor local con el perfil `casa`, se detecto otro sintoma
+relacionado con el ingreso:
+
+```text
+GET /login -> 302 Location: /login
+```
+
+Ese bucle hacia que el navegador no pudiera usar correctamente el formulario de ingreso.
+El usuario y la clave local no eran todavia el problema: la pantalla de login no estaba
+siendo servida como una vista propia del proyecto.
+
+Solucion aplicada:
+
+- Se agrego `LoginController` para renderizar `GET /login`.
+- Se agrego `templates/login.html` con campos `username`, `password` y token CSRF.
+- Se configuro `SecurityConfig` con `.loginPage("/login")`.
+- Se agrego una prueba de regresion para confirmar que `/login` responde `200` y contiene
+  los campos de usuario y clave.
+
+Archivos principales:
+
+```text
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/LoginController.java
+src/main/resources/templates/login.html
+src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/config/SecurityConfig.java
+src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/SystemStatusControllerTests.java
+```
+
+Verificacion local realizada:
+
+```text
+GET http://192.168.1.8:8081/login -> 200
+POST /login admin.local/AdminLocal123 -> 302 /admin
+GET /admin -> 200
+GET /admin/usuarios -> 200
+GET /admin/equipos -> 200
+GET /api/v1/me -> 200
+GET /api/v1/me/modulos -> 200
+GET /api/v1/equipos -> 200
+```
+
+Tests:
+
+```text
+.\mvnw.cmd --batch-mode test
+Tests run: 48, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```

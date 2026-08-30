@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title th:text="${applicationName} + ' - Ingreso'">Inventario Modular - Ingreso</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell">
+		<section class="status-panel login-panel" aria-labelledby="login-title">
+			<p class="eyebrow">Centro Judicial San Pedro</p>
+			<h1 id="login-title" th:text="${applicationName}">Inventario Modular</h1>
+
+			<p class="login-intro">Ingrese con usuario local o credenciales de dominio habilitadas.</p>
+
+			<p class="success-message" th:if="${loggedOut}">Sesion cerrada correctamente.</p>
+			<p class="error-message" th:if="${hasError}">Usuario o clave incorrectos.</p>
+
+			<form class="login-form" th:action="@{/login}" method="post">
+				<label>
+					<span>Usuario</span>
+					<input type="text" name="username" autocomplete="username" required autofocus>
+				</label>
+
+				<label>
+					<span>Clave</span>
+					<input type="password" name="password" autocomplete="current-password" required>
+				</label>
+
+				<button class="primary-action" type="submit">Ingresar</button>
+			</form>
+		</section>
+	</main>
+</body>
+</html>
