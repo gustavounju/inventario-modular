@@ -29,7 +29,8 @@ Reglas:
 
 - Inventario Modular no guarda claves de dominio.
 - Inventario Modular no cambia claves de dominio.
-- La pantalla de usuarios solo autoriza la identidad y le asigna permisos.
+- Inventario Modular no crea cuentas de dominio.
+- La pantalla de usuarios debe permitir seleccionar una identidad ya existente del dominio y asignarle permisos.
 - Si la cuenta existe en AD pero no esta autorizada en MySQL, queda sin modulos.
 
 ## Usuario local
@@ -94,19 +95,34 @@ Abrir:
 /admin/usuarios
 ```
 
-Para una cuenta de dominio:
+### Crear usuario local
 
 ```text
-Origen de autenticacion: Active Directory
-Clave local: dejar vacio
-```
-
-Para una cuenta local:
-
-```text
-Origen de autenticacion: Usuario local
+Usuario local: chofer.local
 Clave local: cargar una clave temporal de al menos 8 caracteres
+Rol inicial: elegir el minimo necesario
 ```
+
+El formulario de alta crea solamente usuarios `LOCAL`.
+
+### Autorizar usuario de Active Directory
+
+El usuario `AD` debe existir primero en el dominio. Inventario Modular no debe ofrecer
+un formulario que parezca crear cuentas en Active Directory.
+
+Flujo correcto esperado:
+
+```text
+Buscar/listar usuarios del dominio
+-> seleccionar una cuenta existente
+-> guardar autorizacion local en MySQL
+-> asignar roles, permisos y modulos
+-> no pedir ni guardar clave de dominio
+```
+
+En casa este flujo no se puede probar contra el dominio real. En produccion/trabajo se
+activa con LDAP de lectura y, si el dominio no permite busqueda anonima, con una cuenta
+tecnica lectora configurada por variables de entorno.
 
 ## Configuracion
 
@@ -124,6 +140,24 @@ permitir usuarios locales:
 ```bash
 INVENTARIO_LOCAL_DB_AUTH_ENABLED=true
 ```
+
+La lectura de usuarios de dominio se controla con:
+
+```bash
+INVENTARIO_LDAP_ENABLED=true
+INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_DOMAIN=podjudsp.local
+INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
+INVENTARIO_LDAP_READ_ONLY_USER_DN=CN=lector-inventario,OU=Servicios,DC=podjudsp,DC=local
+INVENTARIO_LDAP_READ_ONLY_PASSWORD=...
+INVENTARIO_LDAP_USER_SEARCH_BASE=
+INVENTARIO_LDAP_USER_SEARCH_FILTER=(&(objectClass=user)(!(objectClass=computer)))
+INVENTARIO_LDAP_USER_SEARCH_LIMIT=50
+```
+
+`INVENTARIO_LDAP_READ_ONLY_PASSWORD` es secreto y no debe commitearse. Si LDAP esta
+apagado, `/admin/usuarios` muestra la seccion de dominio como no disponible sin romper el
+alta local.
 
 ## Recomendacion operativa
 
@@ -143,6 +177,9 @@ Implementado:
 - tabla `credenciales_locales`;
 - alta de usuario local con password desde API y pantalla;
 - autenticacion de usuario local contra hash BCrypt;
+- separacion visual entre crear usuarios locales y autorizar usuarios AD;
+- listado LDAP de usuarios de dominio cuando `inventario.ldap.enabled=true`;
+- autorizacion local de usuarios AD desde API y pantalla, sin pedir clave de dominio;
 - pruebas automatizadas para verificar que no se guarde password plano.
 
 Pendiente:
@@ -151,5 +188,4 @@ Pendiente:
 - activar/desactivar usuario desde pantalla;
 - eliminar credencial local o desactivar usuario temporal;
 - auditoria de altas/cambios de clave;
-- busqueda/listado de usuarios de Active Directory.
-
+- busqueda filtrada/paginada de usuarios de Active Directory.

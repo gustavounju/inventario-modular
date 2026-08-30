@@ -48,22 +48,35 @@ Para usuarios locales reales:
 
 ## Consecuencia en la pantalla `/admin/usuarios`
 
-La pantalla actual no crea una credencial. Crea una autorizacion.
+La pantalla debe separar dos acciones distintas.
 
-Por eso el formulario debe entenderse como:
+Crear usuario local:
 
 ```text
-Autorizar identidad
--> cuenta AD o local
+Crear usuario local
+-> username local
+-> clave local
 -> nombre visible
 -> fuero/area
 -> estado
 -> rol inicial
 ```
 
-No debe pedir password mientras se este autorizando una identidad de Active Directory.
+Autorizar usuario AD:
 
-## Requisito futuro: listado de usuarios de Active Directory
+```text
+Buscar/listar usuario de Active Directory
+-> seleccionar cuenta existente
+-> guardar autorizacion local
+-> asignar roles, permisos y modulos
+-> no pedir ni guardar clave de dominio
+```
+
+Por eso el alta directa debe crear solamente usuarios `LOCAL`. Crear manualmente un
+usuario con origen `AD` desde el formulario es conceptualmente incorrecto: Inventario
+Modular no crea cuentas en el dominio.
+
+## Listado de usuarios de Active Directory
 
 En produccion, la administracion ideal no deberia obligar a escribir el usuario a mano.
 Deberia permitir buscar/listar usuarios de Active Directory y luego asignarles roles y
@@ -84,8 +97,9 @@ Para eso se necesita una integracion LDAP de lectura, distinta del login:
 - login LDAP: valida usuario y clave;
 - busqueda LDAP: lista o busca usuarios del dominio para administracion.
 
-Esa busqueda puede requerir una cuenta tecnica de lectura configurada por variables de
-entorno en el servidor, nunca guardada en git.
+Esa busqueda queda implementada como lectura opcional. Puede requerir una cuenta tecnica
+de lectura configurada por variables de entorno en el servidor, nunca guardada en git.
+Cuando LDAP esta apagado, la pantalla muestra la seccion de dominio como no disponible.
 
 ## Alternativas consideradas
 
@@ -127,6 +141,15 @@ La autenticacion local de base se habilita con:
 
 ```text
 inventario.local-db-auth.enabled=true
+```
+
+La lectura de usuarios de dominio se habilita con:
+
+```text
+inventario.ldap.enabled=true
+inventario.ldap.read-only-user-dn=...
+inventario.ldap.read-only-password=...
+inventario.ldap.user-search-filter=(&(objectClass=user)(!(objectClass=computer)))
 ```
 
 ## Proxima decision tecnica

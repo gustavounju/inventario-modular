@@ -39,7 +39,10 @@ class UsuarioAdminPageControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(view().name("admin/usuarios"))
 			.andExpect(content().string(containsString("Administracion de usuarios")))
-			.andExpect(content().string(containsString("Autorizar identidad")))
+			.andExpect(content().string(containsString("Crear usuario local")))
+			.andExpect(content().string(containsString("Usuarios de dominio")))
+			.andExpect(content().string(containsString("No disponible")))
+			.andExpect(content().string(containsString("LDAP esta desactivado en este entorno.")))
 			.andExpect(content().string(containsString("admin.local")))
 			.andExpect(content().string(containsString("ADMINISTRADOR")));
 	}
@@ -58,7 +61,6 @@ class UsuarioAdminPageControllerTests {
 				.param("username", "tecnico.local")
 				.param("nombreVisible", "Tecnico Local")
 				.param("fuero", "Informatica")
-				.param("origen", "LOCAL")
 				.param("password", "TecnicoLocal123")
 				.param("activo", "true")
 				.param("roles", "ADMINISTRADOR"))
@@ -69,6 +71,26 @@ class UsuarioAdminPageControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(content().string(containsString("tecnico.local")))
 			.andExpect(content().string(containsString("Tecnico Local")));
+	}
+
+	@Test
+	void autorizaUsuarioDominioDesdeFormularioWebSinClaveLocal() throws Exception {
+		mockMvc.perform(post("/admin/usuarios/dominio")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("username", "gmurad")
+				.param("nombreVisible", "Gustavo Elias Murad")
+				.param("fuero", "Informatica")
+				.param("activo", "true")
+				.param("roles", "ADMINISTRADOR"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrl("/admin/usuarios?autorizado=gmurad"));
+
+		mockMvc.perform(get("/admin/usuarios").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("gmurad")))
+			.andExpect(content().string(containsString("Gustavo Elias Murad")))
+			.andExpect(content().string(containsString("AD")));
 	}
 
 	private ActiveDirectoryUserDetails adminLocal() {

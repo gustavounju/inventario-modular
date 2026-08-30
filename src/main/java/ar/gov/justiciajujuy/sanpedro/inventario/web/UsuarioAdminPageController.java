@@ -2,8 +2,11 @@ package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
 import java.util.Set;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.OrigenIdentidad;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.AutorizarUsuarioDominioCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.CrearUsuarioCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.PasswordLocalRequeridoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.RolNoEncontradoException;
@@ -25,12 +28,15 @@ public class UsuarioAdminPageController {
 	private static final String PERMISO_ADMINISTRAR = "ADMINISTRAR";
 
 	private final AuthorizationService authorizationService;
+	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 	private final UsuarioManagementService usuarioManagementService;
 
 	public UsuarioAdminPageController(
 			AuthorizationService authorizationService,
+			ActiveDirectoryDomainService activeDirectoryDomainService,
 			UsuarioManagementService usuarioManagementService) {
 		this.authorizationService = authorizationService;
+		this.activeDirectoryDomainService = activeDirectoryDomainService;
 		this.usuarioManagementService = usuarioManagementService;
 	}
 
@@ -47,7 +53,6 @@ public class UsuarioAdminPageController {
 			@RequestParam String username,
 			@RequestParam String nombreVisible,
 			@RequestParam String fuero,
-			@RequestParam(defaultValue = "AD") String origen,
 			@RequestParam(required = false) String password,
 			@RequestParam(defaultValue = "false") boolean activo,
 			@RequestParam Set<String> roles) {
@@ -59,7 +64,7 @@ public class UsuarioAdminPageController {
 					username,
 					nombreVisible,
 					fuero,
-					origen,
+					OrigenIdentidad.LOCAL.name(),
 					password,
 					activo,
 					roles));
@@ -73,8 +78,35 @@ public class UsuarioAdminPageController {
 		}
 	}
 
+	@PostMapping("/admin/usuarios/dominio")
+	public String autorizarUsuarioDominio(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam String username,
+			@RequestParam String nombreVisible,
+			@RequestParam String fuero,
+			@RequestParam(defaultValue = "true") boolean activo,
+			@RequestParam Set<String> roles) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+
+		String usernameNormalizado = username.trim().toLowerCase();
+		try {
+			usuarioManagementService.autorizarUsuarioDominio(new AutorizarUsuarioDominioCommand(
+					username,
+					nombreVisible,
+					fuero,
+					activo,
+					roles));
+			return "redirect:/admin/usuarios?autorizado=" + usernameNormalizado;
+		} catch (UsuarioDuplicadoException exception) {
+			return "redirect:/admin/usuarios?error=duplicado";
+		} catch (RolNoEncontradoException exception) {
+			return "redirect:/admin/usuarios?error=rol";
+		}
+	}
+
 	private void cargarModelo(Model model) {
 		model.addAttribute("usuarios", usuarioManagementService.listarUsuarios());
+		model.addAttribute("usuariosDominio", activeDirectoryDomainService.listarUsuarios());
 		model.addAttribute("roles", usuarioManagementService.listarRoles());
 	}
 

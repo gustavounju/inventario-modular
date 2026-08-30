@@ -84,6 +84,18 @@ public class UsuarioManagementService {
 		return toResumen(usuarioGuardado);
 	}
 
+	@Transactional
+	public UsuarioResumen autorizarUsuarioDominio(AutorizarUsuarioDominioCommand command) {
+		return crearUsuario(new CrearUsuarioCommand(
+				command.username(),
+				command.nombreVisible(),
+				command.fuero(),
+				OrigenIdentidad.AD.name(),
+				null,
+				command.activo(),
+				command.roles()));
+	}
+
 	private void validarPasswordLocal(OrigenIdentidad origen, String password) {
 		if (origen == OrigenIdentidad.LOCAL && !StringUtils.hasText(password)) {
 			throw new PasswordLocalRequeridoException();
@@ -132,6 +144,14 @@ public class UsuarioManagementService {
 			String fuero,
 			String origen,
 			String password,
+			boolean activo,
+			Set<String> roles) {
+	}
+
+	public record AutorizarUsuarioDominioCommand(
+			String username,
+			String nombreVisible,
+			String fuero,
 			boolean activo,
 			Set<String> roles) {
 	}

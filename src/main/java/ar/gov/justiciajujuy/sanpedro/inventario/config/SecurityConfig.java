@@ -5,12 +5,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.ldap.core.LdapOperations;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.util.StringUtils;
 
 @Configuration
 public class SecurityConfig {
@@ -41,6 +45,20 @@ public class SecurityConfig {
 			);
 
 		return http.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "inventario.ldap.enabled", havingValue = "true")
+	LdapOperations activeDirectoryReadOnlyLdapOperations(ActiveDirectoryProperties properties) {
+		LdapContextSource contextSource = new LdapContextSource();
+		contextSource.setUrl(properties.getUrl());
+		contextSource.setBase(properties.getBaseDn());
+		if (StringUtils.hasText(properties.getReadOnlyUserDn())) {
+			contextSource.setUserDn(properties.getReadOnlyUserDn());
+			contextSource.setPassword(properties.getReadOnlyPassword());
+		}
+		contextSource.afterPropertiesSet();
+		return new LdapTemplate(contextSource);
 	}
 
 	@Bean

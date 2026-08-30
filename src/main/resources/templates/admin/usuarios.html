@@ -25,6 +25,9 @@
 			<p class="success-message" th:if="${param.creado != null}">
 				Usuario creado: <strong th:text="${param.creado}">usuario</strong>
 			</p>
+			<p class="success-message" th:if="${param.autorizado != null}">
+				Usuario de dominio autorizado: <strong th:text="${param.autorizado}">usuario</strong>
+			</p>
 			<p class="error-message" th:if="${param.error != null and param.error[0] == 'duplicado'}">
 				El usuario ya existe en Inventario Modular.
 			</p>
@@ -37,27 +40,19 @@
 
 			<section class="management-layout">
 				<form class="user-form" th:action="@{/admin/usuarios}" method="post" aria-labelledby="new-user-title">
-					<h2 id="new-user-title">Autorizar identidad</h2>
+					<h2 id="new-user-title">Crear usuario local</h2>
 
 					<label>
-						<span>Cuenta AD o local</span>
+						<span>Usuario local</span>
 						<input name="username" type="text" maxlength="120" pattern="[a-zA-Z0-9._@-]+"
-								placeholder="gmurad" required>
-					</label>
-
-					<label>
-						<span>Origen de autenticacion</span>
-						<select name="origen" required>
-							<option value="AD" selected>Active Directory</option>
-							<option value="LOCAL">Usuario local</option>
-						</select>
+								placeholder="chofer.local" required>
 					</label>
 
 					<label>
 						<span>Clave local</span>
 						<input name="password" type="password" minlength="8" maxlength="120" autocomplete="new-password"
-								placeholder="Solo para origen LOCAL">
-						<small class="field-help">Para cuentas AD, dejar vacio. La clave la valida el dominio.</small>
+								placeholder="Minimo 8 caracteres" required>
+						<small class="field-help">Solo se crean usuarios locales. Las cuentas AD se toman del dominio y no llevan clave aca.</small>
 					</label>
 
 					<label>
@@ -123,6 +118,48 @@
 									</td>
 									<td data-label="Roles">
 										<span class="role-chip" th:each="rol : ${usuario.roles}" th:text="${rol}">ADMINISTRADOR</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</section>
+
+				<section class="user-list-section" aria-labelledby="domain-users-title">
+					<div class="section-header">
+						<h2 id="domain-users-title">Usuarios de dominio</h2>
+						<span class="count-badge" th:if="${usuariosDominio.disponible}" th:text="${#lists.size(usuariosDominio.usuarios)} + ' encontrados'">0 encontrados</span>
+						<span class="count-badge" th:unless="${usuariosDominio.disponible}">No disponible</span>
+					</div>
+					<p class="empty-state" th:unless="${usuariosDominio.disponible}" th:text="${usuariosDominio.mensaje}">
+						LDAP esta desactivado en este entorno.
+					</p>
+					<div class="responsive-table" th:if="${usuariosDominio.disponible}">
+						<table>
+							<thead>
+								<tr>
+									<th scope="col">Usuario AD</th>
+									<th scope="col">Nombre</th>
+									<th scope="col">Fuero</th>
+									<th scope="col">Accion</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="usuarioDominio : ${usuariosDominio.usuarios}">
+									<td data-label="Usuario AD" th:text="${usuarioDominio.username}">gmurad</td>
+									<td data-label="Nombre" th:text="${usuarioDominio.nombreVisible}">Gustavo Elias Murad</td>
+									<td data-label="Fuero" th:text="${usuarioDominio.fuero}">Informatica</td>
+									<td data-label="Accion">
+										<form class="inline-action-form" th:action="@{/admin/usuarios/dominio}" method="post">
+											<input type="hidden" name="username" th:value="${usuarioDominio.username}">
+											<input type="hidden" name="nombreVisible" th:value="${usuarioDominio.nombreVisible}">
+											<input type="hidden" name="fuero" th:value="${usuarioDominio.fuero}">
+											<input type="hidden" name="activo" value="true">
+											<select name="roles" aria-label="Rol local">
+												<option th:each="rol : ${roles}" th:value="${rol.codigo}" th:text="${rol.codigo}">LECTOR</option>
+											</select>
+											<button class="secondary-action" type="submit">Autorizar</button>
+										</form>
 									</td>
 								</tr>
 							</tbody>

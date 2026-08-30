@@ -79,6 +79,8 @@ GET /api/v1/me
 GET /api/v1/me/modulos
 GET /api/v1/usuarios
 POST /api/v1/usuarios
+GET /api/v1/usuarios/dominio
+POST /api/v1/usuarios/dominio
 GET /api/v1/roles
 ```
 
@@ -118,10 +120,27 @@ Los endpoints de administracion requieren que el usuario autenticado tenga permi
 }
 ```
 
-`POST /api/v1/usuarios` crea un usuario local autorizado. No recibe clave ni guarda clave
-de dominio.
+`POST /api/v1/usuarios` crea un usuario local autorizado. Recibe una clave local, pero
+solo guarda hash BCrypt en `credenciales_locales`.
 
 Ejemplo:
+
+```json
+{
+  "username": "chofer.local",
+  "nombreVisible": "Chofer de Guardia",
+  "fuero": "Informatica",
+  "password": "ClaveTemporal123",
+  "activo": true,
+  "roles": ["ADMINISTRADOR"]
+}
+```
+
+`GET /api/v1/usuarios/dominio` lista usuarios de Active Directory si LDAP esta habilitado
+y configurado. En modo local devuelve `disponible=false`.
+
+`POST /api/v1/usuarios/dominio` autoriza localmente una identidad AD existente, sin
+recibir ni guardar clave de dominio:
 
 ```json
 {
@@ -160,15 +179,17 @@ La pantalla `/admin/usuarios` ya permite:
 - listar usuarios registrados;
 - ver estado activo/inactivo;
 - ver roles asignados;
-- autorizar una identidad con rol inicial.
+- crear usuarios locales con clave hasheada;
+- listar usuarios de dominio cuando LDAP esta disponible;
+- autorizar usuarios AD con rol inicial, sin pedir clave de dominio.
 
 Para cuentas de Active Directory, la clave la valida el dominio durante el login.
 Inventario Modular solo guarda autorizacion local: roles, permisos y modulos. Para cuentas
 locales, la pantalla puede cargar una clave propia y el sistema guarda solamente hash
 BCrypt en `credenciales_locales`.
 
-Todavia falta buscar/listar usuarios de Active Directory en produccion, editar roles
-existentes, activar/desactivar usuarios desde pantalla y mostrar la matriz completa de
+Todavia falta busqueda filtrada/paginada de Active Directory, editar roles existentes,
+activar/desactivar usuarios desde pantalla y mostrar la matriz completa de
 modulos/permisos por rol.
 
 ## Comportamiento actual
@@ -196,7 +217,7 @@ de usuarios.
 Los siguientes pasos son:
 
 - bloquear acceso a modulos cuando `autorizado = false`;
-- buscar/listar usuarios de Active Directory desde la pantalla administrativa;
+- agregar busqueda filtrada/paginada de Active Directory;
 - permitir editar roles de usuarios existentes;
 - permitir activar/desactivar usuarios existentes;
 - permitir cambiar clave de usuarios locales;

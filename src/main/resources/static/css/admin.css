@@ -370,6 +370,23 @@ h1 {
 	margin-top: 6px;
 }
 
+.inline-action-form {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
+}
+
+.inline-action-form select {
+	border: 1px solid #c7d2dd;
+	border-radius: 6px;
+	color: #1d252d;
+	font: inherit;
+	min-width: 150px;
+	padding: 8px 10px;
+}
+
 .role-picker {
 	border: 1px solid #d9e0e7;
 	border-radius: 8px;
@@ -471,6 +488,15 @@ td {
 	.secondary-action,
 	.primary-action {
 		text-align: center;
+		width: 100%;
+	}
+
+	.inline-action-form {
+		align-items: stretch;
+		display: grid;
+	}
+
+	.inline-action-form select {
 		width: 100%;
 	}
 

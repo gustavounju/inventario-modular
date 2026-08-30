@@ -44,6 +44,21 @@ class UsuarioAdminControllerTests {
 	}
 
 	@Test
+	void listaUsuariosDominioComoNoDisponibleSiLdapEstaDesactivado() throws Exception {
+		mockMvc.perform(get("/api/v1/usuarios/dominio").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.disponible").value(false))
+			.andExpect(jsonPath("$.mensaje").value("LDAP esta desactivado en este entorno."))
+			.andExpect(jsonPath("$.usuarios").isEmpty());
+	}
+
+	@Test
+	void bloqueaListadoDominioSiNoTienePermisoAdministrarUsuarios() throws Exception {
+		mockMvc.perform(get("/api/v1/usuarios/dominio").with(user(usuarioSinPermisos())))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void listaRolesDisponiblesParaAdministrarUsuarios() throws Exception {
 		mockMvc.perform(get("/api/v1/roles").with(user(adminLocal())))
 			.andExpect(status().isOk())
@@ -52,7 +67,33 @@ class UsuarioAdminControllerTests {
 	}
 
 	@Test
-	void creaUsuarioDeDominioConRolesLocalesSinGuardarClave() throws Exception {
+	void creaUsuarioLocalDesdeEndpointDeAlta() throws Exception {
+		String body = """
+				{
+				  "username": "gmurad.local",
+				  "nombreVisible": "Gustavo Elias Murad Local",
+				  "fuero": "Informatica",
+				  "password": "UsuarioLocal123",
+				  "activo": true,
+				  "roles": ["ADMINISTRADOR"]
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/usuarios")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.username").value("gmurad.local"))
+			.andExpect(jsonPath("$.nombreVisible").value("Gustavo Elias Murad Local"))
+			.andExpect(jsonPath("$.origen").value("LOCAL"))
+			.andExpect(jsonPath("$.tieneCredencialLocal").value(true))
+			.andExpect(jsonPath("$.roles", hasItem("ADMINISTRADOR")));
+	}
+
+	@Test
+	void noCreaUsuariosDeDominioDesdeEndpointDeAltaLocal() throws Exception {
 		String body = """
 				{
 				  "username": "gmurad",
@@ -69,10 +110,31 @@ class UsuarioAdminControllerTests {
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(body))
+			.andExpect(status().isUnprocessableContent());
+	}
+
+	@Test
+	void autorizaUsuarioDominioDesdeEndpointSeparadoSinGuardarClave() throws Exception {
+		String body = """
+				{
+				  "username": "gmurad",
+				  "nombreVisible": "Gustavo Elias Murad",
+				  "fuero": "Informatica",
+				  "activo": true,
+				  "roles": ["ADMINISTRADOR"]
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/usuarios/dominio")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.username").value("gmurad"))
 			.andExpect(jsonPath("$.nombreVisible").value("Gustavo Elias Murad"))
 			.andExpect(jsonPath("$.origen").value("AD"))
+			.andExpect(jsonPath("$.tieneCredencialLocal").value(false))
 			.andExpect(jsonPath("$.roles", hasItem("ADMINISTRADOR")));
 	}
 
@@ -109,6 +171,7 @@ class UsuarioAdminControllerTests {
 				  "username": "admin.local",
 				  "nombreVisible": "Administrador Local",
 				  "fuero": "Desarrollo local",
+				  "password": "AdminLocalDuplicado123",
 				  "activo": true,
 				  "roles": ["ADMINISTRADOR"]
 				}

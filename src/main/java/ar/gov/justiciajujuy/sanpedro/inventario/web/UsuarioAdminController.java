@@ -4,7 +4,11 @@ import java.util.List;
 import java.util.Set;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService.DominioUsuarios;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.OrigenIdentidad;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.AutorizarUsuarioDominioCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.CrearUsuarioCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.PasswordLocalRequeridoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.RolNoEncontradoException;
@@ -35,12 +39,15 @@ public class UsuarioAdminController {
 	private static final String PERMISO_ADMINISTRAR = "ADMINISTRAR";
 
 	private final AuthorizationService authorizationService;
+	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 	private final UsuarioManagementService usuarioManagementService;
 
 	public UsuarioAdminController(
 			AuthorizationService authorizationService,
+			ActiveDirectoryDomainService activeDirectoryDomainService,
 			UsuarioManagementService usuarioManagementService) {
 		this.authorizationService = authorizationService;
+		this.activeDirectoryDomainService = activeDirectoryDomainService;
 		this.usuarioManagementService = usuarioManagementService;
 	}
 
@@ -48,6 +55,21 @@ public class UsuarioAdminController {
 	public UsuariosResponse listarUsuarios(@AuthenticationPrincipal UserDetails userDetails) {
 		exigirPermisoAdministrarUsuarios(userDetails);
 		return new UsuariosResponse(usuarioManagementService.listarUsuarios());
+	}
+
+	@GetMapping("/dominio")
+	public DominioUsuarios listarUsuariosDominio(@AuthenticationPrincipal UserDetails userDetails) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+		return activeDirectoryDomainService.listarUsuarios();
+	}
+
+	@PostMapping("/dominio")
+	@ResponseStatus(HttpStatus.CREATED)
+	public UsuarioResumen autorizarUsuarioDominio(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@Valid @RequestBody AutorizarUsuarioDominioRequest request) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+		return usuarioManagementService.autorizarUsuarioDominio(request.toCommand());
 	}
 
 	@PostMapping
@@ -113,7 +135,31 @@ public class UsuarioAdminController {
 			Set<@NotBlank @Size(max = 60) String> roles) {
 
 		private CrearUsuarioCommand toCommand() {
-			return new CrearUsuarioCommand(username, nombreVisible, fuero, origen, password, activo, roles);
+			return new CrearUsuarioCommand(username, nombreVisible, fuero, OrigenIdentidad.LOCAL.name(), password, activo, roles);
+		}
+	}
+
+	public record AutorizarUsuarioDominioRequest(
+			@NotBlank
+			@Size(max = 120)
+			@Pattern(regexp = "^[a-zA-Z0-9._@-]+$")
+			String username,
+
+			@NotBlank
+			@Size(max = 180)
+			String nombreVisible,
+
+			@NotBlank
+			@Size(max = 120)
+			String fuero,
+
+			boolean activo,
+
+			@NotEmpty
+			Set<@NotBlank @Size(max = 60) String> roles) {
+
+		private AutorizarUsuarioDominioCommand toCommand() {
+			return new AutorizarUsuarioDominioCommand(username, nombreVisible, fuero, activo, roles);
 		}
 	}
 }
