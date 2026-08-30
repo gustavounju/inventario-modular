@@ -62,6 +62,16 @@ El modo local de casa ya permite login repetido con `admin.local` sin depender d
 Directory. El incidente y su solucion quedaron documentados en
 [Incidente login local repetido](./incidente-login-local-repetido.md).
 
+La primera pantalla visual de seguridad esta disponible en:
+
+```text
+/admin/usuarios
+```
+
+Permite listar usuarios autorizados y crear un usuario con rol inicial. La edicion de
+roles existentes, activar/desactivar usuarios y la matriz completa rol-modulo-permiso
+quedan como continuacion inmediata.
+
 ## Principio rector
 
 Active Directory confirma identidad. Inventario Modular decide autorizacion.

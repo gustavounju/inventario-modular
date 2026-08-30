@@ -45,7 +45,7 @@ usuario puede entrar, que rol tiene y que modulos puede ver.
 
 ## Primer sprint iniciado: Usuarios y permisos minimos
 
-Estado: primera capa implementada; falta administracion visual.
+Estado: primera capa implementada; administracion visual inicial en curso.
 
 Objetivo:
 
@@ -60,7 +60,8 @@ Objetivo:
 - Login local repetido en Windows/casa. Corregido.
 - Permitir que solo usuarios autorizados localmente entren al panel. Pendiente de aplicar
   despues de cargar un administrador real de dominio.
-- Crear pantalla administrativa para usuarios, roles y modulos. Pendiente.
+- Crear pantalla administrativa para usuarios, roles y modulos. Primera version
+  completada con `/admin/usuarios`.
 
 Resultado esperado:
 
@@ -89,12 +90,14 @@ Motivo:
 
 Primer alcance del sprint:
 
-- Pantalla `/admin/usuarios`.
-- Listado de usuarios autorizados y pendientes.
-- Formulario para crear un usuario autorizado.
-- Selector de rol inicial.
-- Vista de modulos y permisos que recibe cada rol.
-- Tests de controlador y servicio para proteger el flujo.
+- Pantalla `/admin/usuarios`. Completado.
+- Listado de usuarios autorizados y pendientes. Completado.
+- Formulario para crear un usuario autorizado. Completado.
+- Selector de rol inicial. Completado.
+- Tests de controlador para proteger el flujo. Completado.
+- Edicion de roles de usuarios existentes. Pendiente.
+- Activar o desactivar usuarios existentes. Pendiente.
+- Vista de modulos y permisos que recibe cada rol. Pendiente.
 
 ## Sprint siguiente
 

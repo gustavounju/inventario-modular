@@ -1,0 +1,83 @@
+package ar.gov.justiciajujuy.sanpedro.inventario.web;
+
+import java.util.Set;
+
+import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.CrearUsuarioCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.RolNoEncontradoException;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.UsuarioDuplicadoException;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
+
+@Controller
+public class UsuarioAdminPageController {
+
+	private static final String MODULO_USUARIOS = "USUARIOS";
+	private static final String PERMISO_ADMINISTRAR = "ADMINISTRAR";
+
+	private final AuthorizationService authorizationService;
+	private final UsuarioManagementService usuarioManagementService;
+
+	public UsuarioAdminPageController(
+			AuthorizationService authorizationService,
+			UsuarioManagementService usuarioManagementService) {
+		this.authorizationService = authorizationService;
+		this.usuarioManagementService = usuarioManagementService;
+	}
+
+	@GetMapping("/admin/usuarios")
+	public String usuarios(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+		cargarModelo(model);
+		return "admin/usuarios";
+	}
+
+	@PostMapping("/admin/usuarios")
+	public String crearUsuario(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam String username,
+			@RequestParam String nombreVisible,
+			@RequestParam String fuero,
+			@RequestParam(defaultValue = "false") boolean activo,
+			@RequestParam Set<String> roles) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+
+		String usernameNormalizado = username.trim().toLowerCase();
+		try {
+			usuarioManagementService.crearUsuario(new CrearUsuarioCommand(
+					username,
+					nombreVisible,
+					fuero,
+					activo,
+					roles));
+			return "redirect:/admin/usuarios?creado=" + usernameNormalizado;
+		} catch (UsuarioDuplicadoException exception) {
+			return "redirect:/admin/usuarios?error=duplicado";
+		} catch (RolNoEncontradoException exception) {
+			return "redirect:/admin/usuarios?error=rol";
+		}
+	}
+
+	private void cargarModelo(Model model) {
+		model.addAttribute("usuarios", usuarioManagementService.listarUsuarios());
+		model.addAttribute("roles", usuarioManagementService.listarRoles());
+	}
+
+	private void exigirPermisoAdministrarUsuarios(UserDetails userDetails) {
+		/*
+		 * La pantalla permite cambiar autorizaciones. Por eso no alcanza con estar
+		 * autenticado: el usuario debe tener ADMINISTRAR sobre el modulo USUARIOS.
+		 */
+		if (!authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para administrar usuarios.");
+		}
+	}
+}

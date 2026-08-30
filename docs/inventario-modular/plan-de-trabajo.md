@@ -59,7 +59,7 @@ Resultado esperado:
 ## Fase 2: Modelo de seguridad modular
 
 Estado: primera implementacion completada; login local repetido corregido;
-administracion visual pendiente.
+administracion visual inicial en curso.
 
 Tareas:
 
@@ -75,8 +75,10 @@ Tareas:
   `GET /api/v1/roles`. Completado.
 - Mostrar modulos habilitados en `/admin`. Completado.
 - Corregir login local repetido en Windows/casa. Completado.
-- Crear pantalla para administrar usuarios y roles consumiendo la API. Pendiente.
+- Crear pantalla para administrar usuarios y roles. Primera version completada en
+  `/admin/usuarios`.
 - Editar roles de usuarios existentes. Pendiente.
+- Mostrar matriz completa rol-modulo-permiso. Pendiente.
 - Aplicar bloqueo fino por permiso en cada modulo funcional. Pendiente.
 
 Resultado esperado:
@@ -187,14 +189,15 @@ Ver tambien: [Versionado Git](./versionado-git.md).
 
 El servidor Ubuntu ya levanta Inventario Modular como servicio `systemd`, con MySQL remoto
 y login AD. En Windows/casa ya se puede trabajar con MySQL local y login simulado. La
-proxima accion recomendada es cerrar la administracion visual minima de seguridad:
+la pantalla inicial `/admin/usuarios` ya permite listar usuarios autorizados y crear un
+usuario con rol inicial. La proxima accion recomendada es completar la administracion de
+roles existentes:
 
 ```text
 Pantalla /admin/usuarios
--> listar usuarios autorizados
--> crear usuario autorizado
--> asignar rol inicial
--> ver modulos que recibe por rol
+-> editar roles de un usuario existente
+-> activar/desactivar usuario
+-> ver matriz rol-modulo-permiso
 ```
 
 Motivo: antes de migrar Equipos, Actas, Muebles o Stock, el administrador debe poder

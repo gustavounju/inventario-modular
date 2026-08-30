@@ -155,8 +155,15 @@ La pantalla `/admin` muestra:
 - permisos de cada modulo;
 - atributos de identidad de AD o del modo local.
 
-Todavia no existe una pantalla completa para crear usuarios, editar roles o asignar
-permisos. Eso corresponde al siguiente paso del modulo `USUARIOS`.
+La pantalla `/admin/usuarios` ya permite:
+
+- listar usuarios registrados;
+- ver estado activo/inactivo;
+- ver roles asignados;
+- crear un usuario autorizado con rol inicial.
+
+Todavia falta editar roles existentes, activar/desactivar usuarios desde pantalla y mostrar
+la matriz completa de modulos/permisos por rol.
 
 ## Comportamiento actual
 
@@ -183,10 +190,10 @@ de usuarios.
 Los siguientes pasos son:
 
 - bloquear acceso a modulos cuando `autorizado = false`;
-- crear pantalla administrativa para usuarios consumiendo `GET /api/v1/usuarios`,
-  `POST /api/v1/usuarios` y `GET /api/v1/roles`;
 - permitir editar roles de usuarios existentes;
+- permitir activar/desactivar usuarios existentes;
 - permitir activar/desactivar modulos;
+- mostrar matriz rol-modulo-permiso;
 - aplicar permisos en endpoints concretos, por ejemplo `EQUIPOS`;
 - dejar tests de acceso permitido y denegado por modulo.
 

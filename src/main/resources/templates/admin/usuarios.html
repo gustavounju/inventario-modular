@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Administracion de usuarios - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="users-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Seguridad modular</p>
+					<h1 id="users-title">Administracion de usuarios</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<p class="success-message" th:if="${param.creado != null}">
+				Usuario creado: <strong th:text="${param.creado}">usuario</strong>
+			</p>
+			<p class="error-message" th:if="${param.error != null and param.error[0] == 'duplicado'}">
+				El usuario ya existe en Inventario Modular.
+			</p>
+			<p class="error-message" th:if="${param.error != null and param.error[0] == 'rol'}">
+				El rol seleccionado no existe o no esta activo.
+			</p>
+
+			<section class="management-layout">
+				<form class="user-form" th:action="@{/admin/usuarios}" method="post" aria-labelledby="new-user-title">
+					<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+					<h2 id="new-user-title">Nuevo usuario autorizado</h2>
+
+					<label>
+						<span>Usuario de dominio</span>
+						<input name="username" type="text" maxlength="120" pattern="[a-zA-Z0-9._@-]+"
+								placeholder="gmurad" required>
+					</label>
+
+					<label>
+						<span>Nombre visible</span>
+						<input name="nombreVisible" type="text" maxlength="180"
+								placeholder="Gustavo Elias Murad" required>
+					</label>
+
+					<label>
+						<span>Fuero o area</span>
+						<input name="fuero" type="text" maxlength="120" placeholder="Informatica" required>
+					</label>
+
+					<fieldset class="role-picker">
+						<legend>Rol inicial</legend>
+						<label th:each="rol : ${roles}">
+							<input type="checkbox" name="roles" th:value="${rol.codigo}" th:checked="${rol.codigo == 'LECTOR'}">
+							<span>
+								<strong th:text="${rol.codigo}">ADMINISTRADOR</strong>
+								<small th:text="${rol.descripcion}">Acceso total.</small>
+							</span>
+						</label>
+					</fieldset>
+
+					<label class="checkbox-row">
+						<input type="checkbox" name="activo" value="true" checked>
+						<span>Usuario activo</span>
+					</label>
+
+					<button class="primary-action" type="submit">Crear usuario</button>
+				</form>
+
+				<section class="user-list-section" aria-labelledby="authorized-users-title">
+					<div class="section-header">
+						<h2 id="authorized-users-title">Usuarios autorizados</h2>
+						<span class="count-badge" th:text="${#lists.size(usuarios)} + ' registrados'">0 registrados</span>
+					</div>
+
+					<div class="responsive-table">
+						<table>
+							<thead>
+								<tr>
+									<th scope="col">Usuario</th>
+									<th scope="col">Nombre</th>
+									<th scope="col">Fuero</th>
+									<th scope="col">Estado</th>
+									<th scope="col">Roles</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="usuario : ${usuarios}">
+									<td data-label="Usuario" th:text="${usuario.username}">admin.local</td>
+									<td data-label="Nombre" th:text="${usuario.nombreVisible}">Administrador Local</td>
+									<td data-label="Fuero" th:text="${usuario.fuero}">Desarrollo local</td>
+									<td data-label="Estado">
+										<span class="authorization-badge" th:classappend="${usuario.activo} ? ' is-authorized' : ' is-pending'"
+												th:text="${usuario.activo} ? 'Activo' : 'Inactivo'">Activo</span>
+									</td>
+									<td data-label="Roles">
+										<span class="role-chip" th:each="rol : ${usuario.roles}" th:text="${rol}">ADMINISTRADOR</span>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</section>
+			</section>
+		</section>
+	</main>
+</body>
+</html>
