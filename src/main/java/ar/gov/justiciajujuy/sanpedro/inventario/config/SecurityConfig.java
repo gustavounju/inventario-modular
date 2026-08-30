@@ -16,8 +16,15 @@ import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAu
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.StringUtils;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.security.TokenAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 @Configuration
 public class SecurityConfig {
+
+	@Value("${inventario.security.report-token:dev-token-123456}")
+	private String reportToken;
 
 	@Bean
 	PasswordEncoder passwordEncoder() {
@@ -31,8 +38,27 @@ public class SecurityConfig {
 		authenticationProviders.orderedStream().forEach(http::authenticationProvider);
 
 		http
+			.addFilterBefore(new TokenAuthenticationFilter(reportToken), UsernamePasswordAuthenticationFilter.class)
+			.csrf(csrf -> csrf
+				.ignoringRequestMatchers("/api/v1/**", "/submit_inventory")
+			)
+			.exceptionHandling(exceptions -> exceptions
+				.authenticationEntryPoint((request, response, authException) -> {
+					String path = request.getRequestURI();
+					if (path.startsWith("/api/v1/") || path.equals("/submit_inventory")) {
+						response.sendError(401, "Unauthorized");
+					} else {
+						response.sendRedirect(request.getContextPath() + "/login");
+					}
+				})
+			)
 			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/", "/api/v1/sistema/estado", "/css/**").permitAll()
+				.requestMatchers(
+					"/", "/login", "/logout",
+					"/api/v1/sistema/estado",
+					"/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico"
+				).permitAll()
+				.requestMatchers("/submit_inventory").authenticated()
 				.anyRequest().authenticated()
 			)
 			.formLogin(form -> form

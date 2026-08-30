@@ -81,6 +81,25 @@ public class UsuarioAdminController {
 		return usuarioManagementService.crearUsuario(request.toCommand());
 	}
 
+	@org.springframework.web.bind.annotation.PutMapping("/{id}")
+	public UsuarioResumen actualizarUsuario(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@org.springframework.web.bind.annotation.PathVariable Long id,
+			@Valid @RequestBody ActualizarUsuarioRequest request) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+		return usuarioManagementService.actualizarUsuario(id, request.roles(), request.activo());
+	}
+
+	@org.springframework.web.bind.annotation.PutMapping("/{id}/password")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void cambiarPasswordLocal(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@org.springframework.web.bind.annotation.PathVariable Long id,
+			@Valid @RequestBody CambiarPasswordRequest request) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+		usuarioManagementService.cambiarPasswordLocal(id, request.password());
+	}
+
 	private void exigirPermisoAdministrarUsuarios(UserDetails userDetails) {
 		/*
 		 * Spring Security ya confirmo la identidad. Esta verificacion confirma que el
@@ -161,5 +180,17 @@ public class UsuarioAdminController {
 		private AutorizarUsuarioDominioCommand toCommand() {
 			return new AutorizarUsuarioDominioCommand(username, nombreVisible, fuero, activo, roles);
 		}
+	}
+
+	public record ActualizarUsuarioRequest(
+			boolean activo,
+			@NotEmpty
+			Set<@NotBlank @Size(max = 60) String> roles) {
+	}
+
+	public record CambiarPasswordRequest(
+			@NotBlank
+			@Size(min = 8, max = 120)
+			String password) {
 	}
 }

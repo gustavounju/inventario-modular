@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Detalle de Equipo - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell">
+		<section class="status-panel" aria-labelledby="equipo-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Detalle de PC / Dispositivo</p>
+					<h1 id="equipo-title" th:text="${equipo.nombre}">PC-001</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin/equipos}">Volver</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<div class="status-row" th:if="${equipo.activo}">
+				<span class="status-dot" aria-hidden="true"></span>
+				<span th:text="'Estado: ' + ${equipo.monitoreo}">REPORTADO</span>
+			</div>
+			<div class="status-row" th:unless="${equipo.activo}" style="color: #82071e;">
+				<span class="status-dot" style="background: #dc3545; box-shadow: 0 0 0 5px rgba(220, 53, 69, 0.16);" aria-hidden="true"></span>
+				<span>Estado: INACTIVO</span>
+			</div>
+
+			<section class="attributes-section">
+				<h2>Información de Identidad</h2>
+				<div class="attributes-table">
+					<div class="attribute-row">
+						<div class="attribute-name">Nombre de Equipo</div>
+						<div class="attribute-value" th:text="${equipo.nombre}">PC-001</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Fuero / Área</div>
+						<div class="attribute-value" th:text="${equipo.fuero}">Informatica</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Último Usuario</div>
+						<div class="attribute-value" th:text="${equipo.ultimoUsuario ?: 'Sin reportar'}">gmurad</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Dirección IP</div>
+						<div class="attribute-value" th:text="${equipo.ip ?: 'Sin reportar'}">10.15.2.20</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="attributes-section">
+				<h2>Hardware y Software</h2>
+				<div class="attributes-table">
+					<div class="attribute-row">
+						<div class="attribute-name">Sistema Operativo</div>
+						<div class="attribute-value" th:text="${equipo.sistemaOperativo ?: 'Sin reportar'}">Windows 11</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Procesador</div>
+						<div class="attribute-value" th:text="${equipo.procesador ?: 'Sin reportar'}">Intel Core i5</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Memoria RAM</div>
+						<div class="attribute-value" th:text="${equipo.ramMb != null} ? (${equipo.ramMb} + ' MB (' + ${equipo.ramMb / 1024} + ' GB)') : 'Sin reportar'">16384 MB</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Impresora Vinculada</div>
+						<div class="attribute-value" th:text="${equipo.impresora ?: 'Sin impresora vinculada'}">HP LaserJet</div>
+					</div>
+				</div>
+			</section>
+
+			<p class="version" style="font-size: 0.8rem;" th:if="${equipo.ultimoReporteEn != null}" 
+			   th:text="'Último reporte recibido: ' + ${#temporals.format(equipo.ultimoReporteEn, 'dd/MM/yyyy HH:mm:ss')}">
+				Último reporte recibido: 30/08/2026 18:00:00
+			</p>
+		</section>
+	</main>
+</body>
+</html>

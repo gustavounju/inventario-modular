@@ -110,6 +110,38 @@ public class UsuarioAdminPageController {
 		model.addAttribute("roles", usuarioManagementService.listarRoles());
 	}
 
+	@PostMapping("/admin/usuarios/editar")
+	public String editarUsuario(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam Long id,
+			@RequestParam(defaultValue = "false") boolean activo,
+			@RequestParam(required = false) Set<String> roles) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+		if (roles == null) {
+			roles = Set.of();
+		}
+		try {
+			usuarioManagementService.actualizarUsuario(id, roles, activo);
+			return "redirect:/admin/usuarios?actualizado=true";
+		} catch (RolNoEncontradoException exception) {
+			return "redirect:/admin/usuarios?error=rol";
+		}
+	}
+
+	@PostMapping("/admin/usuarios/cambiar-clave")
+	public String cambiarClave(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam Long id,
+			@RequestParam String password) {
+		exigirPermisoAdministrarUsuarios(userDetails);
+		try {
+			usuarioManagementService.cambiarPasswordLocal(id, password);
+			return "redirect:/admin/usuarios?claveCambiada=true";
+		} catch (PasswordLocalRequeridoException exception) {
+			return "redirect:/admin/usuarios?error=password";
+		}
+	}
+
 	private void exigirPermisoAdministrarUsuarios(UserDetails userDetails) {
 		/*
 		 * La pantalla permite cambiar autorizaciones. Por eso no alcanza con estar

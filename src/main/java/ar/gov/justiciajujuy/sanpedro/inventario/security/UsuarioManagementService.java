@@ -96,6 +96,31 @@ public class UsuarioManagementService {
 				command.roles()));
 	}
 
+	@Transactional
+	public UsuarioResumen actualizarUsuario(Long id, Set<String> roles, boolean activo) {
+		UsuarioSistema usuario = usuarioSistemaRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + id));
+		usuario.setActivo(activo);
+		usuario.reemplazarRoles(buscarRoles(roles));
+		return toResumen(usuarioSistemaRepository.save(usuario));
+	}
+
+	@Transactional
+	public void cambiarPasswordLocal(Long id, String nuevoPassword) {
+		UsuarioSistema usuario = usuarioSistemaRepository.findById(id)
+				.orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + id));
+		if (usuario.getOrigen() != OrigenIdentidad.LOCAL) {
+			throw new IllegalArgumentException("Solo se puede cambiar la clave de usuarios locales.");
+		}
+		if (!StringUtils.hasText(nuevoPassword) || nuevoPassword.length() < 8) {
+			throw new PasswordLocalRequeridoException();
+		}
+		CredencialLocal credencial = credencialLocalRepository.findById(id)
+				.orElseGet(() -> new CredencialLocal(usuario, "", false));
+		credencial.setPasswordHash(passwordEncoder.encode(nuevoPassword));
+		credencialLocalRepository.save(credencial);
+	}
+
 	private void validarPasswordLocal(OrigenIdentidad origen, String password) {
 		if (origen == OrigenIdentidad.LOCAL && !StringUtils.hasText(password)) {
 			throw new PasswordLocalRequeridoException();

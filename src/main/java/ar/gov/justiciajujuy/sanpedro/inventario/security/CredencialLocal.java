@@ -53,6 +53,10 @@ public class CredencialLocal {
 		return passwordHash;
 	}
 
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
 	public boolean isRequiereCambioClave() {
 		return requiereCambioClave;
 	}

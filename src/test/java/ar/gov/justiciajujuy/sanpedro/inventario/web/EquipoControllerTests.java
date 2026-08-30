@@ -130,4 +130,42 @@ class EquipoControllerTests {
 				"Mesa de ayuda",
 				Map.of("origen", List.of("AD_TEST")));
 	}
+
+	@Test
+	void registraInventarioLegacyConTokenValidoYFormatoHeredado() throws Exception {
+		String legacyPayload = """
+				{
+				  "PC_Nombre": "pc-legacy-004",
+				  "Usuario_Actual": "mperes",
+				  "Sistema": {
+				    "OsName": "Windows 10 Pro",
+				    "Procesador": "Intel Core i7",
+				    "RAM (GB)": 8.0,
+				    "Office": "Microsoft Office 2019"
+				  },
+				  "Red": [
+				    { "IPAddress": "10.15.2.14", "MACAddress": "00:11:22:33:44:55" }
+				  ],
+				  "Printer_Model": "HP LaserJet Legacy",
+				  "Printer_Port": "USB001 (Local)",
+				  "Printer_SN": "SN-LEGACY-123"
+				}
+				""";
+
+		mockMvc.perform(post("/submit_inventory")
+				.header("Authorization", "Bearer dev-token-123456")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(legacyPayload))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("success"));
+	}
+
+	@Test
+	void rechazaInventarioLegacyConTokenInvalido() throws Exception {
+		mockMvc.perform(post("/submit_inventory")
+				.header("Authorization", "Bearer token-invalido")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{}"))
+			.andExpect(status().isUnauthorized());
+	}
 }

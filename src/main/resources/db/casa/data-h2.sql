@@ -39,3 +39,7 @@ FROM roles r
 CROSS JOIN modulos m
 CROSS JOIN permisos p
 WHERE r.codigo = 'ADMINISTRADOR';
+
+MERGE INTO equipos (id, nombre, ultimo_usuario, fuero, ip, sistema_operativo, procesador, ram_mb, impresora, monitoreo, activo) KEY(nombre) VALUES
+  (1, 'PC-INF-001', 'gmurad', 'Informatica', '10.15.2.10', 'Windows 11 Pro', 'Intel Core i5', 16384, 'HP LaserJet', 'REPORTADO', TRUE),
+  (2, 'PC-MESA-002', 'mesa.entrada', 'Mesa de ayuda', '10.15.2.11', 'Windows 10 Pro', 'Intel Core i3', 8192, NULL, 'REPORTADO', TRUE);

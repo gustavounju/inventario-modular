@@ -54,7 +54,9 @@
 						</thead>
 						<tbody>
 							<tr th:each="equipo : ${equipos.equipos}">
-								<td data-label="Equipo" th:text="${equipo.nombre}">PC-001</td>
+								<td data-label="Equipo">
+									<a th:href="@{/admin/equipos/{id}(id=${equipo.id})}" th:text="${equipo.nombre}" style="font-weight: bold; color: #23405f; text-decoration: none;">PC-001</a>
+								</td>
 								<td data-label="Usuario" th:text="${equipo.ultimoUsuario ?: 'Sin dato'}">gmurad</td>
 								<td data-label="Fuero" th:text="${equipo.fuero}">Informatica</td>
 								<td data-label="IP" th:text="${equipo.ip ?: 'Sin dato'}">10.15.2.20</td>

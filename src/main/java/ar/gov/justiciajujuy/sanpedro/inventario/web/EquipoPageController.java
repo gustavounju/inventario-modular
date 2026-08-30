@@ -37,4 +37,16 @@ public class EquipoPageController {
 		model.addAttribute("equipos", equipoService.listar(q, 0, 50));
 		return "admin/equipos";
 	}
+
+	@org.springframework.web.bind.annotation.GetMapping("/admin/equipos/{id}")
+	public String detalle(
+			Model model,
+			@AuthenticationPrincipal UserDetails userDetails,
+			@org.springframework.web.bind.annotation.PathVariable Long id) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER)) {
+			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para ver equipos.");
+		}
+		model.addAttribute("equipo", equipoService.obtener(id));
+		return "admin/equipo-detalle";
+	}
 }

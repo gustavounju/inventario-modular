@@ -89,7 +89,6 @@ public class EquipoController {
 			@Size(max = 120)
 			String ultimoUsuario,
 
-			@NotBlank
 			@Size(max = 120)
 			String fuero,
 

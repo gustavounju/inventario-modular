@@ -28,6 +28,12 @@
 			<p class="success-message" th:if="${param.autorizado != null}">
 				Usuario de dominio autorizado: <strong th:text="${param.autorizado}">usuario</strong>
 			</p>
+			<p class="success-message" th:if="${param.actualizado != null}">
+				Usuario actualizado correctamente.
+			</p>
+			<p class="success-message" th:if="${param.claveCambiada != null}">
+				Clave del usuario modificada correctamente.
+			</p>
 			<p class="error-message" th:if="${param.error != null and param.error[0] == 'duplicado'}">
 				El usuario ya existe en Inventario Modular.
 			</p>
@@ -101,6 +107,7 @@
 									<th scope="col">Origen</th>
 									<th scope="col">Estado</th>
 									<th scope="col">Roles</th>
+									<th scope="col">Acciones</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -118,6 +125,20 @@
 									</td>
 									<td data-label="Roles">
 										<span class="role-chip" th:each="rol : ${usuario.roles}" th:text="${rol}">ADMINISTRADOR</span>
+									</td>
+									<td data-label="Acciones">
+										<div class="inline-action-form">
+											<button type="button" class="secondary-action" 
+													th:data-id="${usuario.id}" 
+													th:data-username="${usuario.username}" 
+													th:data-roles="${#strings.listJoin(usuario.roles, ',')}" 
+													th:data-activo="${usuario.activo}" 
+													onclick="handleEditClick(this)">Editar</button>
+											<button type="button" class="secondary-action" th:if="${usuario.origen == 'LOCAL'}"
+													th:data-id="${usuario.id}" 
+													th:data-username="${usuario.username}" 
+													onclick="handlePasswordClick(this)">Clave</button>
+										</div>
 									</td>
 								</tr>
 							</tbody>
@@ -169,5 +190,85 @@
 			</section>
 		</section>
 	</main>
+
+	<!-- Modal de Edicion -->
+	<dialog id="editDialog" class="status-panel">
+		<form method="post" th:action="@{/admin/usuarios/editar}">
+			<h2>Editar Usuario</h2>
+			<input type="hidden" name="id" id="editUserId">
+			<p style="margin: 14px 0 20px;">Usuario: <strong id="editUsername"></strong></p>
+			
+			<fieldset class="role-picker" style="margin-bottom: 18px;">
+				<legend>Roles asignados</legend>
+				<label th:each="rol : ${roles}">
+					<input type="checkbox" name="roles" th:value="${rol.codigo}" class="edit-role-checkbox">
+					<span>
+						<strong th:text="${rol.codigo}">ADMINISTRADOR</strong>
+					</span>
+				</label>
+			</fieldset>
+			
+			<label class="checkbox-row" style="margin-bottom: 24px;">
+				<input type="checkbox" name="activo" value="true" id="editActivo">
+				<span>Usuario activo</span>
+			</label>
+			
+			<div style="display: flex; gap: 10px; justify-content: flex-end;">
+				<button type="button" class="secondary-action" onclick="document.getElementById('editDialog').close()">Cancelar</button>
+				<button type="submit" class="primary-action">Guardar</button>
+			</div>
+		</form>
+	</dialog>
+
+	<!-- Modal de Cambio de Clave -->
+	<dialog id="passwordDialog" class="status-panel">
+		<form method="post" th:action="@{/admin/usuarios/cambiar-clave}">
+			<h2>Cambiar Clave Local</h2>
+			<input type="hidden" name="id" id="passUserId">
+			<p style="margin: 14px 0 20px;">Usuario: <strong id="passUsername"></strong></p>
+			
+			<label style="display: grid; gap: 7px; margin-bottom: 24px;">
+				<span style="color: #415366; font-size: 0.84rem; font-weight: 700;">Nueva Clave</span>
+				<input name="password" type="password" minlength="8" maxlength="120" required 
+					   placeholder="Minimo 8 caracteres" 
+					   style="border: 1px solid #c7d2dd; border-radius: 6px; padding: 10px 12px; width: 100%;">
+			</label>
+			
+			<div style="display: flex; gap: 10px; justify-content: flex-end;">
+				<button type="button" class="secondary-action" onclick="document.getElementById('passwordDialog').close()">Cancelar</button>
+				<button type="submit" class="primary-action">Guardar</button>
+			</div>
+		</form>
+	</dialog>
+
+	<script>
+		function handleEditClick(btn) {
+			const id = btn.getAttribute('data-id');
+			const username = btn.getAttribute('data-username');
+			const rolesStr = btn.getAttribute('data-roles');
+			const activo = btn.getAttribute('data-activo') === 'true';
+			
+			document.getElementById('editUserId').value = id;
+			document.getElementById('editUsername').textContent = username;
+			document.getElementById('editActivo').checked = activo;
+			
+			const roles = rolesStr ? rolesStr.split(',') : [];
+			const checkboxes = document.querySelectorAll('.edit-role-checkbox');
+			checkboxes.forEach(cb => {
+				cb.checked = roles.includes(cb.value);
+			});
+			
+			document.getElementById('editDialog').showModal();
+		}
+
+		function handlePasswordClick(btn) {
+			const id = btn.getAttribute('data-id');
+			const username = btn.getAttribute('data-username');
+			
+			document.getElementById('passUserId').value = id;
+			document.getElementById('passUsername').textContent = username;
+			document.getElementById('passwordDialog').showModal();
+		}
+	</script>
 </body>
 </html>

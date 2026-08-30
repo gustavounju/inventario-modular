@@ -48,14 +48,94 @@ public class EquipoService {
 				.orElseThrow(() -> new EquipoNoEncontradoException(id));
 	}
 
+	private static final java.util.Map<String, String> DEFAULT_FUERO_MAPPING = java.util.Map.ofEntries(
+			java.util.Map.entry("TTSIVVOC", "Tribunal de Trabajo Sala IV"),
+			java.util.Map.entry("OGL", "Oficina de Gestion Laboral"),
+			java.util.Map.entry("SISTEMAS", "Dpto. Informatica San Pedro"),
+			java.util.Map.entry("VGS", "Violencia de Género 5"),
+			java.util.Map.entry("VG5", "Violencia de Género 5"),
+			java.util.Map.entry("SIVL", "Sala IV Laboral"),
+			java.util.Map.entry("TJO1", "Tribunal de Juicio"),
+			java.util.Map.entry("TJ01", "Tribunal de Juicio"),
+			java.util.Map.entry("TJ", "Tribunal de Juicio"),
+			java.util.Map.entry("CGESE", "Cámara Gesell"),
+			java.util.Map.entry("JCC8SEC16", "Juzgado civil y Comercial N°8 Secretaria 16"),
+			java.util.Map.entry("JCC9SEC18", "Juzgado civil y Comercial N°9 Secretaria 18"),
+			java.util.Map.entry("JCC", "Juzgado Civil y Comercial"),
+			java.util.Map.entry("CCYCSIV", "Cámara Civil y Comercial Sala IV"),
+			java.util.Map.entry("CCYC", "Cámara Civil y Comercial"),
+			java.util.Map.entry("PRENSA", "Prensa Poder Judicial de San Pedro de Jujuy"),
+			java.util.Map.entry("SUPINT", "Superintendencia"),
+			java.util.Map.entry("EQINT", "Equipo Interdisciplinario"),
+			java.util.Map.entry("JUZMEN2", "Juzgado de Menores 2"),
+			java.util.Map.entry("JUZMEN", "Juzgado de Menores"),
+			java.util.Map.entry("JMEN", "Juzgado de Menores"),
+			java.util.Map.entry("OGJ", "Oficina de Gestion Judicial"),
+			java.util.Map.entry("VIOGEN", "Violencia de Género 5"),
+			java.util.Map.entry("TFSIIIV", "Tribunal de Familia - Sala III"),
+			java.util.Map.entry("TRIBJU", "Tribunal de Juicio"),
+			java.util.Map.entry("FAM", "Juzgado de Familia"),
+			java.util.Map.entry("JF", "Juzgado de Familia"),
+			java.util.Map.entry("JFAM", "Juzgado de Familia"),
+			java.util.Map.entry("CORP", "Juzgado de Control - Corp."),
+			java.util.Map.entry("JCON", "Juzgado de Control"),
+			java.util.Map.entry("OMN", "Mandamientos y Notificaciones"),
+			java.util.Map.entry("OM", "Oficina de Mandamientos"),
+			java.util.Map.entry("NOT", "Oficina de Notificaciones"),
+			java.util.Map.entry("BIB", "Biblioteca"),
+			java.util.Map.entry("ARQ", "Archivo"),
+			java.util.Map.entry("INT", "Intendencia"),
+			java.util.Map.entry("MAY", "Mayordomia"),
+			java.util.Map.entry("MED", "Reconocimiento Medico"),
+			java.util.Map.entry("PSI", "Psicologia"),
+			java.util.Map.entry("TS", "Trabajo Social"),
+			java.util.Map.entry("MESA", "Mesa de Entradas"),
+			java.util.Map.entry("ME", "Mesa de Entradas"),
+			java.util.Map.entry("VOC", "Vocalia"),
+			java.util.Map.entry("DP", "Defensoria Publica"),
+			java.util.Map.entry("DEF", "Defensoria"),
+			java.util.Map.entry("MPA", "Ministerio Publico Acusacion"),
+			java.util.Map.entry("SIGJ", "Sistemas SIGJ")
+	);
+
+	private String detectarFuero(String pcName) {
+		if (pcName == null) {
+			return "Desconocido";
+		}
+		String pcUpper = pcName.toUpperCase();
+		String bestMatch = "Desconocido";
+		int longestPrefixLen = -1;
+
+		for (java.util.Map.Entry<String, String> entry : DEFAULT_FUERO_MAPPING.entrySet()) {
+			String prefix = entry.getKey().toUpperCase();
+			if (pcUpper.startsWith(prefix)) {
+				if (prefix.length() > longestPrefixLen) {
+					longestPrefixLen = prefix.length();
+					bestMatch = entry.getValue();
+				}
+			}
+		}
+		return bestMatch;
+	}
+
 	@Transactional
 	public EquipoDetalle registrarInventario(ReporteInventarioCommand command) {
 		String nombre = normalizarNombre(command.nombre());
-		Equipo equipo = equipoRepository.findByNombreIgnoreCase(nombre)
-				.orElseGet(() -> new Equipo(nombre, command.fuero().trim()));
+		
+		String fuero = null;
+		Equipo equipoExistente = equipoRepository.findByNombreIgnoreCase(nombre).orElse(null);
+		if (command.fuero() != null && StringUtils.hasText(command.fuero())) {
+			fuero = command.fuero().trim();
+		} else if (equipoExistente != null) {
+			fuero = equipoExistente.getFuero();
+		} else {
+			fuero = detectarFuero(nombre);
+		}
+
+		Equipo equipo = equipoExistente != null ? equipoExistente : new Equipo(nombre, fuero);
 		equipo.actualizarDesdeReporte(
 				textoOpcional(command.ultimoUsuario()),
-				command.fuero().trim(),
+				fuero,
 				textoOpcional(command.ip()),
 				textoOpcional(command.sistemaOperativo()),
 				textoOpcional(command.procesador()),

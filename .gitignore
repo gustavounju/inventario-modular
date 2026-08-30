@@ -1,6 +1,8 @@
 HELP.md
 target/
 .local-data/
+.local-data.backup-*/
+*.log
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
