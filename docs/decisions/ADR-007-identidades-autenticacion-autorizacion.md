@@ -40,7 +40,7 @@ Para usuarios de Active Directory:
 
 Para usuarios locales reales:
 
-- Deben implementarse como un proveedor de autenticacion separado.
+- Se implementan como un proveedor de autenticacion separado.
 - La clave no debe guardarse en texto plano.
 - La base solo puede guardar un hash seguro de la clave.
 - El alta o cambio de clave debe quedar auditado.
@@ -104,9 +104,9 @@ siendo la fuente de autenticacion.
 Rechazado como modelo definitivo. Sirve para el primer prototipo, pero para produccion
 conviene agregar un campo de origen o una tabla de credenciales locales separada.
 
-## Proxima decision tecnica
+## Implementacion inicial
 
-Definir el modelo definitivo de identidad:
+La primera implementacion agrega:
 
 ```text
 usuarios
@@ -123,6 +123,17 @@ credenciales_locales
 -> actualizado_en
 ```
 
-Tambien definir si en produccion se permitiran usuarios locales reales o si quedaran solo
-para desarrollo/emergencia.
+La autenticacion local de base se habilita con:
 
+```text
+inventario.local-db-auth.enabled=true
+```
+
+## Proxima decision tecnica
+
+Definir la politica operativa de produccion:
+
+- si los usuarios locales estaran habilitados siempre o solo por emergencia;
+- quien puede crear usuarios locales;
+- cuanto tiempo puede vivir una cuenta local temporal;
+- como se auditan altas, cambios de clave y desactivaciones.

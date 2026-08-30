@@ -2,10 +2,13 @@ package ar.gov.justiciajujuy.sanpedro.inventario.config;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetailsContextMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -13,7 +16,16 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+
+	@Bean
+	SecurityFilterChain securityFilterChain(
+			HttpSecurity http,
+			ObjectProvider<AuthenticationProvider> authenticationProviders) throws Exception {
+		authenticationProviders.orderedStream().forEach(http::authenticationProvider);
+
 		http
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers("/", "/api/v1/sistema/estado", "/css/**").permitAll()

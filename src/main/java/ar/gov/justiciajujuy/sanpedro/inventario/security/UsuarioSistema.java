@@ -6,6 +6,8 @@ import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -31,6 +33,10 @@ public class UsuarioSistema {
 	@Column(nullable = false, length = 120)
 	private String fuero;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private OrigenIdentidad origen = OrigenIdentidad.AD;
+
 	@Column(nullable = false)
 	private boolean activo = true;
 
@@ -51,9 +57,14 @@ public class UsuarioSistema {
 	}
 
 	public UsuarioSistema(String username, String nombreVisible, String fuero) {
+		this(username, nombreVisible, fuero, OrigenIdentidad.AD);
+	}
+
+	public UsuarioSistema(String username, String nombreVisible, String fuero, OrigenIdentidad origen) {
 		this.username = username;
 		this.nombreVisible = nombreVisible;
 		this.fuero = fuero;
+		this.origen = origen;
 	}
 
 	public Long getId() {
@@ -70,6 +81,10 @@ public class UsuarioSistema {
 
 	public String getFuero() {
 		return fuero;
+	}
+
+	public OrigenIdentidad getOrigen() {
+		return origen;
 	}
 
 	public boolean isActivo() {

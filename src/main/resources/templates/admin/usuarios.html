@@ -17,7 +17,6 @@
 				<nav class="admin-actions" aria-label="Acciones administrativas">
 					<a class="secondary-action" th:href="@{/admin}">Volver</a>
 					<form class="logout-form" th:action="@{/logout}" method="post">
-						<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 						<button type="submit">Salir</button>
 					</form>
 				</nav>
@@ -32,16 +31,33 @@
 			<p class="error-message" th:if="${param.error != null and param.error[0] == 'rol'}">
 				El rol seleccionado no existe o no esta activo.
 			</p>
+			<p class="error-message" th:if="${param.error != null and param.error[0] == 'password'}">
+				Los usuarios locales requieren una clave de al menos 8 caracteres.
+			</p>
 
 			<section class="management-layout">
 				<form class="user-form" th:action="@{/admin/usuarios}" method="post" aria-labelledby="new-user-title">
-					<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 					<h2 id="new-user-title">Autorizar identidad</h2>
 
 					<label>
 						<span>Cuenta AD o local</span>
 						<input name="username" type="text" maxlength="120" pattern="[a-zA-Z0-9._@-]+"
 								placeholder="gmurad" required>
+					</label>
+
+					<label>
+						<span>Origen de autenticacion</span>
+						<select name="origen" required>
+							<option value="AD" selected>Active Directory</option>
+							<option value="LOCAL">Usuario local</option>
+						</select>
+					</label>
+
+					<label>
+						<span>Clave local</span>
+						<input name="password" type="password" minlength="8" maxlength="120" autocomplete="new-password"
+								placeholder="Solo para origen LOCAL">
+						<small class="field-help">Para cuentas AD, dejar vacio. La clave la valida el dominio.</small>
 					</label>
 
 					<label>
@@ -87,6 +103,7 @@
 									<th scope="col">Usuario</th>
 									<th scope="col">Nombre</th>
 									<th scope="col">Fuero</th>
+									<th scope="col">Origen</th>
 									<th scope="col">Estado</th>
 									<th scope="col">Roles</th>
 								</tr>
@@ -96,6 +113,10 @@
 									<td data-label="Usuario" th:text="${usuario.username}">admin.local</td>
 									<td data-label="Nombre" th:text="${usuario.nombreVisible}">Administrador Local</td>
 									<td data-label="Fuero" th:text="${usuario.fuero}">Desarrollo local</td>
+									<td data-label="Origen">
+										<span class="role-chip" th:text="${usuario.origen}">LOCAL</span>
+										<span class="credential-hint" th:if="${usuario.tieneCredencialLocal}">con clave local</span>
+									</td>
 									<td data-label="Estado">
 										<span class="authorization-badge" th:classappend="${usuario.activo} ? ' is-authorized' : ' is-pending'"
 												th:text="${usuario.activo} ? 'Activo' : 'Inactivo'">Activo</span>

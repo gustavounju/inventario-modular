@@ -7,10 +7,11 @@ import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDeta
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 
@@ -27,13 +28,9 @@ public class LocalAuthenticationConfig {
 
 	@Bean
 	@ConditionalOnProperty(name = "inventario.ldap.enabled", havingValue = "false", matchIfMissing = true)
-	PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
-
-	@Bean
-	@ConditionalOnProperty(name = "inventario.ldap.enabled", havingValue = "false", matchIfMissing = true)
-	UserDetailsService localUserDetailsService(LocalAuthenticationProperties properties, PasswordEncoder passwordEncoder) {
+	AuthenticationProvider localAuthenticationProvider(
+			LocalAuthenticationProperties properties,
+			PasswordEncoder passwordEncoder) {
 		/*
 		 * Este usuario existe solo para estudiar y probar en casa, donde no hay acceso al
 		 * dominio real. Reutilizamos ActiveDirectoryUserDetails para que la pantalla vea
@@ -44,27 +41,51 @@ public class LocalAuthenticationConfig {
 		String configuredUsername = properties.getUsername();
 		String encodedPassword = passwordEncoder.encode(properties.getPassword());
 
-		return username -> {
-			if (StringUtils.hasText(username) && configuredUsername.equalsIgnoreCase(username.trim())) {
-				/*
-				 * Spring Security borra las credenciales del UserDetails autenticado.
-				 * Por eso devolvemos una instancia nueva en cada busqueda y conservamos
-				 * la clave codificada fuera del objeto que se entrega al framework.
-				 */
-				return new ActiveDirectoryUserDetails(
-						properties.getUsername(),
-						encodedPassword,
-						List.of(
-								new SimpleGrantedAuthority("ROLE_USER"),
-								new SimpleGrantedAuthority("ROLE_ADMIN")),
-						properties.getDisplayName(),
-						properties.getFuero(),
-						Map.of(
-								"modo", List.of("LOCAL_SIMULADO"),
-								"origen", List.of("Windows sin dominio"),
-								"descripcion", List.of("Usuario local para desarrollo")));
+		return new AuthenticationProvider() {
+
+			@Override
+			public Authentication authenticate(Authentication authentication) {
+				String username = String.valueOf(authentication.getPrincipal());
+				String password = String.valueOf(authentication.getCredentials());
+				if (coincideUsuarioYPassword(username, password)) {
+					ActiveDirectoryUserDetails principal = crearPrincipalLocal(encodedPassword, properties);
+					return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+				}
+				throw new BadCredentialsException("Credenciales locales invalidas.");
 			}
-			throw new UsernameNotFoundException("Usuario local no configurado: " + username);
+
+			@Override
+			public boolean supports(Class<?> authentication) {
+				return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+			}
+
+			private boolean coincideUsuarioYPassword(String username, String password) {
+				return StringUtils.hasText(username)
+						&& configuredUsername.equalsIgnoreCase(username.trim())
+						&& passwordEncoder.matches(password, encodedPassword);
+			}
 		};
+	}
+
+	private ActiveDirectoryUserDetails crearPrincipalLocal(
+			String encodedPassword,
+			LocalAuthenticationProperties properties) {
+		/*
+		 * Spring Security borra las credenciales del UserDetails autenticado.
+		 * Por eso devolvemos una instancia nueva en cada busqueda y conservamos
+		 * la clave codificada fuera del objeto que se entrega al framework.
+		 */
+		return new ActiveDirectoryUserDetails(
+				properties.getUsername(),
+				encodedPassword,
+				List.of(
+						new SimpleGrantedAuthority("ROLE_USER"),
+						new SimpleGrantedAuthority("ROLE_ADMIN")),
+				properties.getDisplayName(),
+				properties.getFuero(),
+				Map.of(
+						"modo", List.of("LOCAL_SIMULADO"),
+						"origen", List.of("Windows sin dominio"),
+						"descripcion", List.of("Usuario local para desarrollo")));
 	}
 }

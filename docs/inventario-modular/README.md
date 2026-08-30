@@ -34,6 +34,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Runbook Ubuntu por PuTTY](./runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
 - [Incidente login local repetido](./incidente-login-local-repetido.md)
+- [Usuarios locales y Active Directory](./usuarios-locales-y-active-directory.md)
 - [Base de datos local Windows](./base-datos-local-windows.md)
 - [Seguridad modular inicial](./seguridad-modular-inicial.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
@@ -69,9 +70,10 @@ La primera pantalla visual de seguridad esta disponible en:
 /admin/usuarios
 ```
 
-Permite listar identidades autorizadas y autorizar una cuenta con rol inicial. Esa pantalla
-no carga passwords: Active Directory valida claves de dominio y MySQL guarda solamente
-roles, permisos y modulos. La edicion de roles existentes, activar/desactivar usuarios, la
+Permite listar identidades autorizadas y autorizar una cuenta con rol inicial. Para cuentas
+`AD`, no se carga password porque Active Directory valida la clave. Para cuentas `LOCAL`,
+la pantalla permite cargar una clave propia y el sistema guarda solo hash BCrypt en
+`credenciales_locales`. La edicion de roles existentes, activar/desactivar usuarios, la
 busqueda/listado de usuarios de AD y la matriz completa rol-modulo-permiso quedan como
 continuacion inmediata.
 

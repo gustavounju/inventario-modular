@@ -339,7 +339,9 @@ h1 {
 	font-weight: 700;
 }
 
-.user-form input[type="text"] {
+.user-form input[type="text"],
+.user-form input[type="password"],
+.user-form select {
 	border: 1px solid #c7d2dd;
 	border-radius: 6px;
 	color: #1d252d;
@@ -348,10 +350,24 @@ h1 {
 	width: 100%;
 }
 
-.user-form input[type="text"]:focus {
+.user-form input[type="text"]:focus,
+.user-form input[type="password"]:focus,
+.user-form select:focus {
 	border-color: #23405f;
 	box-shadow: 0 0 0 3px rgba(35, 64, 95, 0.14);
 	outline: none;
+}
+
+.field-help,
+.credential-hint {
+	color: #5e7184;
+	font-size: 0.78rem;
+	line-height: 1.35;
+}
+
+.credential-hint {
+	display: block;
+	margin-top: 6px;
 }
 
 .role-picker {

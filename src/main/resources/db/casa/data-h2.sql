@@ -24,8 +24,8 @@ MERGE INTO roles (id, codigo, nombre, descripcion, activo) KEY(codigo) VALUES
   (4, 'LECTOR', 'Lector', 'Acceso de solo consulta.', TRUE),
   (5, 'PERSONALIZADO', 'Personalizado', 'Rol para combinaciones manuales de permisos.', TRUE);
 
-MERGE INTO usuarios (id, username, nombre_visible, fuero, activo) KEY(username) VALUES
-  (1, 'admin.local', 'Administrador Local', 'Desarrollo local', TRUE);
+MERGE INTO usuarios (id, username, nombre_visible, fuero, origen, activo) KEY(username) VALUES
+  (1, 'admin.local', 'Administrador Local', 'Desarrollo local', 'LOCAL', TRUE);
 
 MERGE INTO usuario_roles (usuario_id, rol_id) KEY(usuario_id, rol_id)
 SELECT u.id, r.id

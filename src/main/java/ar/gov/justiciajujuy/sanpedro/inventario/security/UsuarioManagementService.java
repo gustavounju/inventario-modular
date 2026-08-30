@@ -4,18 +4,28 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 public class UsuarioManagementService {
 
 	private final UsuarioSistemaRepository usuarioSistemaRepository;
 	private final RolRepository rolRepository;
+	private final CredencialLocalRepository credencialLocalRepository;
+	private final PasswordEncoder passwordEncoder;
 
-	public UsuarioManagementService(UsuarioSistemaRepository usuarioSistemaRepository, RolRepository rolRepository) {
+	public UsuarioManagementService(
+			UsuarioSistemaRepository usuarioSistemaRepository,
+			RolRepository rolRepository,
+			CredencialLocalRepository credencialLocalRepository,
+			PasswordEncoder passwordEncoder) {
 		this.usuarioSistemaRepository = usuarioSistemaRepository;
 		this.rolRepository = rolRepository;
+		this.credencialLocalRepository = credencialLocalRepository;
+		this.passwordEncoder = passwordEncoder;
 	}
 
 	@Transactional(readOnly = true)
@@ -45,6 +55,8 @@ public class UsuarioManagementService {
 		 * representen a la misma cuenta de dominio dentro del inventario.
 		 */
 		String usernameNormalizado = normalizar(command.username());
+		OrigenIdentidad origen = OrigenIdentidad.desde(command.origen());
+		validarPasswordLocal(origen, command.password());
 		if (usuarioSistemaRepository.existsByUsernameIgnoreCase(usernameNormalizado)) {
 			throw new UsuarioDuplicadoException(usernameNormalizado);
 		}
@@ -52,11 +64,33 @@ public class UsuarioManagementService {
 		UsuarioSistema usuario = new UsuarioSistema(
 				usernameNormalizado,
 				command.nombreVisible().trim(),
-				command.fuero().trim());
+				command.fuero().trim(),
+				origen);
 		usuario.setActivo(command.activo());
 		usuario.reemplazarRoles(buscarRoles(command.roles()));
 
-		return toResumen(usuarioSistemaRepository.save(usuario));
+		UsuarioSistema usuarioGuardado = usuarioSistemaRepository.save(usuario);
+		if (origen == OrigenIdentidad.LOCAL) {
+			/*
+			 * La clave local nunca se guarda en texto plano. Solo queda el hash BCrypt,
+			 * suficiente para que Spring Security compare futuros inicios de sesion.
+			 */
+			credencialLocalRepository.save(new CredencialLocal(
+					usuarioGuardado,
+					passwordEncoder.encode(command.password()),
+					false));
+		}
+
+		return toResumen(usuarioGuardado);
+	}
+
+	private void validarPasswordLocal(OrigenIdentidad origen, String password) {
+		if (origen == OrigenIdentidad.LOCAL && !StringUtils.hasText(password)) {
+			throw new PasswordLocalRequeridoException();
+		}
+		if (origen == OrigenIdentidad.LOCAL && password.length() < 8) {
+			throw new PasswordLocalRequeridoException();
+		}
 	}
 
 	private Set<Rol> buscarRoles(Set<String> codigos) {
@@ -82,7 +116,9 @@ public class UsuarioManagementService {
 				usuario.getUsername(),
 				usuario.getNombreVisible(),
 				usuario.getFuero(),
+				usuario.getOrigen().name(),
 				usuario.isActivo(),
+				credencialLocalRepository.existsByUsuarioUsernameIgnoreCase(usuario.getUsername()),
 				roles);
 	}
 
@@ -94,6 +130,8 @@ public class UsuarioManagementService {
 			String username,
 			String nombreVisible,
 			String fuero,
+			String origen,
+			String password,
 			boolean activo,
 			Set<String> roles) {
 	}
@@ -103,7 +141,9 @@ public class UsuarioManagementService {
 			String username,
 			String nombreVisible,
 			String fuero,
+			String origen,
 			boolean activo,
+			boolean tieneCredencialLocal,
 			List<String> roles) {
 	}
 
@@ -126,6 +166,13 @@ public class UsuarioManagementService {
 
 		public RolNoEncontradoException(Set<String> codigos) {
 			super("No se encontraron todos los roles solicitados: " + codigos);
+		}
+	}
+
+	public static class PasswordLocalRequeridoException extends RuntimeException {
+
+		public PasswordLocalRequeridoException() {
+			super("Los usuarios locales requieren una clave de al menos 8 caracteres.");
 		}
 	}
 }

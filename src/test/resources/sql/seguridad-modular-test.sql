@@ -3,6 +3,7 @@ CREATE TABLE usuarios (
   username VARCHAR(120) NOT NULL UNIQUE,
   nombre_visible VARCHAR(180) NOT NULL,
   fuero VARCHAR(120) NOT NULL,
+  origen VARCHAR(20) NOT NULL DEFAULT 'AD',
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -45,10 +46,18 @@ CREATE TABLE rol_modulo_permisos (
   PRIMARY KEY (rol_id, modulo_id, permiso_id)
 );
 
-INSERT INTO usuarios (id, username, nombre_visible, fuero, activo)
+CREATE TABLE credenciales_locales (
+  usuario_id BIGINT PRIMARY KEY,
+  password_hash VARCHAR(255) NOT NULL,
+  requiere_cambio_clave BOOLEAN NOT NULL DEFAULT FALSE,
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo)
 VALUES
-  (1, 'admin.local', 'Administrador Local', 'Desarrollo local', TRUE),
-  (2, 'sin.permisos', 'Usuario Sin Permisos', 'Mesa de ayuda', FALSE);
+  (1, 'admin.local', 'Administrador Local', 'Desarrollo local', 'LOCAL', TRUE),
+  (2, 'sin.permisos', 'Usuario Sin Permisos', 'Mesa de ayuda', 'AD', FALSE);
 
 INSERT INTO roles (id, codigo, nombre, descripcion, activo)
 VALUES (1, 'ADMINISTRADOR', 'Administrador', 'Acceso total a los modulos del sistema.', TRUE);

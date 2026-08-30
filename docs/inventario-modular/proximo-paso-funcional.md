@@ -63,6 +63,7 @@ Objetivo:
 - Crear pantalla administrativa para usuarios, roles y modulos. Primera version
   completada con `/admin/usuarios`.
 - Separar identidad, autenticacion y autorizacion. Documentado en ADR-007.
+- Crear usuarios locales con password propio y hash BCrypt. Primera version completada.
 
 Resultado esperado:
 
@@ -97,9 +98,10 @@ Primer alcance del sprint:
 - Selector de rol inicial. Completado.
 - Tests de controlador para proteger el flujo. Completado.
 - Busqueda/listado de usuarios de Active Directory en produccion. Pendiente.
-- Definicion de usuarios locales reales con password propio. Pendiente.
 - Edicion de roles de usuarios existentes. Pendiente.
 - Activar o desactivar usuarios existentes. Pendiente.
+- Cambio de clave para usuarios locales. Pendiente.
+- Auditoria de altas, cambios de clave y desactivaciones. Pendiente.
 - Vista de modulos y permisos que recibe cada rol. Pendiente.
 
 ## Sprint siguiente

@@ -6,6 +6,7 @@ import java.util.Set;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.CrearUsuarioCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.PasswordLocalRequeridoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.RolNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.UsuarioDuplicadoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.UsuarioResumen;
@@ -78,6 +79,11 @@ public class UsuarioAdminController {
 	void rolNoEncontrado() {
 	}
 
+	@ExceptionHandler(PasswordLocalRequeridoException.class)
+	@ResponseStatus(HttpStatus.UNPROCESSABLE_CONTENT)
+	void passwordLocalRequerido() {
+	}
+
 	public record UsuariosResponse(List<UsuarioResumen> usuarios) {
 	}
 
@@ -95,13 +101,19 @@ public class UsuarioAdminController {
 			@Size(max = 120)
 			String fuero,
 
+			@Size(max = 20)
+			String origen,
+
+			@Size(max = 120)
+			String password,
+
 			boolean activo,
 
 			@NotEmpty
 			Set<@NotBlank @Size(max = 60) String> roles) {
 
 		private CrearUsuarioCommand toCommand() {
-			return new CrearUsuarioCommand(username, nombreVisible, fuero, activo, roles);
+			return new CrearUsuarioCommand(username, nombreVisible, fuero, origen, password, activo, roles);
 		}
 	}
 }

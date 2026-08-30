@@ -58,6 +58,8 @@ class UsuarioAdminPageControllerTests {
 				.param("username", "tecnico.local")
 				.param("nombreVisible", "Tecnico Local")
 				.param("fuero", "Informatica")
+				.param("origen", "LOCAL")
+				.param("password", "TecnicoLocal123")
 				.param("activo", "true")
 				.param("roles", "ADMINISTRADOR"))
 			.andExpect(status().is3xxRedirection())

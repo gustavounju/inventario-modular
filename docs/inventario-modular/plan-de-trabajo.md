@@ -79,9 +79,10 @@ Tareas:
   `/admin/usuarios`.
 - Separar formalmente identidad, autenticacion y autorizacion. Documentado en
   `ADR-007`.
+- Crear credenciales locales con password hash BCrypt. Primera version completada.
 - Buscar/listar usuarios de Active Directory desde administracion. Pendiente.
-- Definir si habra usuarios locales reales con password propio. Pendiente.
 - Editar roles de usuarios existentes. Pendiente.
+- Cambiar clave de usuarios locales. Pendiente.
 - Mostrar matriz completa rol-modulo-permiso. Pendiente.
 - Aplicar bloqueo fino por permiso en cada modulo funcional. Pendiente.
 
@@ -200,8 +201,9 @@ una cuenta con rol inicial. La proxima accion recomendada es cerrar el modelo de
 Pantalla /admin/usuarios
 -> buscar/listar usuarios de Active Directory en produccion
 -> autorizar una cuenta AD sin cargar password
--> definir usuarios locales reales, si se permiten
--> si hay usuarios locales: guardar solo hash de password
+-> cambiar clave de usuarios locales
+-> activar/desactivar usuarios temporales
+-> auditar altas y cambios de clave
 ```
 
 Motivo: antes de migrar Equipos, Actas, Muebles o Stock, el administrador debe poder

@@ -39,6 +39,7 @@ class UsuarioAdminControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.usuarios", hasSize(2)))
 			.andExpect(jsonPath("$.usuarios[0].username").value("admin.local"))
+			.andExpect(jsonPath("$.usuarios[0].origen").value("LOCAL"))
 			.andExpect(jsonPath("$.usuarios[0].roles", hasItem("ADMINISTRADOR")));
 	}
 
@@ -57,6 +58,7 @@ class UsuarioAdminControllerTests {
 				  "username": "gmurad",
 				  "nombreVisible": "Gustavo Elias Murad",
 				  "fuero": "Informatica",
+				  "origen": "AD",
 				  "activo": true,
 				  "roles": ["ADMINISTRADOR"]
 				}
@@ -70,6 +72,33 @@ class UsuarioAdminControllerTests {
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.username").value("gmurad"))
 			.andExpect(jsonPath("$.nombreVisible").value("Gustavo Elias Murad"))
+			.andExpect(jsonPath("$.origen").value("AD"))
+			.andExpect(jsonPath("$.roles", hasItem("ADMINISTRADOR")));
+	}
+
+	@Test
+	void creaUsuarioLocalConPasswordHasheado() throws Exception {
+		String body = """
+				{
+				  "username": "chofer.local",
+				  "nombreVisible": "Chofer de Guardia",
+				  "fuero": "Servicios Generales",
+				  "origen": "LOCAL",
+				  "password": "ChoferLocal123",
+				  "activo": true,
+				  "roles": ["ADMINISTRADOR"]
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/usuarios")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.username").value("chofer.local"))
+			.andExpect(jsonPath("$.origen").value("LOCAL"))
+			.andExpect(jsonPath("$.tieneCredencialLocal").value(true))
 			.andExpect(jsonPath("$.roles", hasItem("ADMINISTRADOR")));
 	}
 

@@ -5,6 +5,7 @@ import java.util.Set;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.CrearUsuarioCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.PasswordLocalRequeridoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.RolNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.UsuarioDuplicadoException;
 import org.springframework.http.HttpStatus;
@@ -46,6 +47,8 @@ public class UsuarioAdminPageController {
 			@RequestParam String username,
 			@RequestParam String nombreVisible,
 			@RequestParam String fuero,
+			@RequestParam(defaultValue = "AD") String origen,
+			@RequestParam(required = false) String password,
 			@RequestParam(defaultValue = "false") boolean activo,
 			@RequestParam Set<String> roles) {
 		exigirPermisoAdministrarUsuarios(userDetails);
@@ -56,6 +59,8 @@ public class UsuarioAdminPageController {
 					username,
 					nombreVisible,
 					fuero,
+					origen,
+					password,
 					activo,
 					roles));
 			return "redirect:/admin/usuarios?creado=" + usernameNormalizado;
@@ -63,6 +68,8 @@ public class UsuarioAdminPageController {
 			return "redirect:/admin/usuarios?error=duplicado";
 		} catch (RolNoEncontradoException exception) {
 			return "redirect:/admin/usuarios?error=rol";
+		} catch (PasswordLocalRequeridoException exception) {
+			return "redirect:/admin/usuarios?error=password";
 		}
 	}
 
