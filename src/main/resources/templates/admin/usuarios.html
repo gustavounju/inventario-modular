@@ -36,10 +36,10 @@
 			<section class="management-layout">
 				<form class="user-form" th:action="@{/admin/usuarios}" method="post" aria-labelledby="new-user-title">
 					<input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-					<h2 id="new-user-title">Nuevo usuario autorizado</h2>
+					<h2 id="new-user-title">Autorizar identidad</h2>
 
 					<label>
-						<span>Usuario de dominio</span>
+						<span>Cuenta AD o local</span>
 						<input name="username" type="text" maxlength="120" pattern="[a-zA-Z0-9._@-]+"
 								placeholder="gmurad" required>
 					</label>

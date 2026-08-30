@@ -39,6 +39,7 @@ class UsuarioAdminPageControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(view().name("admin/usuarios"))
 			.andExpect(content().string(containsString("Administracion de usuarios")))
+			.andExpect(content().string(containsString("Autorizar identidad")))
 			.andExpect(content().string(containsString("admin.local")))
 			.andExpect(content().string(containsString("ADMINISTRADOR")));
 	}

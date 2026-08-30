@@ -160,10 +160,16 @@ La pantalla `/admin/usuarios` ya permite:
 - listar usuarios registrados;
 - ver estado activo/inactivo;
 - ver roles asignados;
-- crear un usuario autorizado con rol inicial.
+- autorizar una identidad con rol inicial.
 
-Todavia falta editar roles existentes, activar/desactivar usuarios desde pantalla y mostrar
-la matriz completa de modulos/permisos por rol.
+Esta pantalla no carga passwords. Para cuentas de Active Directory, la clave la valida el
+dominio durante el login. Inventario Modular solo guarda autorizacion local: roles,
+permisos y modulos. Si se incorporan usuarios locales reales, deben tener un proveedor de
+autenticacion separado y guardar solo hash de password.
+
+Todavia falta buscar/listar usuarios de Active Directory en produccion, editar roles
+existentes, activar/desactivar usuarios desde pantalla y mostrar la matriz completa de
+modulos/permisos por rol.
 
 ## Comportamiento actual
 
@@ -190,6 +196,8 @@ de usuarios.
 Los siguientes pasos son:
 
 - bloquear acceso a modulos cuando `autorizado = false`;
+- buscar/listar usuarios de Active Directory desde la pantalla administrativa;
+- definir usuarios locales reales con password propio, si se permiten;
 - permitir editar roles de usuarios existentes;
 - permitir activar/desactivar usuarios existentes;
 - permitir activar/desactivar modulos;

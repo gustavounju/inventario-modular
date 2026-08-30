@@ -77,6 +77,10 @@ Tareas:
 - Corregir login local repetido en Windows/casa. Completado.
 - Crear pantalla para administrar usuarios y roles. Primera version completada en
   `/admin/usuarios`.
+- Separar formalmente identidad, autenticacion y autorizacion. Documentado en
+  `ADR-007`.
+- Buscar/listar usuarios de Active Directory desde administracion. Pendiente.
+- Definir si habra usuarios locales reales con password propio. Pendiente.
 - Editar roles de usuarios existentes. Pendiente.
 - Mostrar matriz completa rol-modulo-permiso. Pendiente.
 - Aplicar bloqueo fino por permiso en cada modulo funcional. Pendiente.
@@ -189,19 +193,20 @@ Ver tambien: [Versionado Git](./versionado-git.md).
 
 El servidor Ubuntu ya levanta Inventario Modular como servicio `systemd`, con MySQL remoto
 y login AD. En Windows/casa ya se puede trabajar con MySQL local y login simulado. La
-la pantalla inicial `/admin/usuarios` ya permite listar usuarios autorizados y crear un
-usuario con rol inicial. La proxima accion recomendada es completar la administracion de
-roles existentes:
+la pantalla inicial `/admin/usuarios` ya permite listar identidades autorizadas y autorizar
+una cuenta con rol inicial. La proxima accion recomendada es cerrar el modelo de identidad:
 
 ```text
 Pantalla /admin/usuarios
--> editar roles de un usuario existente
--> activar/desactivar usuario
--> ver matriz rol-modulo-permiso
+-> buscar/listar usuarios de Active Directory en produccion
+-> autorizar una cuenta AD sin cargar password
+-> definir usuarios locales reales, si se permiten
+-> si hay usuarios locales: guardar solo hash de password
 ```
 
 Motivo: antes de migrar Equipos, Actas, Muebles o Stock, el administrador debe poder
-decidir desde pantalla que usuario ve que modulo. La regla central sigue siendo:
+elegir usuarios reales del dominio y decidir desde pantalla que modulo ve cada identidad.
+La regla central sigue siendo:
 
 ```text
 AD autentica identidad.

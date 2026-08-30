@@ -40,6 +40,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Decision sobre inventario viejo como referencia funcional](../decisions/ADR-003-inventario-viejo-como-referencia-funcional.md)
 - [Decision sobre modo local sin dominio](../decisions/ADR-005-modo-local-sin-dominio.md)
 - [Decision sobre autorizacion modular inicial](../decisions/ADR-006-autorizacion-modular-inicial.md)
+- [Decision sobre identidades, autenticacion y autorizacion](../decisions/ADR-007-identidades-autenticacion-autorizacion.md)
 
 ## Alcance inicial
 
@@ -68,9 +69,11 @@ La primera pantalla visual de seguridad esta disponible en:
 /admin/usuarios
 ```
 
-Permite listar usuarios autorizados y crear un usuario con rol inicial. La edicion de
-roles existentes, activar/desactivar usuarios y la matriz completa rol-modulo-permiso
-quedan como continuacion inmediata.
+Permite listar identidades autorizadas y autorizar una cuenta con rol inicial. Esa pantalla
+no carga passwords: Active Directory valida claves de dominio y MySQL guarda solamente
+roles, permisos y modulos. La edicion de roles existentes, activar/desactivar usuarios, la
+busqueda/listado de usuarios de AD y la matriz completa rol-modulo-permiso quedan como
+continuacion inmediata.
 
 ## Principio rector
 
