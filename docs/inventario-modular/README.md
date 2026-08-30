@@ -35,6 +35,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
 - [Incidente login local repetido](./incidente-login-local-repetido.md)
 - [Usuarios locales y Active Directory](./usuarios-locales-y-active-directory.md)
+- [Modulo Equipos](./modulo-equipos.md)
 - [Base de datos local Windows](./base-datos-local-windows.md)
 - [Seguridad modular inicial](./seguridad-modular-inicial.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
@@ -56,9 +57,9 @@ seguridad y modularidad:
 6. Panel minimo para administrar usuarios, roles, permisos y modulos.
 
 Estado actual: ya existe una primera implementacion de usuarios, roles, permisos,
-modulos, seed inicial, endpoints de usuario actual y API administrativa inicial para
-crear usuarios autorizados. La administracion visual completa de usuarios/roles y el
-bloqueo fino por permiso quedan como pasos siguientes.
+modulos, seed inicial, endpoints de usuario actual, API administrativa para usuarios,
+alta local con clave BCrypt, listado/autorizacion inicial de usuarios AD y primer modulo
+funcional `EQUIPOS`.
 
 El modo local de casa ya permite login repetido con `admin.local` sin depender de Active
 Directory. El incidente y su solucion quedaron documentados en
@@ -70,12 +71,21 @@ La primera pantalla visual de seguridad esta disponible en:
 /admin/usuarios
 ```
 
-Permite listar identidades autorizadas y autorizar una cuenta con rol inicial. Para cuentas
-`AD`, no se carga password porque Active Directory valida la clave. Para cuentas `LOCAL`,
-la pantalla permite cargar una clave propia y el sistema guarda solo hash BCrypt en
-`credenciales_locales`. La edicion de roles existentes, activar/desactivar usuarios, la
-busqueda/listado de usuarios de AD y la matriz completa rol-modulo-permiso quedan como
-continuacion inmediata.
+Permite listar identidades autorizadas, crear usuarios locales y autorizar cuentas `AD`
+sin cargar password porque Active Directory valida la clave. Para cuentas `LOCAL`, la
+pantalla permite cargar una clave propia y el sistema guarda solo hash BCrypt en
+`credenciales_locales`. La edicion de roles existentes, activar/desactivar usuarios,
+busqueda paginada de AD y la matriz completa rol-modulo-permiso quedan como continuacion
+de seguridad.
+
+La primera pantalla funcional esta disponible en:
+
+```text
+/admin/equipos
+```
+
+Permite listar equipos, buscar por nombre/usuario/fuero y consumir la misma base que la
+API `/api/v1/equipos`.
 
 ## Principio rector
 

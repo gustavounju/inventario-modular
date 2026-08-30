@@ -1,5 +1,6 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -48,7 +49,7 @@ class CurrentUserControllerTests {
 			.andExpect(jsonPath("$.autorizado", is(true)))
 			.andExpect(jsonPath("$.modulos", hasSize(2)))
 			.andExpect(jsonPath("$.modulos[0].codigo", is("EQUIPOS")))
-			.andExpect(jsonPath("$.modulos[0].permisos", hasSize(2)));
+			.andExpect(jsonPath("$.modulos[0].permisos", containsInAnyOrder("ADMINISTRAR", "EDITAR", "VER")));
 	}
 
 	@Test

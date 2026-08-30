@@ -387,6 +387,34 @@ h1 {
 	padding: 8px 10px;
 }
 
+.search-form {
+	align-items: end;
+	display: grid;
+	gap: 12px;
+	grid-template-columns: minmax(220px, 1fr) auto;
+	margin-bottom: 18px;
+}
+
+.search-form label {
+	display: grid;
+	gap: 7px;
+}
+
+.search-form label span {
+	color: #415366;
+	font-size: 0.84rem;
+	font-weight: 700;
+}
+
+.search-form input[type="search"] {
+	border: 1px solid #c7d2dd;
+	border-radius: 6px;
+	color: #1d252d;
+	font: inherit;
+	padding: 10px 12px;
+	width: 100%;
+}
+
 .role-picker {
 	border: 1px solid #d9e0e7;
 	border-radius: 8px;
@@ -498,6 +526,10 @@ td {
 
 	.inline-action-form select {
 		width: 100%;
+	}
+
+	.search-form {
+		grid-template-columns: 1fr;
 	}
 
 	.management-layout {

@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class AdminController {
 
 	private static final String MODULO_USUARIOS = "USUARIOS";
+	private static final String MODULO_EQUIPOS = "EQUIPOS";
 	private static final String PERMISO_ADMINISTRAR = "ADMINISTRAR";
+	private static final String PERMISO_VER = "VER";
 
 	private final String applicationName;
 	private final String version;
@@ -47,6 +49,8 @@ public class AdminController {
 		model.addAttribute("fuero", usuarioActual.fuero());
 		model.addAttribute("authorized", usuarioActual.autorizado());
 		model.addAttribute("modules", usuarioActual.modulos());
+		model.addAttribute("canViewEquipos",
+				authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER));
 		model.addAttribute("canManageUsers",
 				authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR));
 		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));

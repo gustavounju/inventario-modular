@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS equipos;
 DROP TABLE IF EXISTS rol_modulo_permisos;
 DROP TABLE IF EXISTS usuario_roles;
 DROP TABLE IF EXISTS credenciales_locales;

@@ -139,6 +139,11 @@ INVENTARIO_LDAP_DOMAIN=DOMINIO
 INVENTARIO_LDAP_BASE_DN=DC=ejemplo,DC=local
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE=displayName
 INVENTARIO_LDAP_FUERO_ATTRIBUTE=department
+INVENTARIO_LDAP_READ_ONLY_USER_DN=
+INVENTARIO_LDAP_READ_ONLY_PASSWORD=
+INVENTARIO_LDAP_USER_SEARCH_BASE=
+INVENTARIO_LDAP_USER_SEARCH_FILTER=(&(objectClass=user)(!(objectClass=computer)))
+INVENTARIO_LDAP_USER_SEARCH_LIMIT=50
 ```
 
 Al iniciar sesion, el panel `/admin` muestra:
@@ -150,7 +155,36 @@ Al iniciar sesion, el panel `/admin` muestra:
 - Boton `Salir`, conectado al logout de Spring Security.
 
 Antes de activar AD en Ubuntu hay que confirmar con Sistemas/AD los valores reales de
-dominio, base DN y el atributo exacto donde esta cargado el fuero.
+dominio, base DN, cuenta lectora opcional y el atributo exacto donde esta cargado el
+fuero.
+
+## Modulos implementados
+
+### Seguridad y usuarios
+
+La pantalla `/admin/usuarios` permite listar identidades autorizadas, crear usuarios
+locales con clave hasheada y autorizar usuarios de Active Directory sin guardar claves de
+dominio.
+
+### Equipos
+
+La primera version del modulo `EQUIPOS` esta disponible en:
+
+```text
+http://localhost:8081/admin/equipos
+```
+
+API:
+
+```text
+GET /api/v1/equipos
+GET /api/v1/equipos/{id}
+POST /api/v1/equipos/inventario
+```
+
+El listado soporta busqueda por nombre de equipo, ultimo usuario o fuero. El endpoint de
+inventario crea o actualiza equipos por `nombre` y queda preparado para conectar el
+script de inventario.
 
 Guia tecnica:
 
@@ -170,6 +204,7 @@ Documentos principales:
 - [CI/CD](docs/inventario-modular/ci-cd.md)
 - [Login Active Directory](docs/inventario-modular/login-active-directory.md)
 - [Proximo paso funcional](docs/inventario-modular/proximo-paso-funcional.md)
+- [Modulo Equipos](docs/inventario-modular/modulo-equipos.md)
 - [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](docs/inventario-modular/modo-local-windows-sin-dominio.md)

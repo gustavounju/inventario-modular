@@ -1,0 +1,127 @@
+package ar.gov.justiciajujuy.sanpedro.inventario.web;
+
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoNoEncontradoException;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoPagina;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.ReporteInventarioCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+@RestController
+@RequestMapping("/api/v1/equipos")
+public class EquipoController {
+
+	private static final String MODULO_EQUIPOS = "EQUIPOS";
+	private static final String PERMISO_VER = "VER";
+	private static final String PERMISO_EDITAR = "EDITAR";
+
+	private final AuthorizationService authorizationService;
+	private final EquipoService equipoService;
+
+	public EquipoController(AuthorizationService authorizationService, EquipoService equipoService) {
+		this.authorizationService = authorizationService;
+		this.equipoService = equipoService;
+	}
+
+	@GetMapping
+	public EquipoPagina listar(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) String q,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "25") int pageSize) {
+		exigirPermiso(userDetails, PERMISO_VER);
+		return equipoService.listar(q, page, pageSize);
+	}
+
+	@GetMapping("/{id}")
+	public EquipoDetalle obtener(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		exigirPermiso(userDetails, PERMISO_VER);
+		return equipoService.obtener(id);
+	}
+
+	@PostMapping("/inventario")
+	@ResponseStatus(HttpStatus.CREATED)
+	public EquipoDetalle registrarInventario(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@Valid @RequestBody ReporteInventarioRequest request) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		return equipoService.registrarInventario(request.toCommand());
+	}
+
+	private void exigirPermiso(UserDetails userDetails, String permiso) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, permiso)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para operar equipos.");
+		}
+	}
+
+	@ExceptionHandler(EquipoNoEncontradoException.class)
+	@ResponseStatus(HttpStatus.NOT_FOUND)
+	void equipoNoEncontrado() {
+	}
+
+	public record ReporteInventarioRequest(
+			@NotBlank
+			@Size(max = 120)
+			@Pattern(regexp = "^[a-zA-Z0-9._-]+$")
+			String nombre,
+
+			@Size(max = 120)
+			String ultimoUsuario,
+
+			@NotBlank
+			@Size(max = 120)
+			String fuero,
+
+			@Size(max = 45)
+			String ip,
+
+			@Size(max = 180)
+			String sistemaOperativo,
+
+			@Size(max = 255)
+			String procesador,
+
+			@Min(0)
+			@Max(1048576)
+			Integer ramMb,
+
+			@Size(max = 180)
+			String impresora,
+
+			boolean activo) {
+
+		private ReporteInventarioCommand toCommand() {
+			return new ReporteInventarioCommand(
+					nombre,
+					ultimoUsuario,
+					fuero,
+					ip,
+					sistemaOperativo,
+					procesador,
+					ramMb,
+					impresora,
+					activo);
+		}
+	}
+}

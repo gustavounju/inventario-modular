@@ -40,12 +40,12 @@ Active Directory autentica identidad.
 Inventario Modular debe decidir autorizacion.
 ```
 
-Hoy el sistema ya puede validar un usuario de AD, pero falta definir localmente si ese
-usuario puede entrar, que rol tiene y que modulos puede ver.
+Hoy el sistema ya puede validar un usuario de AD, autorizarlo localmente, asignarle roles
+iniciales y mostrar u ocultar accesos por permiso.
 
 ## Primer sprint iniciado: Usuarios y permisos minimos
 
-Estado: primera capa implementada; administracion visual inicial en curso.
+Estado: primera capa implementada; administracion visual inicial completada.
 
 Objetivo:
 
@@ -64,6 +64,8 @@ Objetivo:
   completada con `/admin/usuarios`.
 - Separar identidad, autenticacion y autorizacion. Documentado en ADR-007.
 - Crear usuarios locales con password propio y hash BCrypt. Primera version completada.
+- Buscar/listar usuarios de Active Directory en produccion. Primera version completada
+  con lectura LDAP opcional.
 
 Resultado esperado:
 
@@ -76,12 +78,13 @@ Resultado esperado:
 Este sprint es pequeno pero muy importante porque evita construir modulos encima de una
 seguridad incompleta.
 
-## Proximo sprint recomendado inmediato
+## Sprint completado parcialmente
 
 ### Sprint 2: Administracion visual de usuarios, roles y modulos
 
-Antes de migrar Equipos conviene terminar la pantalla que permita administrar la seguridad
-modular desde el navegador.
+Antes de migrar Equipos convenia terminar la pantalla que permita administrar la seguridad
+modular desde el navegador. La primera version ya existe y permite separar alta local de
+autorizacion AD.
 
 Motivo:
 
@@ -97,19 +100,19 @@ Primer alcance del sprint:
 - Formulario para autorizar una identidad con rol inicial. Completado.
 - Selector de rol inicial. Completado.
 - Tests de controlador para proteger el flujo. Completado.
-- Busqueda/listado de usuarios de Active Directory en produccion. Pendiente.
+- Busqueda/listado de usuarios de Active Directory en produccion. Primera version
+  completada.
 - Edicion de roles de usuarios existentes. Pendiente.
 - Activar o desactivar usuarios existentes. Pendiente.
 - Cambio de clave para usuarios locales. Pendiente.
 - Auditoria de altas, cambios de clave y desactivaciones. Pendiente.
 - Vista de modulos y permisos que recibe cada rol. Pendiente.
 
-## Sprint siguiente
+## Sprint iniciado
 
 ### Sprint 3: Equipos como primer modulo funcional
 
-Despues de cerrar la administracion visual de seguridad, el primer modulo funcional
-recomendado es `Equipos`.
+El primer modulo funcional iniciado es `Equipos`.
 
 Motivo:
 
@@ -121,13 +124,18 @@ Motivo:
 
 Primer alcance de Equipos:
 
-- Migracion Flyway para tabla `equipos`.
-- Endpoint `GET /api/v1/equipos`.
-- Endpoint `GET /api/v1/equipos/{id}`.
-- Endpoint interno para recibir inventario de una PC.
-- Pantalla simple de listado.
-- Busqueda por nombre, usuario o fuero.
-- Tests de repositorio/controlador.
+- Migracion Flyway para tabla `equipos`. Completado.
+- Endpoint `GET /api/v1/equipos`. Completado.
+- Endpoint `GET /api/v1/equipos/{id}`. Completado.
+- Endpoint interno para recibir inventario de una PC. Completado como
+  `POST /api/v1/equipos/inventario`.
+- Pantalla simple de listado. Completado en `/admin/equipos`.
+- Busqueda por nombre, usuario o fuero. Completado.
+- Tests de controlador/pantalla. Completado.
+- Conectar el script real `inventario.ps1`. Pendiente.
+- Definir autenticacion de maquina o token especifico para reportes automaticos.
+  Pendiente.
+- Importar datos iniciales desde el inventario viejo. Pendiente.
 
 ## No comenzar todavia por
 

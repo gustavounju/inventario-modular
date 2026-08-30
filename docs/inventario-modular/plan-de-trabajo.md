@@ -59,7 +59,7 @@ Resultado esperado:
 ## Fase 2: Modelo de seguridad modular
 
 Estado: primera implementacion completada; login local repetido corregido;
-administracion visual inicial en curso.
+administracion visual inicial completada para alta local y autorizacion AD basica.
 
 Tareas:
 
@@ -80,7 +80,8 @@ Tareas:
 - Separar formalmente identidad, autenticacion y autorizacion. Documentado en
   `ADR-007`.
 - Crear credenciales locales con password hash BCrypt. Primera version completada.
-- Buscar/listar usuarios de Active Directory desde administracion. Pendiente.
+- Buscar/listar usuarios de Active Directory desde administracion. Primera version
+  completada.
 - Editar roles de usuarios existentes. Pendiente.
 - Cambiar clave de usuarios locales. Pendiente.
 - Mostrar matriz completa rol-modulo-permiso. Pendiente.
@@ -143,11 +144,21 @@ Resultado esperado:
 
 ## Fase 6: Primer modulo funcional
 
-Candidato recomendado actualizado: EQUIPOS.
+Estado: iniciado con `EQUIPOS`.
 
 Motivo: Equipos es el nucleo del inventario viejo y alimenta dashboard, tareas, reportes,
-mapas, stock asignado y actas. La decision queda condicionada a cerrar primero usuarios y
-permisos minimos.
+mapas, stock asignado y actas.
+
+Primera version completada:
+
+- Migracion Flyway `V3__equipos_inicial.sql`.
+- Entidad y repositorio `Equipo`.
+- Endpoint `GET /api/v1/equipos` con busqueda y paginacion.
+- Endpoint `GET /api/v1/equipos/{id}`.
+- Endpoint `POST /api/v1/equipos/inventario` para alta/actualizacion por reporte.
+- Pantalla `/admin/equipos` con listado y busqueda.
+- Acceso desde `/admin` solo con permiso `EQUIPOS:VER`.
+- Tests de controlador y pantalla.
 
 ## Fase 7: Migracion progresiva
 
@@ -194,16 +205,17 @@ Ver tambien: [Versionado Git](./versionado-git.md).
 
 El servidor Ubuntu ya levanta Inventario Modular como servicio `systemd`, con MySQL remoto
 y login AD. En Windows/casa ya se puede trabajar con MySQL local y login simulado. La
-la pantalla inicial `/admin/usuarios` ya permite listar identidades autorizadas y autorizar
-una cuenta con rol inicial. La proxima accion recomendada es cerrar el modelo de identidad:
+pantalla inicial `/admin/usuarios` ya permite listar identidades autorizadas, crear
+usuarios locales, listar usuarios de dominio cuando LDAP esta disponible y autorizar una
+cuenta AD sin cargar password. El primer modulo funcional `EQUIPOS` ya esta iniciado con
+tabla, API y pantalla de listado. La proxima accion recomendada es evolucionar Equipos:
 
 ```text
-Pantalla /admin/usuarios
--> buscar/listar usuarios de Active Directory en produccion
--> autorizar una cuenta AD sin cargar password
--> cambiar clave de usuarios locales
--> activar/desactivar usuarios temporales
--> auditar altas y cambios de clave
+Modulo EQUIPOS
+-> conectar el script inventario.ps1 al endpoint de reporte
+-> definir token/autenticacion de maquina para reportes automaticos
+-> crear detalle visual por equipo
+-> importar datos iniciales desde el inventario viejo
 ```
 
 Motivo: antes de migrar Equipos, Actas, Muebles o Stock, el administrador debe poder
@@ -215,7 +227,8 @@ AD autentica identidad.
 Inventario Modular autoriza acceso y modulos.
 ```
 
-Despues de esa pantalla, comenzar con el modulo EQUIPOS como primer modulo funcional.
+En paralelo siguen pendientes mejoras de seguridad visual: editar roles existentes,
+activar/desactivar usuarios temporales, cambiar clave local y auditar cambios.
 
 Ver tambien:
 

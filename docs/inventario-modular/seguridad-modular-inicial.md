@@ -82,6 +82,9 @@ POST /api/v1/usuarios
 GET /api/v1/usuarios/dominio
 POST /api/v1/usuarios/dominio
 GET /api/v1/roles
+GET /api/v1/equipos
+GET /api/v1/equipos/{id}
+POST /api/v1/equipos/inventario
 ```
 
 `GET /api/v1/me` devuelve:
@@ -162,6 +165,18 @@ Respuestas esperadas:
 - `409 Conflict`: el usuario ya existe.
 - `422 Unprocessable Content`: algun rol solicitado no existe.
 
+### Modulo Equipos por API
+
+Los endpoints de equipos requieren permisos del modulo `EQUIPOS`:
+
+- `GET /api/v1/equipos`: requiere `VER`.
+- `GET /api/v1/equipos/{id}`: requiere `VER`.
+- `POST /api/v1/equipos/inventario`: requiere `EDITAR`.
+
+El listado acepta `q`, `page` y `pageSize`. La busqueda `q` filtra por nombre de equipo,
+ultimo usuario o fuero. El endpoint de inventario crea o actualiza por `nombre`, normaliza
+el nombre a mayusculas y registra el ultimo reporte.
+
 ## Pantalla administrativa actual
 
 La pantalla `/admin` muestra:
@@ -191,6 +206,13 @@ BCrypt en `credenciales_locales`.
 Todavia falta busqueda filtrada/paginada de Active Directory, editar roles existentes,
 activar/desactivar usuarios desde pantalla y mostrar la matriz completa de
 modulos/permisos por rol.
+
+La pantalla `/admin/equipos` ya permite:
+
+- listar equipos;
+- buscar por nombre, ultimo usuario o fuero;
+- ver estado de monitoreo;
+- acceder solo si el usuario tiene `EQUIPOS:VER`.
 
 ## Comportamiento actual
 
@@ -224,7 +246,7 @@ Los siguientes pasos son:
 - auditar altas, cambios de clave y desactivaciones;
 - permitir activar/desactivar modulos;
 - mostrar matriz rol-modulo-permiso;
-- aplicar permisos en endpoints concretos, por ejemplo `EQUIPOS`;
+- seguir aplicando permisos en cada modulo funcional nuevo;
 - dejar tests de acceso permitido y denegado por modulo.
 
 ## Pruebas
@@ -234,6 +256,8 @@ Las pruebas relacionadas estan en:
 ```text
 src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/CurrentUserControllerTests.java
 src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/UsuarioAdminControllerTests.java
+src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/EquipoControllerTests.java
+src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/EquipoPageControllerTests.java
 src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/security/LocalAuthenticationConfigTests.java
 src/test/resources/sql/seguridad-modular-test.sql
 src/test/resources/sql/limpiar-seguridad-modular-test.sql

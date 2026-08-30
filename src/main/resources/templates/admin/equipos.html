@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Equipos - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="equipos-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Modulo funcional</p>
+					<h1 id="equipos-title">Equipos</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<section class="modules-section" aria-labelledby="equipos-list-title">
+				<div class="section-header">
+					<h2 id="equipos-list-title">Inventario tecnico</h2>
+					<span class="count-badge" th:text="${equipos.paginacion.totalItems} + ' equipos'">0 equipos</span>
+				</div>
+
+				<form class="search-form" th:action="@{/admin/equipos}" method="get" role="search">
+					<label>
+						<span>Buscar</span>
+						<input name="q" type="search" maxlength="120" th:value="${query}" placeholder="PC, usuario o fuero">
+					</label>
+					<button class="primary-action" type="submit">Buscar</button>
+				</form>
+
+				<p class="empty-state" th:if="${#lists.isEmpty(equipos.equipos)}">
+					Todavia no hay equipos para mostrar.
+				</p>
+
+				<div class="responsive-table" th:if="${!#lists.isEmpty(equipos.equipos)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Equipo</th>
+								<th scope="col">Usuario</th>
+								<th scope="col">Fuero</th>
+								<th scope="col">IP</th>
+								<th scope="col">Sistema</th>
+								<th scope="col">Estado</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="equipo : ${equipos.equipos}">
+								<td data-label="Equipo" th:text="${equipo.nombre}">PC-001</td>
+								<td data-label="Usuario" th:text="${equipo.ultimoUsuario ?: 'Sin dato'}">gmurad</td>
+								<td data-label="Fuero" th:text="${equipo.fuero}">Informatica</td>
+								<td data-label="IP" th:text="${equipo.ip ?: 'Sin dato'}">10.15.2.20</td>
+								<td data-label="Sistema" th:text="${equipo.sistemaOperativo ?: 'Sin dato'}">Windows 11</td>
+								<td data-label="Estado">
+									<span class="authorization-badge" th:classappend="${equipo.activo} ? ' is-authorized' : ' is-pending'"
+											th:text="${equipo.activo} ? equipo.monitoreo : 'INACTIVO'">REPORTADO</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+		</section>
+	</main>
+</body>
+</html>
