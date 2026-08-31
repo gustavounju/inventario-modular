@@ -12,6 +12,7 @@ if ([string]::IsNullOrWhiteSpace($Token)) {
     $Token = "dev-token-123456"
 }
 
+# Escapado minimo para armar JSON compatible con PowerShell viejo y moderno.
 function ConvertTo-JsonString {
     param($Value)
     if ($null -eq $Value) {
@@ -25,6 +26,7 @@ function ConvertTo-JsonString {
     return $Text.Trim()
 }
 
+# Usa CIM en PowerShell moderno y WMI en equipos antiguos.
 function Get-InventoryClass {
     param(
         [string]$ClassName,

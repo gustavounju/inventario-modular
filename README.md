@@ -206,6 +206,7 @@ GET  /api/v1/equipos
 GET  /api/v1/equipos/{id}
 POST /api/v1/equipos/inventario
 GET  /scripts/windows/inventario-modular.ps1
+GET  /scripts/windows/inventario-modular.ps1.sha256
 ```
 
 El listado soporta busqueda por nombre de equipo, ultimo usuario o fuero. El endpoint de
@@ -238,6 +239,7 @@ Documentos principales:
 - [Modo local Windows sin dominio](docs/inventario-modular/modo-local-windows-sin-dominio.md)
 - [Base de datos local Windows](docs/inventario-modular/base-datos-local-windows.md)
 - [Script de inventario Windows](docs/inventario-modular/script-inventario-windows.md)
+- [Actualizacion produccion Inventario Modular](docs/inventario-modular/actualizacion-produccion-inventario-modular.md)
 - [Incidente login local repetido](docs/inventario-modular/incidente-login-local-repetido.md)
 
 ## Repositorios

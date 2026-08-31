@@ -113,14 +113,13 @@ servidor desde donde se abrio la pantalla.
 Uso manual local:
 
 ```powershell
-iwr "http://192.168.1.8:8081/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile "$env:TEMP\inventario-modular.ps1"
-powershell -ExecutionPolicy Bypass -File "$env:TEMP\inventario-modular.ps1" `
-  -ServerUrl "http://192.168.1.8:8081/api/v1/equipos/inventario"
+$u='http://192.168.1.8:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
 Guia operativa:
 
 - [Script de inventario Windows](script-inventario-windows.md)
+- [Actualizacion de produccion](actualizacion-produccion-inventario-modular.md)
 
 Comportamiento:
 

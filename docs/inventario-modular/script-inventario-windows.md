@@ -26,6 +26,12 @@ Cuando la app esta levantada, el script se puede descargar desde el mismo servid
 http://IP_DEL_SERVIDOR:8081/scripts/windows/inventario-modular.ps1
 ```
 
+La app tambien publica el hash SHA-256 del script:
+
+```text
+http://IP_DEL_SERVIDOR:8081/scripts/windows/inventario-modular.ps1.sha256
+```
+
 ## Datos capturados
 
 - nombre de PC;
@@ -51,6 +57,14 @@ La pantalla `/login` muestra un comando listo para copiar. Ese comando usa
 `window.location.origin`, por eso toma automaticamente la IP y puerto desde donde se abrio
 el login.
 
+Antes de ejecutar, el comando:
+
+1. descarga el hash SHA-256 publicado por el servidor;
+2. descarga el script;
+3. calcula el SHA-256 local del archivo descargado;
+4. compara ambos valores;
+5. ejecuta el script solo si coinciden.
+
 Ejemplo: si se abre el login en:
 
 ```text
@@ -74,15 +88,13 @@ http://192.168.1.8:8081/api/v1/equipos/inventario
 Con la app levantada en la misma maquina:
 
 ```powershell
-iwr "http://localhost:8081/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile "$env:TEMP\inventario-modular.ps1"
-powershell -ExecutionPolicy Bypass -File "$env:TEMP\inventario-modular.ps1"
+$u='http://localhost:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
 Para apuntar a la IP LAN de la maquina de Gustavo:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "$env:TEMP\inventario-modular.ps1" `
-  -ServerUrl "http://192.168.1.8:8081/api/v1/equipos/inventario"
+$u='http://192.168.1.8:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
 Para probar sin enviar:
@@ -109,6 +121,15 @@ $env:INVENTARIO_REPORT_TOKEN = "TOKEN_REAL_DE_REPORTE"
 
 En Ubuntu/systemd se debe cargar en el `EnvironmentFile` del servicio, no en el repositorio.
 
+No publicar el token real dentro del HTML del login. Si se configura un token real en el
+servidor, pasarlo al equipo inventariado por una via administrada, por ejemplo:
+
+```powershell
+$env:INVENTARIO_REPORT_TOKEN = "TOKEN_REAL_DE_REPORTE"
+```
+
+Luego ejecutar el comando copiado desde el login.
+
 ## Fuero
 
 Si no se informa fuero, el backend intenta detectarlo por prefijo del nombre de PC y, si el
@@ -117,7 +138,7 @@ equipo ya existia, conserva el fuero anterior.
 Para mandarlo explicitamente:
 
 ```powershell
-.\scripts\windows\inventario-modular.ps1 `
+powershell -NoProfile -File "$env:TEMP\inventario-modular.ps1" `
   -Fuero "Dpto. Informatica San Pedro"
 ```
 
@@ -125,8 +146,18 @@ O por variable de entorno:
 
 ```powershell
 $env:INVENTARIO_FUERO = "Dpto. Informatica San Pedro"
-.\scripts\windows\inventario-modular.ps1
+powershell -NoProfile -File "$env:TEMP\inventario-modular.ps1"
 ```
+
+## Seguridad operativa
+
+- El script no abre puertos.
+- El script no instala servicios.
+- El script no queda corriendo en segundo plano.
+- El script no modifica configuracion del equipo.
+- El script lee inventario por CIM/WMI y envia un POST al servidor.
+- El uso normal evita `ExecutionPolicy Bypass`; si una politica local bloquea el script,
+  usar `Bypass` solo como fallback manual y despues de validar SHA-256.
 
 ## Respaldo local, no reenvio automatico
 
