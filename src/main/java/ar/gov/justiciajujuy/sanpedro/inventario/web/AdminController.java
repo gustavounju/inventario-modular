@@ -3,6 +3,7 @@ package ar.gov.justiciajujuy.sanpedro.inventario.web;
 import java.util.List;
 import java.util.Map;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.config.RuntimeModeService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService.UsuarioActual;
@@ -24,14 +25,17 @@ public class AdminController {
 	private final String applicationName;
 	private final String version;
 	private final AuthorizationService authorizationService;
+	private final RuntimeModeService runtimeModeService;
 
 	public AdminController(
 			@Value("${spring.application.name}") String applicationName,
 			@Value("${inventario.version}") String version,
-			AuthorizationService authorizationService) {
+			AuthorizationService authorizationService,
+			RuntimeModeService runtimeModeService) {
 		this.applicationName = applicationName;
 		this.version = version;
 		this.authorizationService = authorizationService;
+		this.runtimeModeService = runtimeModeService;
 	}
 
 	@GetMapping("/")
@@ -54,6 +58,7 @@ public class AdminController {
 		model.addAttribute("canManageUsers",
 				authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR));
 		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));
+		model.addAttribute("runtimeMode", runtimeModeService.current());
 		return "admin/index";
 	}
 

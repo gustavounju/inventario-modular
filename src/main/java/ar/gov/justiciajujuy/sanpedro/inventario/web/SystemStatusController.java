@@ -1,7 +1,7 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.config.RuntimeModeService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,28 +12,26 @@ public class SystemStatusController {
 
 	private final String applicationName;
 	private final String version;
-	private final Environment environment;
+	private final RuntimeModeService runtimeModeService;
 
 	public SystemStatusController(
 			@Value("${spring.application.name}") String applicationName,
 			@Value("${inventario.version}") String version,
-			Environment environment) {
+			RuntimeModeService runtimeModeService) {
 		this.applicationName = applicationName;
 		this.version = version;
-		this.environment = environment;
+		this.runtimeModeService = runtimeModeService;
 	}
 
 	@GetMapping("/estado")
 	public SystemStatusResponse status() {
-		String[] activeProfiles = environment.getActiveProfiles();
-		String profile = activeProfiles.length == 0 ? "default" : activeProfiles[0];
-		return new SystemStatusResponse("OPERATIVO", applicationName, version, profile);
+		return new SystemStatusResponse("OPERATIVO", applicationName, version, runtimeModeService.current());
 	}
 
 	public record SystemStatusResponse(
 			String estado,
 			String aplicacion,
 			String version,
-			String perfil) {
+			RuntimeModeService.RuntimeMode modo) {
 	}
 }

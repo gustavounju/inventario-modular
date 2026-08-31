@@ -91,10 +91,10 @@ mvn test
 
 `BUILD SUCCESS` es una salida de Maven, no un comando.
 
-Ejecutar app en modo casa, sin dominio y con base H2 local de archivo:
+Ejecutar app en modo local, preparada para trabajar con MySQL:
 
 ```powershell
-.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=casa
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Ese modo usa el puerto `8081` para no chocar con el inventario viejo:
@@ -105,13 +105,25 @@ http://localhost:8081/admin
 http://localhost:8081/api/v1/sistema/estado
 ```
 
-`/admin` requiere autenticacion. En laboratorio local/casa, si Active Directory no esta
-activado, se ingresa con:
+El perfil `local` intenta primero la base MySQL del trabajo y, si no hay conexion, cae a
+la base MySQL local de Windows:
+
+```text
+Trabajo: jdbc:mysql://10.15.0.62:3306/inventario_modular
+Casa:    jdbc:mysql://127.0.0.1:3306/inventario_modular
+```
+
+`/admin` requiere autenticacion. En laboratorio local/casa se ingresa con:
 
 ```text
 Usuario: admin.local
 Clave: AdminLocal123
 ```
+
+Al ingresar, el panel `/admin` muestra el modo activo para orientacion operativa:
+
+- `TRABAJO`: Active Directory disponible y MySQL remoto.
+- `LOCAL`: Active Directory apagado/no disponible o fallback a MySQL local.
 
 La pantalla `/login` es una vista propia del proyecto para evitar depender de la pagina
 generada por Spring Security. En Ubuntu/trabajo, la autenticacion prevista es contra
@@ -133,6 +145,10 @@ inventario_modular
 En Windows puede correr contra MySQL local para estudiar y probar. En el trabajo, la app
 Ubuntu debe conectarse a MySQL en `10.15.0.62`, no a `localhost`. Produccion queda fuera
 de esta primera etapa.
+
+La guia paso a paso para crear la base local, usuario local y verificar Flyway esta en:
+
+- [Base de datos local Windows](docs/inventario-modular/base-datos-local-windows.md)
 
 ## Active Directory
 

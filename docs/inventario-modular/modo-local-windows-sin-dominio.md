@@ -12,29 +12,43 @@ En el trabajo:
 
 ```text
 LDAP/Active Directory real -> usuario y clave de dominio
+MySQL remoto -> 10.15.0.62/inventario_modular
 ```
 
 En casa:
 
 ```text
-Login local simulado -> usuario configurado en application-local.properties o variables
+Usuarios locales -> usuario configurado o usuarios creados en MySQL local
+MySQL local -> 127.0.0.1/inventario_modular
 ```
 
 Cuando todavia no esta creada la base MySQL local, se puede usar el perfil `casa`.
 Ese perfil levanta una base H2 de archivo dentro de `.local-data/` y permite probar login,
 pantallas y API sin tocar MySQL, Active Directory ni produccion.
 
-## Regla de seguridad
+## Regla de deteccion
 
-El modo local solo funciona cuando:
+El perfil `local` intenta primero la base modular remota del trabajo:
 
 ```properties
-inventario.local-auth.enabled=true
-inventario.ldap.enabled=false
+inventario.datasource.primary.url=jdbc:mysql://10.15.0.62:3306/inventario_modular
 ```
 
-Si `inventario.ldap.enabled=true`, el proveedor local no se registra. Eso evita que una
-instalacion configurada para Active Directory acepte por accidente el usuario local.
+Si esa base no esta disponible desde la red actual, cambia automaticamente al fallback:
+
+```properties
+inventario.datasource.fallback.url=jdbc:mysql://127.0.0.1:3306/inventario_modular
+```
+
+La pantalla `/admin` muestra el modo detectado para orientar al usuario:
+
+```text
+TRABAJO -> Active Directory disponible y MySQL remoto
+LOCAL   -> usuarios locales y base local/fallback
+```
+
+El endpoint `GET /api/v1/sistema/estado` tambien informa el modo, la base activa y si
+Active Directory esta configurado/disponible, sin mostrar claves.
 
 ## Usuario local por defecto
 
@@ -124,7 +138,8 @@ Ese directorio esta ignorado por git.
 ### Opcion con MySQL local
 
 Usar el perfil `local` cuando ya exista la base `inventario_modular` y el usuario
-`inventario_local` tenga clave y permisos.
+`inventario_local` tenga clave y permisos. Este es el modo recomendado cuando MySQL local
+ya esta preparado.
 
 ```powershell
 mvn spring-boot:run
@@ -136,11 +151,11 @@ Si aparece este error:
 Access denied for user 'inventario_local'@'localhost' (using password: NO)
 ```
 
-significa que Spring Boot intento entrar a MySQL sin clave. Actualizar el codigo desde
-GitLab y verificar que `application-local.properties` tenga este valor por defecto:
+significa que Spring Boot intento entrar a MySQL local sin clave. Actualizar el codigo
+desde GitLab y verificar que `application-local.properties` tenga este fallback:
 
 ```properties
-spring.datasource.password=${INVENTARIO_DB_PASSWORD:Cambiar_Clave_Local_123!}
+inventario.datasource.fallback.password=${INVENTARIO_DB_FALLBACK_PASSWORD:Cambiar_Clave_Local_123!}
 ```
 
 Si aparece:
@@ -180,7 +195,8 @@ Clave: AdminLocal123
 ## Como esta implementado
 
 - `LocalAuthenticationProperties` lee las propiedades `inventario.local-auth.*`.
-- `LocalAuthenticationConfig` crea un usuario local en memoria.
+- `LocalAuthenticationConfig` crea un usuario local de rescate/desarrollo en memoria.
+- `DatabaseLocalAuthenticationProvider` valida usuarios locales guardados en MySQL.
 - La clave local se codifica con BCrypt al arrancar.
 - La pantalla admin recibe una identidad compatible con la usada por Active Directory.
 - Los atributos mostrados indican que la sesion viene de `LOCAL_SIMULADO`.
@@ -189,11 +205,11 @@ Clave: AdminLocal123
 
 ## Que no hace
 
-- No consulta Active Directory.
+- No consulta Active Directory cuando `inventario.ldap.enabled=false`.
 - No guarda claves de dominio.
 - No crea usuarios en MySQL cuando se usa el perfil `casa`, porque ese modo usa H2.
 - No reemplaza el esquema definitivo de usuarios, roles, permisos y modulos.
-- No debe usarse como mecanismo de ingreso productivo.
+- No debe usarse como mecanismo productivo sin una politica institucional de emergencia.
 
 ## Diferencia con el trabajo
 
@@ -209,7 +225,8 @@ INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"
 Y la base debe apuntar a:
 
 ```bash
-INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular"
+INVENTARIO_DB_PRIMARY_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular"
 ```
 
-En casa, esos valores reales no se usan.
+En casa, si esos valores no responden, el sistema cae a MySQL local y la pantalla informa
+`LOCAL`.

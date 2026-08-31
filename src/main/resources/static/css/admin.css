@@ -144,6 +144,38 @@ h1 {
 	overflow-wrap: anywhere;
 }
 
+.runtime-section {
+	margin-top: 24px;
+	padding: 18px 0 0;
+	border-top: 1px solid #e6ebf0;
+}
+
+.runtime-grid {
+	display: grid;
+	gap: 12px;
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+	margin: 14px 0;
+}
+
+.runtime-grid div {
+	border: 1px solid #e1e7ee;
+	border-radius: 8px;
+	padding: 12px;
+}
+
+.runtime-grid dt {
+	color: #5e7184;
+	font-size: 0.78rem;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.runtime-grid dd {
+	margin: 5px 0 0;
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+
 .attributes-section {
 	margin-top: 30px;
 	padding-top: 24px;

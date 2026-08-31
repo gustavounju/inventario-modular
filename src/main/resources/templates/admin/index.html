@@ -26,6 +26,34 @@
 				<span class="status-dot" aria-hidden="true"></span>
 				<span>Sistema operativo</span>
 			</div>
+			<section class="runtime-section" aria-labelledby="runtime-title">
+				<div class="section-header">
+					<h2 id="runtime-title">Modo de trabajo</h2>
+					<span class="authorization-badge" th:classappend="${runtimeMode.modoTrabajo == 'TRABAJO'} ? ' is-authorized' : ' is-pending'"
+							th:text="${runtimeMode.modoTrabajo}">LOCAL</span>
+				</div>
+				<dl class="runtime-grid">
+					<div>
+						<dt>Perfil</dt>
+						<dd th:text="${runtimeMode.perfil}">local</dd>
+					</div>
+					<div>
+						<dt>Base de datos</dt>
+						<dd th:text="${runtimeMode.baseDatos}">MySQL local</dd>
+					</div>
+					<div>
+						<dt>Conexion</dt>
+						<dd th:text="${runtimeMode.baseDatosUrl}">mysql://127.0.0.1:3306/inventario_modular</dd>
+					</div>
+					<div>
+						<dt>Autenticacion</dt>
+						<dd th:text="${runtimeMode.autenticacion}">Usuarios locales</dd>
+					</div>
+				</dl>
+				<p class="empty-state" th:text="${runtimeMode.mensaje}">
+					Modo local/fallback: se usan usuarios locales y base local disponible.
+				</p>
+			</section>
 			<dl class="identity-grid" aria-label="Usuario autenticado">
 				<div>
 					<dt>Usuario</dt>

@@ -158,12 +158,13 @@ Verificar:
 mvn -version
 ```
 
-La configuracion `local` ya trae estos valores por defecto:
+La configuracion `local` intenta primero la base modular remota del trabajo y luego cae a
+MySQL local. Para casa, estos son los valores de fallback por defecto:
 
 ```properties
-spring.datasource.url=jdbc:mysql://127.0.0.1:3306/inventario_modular
-spring.datasource.username=inventario_local
-spring.datasource.password=Cambiar_Clave_Local_123!
+inventario.datasource.fallback.url=jdbc:mysql://127.0.0.1:3306/inventario_modular
+inventario.datasource.fallback.username=inventario_local
+inventario.datasource.fallback.password=Cambiar_Clave_Local_123!
 ```
 
 Por eso, despues de crear la base y el usuario, alcanza con ejecutar:
@@ -175,9 +176,9 @@ mvn spring-boot:run
 Si se quiere usar otra clave local, en la misma PowerShell donde se va a iniciar la app:
 
 ```powershell
-$env:INVENTARIO_DB_URL = "jdbc:mysql://127.0.0.1:3306/inventario_modular"
-$env:INVENTARIO_DB_USER = "inventario_local"
-$env:INVENTARIO_DB_PASSWORD = "Cambiar_Clave_Local_123!"
+$env:INVENTARIO_DB_FALLBACK_URL = "jdbc:mysql://127.0.0.1:3306/inventario_modular"
+$env:INVENTARIO_DB_FALLBACK_USER = "inventario_local"
+$env:INVENTARIO_DB_FALLBACK_PASSWORD = "Cambiar_Clave_Local_123!"
 ```
 
 Estas variables viven solo en esa terminal. No se commitean.
@@ -190,11 +191,12 @@ En la maquina local se confirmo:
 MySQL80: Running
 Base: inventario_modular
 Usuario de app: inventario_local@localhost
-Tablas creadas por Flyway: version 1 - seguridad modular
+Tablas creadas por Flyway: version 3 - seguridad modular, credenciales locales y equipos
 Usuarios iniciales: 1
 Modulos iniciales: 9
 Roles iniciales: 5
 Login local: admin.local -> /admin
+Modo mostrado por la app: LOCAL, MySQL local, usuarios locales
 ```
 
 ## Comandos prohibidos

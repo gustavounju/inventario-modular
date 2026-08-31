@@ -41,6 +41,9 @@ class DatabaseLocalAuthenticationProviderTests {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
+	@Autowired
+	private ConfiguredLocalCredentialInitializer configuredLocalCredentialInitializer;
+
 	@Test
 	void autenticaUsuarioLocalGuardadoEnBaseSinGuardarPasswordPlano() throws Exception {
 		usuarioManagementService.crearUsuario(new CrearUsuarioCommand(
@@ -85,5 +88,15 @@ class DatabaseLocalAuthenticationProviderTests {
 				.password("ChoferLocal123"))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(redirectedUrl("/admin"));
+	}
+
+	@Test
+	void inicializaCredencialDelUsuarioConfiguradoSiExisteEnBase() throws Exception {
+		configuredLocalCredentialInitializer.run(null);
+
+		CredencialLocal credencial = credencialLocalRepository.findActivaByUsername("admin.local").orElseThrow();
+
+		assertThat(credencial.getPasswordHash()).isNotEqualTo("AdminLocal123");
+		assertThat(passwordEncoder.matches("AdminLocal123", credencial.getPasswordHash())).isTrue();
 	}
 }

@@ -7,6 +7,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDeta
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,15 +20,14 @@ import org.springframework.util.StringUtils;
  * Configura el login local de desarrollo cuando no hay Active Directory disponible.
  *
  * <p>La clase se activa solo si `inventario.local-auth.enabled=true`. Ademas, sus beans
- * se registran solo cuando `inventario.ldap.enabled=false`, para que el modo de casa no
- * compita con el login real del dominio en el trabajo.</p>
+ * queda disponible cuando la conexion al dominio no existe o se trabaja desde casa.</p>
  */
 @Configuration
 @ConditionalOnProperty(name = "inventario.local-auth.enabled", havingValue = "true")
 public class LocalAuthenticationConfig {
 
 	@Bean
-	@ConditionalOnProperty(name = "inventario.ldap.enabled", havingValue = "false", matchIfMissing = true)
+	@Order(20)
 	AuthenticationProvider localAuthenticationProvider(
 			LocalAuthenticationProperties properties,
 			PasswordEncoder passwordEncoder) {

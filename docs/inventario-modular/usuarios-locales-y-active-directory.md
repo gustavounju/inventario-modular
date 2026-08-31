@@ -124,7 +124,7 @@ En casa este flujo no se puede probar contra el dominio real. En produccion/trab
 activa con LDAP de lectura y, si el dominio no permite busqueda anonima, con una cuenta
 tecnica lectora configurada por variables de entorno.
 
-## Configuracion
+## Configuracion y fallback
 
 El proveedor de usuarios locales de base se controla con:
 
@@ -134,10 +134,19 @@ inventario.local-db-auth.enabled=true
 
 En Windows/casa queda habilitado por defecto en los perfiles `local` y `casa`.
 
-En produccion debe habilitarse con una variable de entorno si la institucion decide
-permitir usuarios locales:
+El usuario local de rescate/desarrollo por configuracion se controla con:
+
+```properties
+inventario.local-auth.enabled=true
+inventario.local-auth.username=admin.local
+```
+
+En el perfil `local`, los proveedores locales quedan disponibles para que el sistema pueda
+seguir funcionando cuando Active Directory no esta disponible. En produccion/trabajo, si
+se decide no permitir usuarios locales de emergencia, debe desactivarse explicitamente:
 
 ```bash
+INVENTARIO_LOCAL_AUTH_ENABLED=false
 INVENTARIO_LOCAL_DB_AUTH_ENABLED=true
 ```
 
@@ -158,6 +167,13 @@ INVENTARIO_LDAP_USER_SEARCH_LIMIT=50
 `INVENTARIO_LDAP_READ_ONLY_PASSWORD` es secreto y no debe commitearse. Si LDAP esta
 apagado, `/admin/usuarios` muestra la seccion de dominio como no disponible sin romper el
 alta local.
+
+La pantalla `/admin` informa el modo de trabajo:
+
+```text
+TRABAJO -> Active Directory disponible y MySQL remoto.
+LOCAL   -> Active Directory apagado/no disponible o base local/fallback.
+```
 
 ## Recomendacion operativa
 
@@ -180,6 +196,7 @@ Implementado:
 - separacion visual entre crear usuarios locales y autorizar usuarios AD;
 - listado LDAP de usuarios de dominio cuando `inventario.ldap.enabled=true`;
 - autorizacion local de usuarios AD desde API y pantalla, sin pedir clave de dominio;
+- indicador visual de modo de trabajo, base activa y autenticacion;
 - pruebas automatizadas para verificar que no se guarde password plano.
 
 Pendiente:

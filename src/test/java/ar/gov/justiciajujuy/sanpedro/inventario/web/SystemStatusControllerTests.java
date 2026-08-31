@@ -39,7 +39,8 @@ class SystemStatusControllerTests {
 			.andExpect(jsonPath("$.estado", is("OPERATIVO")))
 			.andExpect(jsonPath("$.aplicacion", is("Inventario Modular")))
 			.andExpect(jsonPath("$.version", is("0.0.1-SNAPSHOT")))
-			.andExpect(jsonPath("$.perfil", is("test")));
+			.andExpect(jsonPath("$.modo.perfil", is("test")))
+			.andExpect(jsonPath("$.modo.modoTrabajo", is("LOCAL")));
 	}
 
 	@Test

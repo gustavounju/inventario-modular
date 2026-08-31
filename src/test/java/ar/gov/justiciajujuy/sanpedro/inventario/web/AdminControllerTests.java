@@ -34,7 +34,8 @@ class AdminControllerTests {
 	void muestraAccesoUsuariosSiPuedeAdministrarUsuarios() throws Exception {
 		mockMvc.perform(get("/admin").with(user(usuario("admin.local"))))
 			.andExpect(status().isOk())
-			.andExpect(content().string(containsString("href=\"/admin/usuarios\"")));
+			.andExpect(content().string(containsString("href=\"/admin/usuarios\"")))
+			.andExpect(content().string(containsString("Modo de trabajo")));
 	}
 
 	@Test

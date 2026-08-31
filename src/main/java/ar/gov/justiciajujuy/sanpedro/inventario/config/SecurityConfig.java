@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.ldap.core.LdapOperations;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
@@ -89,6 +90,7 @@ public class SecurityConfig {
 	}
 
 	@Bean
+	@Order(30)
 	@ConditionalOnProperty(name = "inventario.ldap.enabled", havingValue = "true")
 	AuthenticationProvider activeDirectoryAuthenticationProvider(
 			ActiveDirectoryProperties properties,

@@ -21,10 +21,10 @@ public class DataSourceConfig {
 
 	private static final Logger log = LoggerFactory.getLogger(DataSourceConfig.class);
 
-	@Value("${inventario.datasource.primary.url:jdbc:mysql://10.15.2.251:3306/inventario_prod}")
+	@Value("${inventario.datasource.primary.url:jdbc:mysql://10.15.0.62:3306/inventario_modular}")
 	private String primaryUrl;
 
-	@Value("${inventario.datasource.primary.username:root}")
+	@Value("${inventario.datasource.primary.username:inventario_modular_app}")
 	private String primaryUsername;
 
 	@Value("${inventario.datasource.primary.password:}")
@@ -54,21 +54,6 @@ public class DataSourceConfig {
 		if (hostPort != null) {
 			primaryReachable = isReachable(hostPort.host, hostPort.port, timeoutMs);
 			
-			if (!primaryReachable && "10.15.0.62".equals(hostPort.host)) {
-				log.info("Host de produccion 10.15.0.62 inalcanzable, intentando IP alternativa 10.15.2.251...");
-				primaryReachable = isReachable("10.15.2.251", hostPort.port, timeoutMs);
-				if (primaryReachable) {
-					urlToUse = primaryUrl.replace("10.15.0.62", "10.15.2.251");
-					log.info("IP alternativa 10.15.2.251 respondio con exito. Usando URL redefinida.");
-				}
-			} else if (!primaryReachable && "10.15.2.251".equals(hostPort.host)) {
-				log.info("Host de produccion 10.15.2.251 inalcanzable, intentando IP alternativa 10.15.0.62...");
-				primaryReachable = isReachable("10.15.0.62", hostPort.port, timeoutMs);
-				if (primaryReachable) {
-					urlToUse = primaryUrl.replace("10.15.2.251", "10.15.0.62");
-					log.info("IP alternativa 10.15.0.62 respondio con exito. Usando URL redefinida.");
-				}
-			}
 		}
 
 		if (primaryReachable) {
