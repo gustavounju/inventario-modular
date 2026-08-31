@@ -416,6 +416,20 @@ h1 {
 	margin-top: 28px;
 }
 
+.domain-user-section {
+	margin-top: 28px;
+}
+
+.domain-search-form {
+	align-items: end;
+	grid-template-columns: minmax(260px, 420px) auto;
+	justify-content: start;
+}
+
+.domain-results-table {
+	margin-top: 14px;
+}
+
 .user-form,
 .user-list-section {
 	min-width: 0;

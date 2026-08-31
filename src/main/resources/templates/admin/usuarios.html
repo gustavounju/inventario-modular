@@ -44,6 +44,60 @@
 				Los usuarios locales requieren una clave de al menos 8 caracteres.
 			</p>
 
+			<section class="user-list-section domain-user-section" aria-labelledby="domain-users-title">
+				<div class="section-header">
+					<h2 id="domain-users-title">Usuarios de dominio</h2>
+					<span class="count-badge" th:if="${usuariosDominio.disponible}" th:text="${#lists.size(usuariosDominio.usuarios)} + ' encontrados'">0 encontrados</span>
+					<span class="count-badge" th:if="${!usuariosDominio.consultaRealizada}">Buscar AD</span>
+					<span class="count-badge" th:if="${usuariosDominio.consultaRealizada and !usuariosDominio.disponible}">No disponible</span>
+				</div>
+				<form class="search-form domain-search-form" th:action="@{/admin/usuarios}" method="get" role="search">
+					<label>
+						<span>Buscar usuario AD</span>
+						<input name="q" type="search" maxlength="120" th:value="${usuariosDominio.query}"
+								placeholder="Usuario, nombre o apellido">
+					</label>
+					<button class="secondary-action" type="submit">Buscar</button>
+				</form>
+				<p class="empty-state" th:if="${!usuariosDominio.disponible}" th:text="${usuariosDominio.mensaje}">
+					Ingrese al menos 2 caracteres para buscar usuarios de dominio.
+				</p>
+				<p class="empty-state" th:if="${usuariosDominio.disponible and #lists.isEmpty(usuariosDominio.usuarios)}">
+					No se encontraron usuarios de dominio para esa busqueda.
+				</p>
+				<div class="responsive-table domain-results-table" th:if="${usuariosDominio.disponible and !#lists.isEmpty(usuariosDominio.usuarios)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Usuario AD</th>
+								<th scope="col">Nombre</th>
+								<th scope="col">Fuero</th>
+								<th scope="col">Accion</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="usuarioDominio : ${usuariosDominio.usuarios}">
+								<td data-label="Usuario AD" th:text="${usuarioDominio.username}">gmurad</td>
+								<td data-label="Nombre" th:text="${usuarioDominio.nombreVisible}">Gustavo Elias Murad</td>
+								<td data-label="Fuero" th:text="${usuarioDominio.fuero}">Informatica</td>
+								<td data-label="Accion">
+									<form class="inline-action-form" th:action="@{/admin/usuarios/dominio}" method="post">
+										<input type="hidden" name="username" th:value="${usuarioDominio.username}">
+										<input type="hidden" name="nombreVisible" th:value="${usuarioDominio.nombreVisible}">
+										<input type="hidden" name="fuero" th:value="${usuarioDominio.fuero}">
+										<input type="hidden" name="activo" value="true">
+										<select name="roles" aria-label="Rol local">
+											<option th:each="rol : ${roles}" th:value="${rol.codigo}" th:text="${rol.codigo}">LECTOR</option>
+										</select>
+										<button class="secondary-action" type="submit">Autorizar</button>
+									</form>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
 			<section class="management-layout">
 				<form class="user-form" th:action="@{/admin/usuarios}" method="post" aria-labelledby="new-user-title">
 					<h2 id="new-user-title">Crear usuario local</h2>
@@ -139,60 +193,6 @@
 													th:data-username="${usuario.username}" 
 													onclick="handlePasswordClick(this)">Clave</button>
 										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</section>
-
-				<section class="user-list-section" aria-labelledby="domain-users-title">
-					<div class="section-header">
-						<h2 id="domain-users-title">Usuarios de dominio</h2>
-						<span class="count-badge" th:if="${usuariosDominio.disponible}" th:text="${#lists.size(usuariosDominio.usuarios)} + ' encontrados'">0 encontrados</span>
-						<span class="count-badge" th:if="${!usuariosDominio.consultaRealizada}">Buscar AD</span>
-						<span class="count-badge" th:if="${usuariosDominio.consultaRealizada and !usuariosDominio.disponible}">No disponible</span>
-					</div>
-					<form class="search-form" th:action="@{/admin/usuarios}" method="get" role="search">
-						<label>
-							<span>Buscar usuario AD</span>
-							<input name="q" type="search" maxlength="120" th:value="${usuariosDominio.query}"
-									placeholder="Usuario, nombre o apellido">
-						</label>
-						<button class="secondary-action" type="submit">Buscar</button>
-					</form>
-					<p class="empty-state" th:if="${!usuariosDominio.disponible}" th:text="${usuariosDominio.mensaje}">
-						Ingrese al menos 2 caracteres para buscar usuarios de dominio.
-					</p>
-					<p class="empty-state" th:if="${usuariosDominio.disponible and #lists.isEmpty(usuariosDominio.usuarios)}">
-						No se encontraron usuarios de dominio para esa busqueda.
-					</p>
-					<div class="responsive-table" th:if="${usuariosDominio.disponible and !#lists.isEmpty(usuariosDominio.usuarios)}">
-						<table>
-							<thead>
-								<tr>
-									<th scope="col">Usuario AD</th>
-									<th scope="col">Nombre</th>
-									<th scope="col">Fuero</th>
-									<th scope="col">Accion</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr th:each="usuarioDominio : ${usuariosDominio.usuarios}">
-									<td data-label="Usuario AD" th:text="${usuarioDominio.username}">gmurad</td>
-									<td data-label="Nombre" th:text="${usuarioDominio.nombreVisible}">Gustavo Elias Murad</td>
-									<td data-label="Fuero" th:text="${usuarioDominio.fuero}">Informatica</td>
-									<td data-label="Accion">
-										<form class="inline-action-form" th:action="@{/admin/usuarios/dominio}" method="post">
-											<input type="hidden" name="username" th:value="${usuarioDominio.username}">
-											<input type="hidden" name="nombreVisible" th:value="${usuarioDominio.nombreVisible}">
-											<input type="hidden" name="fuero" th:value="${usuarioDominio.fuero}">
-											<input type="hidden" name="activo" value="true">
-											<select name="roles" aria-label="Rol local">
-												<option th:each="rol : ${roles}" th:value="${rol.codigo}" th:text="${rol.codigo}">LECTOR</option>
-											</select>
-											<button class="secondary-action" type="submit">Autorizar</button>
-										</form>
 									</td>
 								</tr>
 							</tbody>
