@@ -54,6 +54,23 @@ class ActiveDirectoryDomainServiceTests {
 	}
 
 	@Test
+	void informaCuentaLectoraIncompletaSinConsultarLdap() {
+		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
+		properties.setEnabled(true);
+		properties.setReadOnlyUserDn("CN=lector-inventario,OU=Servicios,DC=podjudsp,DC=local");
+		LdapOperations ldapOperations = mock(LdapOperations.class);
+		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
+
+		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("gmurad");
+
+		assertThat(resultado.disponible()).isFalse();
+		assertThat(resultado.consultaRealizada()).isTrue();
+		assertThat(resultado.mensaje()).isEqualTo("La cuenta LDAP lectora no tiene clave configurada.");
+		verify(ldapOperations, never()).search(any(String.class), any(String.class), any(SearchControls.class),
+				any(AttributesMapper.class));
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void mapeaUsuariosDelDirectorioSinClavesNiAtributosSensibles() throws Exception {
 		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();

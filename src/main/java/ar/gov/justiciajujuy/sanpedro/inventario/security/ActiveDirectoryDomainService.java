@@ -12,12 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapOperations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
 public class ActiveDirectoryDomainService {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(ActiveDirectoryDomainService.class);
 	private static final int MIN_QUERY_LENGTH = 2;
 	private static final String ATTRIBUTE_NAME_PATTERN = "[a-zA-Z][a-zA-Z0-9-]*";
 
@@ -58,6 +61,11 @@ public class ActiveDirectoryDomainService {
 			return DominioUsuarios.noDisponible("No hay cliente LDAP de lectura configurado.", queryNormalizada);
 		}
 
+		if (StringUtils.hasText(properties.getReadOnlyUserDn())
+				&& !StringUtils.hasText(properties.getReadOnlyPassword())) {
+			return DominioUsuarios.noDisponible("La cuenta LDAP lectora no tiene clave configurada.", queryNormalizada);
+		}
+
 		try {
 			String displayNameAttribute = safeAttributeName(properties.getDisplayNameAttribute(), "displayName");
 			SearchControls controls = new SearchControls();
@@ -77,6 +85,7 @@ public class ActiveDirectoryDomainService {
 					(AttributesMapper<UsuarioDominio>) this::toUsuarioDominio);
 			return DominioUsuarios.disponible(usuarios, queryNormalizada);
 		} catch (RuntimeException exception) {
+			LOGGER.warn("No se pudo consultar Active Directory para autorizar usuarios: {}", exception.getMessage());
 			return DominioUsuarios.noDisponible("No se pudo consultar Active Directory.", queryNormalizada);
 		}
 	}
