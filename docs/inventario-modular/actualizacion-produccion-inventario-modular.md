@@ -127,6 +127,48 @@ HTML si no hay sesion. La prueba funcional principal es entrar con `admin.local`
 `/admin/usuarios`, buscar un usuario AD por usuario/nombre/apellido y autorizarlo con el
 rol correspondiente.
 
+## Incidente resuelto: busqueda de usuarios AD
+
+Fecha de validacion: 31 de agosto de 2026.
+
+Sintoma observado:
+
+```text
+/admin/usuarios -> Usuarios de dominio -> No disponible
+No se pudo consultar Active Directory.
+```
+
+Causa:
+
+```text
+INVENTARIO_LDAP_ENABLED=true estaba configurado, pero faltaba la cuenta lectora LDAP.
+Spring informaba: Property 'userDn' not set - anonymous context will be used for read-only operations.
+Active Directory rechazaba la consulta anonima.
+```
+
+Correccion aplicada:
+
+```text
+1. Se configuro una cuenta lectora LDAP en /etc/inventario-modular/inventario-modular.env.
+2. Se actualizo la app para buscar usuarios AD bajo demanda, no al abrir la pantalla.
+3. Se movio la seccion Usuarios de dominio arriba, en una fila/tabla ordenada de resultados.
+```
+
+Variables criticas, sin documentar valores secretos:
+
+```bash
+INVENTARIO_LDAP_READ_ONLY_USER_DN=CUENTA_LECTORA_LDAP
+INVENTARIO_LDAP_READ_ONLY_PASSWORD=CLAVE_REAL_SOLO_EN_SERVIDOR
+```
+
+Resultado confirmado:
+
+```text
+La busqueda ya toma usuarios de Active Directory desde la pantalla de administracion.
+Desde cada resultado se puede seleccionar el usuario, asignarle rol y guardarlo como
+usuario autorizado en MySQL.
+```
+
 Desde una PC de la red, abrir:
 
 ```text

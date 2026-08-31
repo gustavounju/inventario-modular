@@ -178,6 +178,12 @@ la busqueda muestra `No disponible`, revisar `INVENTARIO_LDAP_READ_ONLY_USER_DN`
 `INVENTARIO_LDAP_READ_ONLY_PASSWORD`: el login usa la clave ingresada por la persona, pero
 la busqueda administrativa necesita una cuenta lectora o consulta anonima habilitada.
 
+Validacion en produccion, 31 de agosto de 2026: despues de configurar la cuenta lectora
+LDAP en `/etc/inventario-modular/inventario-modular.env`, la busqueda de usuarios de
+dominio respondio correctamente desde `admin.local`. La seccion de dominio quedo ubicada
+arriba de la pantalla para buscar, seleccionar y autorizar usuarios AD antes de revisar la
+tabla de usuarios autorizados.
+
 Al iniciar sesion, el panel `/admin` muestra:
 
 - Usuario/cuenta usada para autenticarse.

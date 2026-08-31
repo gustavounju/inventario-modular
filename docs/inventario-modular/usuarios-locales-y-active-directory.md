@@ -125,6 +125,11 @@ buscador. Solo cuando se envia una busqueda de al menos 2 caracteres consulta LD
 evita respuestas enormes del dominio y permite autorizar puntualmente usuarios como
 `gmurad`.
 
+En produccion, el 31 de agosto de 2026 se confirmo el flujo completo: con `admin.local`
+se busco un usuario de dominio, Active Directory devolvio resultados y la pantalla mostro
+las filas ordenadas arriba, antes de la creacion de usuarios locales y de la tabla de
+usuarios autorizados.
+
 En casa este flujo no se puede probar contra el dominio real. En produccion/trabajo se
 activa con LDAP de lectura y, si el dominio no permite busqueda anonima, con una cuenta
 tecnica lectora configurada por variables de entorno.
@@ -217,6 +222,7 @@ Implementado:
 - autenticacion de usuario local contra hash BCrypt;
 - separacion visual entre crear usuarios locales y autorizar usuarios AD;
 - busqueda LDAP filtrada de usuarios de dominio cuando `inventario.ldap.enabled=true`;
+- busqueda de usuarios AD ubicada arriba de la pantalla de administracion para acelerar la autorizacion;
 - autorizacion local de usuarios AD desde API y pantalla, sin pedir clave de dominio;
 - indicador visual de modo de trabajo, base activa y autenticacion;
 - pruebas automatizadas para verificar que no se guarde password plano.
