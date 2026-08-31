@@ -105,6 +105,33 @@ public class EquipoController {
 			@Max(1048576)
 			Integer ramMb,
 
+			@Size(max = 500)
+			String ramDetalles,
+
+			@Size(max = 500)
+			String ramSeriales,
+
+			@Size(max = 500)
+			String discosModelos,
+
+			@Size(max = 500)
+			String discosSeriales,
+
+			@Size(max = 255)
+			String motherboardModelo,
+
+			@Size(max = 255)
+			String motherboardSerial,
+
+			@Size(max = 500)
+			String monitores,
+
+			@Size(max = 180)
+			String teclado,
+
+			@Size(max = 180)
+			String mouse,
+
 			@Size(max = 180)
 			String impresora,
 
@@ -119,6 +146,15 @@ public class EquipoController {
 					sistemaOperativo,
 					procesador,
 					ramMb,
+					ramDetalles,
+					ramSeriales,
+					discosModelos,
+					discosSeriales,
+					motherboardModelo,
+					motherboardSerial,
+					monitores,
+					teclado,
+					mouse,
 					impresora,
 					activo);
 		}

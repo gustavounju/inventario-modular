@@ -76,11 +76,24 @@ public class LegacyInventarioController {
 				osName,
 				procesador,
 				ramMb,
+				texto(payload.get("RAM_Detalles")),
+				texto(payload.get("RAM_Serials")),
+				texto(payload.get("Disk_Models")),
+				texto(payload.get("Disk_Serials")),
+				texto(payload.get("Motherboard_Model")),
+				texto(payload.get("Motherboard_SN")),
+				texto(payload.get("Monitors")),
+				texto(payload.get("Keyboard_Model")),
+				texto(payload.get("Mouse_Model")),
 				impresora,
 				true
 		);
 
 		equipoService.registrarInventario(command);
 		return Map.of("status", "success");
+	}
+
+	private String texto(Object valor) {
+		return valor instanceof String texto ? texto : null;
 	}
 }

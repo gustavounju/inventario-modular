@@ -14,10 +14,16 @@ viejo. No reemplaza todavia toda la profundidad del script heredado: deja funcio
 camino minimo confiable para cargar equipos reales y despues sumar componentes con mas
 detalle.
 
-## Archivo
+## Archivo servido por la app
 
 ```text
-scripts/windows/inventario-modular.ps1
+src/main/resources/static/scripts/windows/inventario-modular.ps1
+```
+
+Cuando la app esta levantada, el script se puede descargar desde el mismo servidor:
+
+```text
+http://IP_DEL_SERVIDOR:8081/scripts/windows/inventario-modular.ps1
 ```
 
 ## Datos capturados
@@ -29,28 +35,60 @@ scripts/windows/inventario-modular.ps1
 - sistema operativo;
 - procesador;
 - RAM total en MB;
+- detalle y seriales de RAM;
+- modelos y seriales de discos;
+- modelo y serial de motherboard;
+- monitores detectados;
+- teclado y mouse;
 - impresora predeterminada o primera impresora fisica detectada;
 - estado activo.
+
+No captura salud SMART en esta etapa.
+
+## Copiar desde el login
+
+La pantalla `/login` muestra un comando listo para copiar. Ese comando usa
+`window.location.origin`, por eso toma automaticamente la IP y puerto desde donde se abrio
+el login.
+
+Ejemplo: si se abre el login en:
+
+```text
+http://192.168.1.8:8081/login
+```
+
+el comando copiado descarga el script desde:
+
+```text
+http://192.168.1.8:8081/scripts/windows/inventario-modular.ps1
+```
+
+y envia el reporte a:
+
+```text
+http://192.168.1.8:8081/api/v1/equipos/inventario
+```
 
 ## Uso local
 
 Con la app levantada en la misma maquina:
 
 ```powershell
-.\scripts\windows\inventario-modular.ps1
+iwr "http://localhost:8081/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile "$env:TEMP\inventario-modular.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\inventario-modular.ps1"
 ```
 
 Para apuntar a la IP LAN de la maquina de Gustavo:
 
 ```powershell
-.\scripts\windows\inventario-modular.ps1 `
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\inventario-modular.ps1" `
   -ServerUrl "http://192.168.1.8:8081/api/v1/equipos/inventario"
 ```
 
 Para probar sin enviar:
 
 ```powershell
-.\scripts\windows\inventario-modular.ps1 -DryRun
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\inventario-modular.ps1" -DryRun
 ```
 
 ## Token
@@ -90,7 +128,7 @@ $env:INVENTARIO_FUERO = "Dpto. Informatica San Pedro"
 .\scripts\windows\inventario-modular.ps1
 ```
 
-## Respaldo local
+## Respaldo local, no reenvio automatico
 
 Si el servidor no responde, el script guarda el JSON en:
 
@@ -100,9 +138,12 @@ C:\ProgramData\InventarioModular
 
 Ese archivo permite reenviar o analizar el reporte cuando vuelva la conectividad.
 
+El "reenvio automatico" seria un paso posterior: el script podria revisar esa carpeta al
+arrancar y mandar al servidor los reportes que quedaron pendientes. Todavia no se implementa
+para mantener este primer flujo simple y visible.
+
 ## Pendiente
 
-- sumar discos, seriales, motherboard, monitores, teclado, mouse y salud SMART;
 - definir cola de reenvio automatico de reportes pendientes;
 - rotar el token de laboratorio antes de usarlo fuera de casa;
 - separar permisos de maquina por sede o segmento de red si se instala masivamente.

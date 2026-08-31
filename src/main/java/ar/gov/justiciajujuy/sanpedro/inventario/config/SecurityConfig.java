@@ -57,7 +57,7 @@ public class SecurityConfig {
 				.requestMatchers(
 					"/", "/login", "/logout",
 					"/api/v1/sistema/estado",
-					"/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico"
+					"/css/**", "/js/**", "/images/**", "/scripts/**", "/webjars/**", "/favicon.ico"
 				).permitAll()
 				.requestMatchers("/submit_inventory").authenticated()
 				.anyRequest().authenticated()

@@ -57,7 +57,10 @@ class EquipoControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.nombre").value("PC-INF-001"))
 			.andExpect(jsonPath("$.procesador").value("Intel Core i5"))
-			.andExpect(jsonPath("$.ramMb").value(16384));
+			.andExpect(jsonPath("$.ramMb").value(16384))
+			.andExpect(jsonPath("$.ramDetalles").value("2x8GB DDR4"))
+			.andExpect(jsonPath("$.discosModelos").value("KINGSTON SA400"))
+			.andExpect(jsonPath("$.motherboardSerial").value("MB-001"));
 	}
 
 	@Test
@@ -71,6 +74,15 @@ class EquipoControllerTests {
 				  "sistemaOperativo": "Windows 11 Pro",
 				  "procesador": "AMD Ryzen 5",
 				  "ramMb": 16384,
+				  "ramDetalles": "2x8GB DDR4 3200MHz",
+				  "ramSeriales": "RAM-001 | RAM-002",
+				  "discosModelos": "WD Blue SSD",
+				  "discosSeriales": "DISK-001",
+				  "motherboardModelo": "ASUS PRIME",
+				  "motherboardSerial": "MB-123",
+				  "monitores": "Samsung 24 SN-456",
+				  "teclado": "Logitech K120",
+				  "mouse": "Logitech M90",
 				  "impresora": "Ricoh Mesa",
 				  "activo": true
 				}
@@ -84,6 +96,9 @@ class EquipoControllerTests {
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.nombre").value("PC-NUEVA-003"))
 			.andExpect(jsonPath("$.ultimoUsuario").value("jlopez"))
+			.andExpect(jsonPath("$.ramDetalles").value("2x8GB DDR4 3200MHz"))
+			.andExpect(jsonPath("$.discosSeriales").value("DISK-001"))
+			.andExpect(jsonPath("$.monitores").value("Samsung 24 SN-456"))
 			.andExpect(jsonPath("$.monitoreo").value("REPORTADO"));
 	}
 
@@ -172,7 +187,16 @@ class EquipoControllerTests {
 				  ],
 				  "Printer_Model": "HP LaserJet Legacy",
 				  "Printer_Port": "USB001 (Local)",
-				  "Printer_SN": "SN-LEGACY-123"
+				  "Printer_SN": "SN-LEGACY-123",
+				  "RAM_Detalles": "8GB DDR4 2666MHz",
+				  "RAM_Serials": "RAM-LEGACY-001",
+				  "Disk_Models": "KINGSTON SSD",
+				  "Disk_Serials": "DISK-LEGACY-001",
+				  "Motherboard_Model": "Dell Board",
+				  "Motherboard_SN": "MB-LEGACY-001",
+				  "Monitors": "Dell 22 MON-001",
+				  "Keyboard_Model": "Dell Keyboard",
+				  "Mouse_Model": "Dell Mouse"
 				}
 				""";
 
@@ -182,6 +206,12 @@ class EquipoControllerTests {
 				.content(legacyPayload))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.status").value("success"));
+
+		mockMvc.perform(get("/api/v1/equipos")
+				.param("q", "pc-legacy-004")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.equipos[0].nombre").value("PC-LEGACY-004"));
 	}
 
 	@Test

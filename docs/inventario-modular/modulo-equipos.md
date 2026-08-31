@@ -87,21 +87,34 @@ Payload:
   "sistemaOperativo": "Windows 11 Pro",
   "procesador": "AMD Ryzen 5",
   "ramMb": 16384,
+  "ramDetalles": "2x8GB DDR4 3200MHz",
+  "ramSeriales": "RAM-001 | RAM-002",
+  "discosModelos": "WD Blue SSD",
+  "discosSeriales": "DISK-001",
+  "motherboardModelo": "ASUS PRIME",
+  "motherboardSerial": "MB-123",
+  "monitores": "Samsung 24 SN-456",
+  "teclado": "Logitech K120",
+  "mouse": "Logitech M90",
   "impresora": "Ricoh Mesa",
   "activo": true
 }
 ```
 
-Script Windows inicial:
+Script Windows inicial servido por la app:
 
 ```text
-scripts/windows/inventario-modular.ps1
+src/main/resources/static/scripts/windows/inventario-modular.ps1
 ```
 
-Uso local:
+Desde `/login` se puede copiar un comando que toma automaticamente la IP y puerto del
+servidor desde donde se abrio la pantalla.
+
+Uso manual local:
 
 ```powershell
-.\scripts\windows\inventario-modular.ps1 `
+iwr "http://192.168.1.8:8081/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile "$env:TEMP\inventario-modular.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\inventario-modular.ps1" `
   -ServerUrl "http://192.168.1.8:8081/api/v1/equipos/inventario"
 ```
 
@@ -163,5 +176,5 @@ mvn "-Dtest=EquipoControllerTests,EquipoPageControllerTests,AdminControllerTests
 - Agregar edicion manual controlada.
 - Agregar importacion inicial desde el inventario viejo.
 - Incorporar relacion futura con stock, componentes, ubicaciones y actas.
-- Sumar al script modular los datos profundos del `inventario.ps1` heredado: discos,
-  seriales, monitores y salud del equipo.
+- Definir si se implementa reenvio automatico de reportes pendientes cuando una PC no
+  puede conectarse al servidor.

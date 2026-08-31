@@ -69,6 +69,42 @@
 						<div class="attribute-value" th:text="${equipo.ramMb != null} ? (${equipo.ramMb} + ' MB (' + ${equipo.ramMb / 1024} + ' GB)') : 'Sin reportar'">16384 MB</div>
 					</div>
 					<div class="attribute-row">
+						<div class="attribute-name">Detalle RAM</div>
+						<div class="attribute-value" th:text="${equipo.ramDetalles ?: 'Sin reportar'}">2x8GB DDR4</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Seriales RAM</div>
+						<div class="attribute-value" th:text="${equipo.ramSeriales ?: 'Sin reportar'}">RAMSN-001</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Discos</div>
+						<div class="attribute-value" th:text="${equipo.discosModelos ?: 'Sin reportar'}">KINGSTON SSD</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Seriales de Disco</div>
+						<div class="attribute-value" th:text="${equipo.discosSeriales ?: 'Sin reportar'}">DISK-001</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Motherboard</div>
+						<div class="attribute-value" th:text="${equipo.motherboardModelo ?: 'Sin reportar'}">Dell 0ABC</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Serial Motherboard</div>
+						<div class="attribute-value" th:text="${equipo.motherboardSerial ?: 'Sin reportar'}">MB-001</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Monitores</div>
+						<div class="attribute-value" th:text="${equipo.monitores ?: 'Sin reportar'}">Dell 22</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Teclado</div>
+						<div class="attribute-value" th:text="${equipo.teclado ?: 'Sin reportar'}">Logitech Keyboard</div>
+					</div>
+					<div class="attribute-row">
+						<div class="attribute-name">Mouse</div>
+						<div class="attribute-value" th:text="${equipo.mouse ?: 'Sin reportar'}">Logitech Mouse</div>
+					</div>
+					<div class="attribute-row">
 						<div class="attribute-name">Impresora Vinculada</div>
 						<div class="attribute-value" th:text="${equipo.impresora ?: 'Sin impresora vinculada'}">HP LaserJet</div>
 					</div>

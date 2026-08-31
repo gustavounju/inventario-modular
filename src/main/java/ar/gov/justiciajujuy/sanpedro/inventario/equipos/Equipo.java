@@ -38,6 +38,33 @@ public class Equipo {
 	@Column(name = "ram_mb")
 	private Integer ramMb;
 
+	@Column(name = "ram_detalles", length = 500)
+	private String ramDetalles;
+
+	@Column(name = "ram_seriales", length = 500)
+	private String ramSeriales;
+
+	@Column(name = "discos_modelos", length = 500)
+	private String discosModelos;
+
+	@Column(name = "discos_seriales", length = 500)
+	private String discosSeriales;
+
+	@Column(name = "motherboard_modelo", length = 255)
+	private String motherboardModelo;
+
+	@Column(name = "motherboard_serial", length = 255)
+	private String motherboardSerial;
+
+	@Column(length = 500)
+	private String monitores;
+
+	@Column(length = 180)
+	private String teclado;
+
+	@Column(length = 180)
+	private String mouse;
+
 	@Column(length = 180)
 	private String impresora;
 
@@ -96,6 +123,42 @@ public class Equipo {
 		return ramMb;
 	}
 
+	public String getRamDetalles() {
+		return ramDetalles;
+	}
+
+	public String getRamSeriales() {
+		return ramSeriales;
+	}
+
+	public String getDiscosModelos() {
+		return discosModelos;
+	}
+
+	public String getDiscosSeriales() {
+		return discosSeriales;
+	}
+
+	public String getMotherboardModelo() {
+		return motherboardModelo;
+	}
+
+	public String getMotherboardSerial() {
+		return motherboardSerial;
+	}
+
+	public String getMonitores() {
+		return monitores;
+	}
+
+	public String getTeclado() {
+		return teclado;
+	}
+
+	public String getMouse() {
+		return mouse;
+	}
+
 	public String getImpresora() {
 		return impresora;
 	}
@@ -119,6 +182,15 @@ public class Equipo {
 			String sistemaOperativo,
 			String procesador,
 			Integer ramMb,
+			String ramDetalles,
+			String ramSeriales,
+			String discosModelos,
+			String discosSeriales,
+			String motherboardModelo,
+			String motherboardSerial,
+			String monitores,
+			String teclado,
+			String mouse,
 			String impresora,
 			boolean activo,
 			LocalDateTime reportadoEn) {
@@ -128,6 +200,15 @@ public class Equipo {
 		this.sistemaOperativo = sistemaOperativo;
 		this.procesador = procesador;
 		this.ramMb = ramMb;
+		this.ramDetalles = ramDetalles;
+		this.ramSeriales = ramSeriales;
+		this.discosModelos = discosModelos;
+		this.discosSeriales = discosSeriales;
+		this.motherboardModelo = motherboardModelo;
+		this.motherboardSerial = motherboardSerial;
+		this.monitores = monitores;
+		this.teclado = teclado;
+		this.mouse = mouse;
 		this.impresora = impresora;
 		this.activo = activo;
 		this.monitoreo = "REPORTADO";

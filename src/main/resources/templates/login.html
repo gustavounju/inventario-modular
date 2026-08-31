@@ -30,7 +30,43 @@
 
 				<button class="primary-action" type="submit">Ingresar</button>
 			</form>
+
+			<section class="script-copy-panel" aria-labelledby="script-copy-title">
+				<h2 id="script-copy-title">Inventario de equipo</h2>
+				<textarea id="inventory-command" readonly rows="5"></textarea>
+				<button class="secondary-action" id="copy-inventory-command" type="button">Copiar comando</button>
+				<p class="script-copy-status" id="copy-inventory-status" role="status" aria-live="polite"></p>
+			</section>
 		</section>
 	</main>
+	<script>
+		(function () {
+			const origin = window.location.origin;
+			const command = [
+				"$u='" + origin + "';",
+				"$p=\"$env:TEMP\\inventario-modular.ps1\";",
+				"iwr \"$u/scripts/windows/inventario-modular.ps1\" -UseBasicParsing -OutFile $p;",
+				"powershell -ExecutionPolicy Bypass -File $p -ServerUrl \"$u/api/v1/equipos/inventario\""
+			].join(" ");
+			const commandBox = document.getElementById("inventory-command");
+			const copyButton = document.getElementById("copy-inventory-command");
+			const status = document.getElementById("copy-inventory-status");
+			commandBox.value = command;
+			copyButton.addEventListener("click", function () {
+				if (navigator.clipboard && window.isSecureContext) {
+					navigator.clipboard.writeText(command).then(function () {
+						status.textContent = "Comando copiado.";
+					}).catch(function () {
+						commandBox.select();
+						status.textContent = "Seleccione y copie el comando.";
+					});
+					return;
+				}
+				commandBox.select();
+				document.execCommand("copy");
+				status.textContent = "Comando copiado.";
+			});
+		}());
+	</script>
 </body>
 </html>

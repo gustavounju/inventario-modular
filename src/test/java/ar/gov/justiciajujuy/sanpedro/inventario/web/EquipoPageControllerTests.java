@@ -50,6 +50,15 @@ class EquipoPageControllerTests {
 	}
 
 	@Test
+	void muestraDetalleDeHardwareExtendido() throws Exception {
+		mockMvc.perform(get("/admin/equipos/1").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Detalle RAM")))
+			.andExpect(content().string(containsString("KINGSTON SA400")))
+			.andExpect(content().string(containsString("MB-001")));
+	}
+
+	@Test
 	void bloqueaPantallaDeEquiposSiNoTienePermiso() throws Exception {
 		mockMvc.perform(get("/admin/equipos").with(user(usuarioSinPermisos())))
 			.andExpect(status().isForbidden());

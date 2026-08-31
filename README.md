@@ -202,14 +202,17 @@ http://localhost:8081/admin/equipos
 API:
 
 ```text
-GET /api/v1/equipos
-GET /api/v1/equipos/{id}
+GET  /api/v1/equipos
+GET  /api/v1/equipos/{id}
 POST /api/v1/equipos/inventario
+GET  /scripts/windows/inventario-modular.ps1
 ```
 
 El listado soporta busqueda por nombre de equipo, ultimo usuario o fuero. El endpoint de
 inventario crea o actualiza equipos por `nombre` y queda preparado para conectar el
-script de inventario.
+script de inventario. Desde `/login` se puede copiar el comando PowerShell para ejecutar
+el script en una PC; la IP del servidor se arma automaticamente con la direccion desde
+donde se abrio el login.
 
 Guia tecnica:
 
