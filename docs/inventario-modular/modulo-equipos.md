@@ -92,6 +92,23 @@ Payload:
 }
 ```
 
+Script Windows inicial:
+
+```text
+scripts/windows/inventario-modular.ps1
+```
+
+Uso local:
+
+```powershell
+.\scripts\windows\inventario-modular.ps1 `
+  -ServerUrl "http://192.168.1.8:8081/api/v1/equipos/inventario"
+```
+
+Guia operativa:
+
+- [Script de inventario Windows](script-inventario-windows.md)
+
 Comportamiento:
 
 - si `nombre` no existe, crea el equipo;
@@ -142,9 +159,9 @@ mvn "-Dtest=EquipoControllerTests,EquipoPageControllerTests,AdminControllerTests
 
 ## Pendiente
 
-- Integrar el script real `inventario.ps1` con este endpoint.
-- Definir autenticacion de maquina o token especifico para reportes automaticos.
 - Agregar detalle visual por equipo.
 - Agregar edicion manual controlada.
 - Agregar importacion inicial desde el inventario viejo.
 - Incorporar relacion futura con stock, componentes, ubicaciones y actas.
+- Sumar al script modular los datos profundos del `inventario.ps1` heredado: discos,
+  seriales, monitores y salud del equipo.

@@ -88,6 +88,30 @@ class EquipoControllerTests {
 	}
 
 	@Test
+	void registraInventarioApiConTokenDeMaquina() throws Exception {
+		String body = """
+				{
+				  "nombre": "pc-token-005",
+				  "ultimoUsuario": "script",
+				  "ip": "192.168.1.50",
+				  "sistemaOperativo": "Windows 11 Pro",
+				  "procesador": "Intel Core i5",
+				  "ramMb": 8192,
+				  "impresora": "HP Oficina",
+				  "activo": true
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/equipos/inventario")
+				.header("Authorization", "Bearer dev-token-123456")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.nombre").value("PC-TOKEN-005"))
+			.andExpect(jsonPath("$.monitoreo").value("REPORTADO"));
+	}
+
+	@Test
 	void bloqueaUsuariosSinPermisoParaVerEquipos() throws Exception {
 		mockMvc.perform(get("/api/v1/equipos").with(user(usuarioSinPermisos())))
 			.andExpect(status().isForbidden());
