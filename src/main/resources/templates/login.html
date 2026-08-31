@@ -52,7 +52,7 @@
 				"$fs=[System.IO.File]::OpenRead($p);",
 				"try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()};",
 				"if($a -ne $h){throw \"SHA-256 invalido. Script descargado no coincide con el publicado por el servidor.\"};",
-				"powershell -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\""
+				"powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\""
 			].join(" ");
 			const commandBox = document.getElementById("inventory-command");
 			const copyButton = document.getElementById("copy-inventory-command");

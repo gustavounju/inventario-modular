@@ -36,6 +36,7 @@ class LoginControllerTests {
 			.andExpect(content().string(containsString("/scripts/windows/inventario-modular.ps1")))
 			.andExpect(content().string(containsString("/scripts/windows/inventario-modular.ps1.sha256")))
 			.andExpect(content().string(containsString("SHA-256 invalido")))
+			.andExpect(content().string(containsString("-ExecutionPolicy Bypass")))
 			.andExpect(content().string(containsString("/api/v1/equipos/inventario")));
 	}
 

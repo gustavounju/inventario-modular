@@ -88,13 +88,13 @@ http://192.168.1.8:8081/api/v1/equipos/inventario
 Con la app levantada en la misma maquina:
 
 ```powershell
-$u='http://localhost:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
+$u='http://localhost:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
 Para apuntar a la IP LAN de la maquina de Gustavo:
 
 ```powershell
-$u='http://192.168.1.8:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
+$u='http://192.168.1.8:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
 Para probar sin enviar:
@@ -138,7 +138,7 @@ equipo ya existia, conserva el fuero anterior.
 Para mandarlo explicitamente:
 
 ```powershell
-powershell -NoProfile -File "$env:TEMP\inventario-modular.ps1" `
+powershell -ExecutionPolicy Bypass -NoProfile -File "$env:TEMP\inventario-modular.ps1" `
   -Fuero "Dpto. Informatica San Pedro"
 ```
 
@@ -146,7 +146,7 @@ O por variable de entorno:
 
 ```powershell
 $env:INVENTARIO_FUERO = "Dpto. Informatica San Pedro"
-powershell -NoProfile -File "$env:TEMP\inventario-modular.ps1"
+powershell -ExecutionPolicy Bypass -NoProfile -File "$env:TEMP\inventario-modular.ps1"
 ```
 
 ## Seguridad operativa
@@ -156,8 +156,9 @@ powershell -NoProfile -File "$env:TEMP\inventario-modular.ps1"
 - El script no queda corriendo en segundo plano.
 - El script no modifica configuracion del equipo.
 - El script lee inventario por CIM/WMI y envia un POST al servidor.
-- El uso normal evita `ExecutionPolicy Bypass`; si una politica local bloquea el script,
-  usar `Bypass` solo como fallback manual y despues de validar SHA-256.
+- El uso normal usa `ExecutionPolicy Bypass` solo para el proceso actual de PowerShell,
+  despues de validar el SHA-256 publicado por el servidor. No modifica la politica
+  permanente de Windows.
 
 ## Respaldo local, no reenvio automatico
 

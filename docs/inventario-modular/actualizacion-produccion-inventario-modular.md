@@ -182,7 +182,7 @@ La pantalla de login debe mostrar el boton `Copiar comando`.
 El login arma automaticamente este tipo de comando, usando la IP desde donde se abrio:
 
 ```powershell
-$u='http://IP_DEL_SERVIDOR:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
+$u='http://IP_DEL_SERVIDOR:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
 Si en produccion se configura `INVENTARIO_REPORT_TOKEN` real en el servidor, el equipo que
@@ -191,19 +191,25 @@ versionados. Para una prueba controlada:
 
 ```powershell
 $env:INVENTARIO_REPORT_TOKEN = "TOKEN_REAL_DE_REPORTE"
-$u='http://IP_DEL_SERVIDOR:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
+$u='http://IP_DEL_SERVIDOR:8081'; $p="$env:TEMP\inventario-modular.ps1"; $h=(iwr "$u/scripts/windows/inventario-modular.ps1.sha256" -UseBasicParsing).Content.Trim(); iwr "$u/scripts/windows/inventario-modular.ps1" -UseBasicParsing -OutFile $p; $sha=[System.Security.Cryptography.SHA256]::Create(); $fs=[System.IO.File]::OpenRead($p); try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()}; if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."}; powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
-## Si falla por politica de ejecucion
+## Politica de ejecucion de PowerShell
 
-Algunos equipos pueden bloquear scripts por politica local. En ese caso, para una prueba
-manual administrada se puede ejecutar el ultimo paso con:
+Algunos equipos bloquean `.ps1` por politica local y muestran:
+
+```text
+No se puede cargar el archivo ... porque la ejecucion de scripts esta deshabilitada en este sistema.
+```
+
+Por eso el comando copiado desde el login usa `-ExecutionPolicy Bypass` solo en ese proceso
+de PowerShell, despues de validar el SHA-256 del script descargado:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"
 ```
 
-Usar ese fallback solo si hace falta y siempre despues de verificar el SHA-256.
+No cambia la politica permanente de Windows y no reemplaza la verificacion del hash.
 
 ## Rollback basico
 
