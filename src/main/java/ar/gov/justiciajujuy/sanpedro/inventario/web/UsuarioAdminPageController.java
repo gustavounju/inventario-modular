@@ -41,9 +41,12 @@ public class UsuarioAdminPageController {
 	}
 
 	@GetMapping("/admin/usuarios")
-	public String usuarios(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+	public String usuarios(
+			Model model,
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(name = "q", required = false) String query) {
 		exigirPermisoAdministrarUsuarios(userDetails);
-		cargarModelo(model);
+		cargarModelo(model, query);
 		return "admin/usuarios";
 	}
 
@@ -96,7 +99,7 @@ public class UsuarioAdminPageController {
 					fuero,
 					activo,
 					roles));
-			return "redirect:/admin/usuarios?autorizado=" + usernameNormalizado;
+			return "redirect:/admin/usuarios?q=" + usernameNormalizado + "&autorizado=" + usernameNormalizado;
 		} catch (UsuarioDuplicadoException exception) {
 			return "redirect:/admin/usuarios?error=duplicado";
 		} catch (RolNoEncontradoException exception) {
@@ -104,9 +107,9 @@ public class UsuarioAdminPageController {
 		}
 	}
 
-	private void cargarModelo(Model model) {
+	private void cargarModelo(Model model, String query) {
 		model.addAttribute("usuarios", usuarioManagementService.listarUsuarios());
-		model.addAttribute("usuariosDominio", activeDirectoryDomainService.listarUsuarios());
+		model.addAttribute("usuariosDominio", activeDirectoryDomainService.buscarUsuarios(query));
 		model.addAttribute("roles", usuarioManagementService.listarRoles());
 	}
 

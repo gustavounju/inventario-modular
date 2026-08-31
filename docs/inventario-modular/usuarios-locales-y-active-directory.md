@@ -113,16 +113,38 @@ un formulario que parezca crear cuentas en Active Directory.
 Flujo correcto esperado:
 
 ```text
-Buscar/listar usuarios del dominio
+Buscar usuario del dominio por usuario, nombre o apellido
 -> seleccionar una cuenta existente
 -> guardar autorizacion local en MySQL
 -> asignar roles, permisos y modulos
 -> no pedir ni guardar clave de dominio
 ```
 
+La pantalla `/admin/usuarios` no carga todo el dominio al abrir. Primero muestra un
+buscador. Solo cuando se envia una busqueda de al menos 2 caracteres consulta LDAP. Esto
+evita respuestas enormes del dominio y permite autorizar puntualmente usuarios como
+`gmurad`.
+
 En casa este flujo no se puede probar contra el dominio real. En produccion/trabajo se
 activa con LDAP de lectura y, si el dominio no permite busqueda anonima, con una cuenta
 tecnica lectora configurada por variables de entorno.
+
+Si la seccion muestra `No disponible` despues de buscar, revisar primero que existan estas
+variables en `/etc/inventario-modular/inventario-modular.env`:
+
+```bash
+INVENTARIO_LDAP_ENABLED=true
+INVENTARIO_LDAP_URL=ldap://SERVIDOR_AD:389
+INVENTARIO_LDAP_DOMAIN=podjudsp.local
+INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
+INVENTARIO_LDAP_READ_ONLY_USER_DN=CN=lector-inventario,OU=Servicios,DC=podjudsp,DC=local
+INVENTARIO_LDAP_READ_ONLY_PASSWORD=CLAVE_REAL_SOLO_EN_SERVIDOR
+```
+
+El login AD puede funcionar aunque la busqueda administrativa falle, porque son caminos
+distintos: el login valida con la clave ingresada por el usuario, mientras que la busqueda
+de usuarios para administracion necesita una cuenta lectora o permisos de consulta anonima
+en LDAP.
 
 ## Configuracion y fallback
 
@@ -194,7 +216,7 @@ Implementado:
 - alta de usuario local con password desde API y pantalla;
 - autenticacion de usuario local contra hash BCrypt;
 - separacion visual entre crear usuarios locales y autorizar usuarios AD;
-- listado LDAP de usuarios de dominio cuando `inventario.ldap.enabled=true`;
+- busqueda LDAP filtrada de usuarios de dominio cuando `inventario.ldap.enabled=true`;
 - autorizacion local de usuarios AD desde API y pantalla, sin pedir clave de dominio;
 - indicador visual de modo de trabajo, base activa y autenticacion;
 - pruebas automatizadas para verificar que no se guarde password plano.
@@ -205,4 +227,4 @@ Pendiente:
 - activar/desactivar usuario desde pantalla;
 - eliminar credencial local o desactivar usuario temporal;
 - auditoria de altas/cambios de clave;
-- busqueda filtrada/paginada de usuarios de Active Directory.
+- auditoria visual/historica de autorizaciones de usuarios AD.

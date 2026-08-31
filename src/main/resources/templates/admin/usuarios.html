@@ -150,12 +150,24 @@
 					<div class="section-header">
 						<h2 id="domain-users-title">Usuarios de dominio</h2>
 						<span class="count-badge" th:if="${usuariosDominio.disponible}" th:text="${#lists.size(usuariosDominio.usuarios)} + ' encontrados'">0 encontrados</span>
-						<span class="count-badge" th:unless="${usuariosDominio.disponible}">No disponible</span>
+						<span class="count-badge" th:if="${!usuariosDominio.consultaRealizada}">Buscar AD</span>
+						<span class="count-badge" th:if="${usuariosDominio.consultaRealizada and !usuariosDominio.disponible}">No disponible</span>
 					</div>
-					<p class="empty-state" th:unless="${usuariosDominio.disponible}" th:text="${usuariosDominio.mensaje}">
-						LDAP esta desactivado en este entorno.
+					<form class="search-form" th:action="@{/admin/usuarios}" method="get" role="search">
+						<label>
+							<span>Buscar usuario AD</span>
+							<input name="q" type="search" maxlength="120" th:value="${usuariosDominio.query}"
+									placeholder="Usuario, nombre o apellido">
+						</label>
+						<button class="secondary-action" type="submit">Buscar</button>
+					</form>
+					<p class="empty-state" th:if="${!usuariosDominio.disponible}" th:text="${usuariosDominio.mensaje}">
+						Ingrese al menos 2 caracteres para buscar usuarios de dominio.
 					</p>
-					<div class="responsive-table" th:if="${usuariosDominio.disponible}">
+					<p class="empty-state" th:if="${usuariosDominio.disponible and #lists.isEmpty(usuariosDominio.usuarios)}">
+						No se encontraron usuarios de dominio para esa busqueda.
+					</p>
+					<div class="responsive-table" th:if="${usuariosDominio.disponible and !#lists.isEmpty(usuariosDominio.usuarios)}">
 						<table>
 							<thead>
 								<tr>

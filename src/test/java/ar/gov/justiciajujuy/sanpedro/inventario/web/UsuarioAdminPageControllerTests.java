@@ -41,10 +41,21 @@ class UsuarioAdminPageControllerTests {
 			.andExpect(content().string(containsString("Administracion de usuarios")))
 			.andExpect(content().string(containsString("Crear usuario local")))
 			.andExpect(content().string(containsString("Usuarios de dominio")))
-			.andExpect(content().string(containsString("No disponible")))
-			.andExpect(content().string(containsString("LDAP esta desactivado en este entorno.")))
+			.andExpect(content().string(containsString("Buscar AD")))
+			.andExpect(content().string(containsString("Buscar usuario AD")))
+			.andExpect(content().string(containsString("Ingrese al menos 2 caracteres para buscar usuarios de dominio.")))
 			.andExpect(content().string(containsString("admin.local")))
 			.andExpect(content().string(containsString("ADMINISTRADOR")));
+	}
+
+	@Test
+	void muestraEstadoLdapAlBuscarUsuariosDeDominio() throws Exception {
+		mockMvc.perform(get("/admin/usuarios")
+				.param("q", "gmurad")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("No disponible")))
+			.andExpect(content().string(containsString("LDAP esta desactivado en este entorno.")));
 	}
 
 	@Test
@@ -84,7 +95,7 @@ class UsuarioAdminPageControllerTests {
 				.param("activo", "true")
 				.param("roles", "ADMINISTRADOR"))
 			.andExpect(status().is3xxRedirection())
-			.andExpect(redirectedUrl("/admin/usuarios?autorizado=gmurad"));
+			.andExpect(redirectedUrl("/admin/usuarios?q=gmurad&autorizado=gmurad"));
 
 		mockMvc.perform(get("/admin/usuarios").with(user(adminLocal())))
 			.andExpect(status().isOk())

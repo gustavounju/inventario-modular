@@ -3,7 +3,9 @@ package ar.gov.justiciajujuy.sanpedro.inventario.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -14,6 +16,7 @@ import javax.naming.directory.SearchControls;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.config.ActiveDirectoryProperties;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapOperations;
 
@@ -25,11 +28,29 @@ class ActiveDirectoryDomainServiceTests {
 		LdapOperations ldapOperations = mock(LdapOperations.class);
 		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
 
+		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("gm");
+
+		assertThat(resultado.disponible()).isFalse();
+		assertThat(resultado.consultaRealizada()).isTrue();
+		assertThat(resultado.query()).isEqualTo("gm");
+		assertThat(resultado.mensaje()).isEqualTo("LDAP esta desactivado en este entorno.");
+		assertThat(resultado.usuarios()).isEmpty();
+	}
+
+	@Test
+	void noConsultaLdapSinBusquedaExplicita() {
+		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
+		properties.setEnabled(true);
+		LdapOperations ldapOperations = mock(LdapOperations.class);
+		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
+
 		ActiveDirectoryDomainService.DominioUsuarios resultado = service.listarUsuarios();
 
 		assertThat(resultado.disponible()).isFalse();
-		assertThat(resultado.mensaje()).isEqualTo("LDAP esta desactivado en este entorno.");
-		assertThat(resultado.usuarios()).isEmpty();
+		assertThat(resultado.consultaRealizada()).isFalse();
+		assertThat(resultado.mensaje()).isEqualTo("Ingrese al menos 2 caracteres para buscar usuarios de dominio.");
+		verify(ldapOperations, never()).search(any(String.class), any(String.class), any(SearchControls.class),
+				any(AttributesMapper.class));
 	}
 
 	@Test
@@ -47,7 +68,7 @@ class ActiveDirectoryDomainServiceTests {
 
 		when(ldapOperations.search(
 				eq("OU=Usuarios"),
-				eq("(objectClass=user)"),
+				any(String.class),
 				any(SearchControls.class),
 				any(AttributesMapper.class)))
 			.thenAnswer(invocation -> List.of(
@@ -56,10 +77,33 @@ class ActiveDirectoryDomainServiceTests {
 
 		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
 
-		ActiveDirectoryDomainService.DominioUsuarios resultado = service.listarUsuarios();
+		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("gmurad");
 
 		assertThat(resultado.disponible()).isTrue();
+		assertThat(resultado.query()).isEqualTo("gmurad");
 		assertThat(resultado.usuarios()).containsExactly(
 				new ActiveDirectoryDomainService.UsuarioDominio("gmurad", "Gustavo Elias Murad", "Informatica"));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void escapaLaBusquedaAntesDeArmarElFiltroLdap() {
+		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
+		properties.setEnabled(true);
+		LdapOperations ldapOperations = mock(LdapOperations.class);
+		when(ldapOperations.search(
+				any(String.class),
+				any(String.class),
+				any(SearchControls.class),
+				any(AttributesMapper.class)))
+			.thenReturn(List.of());
+		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
+
+		service.buscarUsuarios("gm*)(admin");
+
+		ArgumentCaptor<String> filterCaptor = ArgumentCaptor.forClass(String.class);
+		verify(ldapOperations).search(any(String.class), filterCaptor.capture(), any(SearchControls.class),
+				any(AttributesMapper.class));
+		assertThat(filterCaptor.getValue()).contains("gm\\2a\\29\\28admin");
 	}
 }

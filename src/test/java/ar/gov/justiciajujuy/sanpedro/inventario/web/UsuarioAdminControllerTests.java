@@ -44,10 +44,24 @@ class UsuarioAdminControllerTests {
 	}
 
 	@Test
-	void listaUsuariosDominioComoNoDisponibleSiLdapEstaDesactivado() throws Exception {
+	void noListaUsuariosDominioSinBusquedaExplicita() throws Exception {
 		mockMvc.perform(get("/api/v1/usuarios/dominio").with(user(adminLocal())))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.disponible").value(false))
+			.andExpect(jsonPath("$.consultaRealizada").value(false))
+			.andExpect(jsonPath("$.mensaje").value("Ingrese al menos 2 caracteres para buscar usuarios de dominio."))
+			.andExpect(jsonPath("$.usuarios").isEmpty());
+	}
+
+	@Test
+	void listaUsuariosDominioComoNoDisponibleSiLdapEstaDesactivado() throws Exception {
+		mockMvc.perform(get("/api/v1/usuarios/dominio")
+				.param("q", "gmurad")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.disponible").value(false))
+			.andExpect(jsonPath("$.consultaRealizada").value(true))
+			.andExpect(jsonPath("$.query").value("gmurad"))
 			.andExpect(jsonPath("$.mensaje").value("LDAP esta desactivado en este entorno."))
 			.andExpect(jsonPath("$.usuarios").isEmpty());
 	}

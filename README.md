@@ -171,6 +171,13 @@ INVENTARIO_LDAP_USER_SEARCH_FILTER=(&(objectClass=user)(!(objectClass=computer))
 INVENTARIO_LDAP_USER_SEARCH_LIMIT=50
 ```
 
+La administracion de usuarios no carga todo Active Directory al abrir. En
+`/admin/usuarios` se busca por usuario, nombre o apellido; desde cada resultado se
+autoriza la cuenta AD en MySQL y se le asignan roles/modulos. Si el login AD funciona pero
+la busqueda muestra `No disponible`, revisar `INVENTARIO_LDAP_READ_ONLY_USER_DN` y
+`INVENTARIO_LDAP_READ_ONLY_PASSWORD`: el login usa la clave ingresada por la persona, pero
+la busqueda administrativa necesita una cuenta lectora o consulta anonima habilitada.
+
 Al iniciar sesion, el panel `/admin` muestra:
 
 - Usuario/cuenta usada para autenticarse.
@@ -188,8 +195,8 @@ fuero.
 ### Seguridad y usuarios
 
 La pantalla `/admin/usuarios` permite listar identidades autorizadas, crear usuarios
-locales con clave hasheada y autorizar usuarios de Active Directory sin guardar claves de
-dominio.
+locales con clave hasheada, buscar usuarios de Active Directory y autorizarlos sin guardar
+claves de dominio.
 
 ### Equipos
 

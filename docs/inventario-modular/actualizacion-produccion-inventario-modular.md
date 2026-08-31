@@ -43,8 +43,8 @@ La configuracion real debe estar fuera de git:
 Revisar sin imprimir secretos completos:
 
 ```bash
-sudo grep -E '^(SPRING_PROFILES_ACTIVE|INVENTARIO_SERVER_PORT|INVENTARIO_DB_PRIMARY_URL|INVENTARIO_DB_PRIMARY_USER|INVENTARIO_LDAP_ENABLED|INVENTARIO_LDAP_URL|INVENTARIO_LDAP_DOMAIN|INVENTARIO_LDAP_BASE_DN)=' /etc/inventario-modular/inventario-modular.env
-sudo grep -E '^(INVENTARIO_DB_PRIMARY_PASSWORD|INVENTARIO_REPORT_TOKEN)=' /etc/inventario-modular/inventario-modular.env | sed 's/=.*/=********/'
+sudo grep -E '^(SPRING_PROFILES_ACTIVE|INVENTARIO_SERVER_PORT|INVENTARIO_DB_PRIMARY_URL|INVENTARIO_DB_URL|INVENTARIO_DB_PRIMARY_USER|INVENTARIO_DB_USER|INVENTARIO_LDAP_ENABLED|INVENTARIO_LDAP_URL|INVENTARIO_LDAP_DOMAIN|INVENTARIO_LDAP_BASE_DN|INVENTARIO_LDAP_READ_ONLY_USER_DN)=' /etc/inventario-modular/inventario-modular.env
+sudo grep -E '^(INVENTARIO_DB_PRIMARY_PASSWORD|INVENTARIO_DB_PASSWORD|INVENTARIO_LDAP_READ_ONLY_PASSWORD|INVENTARIO_REPORT_TOKEN)=' /etc/inventario-modular/inventario-modular.env | sed 's/=.*/=********/'
 ```
 
 Valores esperados para trabajo, ajustando usuario/clave reales:
@@ -64,8 +64,17 @@ INVENTARIO_DB_PRIMARY_PASSWORD=CAMBIAR_EN_SERVIDOR
 INVENTARIO_REPORT_TOKEN=CAMBIAR_TOKEN_LARGO_ALEATORIO
 INVENTARIO_LOCAL_AUTH_ENABLED=true
 INVENTARIO_LOCAL_DB_AUTH_ENABLED=true
-INVENTARIO_LDAP_ENABLED=false
+INVENTARIO_LDAP_ENABLED=true
+INVENTARIO_LDAP_URL=ldap://SERVIDOR_AD:389
+INVENTARIO_LDAP_DOMAIN=podjudsp.local
+INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
+INVENTARIO_LDAP_READ_ONLY_USER_DN=CN=lector-inventario,OU=Servicios,DC=podjudsp,DC=local
+INVENTARIO_LDAP_READ_ONLY_PASSWORD=CAMBIAR_EN_SERVIDOR
 ```
+
+El perfil `local` acepta tambien los aliases historicos `INVENTARIO_DB_URL`,
+`INVENTARIO_DB_USER` e `INVENTARIO_DB_PASSWORD`, porque esos nombres ya fueron usados en
+el servidor. Las claves reales nunca se escriben en git.
 
 Proteger el archivo:
 
@@ -107,9 +116,16 @@ Desde el servidor Ubuntu:
 
 ```bash
 curl -s http://127.0.0.1:8081/api/v1/sistema/estado
+curl -s 'http://127.0.0.1:8081/api/v1/usuarios/dominio?q=gmurad'
 curl -s http://127.0.0.1:8081/scripts/windows/inventario-modular.ps1.sha256
 curl -I http://127.0.0.1:8081/scripts/windows/inventario-modular.ps1
 ```
+
+El endpoint `/api/v1/usuarios/dominio` exige usuario autenticado con permiso de administrar
+usuarios, por lo que la verificacion con `curl` directo puede redirigir al login o devolver
+HTML si no hay sesion. La prueba funcional principal es entrar con `admin.local`, abrir
+`/admin/usuarios`, buscar un usuario AD por usuario/nombre/apellido y autorizarlo con el
+rol correspondiente.
 
 Desde una PC de la red, abrir:
 
