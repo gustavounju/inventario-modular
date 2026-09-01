@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Stock - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="stock-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Componentes sueltos</p>
+					<h1 id="stock-title">Stock</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<a class="secondary-action" th:href="@{/admin/ordenes-armado}">Ordenes</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<p class="success-message" th:if="${creado}">Componente de stock cargado correctamente.</p>
+
+			<section class="modules-section" aria-labelledby="stock-list-title">
+				<div class="section-header">
+					<div>
+						<h2 id="stock-list-title">Componentes disponibles</h2>
+						<p class="section-note">Piezas sueltas que despues pueden reservarse desde una orden de armado.</p>
+					</div>
+					<span class="count-badge" th:text="${#lists.size(componentesStock)} + ' componentes'">0 componentes</span>
+				</div>
+
+				<p class="empty-state" th:if="${#lists.isEmpty(componentesStock)}">Todavia no hay componentes cargados en stock.</p>
+
+				<div class="responsive-table" th:if="${!#lists.isEmpty(componentesStock)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Tipo</th>
+								<th scope="col">Componente</th>
+								<th scope="col">Estado</th>
+								<th scope="col">Serial</th>
+								<th scope="col">Ubicacion</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="componente : ${componentesStock}">
+								<td data-label="Tipo" th:text="${componente.tipo}">RAM</td>
+								<td data-label="Componente">
+									<strong th:text="${componente.descripcion}">Memoria RAM</strong>
+									<span class="table-subtext">
+										<span th:text="${componente.marca ?: ''}">Kingston</span>
+										<span th:text="${componente.modelo ?: ''}">DDR4</span>
+										<span th:text="${componente.capacidad ?: ''}">8GB</span>
+									</span>
+								</td>
+								<td data-label="Estado">
+									<span class="authorization-badge" th:classappend="${componente.estado.name() == 'DISPONIBLE'} ? ' is-authorized' : ' is-pending'"
+											th:text="${componente.estado}">DISPONIBLE</span>
+								</td>
+								<td data-label="Serial" th:text="${componente.serial ?: 'Sin serial'}">SN-001</td>
+								<td data-label="Ubicacion" th:text="${componente.ubicacion ?: 'Sin ubicacion'}">Deposito</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}" aria-labelledby="stock-edit-title">
+				<div class="section-header">
+					<div>
+						<h2 id="stock-edit-title">Editar stock cargado</h2>
+						<p class="section-note">Corrija datos de componentes sueltos antes de reservarlos o asignarlos.</p>
+					</div>
+				</div>
+
+				<div class="edit-stack">
+					<form class="equipment-form inline-edit-card" th:each="componente : ${componentesStock}"
+							th:action="@{/admin/stock/componentes/{id}(id=${componente.id})}" method="post">
+						<div class="section-header">
+							<h2 th:text="${componente.descripcion}">Memoria RAM</h2>
+							<span class="count-badge" th:text="'ID ' + ${componente.id}">ID 1</span>
+						</div>
+						<div class="form-grid">
+							<label>
+								<span>Tipo</span>
+								<select name="tipo">
+									<option th:each="tipo : ${tiposComponente}" th:value="${tipo}" th:text="${tipo}"
+											th:selected="${tipo == componente.tipo}">RAM</option>
+								</select>
+							</label>
+							<label>
+								<span>Estado</span>
+								<select name="estado">
+									<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}"
+											th:selected="${estado == componente.estado}">DISPONIBLE</option>
+								</select>
+							</label>
+							<label>
+								<span>Descripcion</span>
+								<input name="descripcion" th:value="${componente.descripcion}" maxlength="255" required>
+							</label>
+							<label>
+								<span>Marca</span>
+								<input name="marca" th:value="${componente.marca}" maxlength="120">
+							</label>
+							<label>
+								<span>Modelo</span>
+								<input name="modelo" th:value="${componente.modelo}" maxlength="180">
+							</label>
+							<label>
+								<span>Serial</span>
+								<input name="serial" th:value="${componente.serial}" maxlength="180">
+							</label>
+							<label>
+								<span>Capacidad</span>
+								<input name="capacidad" th:value="${componente.capacidad}" maxlength="120">
+							</label>
+							<label>
+								<span>Ubicacion</span>
+								<input name="ubicacion" th:value="${componente.ubicacion}" maxlength="120">
+							</label>
+						</div>
+						<label>
+							<span>Observaciones</span>
+							<textarea name="observaciones" maxlength="500" rows="2" th:text="${componente.observaciones}"></textarea>
+						</label>
+						<label class="checkbox-row">
+							<input name="activo" type="checkbox" value="true" th:checked="${componente.activo}">
+							<span>Componente activo</span>
+						</label>
+						<div class="form-actions">
+							<button class="secondary-action" type="submit">Guardar cambios</button>
+						</div>
+					</form>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarStock}" aria-labelledby="stock-form-title">
+				<div class="section-header">
+					<h2 id="stock-form-title">Cargar componente suelto</h2>
+					<span class="count-badge">Requiere STOCK:EDITAR</span>
+				</div>
+
+				<form class="equipment-form" th:action="@{/admin/stock/componentes}" th:object="${stockForm}" method="post">
+					<div class="form-grid">
+						<label>
+							<span>Tipo</span>
+							<select th:field="*{tipo}">
+								<option th:each="tipo : ${tiposComponente}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+							</select>
+						</label>
+						<label>
+							<span>Estado</span>
+							<select th:field="*{estado}">
+								<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}">DISPONIBLE</option>
+							</select>
+						</label>
+						<label>
+							<span>Descripcion</span>
+							<input th:field="*{descripcion}" maxlength="255" required>
+							<small class="field-error" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}">Error</small>
+						</label>
+						<label>
+							<span>Marca</span>
+							<input th:field="*{marca}" maxlength="120">
+						</label>
+						<label>
+							<span>Modelo</span>
+							<input th:field="*{modelo}" maxlength="180">
+						</label>
+						<label>
+							<span>Serial</span>
+							<input th:field="*{serial}" maxlength="180">
+						</label>
+						<label>
+							<span>Capacidad</span>
+							<input th:field="*{capacidad}" maxlength="120">
+						</label>
+						<label>
+							<span>Ubicacion</span>
+							<input th:field="*{ubicacion}" maxlength="120">
+						</label>
+					</div>
+					<label>
+						<span>Observaciones</span>
+						<textarea th:field="*{observaciones}" maxlength="500" rows="3"></textarea>
+					</label>
+					<label class="checkbox-row">
+						<input th:field="*{activo}" type="checkbox">
+						<span>Componente activo</span>
+					</label>
+					<div class="form-actions">
+						<button class="primary-action" type="submit">Guardar stock</button>
+					</div>
+				</form>
+			</section>
+		</section>
+	</main>
+</body>
+</html>

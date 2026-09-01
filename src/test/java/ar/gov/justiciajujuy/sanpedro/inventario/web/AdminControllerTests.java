@@ -42,7 +42,11 @@ class AdminControllerTests {
 	void muestraAccesoEquiposSiPuedeVerEquipos() throws Exception {
 		mockMvc.perform(get("/admin").with(user(usuario("admin.local"))))
 			.andExpect(status().isOk())
-			.andExpect(content().string(containsString("href=\"/admin/equipos\"")));
+			.andExpect(content().string(containsString("href=\"/admin/equipos\"")))
+			.andExpect(content().string(containsString("href=\"/admin/dashboard-diferencias\"")))
+			.andExpect(content().string(containsString("href=\"/admin/stock\"")))
+			.andExpect(content().string(containsString("href=\"/admin/ordenes-armado\"")))
+			.andExpect(content().string(containsString("href=\"/admin/auditoria\"")));
 	}
 
 	@Test
@@ -56,7 +60,11 @@ class AdminControllerTests {
 	void ocultaAccesoEquiposSiNoPuedeVerEquipos() throws Exception {
 		mockMvc.perform(get("/admin").with(user(usuario("sin.permisos"))))
 			.andExpect(status().isOk())
-			.andExpect(content().string(not(containsString("href=\"/admin/equipos\""))));
+			.andExpect(content().string(not(containsString("href=\"/admin/equipos\""))))
+			.andExpect(content().string(not(containsString("href=\"/admin/dashboard-diferencias\""))))
+			.andExpect(content().string(not(containsString("href=\"/admin/stock\""))))
+			.andExpect(content().string(not(containsString("href=\"/admin/ordenes-armado\""))))
+			.andExpect(content().string(not(containsString("href=\"/admin/auditoria\""))));
 	}
 
 	private ActiveDirectoryUserDetails usuario(String username) {

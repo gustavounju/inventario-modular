@@ -19,6 +19,10 @@ public class AdminController {
 
 	private static final String MODULO_USUARIOS = "USUARIOS";
 	private static final String MODULO_EQUIPOS = "EQUIPOS";
+	private static final String MODULO_COMPONENTES = "COMPONENTES";
+	private static final String MODULO_STOCK = "STOCK";
+	private static final String MODULO_ORDENES_ARMADO = "ORDENES_ARMADO";
+	private static final String MODULO_AUDITORIA = "AUDITORIA";
 	private static final String PERMISO_ADMINISTRAR = "ADMINISTRAR";
 	private static final String PERMISO_VER = "VER";
 
@@ -55,6 +59,14 @@ public class AdminController {
 		model.addAttribute("modules", usuarioActual.modulos());
 		model.addAttribute("canViewEquipos",
 				authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER));
+		model.addAttribute("canViewDashboardDiferencias",
+				authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER));
+		model.addAttribute("canViewStock",
+				authorizationService.tienePermiso(userDetails, MODULO_STOCK, PERMISO_VER));
+		model.addAttribute("canViewOrdenesArmado",
+				authorizationService.tienePermiso(userDetails, MODULO_ORDENES_ARMADO, PERMISO_VER));
+		model.addAttribute("canViewAuditoria",
+				authorizationService.tienePermiso(userDetails, MODULO_AUDITORIA, PERMISO_VER));
 		model.addAttribute("canManageUsers",
 				authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR));
 		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));

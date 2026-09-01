@@ -47,9 +47,13 @@ class CurrentUserControllerTests {
 			.andExpect(jsonPath("$.nombreVisible", is("Administrador Local")))
 			.andExpect(jsonPath("$.fuero", is("Desarrollo local")))
 			.andExpect(jsonPath("$.autorizado", is(true)))
-			.andExpect(jsonPath("$.modulos", hasSize(2)))
+			.andExpect(jsonPath("$.modulos", hasSize(6)))
 			.andExpect(jsonPath("$.modulos[0].codigo", is("EQUIPOS")))
-			.andExpect(jsonPath("$.modulos[0].permisos", containsInAnyOrder("ADMINISTRAR", "EDITAR", "VER")));
+			.andExpect(jsonPath("$.modulos[0].permisos", containsInAnyOrder("ADMINISTRAR", "EDITAR", "VER")))
+			.andExpect(jsonPath("$.modulos[1].codigo", is("STOCK")))
+			.andExpect(jsonPath("$.modulos[2].codigo", is("ORDENES_ARMADO")))
+			.andExpect(jsonPath("$.modulos[3].codigo", is("COMPONENTES")))
+			.andExpect(jsonPath("$.modulos[5].codigo", is("AUDITORIA")));
 	}
 
 	@Test

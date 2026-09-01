@@ -3,9 +3,12 @@ package ar.gov.justiciajujuy.sanpedro.inventario.web;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import java.util.List;
 import java.util.Map;
@@ -53,14 +56,111 @@ class EquipoPageControllerTests {
 	void muestraDetalleDeHardwareExtendido() throws Exception {
 		mockMvc.perform(get("/admin/equipos/1").with(user(adminLocal())))
 			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Gemelo digital / Componentes")))
+			.andExpect(content().string(containsString("Modulo RAM instalado")))
+			.andExpect(content().string(containsString("Edicion manual controlada")))
 			.andExpect(content().string(containsString("Detalle RAM")))
 			.andExpect(content().string(containsString("KINGSTON SA400")))
 			.andExpect(content().string(containsString("MB-001")));
 	}
 
 	@Test
+	void agregaComponenteDesdeDetalleDeEquipo() throws Exception {
+		mockMvc.perform(post("/admin/equipos/1/componentes")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("tipo", "MONITOR")
+				.param("origen", "STOCK")
+				.param("estadoComparacion", "ESPERADO")
+				.param("descripcion", "Monitor entregado para armado")
+				.param("marca", "Samsung")
+				.param("modelo", "S24")
+				.param("serial", "MON-001")
+				.param("capacidad", "24 pulgadas")
+				.param("ubicacion", "Escritorio")
+				.param("observaciones", "Sale de stock")
+				.param("activo", "true"))
+			.andExpect(status().is3xxRedirection());
+
+		mockMvc.perform(get("/admin/equipos/1").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Monitor entregado para armado")))
+			.andExpect(content().string(containsString("MON-001")));
+	}
+
+	@Test
+	void consolidaRelevamientoInicialDesdeDetalleDeEquipo() throws Exception {
+		mockMvc.perform(post("/admin/equipos/1/componentes/consolidar-relevamiento-inicial")
+				.with(user(adminLocal()))
+				.with(csrf()))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrlPattern("/admin/equipos/1?actualizado=*"));
+
+		mockMvc.perform(get("/admin/equipos/1").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("RELEVAMIENTO_INICIAL")))
+			.andExpect(content().string(containsString("Consolidar lectura como relevamiento inicial")));
+	}
+
+	@Test
+	void actualizaEquipoDesdePantalla() throws Exception {
+		mockMvc.perform(post("/admin/equipos/1")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("nombre", "pc-inf-001-editada")
+				.param("fuero", "Informatica")
+				.param("ultimoUsuario", "soporte")
+				.param("ip", "10.15.2.99")
+				.param("sistemaOperativo", "Windows 11 Enterprise")
+				.param("procesador", "Intel Core i7")
+				.param("ramMb", "32768")
+				.param("ramDetalles", "2x16GB DDR4")
+				.param("ramSeriales", "RAM-A | RAM-B")
+				.param("discosModelos", "WD Blue NVMe")
+				.param("discosSeriales", "NVME-001")
+				.param("motherboardModelo", "Dell Board X")
+				.param("motherboardSerial", "MB-X")
+				.param("monitores", "Dell 24 SN MON-X")
+				.param("teclado", "Dell KB216")
+				.param("mouse", "Dell MS116")
+				.param("impresora", "Ricoh Informatica")
+				.param("activo", "true"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrlPattern("/admin/equipos/1?actualizado=*"));
+
+		mockMvc.perform(get("/admin/equipos/1").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("PC-INF-001-EDITADA")))
+			.andExpect(content().string(containsString("Windows 11 Enterprise")));
+	}
+
+	@Test
+	void muestraErrorSiElNombreYaExisteAlEditarDesdePantalla() throws Exception {
+		mockMvc.perform(post("/admin/equipos/1")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("nombre", "PC-MESA-002")
+				.param("fuero", "Informatica")
+				.param("activo", "true"))
+			.andExpect(status().isOk())
+			.andExpect(view().name("admin/equipo-detalle"))
+			.andExpect(content().string(containsString("Ya existe un equipo con nombre")));
+	}
+
+	@Test
 	void bloqueaPantallaDeEquiposSiNoTienePermiso() throws Exception {
 		mockMvc.perform(get("/admin/equipos").with(user(usuarioSinPermisos())))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void bloqueaEdicionDeEquipoSiNoTienePermiso() throws Exception {
+		mockMvc.perform(post("/admin/equipos/1")
+				.with(user(usuarioSinPermisos()))
+				.with(csrf())
+				.param("nombre", "PC-INF-001")
+				.param("fuero", "Informatica")
+				.param("activo", "true"))
 			.andExpect(status().isForbidden());
 	}
 

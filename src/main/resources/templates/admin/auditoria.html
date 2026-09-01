@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Auditoria - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="auditoria-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Trazabilidad operativa</p>
+					<h1 id="auditoria-title">Auditoria</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<section class="modules-section" aria-labelledby="eventos-title">
+				<div class="section-header">
+					<div>
+						<h2 id="eventos-title">Eventos recientes</h2>
+						<p class="section-note">Cambios relevantes registrados desde componentes, stock y ordenes de armado.</p>
+					</div>
+					<span class="count-badge" th:text="${#lists.size(eventos)} + ' eventos'">0 eventos</span>
+				</div>
+
+				<p class="empty-state" th:if="${#lists.isEmpty(eventos)}">Todavia no hay eventos de auditoria registrados.</p>
+
+				<div class="responsive-table" th:if="${!#lists.isEmpty(eventos)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Fecha</th>
+								<th scope="col">Usuario</th>
+								<th scope="col">Modulo</th>
+								<th scope="col">Accion</th>
+								<th scope="col">Entidad</th>
+								<th scope="col">Detalle</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="evento : ${eventos}">
+								<td data-label="Fecha" th:text="${evento.creadoEn != null} ? ${#temporals.format(evento.creadoEn, 'dd/MM/yyyy HH:mm:ss')} : 'Sin fecha'">31/08/2026 23:59:00</td>
+								<td data-label="Usuario" th:text="${evento.usuario}">admin.local</td>
+								<td data-label="Modulo" th:text="${evento.modulo}">STOCK</td>
+								<td data-label="Accion">
+									<span class="authorization-badge is-pending" th:text="${evento.accion}">CREAR</span>
+								</td>
+								<td data-label="Entidad" th:text="|${evento.entidadTipo} #${evento.entidadId ?: '-'}|">StockComponente #1</td>
+								<td data-label="Detalle" th:text="${evento.detalle}">Cambio registrado.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+		</section>
+	</main>
+</body>
+</html>

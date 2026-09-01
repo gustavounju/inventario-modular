@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -100,6 +101,140 @@ class EquipoControllerTests {
 			.andExpect(jsonPath("$.discosSeriales").value("DISK-001"))
 			.andExpect(jsonPath("$.monitores").value("Samsung 24 SN-456"))
 			.andExpect(jsonPath("$.monitoreo").value("REPORTADO"));
+
+		mockMvc.perform(get("/api/v1/equipos/3/componentes").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.origen == 'SCRIPT')]", hasSize(9)))
+			.andExpect(jsonPath("$[?(@.serial == 'RAM-001' && @.estadoComparacion == 'DETECTADO')]", hasSize(1)))
+			.andExpect(jsonPath("$[?(@.serial == 'DISK-001')]", hasSize(1)));
+	}
+
+	@Test
+	void reemplazaComponentesDetectadosPorScriptAlRecibirNuevoReporte() throws Exception {
+		String primerReporte = """
+				{
+				  "nombre": "pc-script-010",
+				  "fuero": "Informatica",
+				  "procesador": "Intel Core i5",
+				  "ramDetalles": "8GB DDR4",
+				  "ramSeriales": "RAM-UNO",
+				  "discosModelos": "SSD Kingston",
+				  "discosSeriales": "DISK-UNO",
+				  "activo": true
+				}
+				""";
+		String segundoReporte = """
+				{
+				  "nombre": "pc-script-010",
+				  "fuero": "Informatica",
+				  "procesador": "Intel Core i5",
+				  "ramDetalles": "16GB DDR4",
+				  "ramSeriales": "RAM-DOS",
+				  "discosModelos": "SSD WD",
+				  "discosSeriales": "DISK-DOS",
+				  "activo": true
+				}
+				""";
+
+		mockMvc.perform(post("/api/v1/equipos/inventario")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(primerReporte))
+			.andExpect(status().isCreated());
+		mockMvc.perform(post("/api/v1/equipos/inventario")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(segundoReporte))
+			.andExpect(status().isCreated());
+
+		mockMvc.perform(get("/api/v1/equipos")
+				.param("q", "pc-script-010")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.equipos[0].nombre").value("PC-SCRIPT-010"));
+		mockMvc.perform(get("/api/v1/equipos/3/componentes").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.origen == 'SCRIPT')]", hasSize(3)))
+			.andExpect(jsonPath("$[?(@.serial == 'RAM-UNO')]", hasSize(0)))
+			.andExpect(jsonPath("$[?(@.serial == 'RAM-DOS')]", hasSize(1)))
+			.andExpect(jsonPath("$[?(@.serial == 'DISK-DOS')]", hasSize(1)));
+	}
+
+	@Test
+	void actualizaEquipoManualmenteSiTienePermisoEditar() throws Exception {
+		String body = """
+				{
+				  "nombre": "pc-inf-001-renombrada",
+				  "ultimoUsuario": "soporte",
+				  "fuero": "Informatica",
+				  "ip": "10.15.2.99",
+				  "sistemaOperativo": "Windows 11 Enterprise",
+				  "procesador": "Intel Core i7",
+				  "ramMb": 32768,
+				  "ramDetalles": "2x16GB DDR4",
+				  "ramSeriales": "RAM-A | RAM-B",
+				  "discosModelos": "WD Blue NVMe",
+				  "discosSeriales": "NVME-001",
+				  "motherboardModelo": "Dell Board X",
+				  "motherboardSerial": "MB-X",
+				  "monitores": "Dell 24 SN MON-X",
+				  "teclado": "Dell KB216",
+				  "mouse": "Dell MS116",
+				  "impresora": "Ricoh Informatica",
+				  "activo": true
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/equipos/1")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.nombre").value("PC-INF-001-RENOMBRADA"))
+			.andExpect(jsonPath("$.ultimoUsuario").value("soporte"))
+			.andExpect(jsonPath("$.ramMb").value(32768))
+			.andExpect(jsonPath("$.motherboardSerial").value("MB-X"));
+	}
+
+	@Test
+	void rechazaActualizacionManualConNombreDuplicado() throws Exception {
+		String body = """
+				{
+				  "nombre": "PC-MESA-002",
+				  "fuero": "Informatica",
+				  "activo": true
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/equipos/1")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isConflict());
+	}
+
+	@Test
+	void desactivaEquipoSinPerderEstadoDeMonitoreo() throws Exception {
+		String body = """
+				{
+				  "nombre": "PC-INF-001",
+				  "fuero": "Informatica",
+				  "activo": false
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/equipos/1")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.activo").value(false))
+			.andExpect(jsonPath("$.monitoreo").value("REPORTADO"));
 	}
 
 	@Test
@@ -143,6 +278,24 @@ class EquipoControllerTests {
 				""";
 
 		mockMvc.perform(post("/api/v1/equipos/inventario")
+				.with(user(usuarioSinPermisos()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void bloqueaUsuariosSinPermisoParaActualizarEquipo() throws Exception {
+		String body = """
+				{
+				  "nombre": "PC-INF-001",
+				  "fuero": "Informatica",
+				  "activo": true
+				}
+				""";
+
+		mockMvc.perform(put("/api/v1/equipos/1")
 				.with(user(usuarioSinPermisos()))
 				.with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
@@ -212,6 +365,12 @@ class EquipoControllerTests {
 				.with(user(adminLocal())))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.equipos[0].nombre").value("PC-LEGACY-004"));
+
+		mockMvc.perform(get("/api/v1/equipos/3/componentes").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.origen == 'SCRIPT')]", hasSize(8)))
+			.andExpect(jsonPath("$[?(@.serial == 'DISK-LEGACY-001')]", hasSize(1)))
+			.andExpect(jsonPath("$[?(@.serial == 'MB-LEGACY-001')]", hasSize(1)));
 	}
 
 	@Test

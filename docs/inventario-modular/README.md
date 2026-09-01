@@ -26,6 +26,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 ## Documentos
 
 - [Instalacion desde cero](./instalacion-desde-cero.md)
+- [Bitacora del proyecto](./bitacora-del-proyecto.md)
 - [Requerimientos del sistema](./requerimientos-sistema.md)
 - [Plan de trabajo](./plan-de-trabajo.md)
 - [Versionado Git](./versionado-git.md)
@@ -36,6 +37,9 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Incidente login local repetido](./incidente-login-local-repetido.md)
 - [Usuarios locales y Active Directory](./usuarios-locales-y-active-directory.md)
 - [Modulo Equipos](./modulo-equipos.md)
+- [Modulo Componentes y Gemelo Digital](./modulo-componentes-gemelo-digital.md)
+- [Stock, ordenes de armado y comparacion](./stock-ordenes-armado-y-comparacion.md)
+- [Auditoria transversal](./auditoria-transversal.md)
 - [Base de datos local Windows](./base-datos-local-windows.md)
 - [Seguridad modular inicial](./seguridad-modular-inicial.md)
 - [Decision tecnica API-first y app movil](../decisions/ADR-002-inventario-modular-api-first.md)
@@ -43,6 +47,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Decision sobre modo local sin dominio](../decisions/ADR-005-modo-local-sin-dominio.md)
 - [Decision sobre autorizacion modular inicial](../decisions/ADR-006-autorizacion-modular-inicial.md)
 - [Decision sobre identidades, autenticacion y autorizacion](../decisions/ADR-007-identidades-autenticacion-autorizacion.md)
+- [Decision sobre componentes y gemelo digital](../decisions/ADR-008-componentes-y-gemelo-digital-del-equipo.md)
 
 ## Alcance inicial
 
@@ -58,8 +63,10 @@ seguridad y modularidad:
 
 Estado actual: ya existe una primera implementacion de usuarios, roles, permisos,
 modulos, seed inicial, endpoints de usuario actual, API administrativa para usuarios,
-alta local con clave BCrypt, listado/autorizacion inicial de usuarios AD y primer modulo
-funcional `EQUIPOS`.
+alta local con clave BCrypt, listado/autorizacion inicial de usuarios AD, modulo
+`EQUIPOS`, modulo `COMPONENTES`, primera base de `STOCK`, `ORDENES_ARMADO` y comparacion
+del gemelo digital, primera auditoria transversal de cambios operativos y dashboard de
+diferencias.
 
 El modo local de casa ya permite login repetido con `admin.local` sin depender de Active
 Directory. El incidente y su solucion quedaron documentados en

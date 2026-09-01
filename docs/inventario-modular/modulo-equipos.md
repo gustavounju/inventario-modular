@@ -64,6 +64,46 @@ EQUIPOS:VER
 Devuelve los campos de listado mas `procesador`, `ramMb`, `impresora` y
 `ultimoReporteEn`.
 
+### Actualizar manualmente
+
+```http
+PUT /api/v1/equipos/{id}
+```
+
+Requiere permiso:
+
+```text
+EQUIPOS:EDITAR
+```
+
+Permite corregir o completar datos desde administracion sin depender de un nuevo reporte
+del script. El nombre se normaliza a mayusculas y no puede repetirse con otro equipo.
+
+Payload:
+
+```json
+{
+  "nombre": "PC-INF-001",
+  "ultimoUsuario": "gmurad",
+  "fuero": "Dpto. Informatica San Pedro",
+  "ip": "10.15.2.10",
+  "sistemaOperativo": "Windows 11 Pro",
+  "procesador": "Intel Core i5",
+  "ramMb": 16384,
+  "ramDetalles": "2x8GB DDR4",
+  "ramSeriales": "RAMSN-001 | RAMSN-002",
+  "discosModelos": "KINGSTON SA400",
+  "discosSeriales": "DISK-001",
+  "motherboardModelo": "Dell 0ABC",
+  "motherboardSerial": "MB-001",
+  "monitores": "Dell 22 SN MON-001",
+  "teclado": "Logitech Keyboard",
+  "mouse": "Logitech Mouse",
+  "impresora": "HP LaserJet",
+  "activo": true
+}
+```
+
 ### Recibir inventario
 
 ```http
@@ -142,14 +182,27 @@ Se muestra desde `/admin` solo cuando el usuario tiene permiso `EQUIPOS:VER`.
 Incluye buscador por PC, usuario o fuero, listado tabular, estado de monitoreo y datos
 basicos: equipo, ultimo usuario, fuero, IP y sistema operativo.
 
+El detalle visual esta en:
+
+```text
+/admin/equipos/{id}
+```
+
+Muestra identidad del equipo, fuero, ultimo usuario, IP, sistema operativo, procesador,
+RAM, discos, motherboard, monitores, teclado, mouse, impresora y fecha del ultimo reporte.
+Si el usuario tiene `EQUIPOS:EDITAR`, tambien muestra el formulario de edicion manual
+controlada para completar datos o activar/desactivar el equipo.
+
 ## Seguridad
 
 La autorizacion se resuelve con `AuthorizationService`:
 
 - `GET /api/v1/equipos`: `EQUIPOS:VER`;
 - `GET /api/v1/equipos/{id}`: `EQUIPOS:VER`;
+- `PUT /api/v1/equipos/{id}`: `EQUIPOS:EDITAR`;
 - `POST /api/v1/equipos/inventario`: `EQUIPOS:EDITAR`;
 - `/admin/equipos`: `EQUIPOS:VER`.
+- `/admin/equipos/{id}`: `EQUIPOS:VER` para detalle y `EQUIPOS:EDITAR` para guardar.
 
 Un usuario autenticado pero sin permisos recibe `403 Forbidden`.
 
@@ -171,8 +224,6 @@ mvn "-Dtest=EquipoControllerTests,EquipoPageControllerTests,AdminControllerTests
 
 ## Pendiente
 
-- Agregar detalle visual por equipo.
-- Agregar edicion manual controlada.
 - Agregar importacion inicial desde el inventario viejo.
 - Incorporar relacion futura con stock, componentes, ubicaciones y actas.
 - Definir si se implementa reenvio automatico de reportes pendientes cuando una PC no

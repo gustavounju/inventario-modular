@@ -221,6 +221,37 @@ h1 {
 	color: #1d252d;
 }
 
+.summary-grid {
+	display: grid;
+	gap: 12px;
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+	margin-top: 24px;
+}
+
+.summary-grid div {
+	border: 1px solid #e1e7ee;
+	border-radius: 8px;
+	padding: 13px 14px;
+}
+
+.summary-grid span {
+	color: #5e7184;
+	display: block;
+	font-size: 0.78rem;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+.summary-grid strong {
+	display: block;
+	margin-top: 5px;
+	overflow-wrap: anywhere;
+}
+
+.dashboard-summary strong {
+	font-size: 1.7rem;
+}
+
 .empty-state {
 	margin: 0;
 	color: #5e7184;
@@ -244,6 +275,12 @@ h1 {
 	margin: 0;
 	font-size: 1rem;
 	line-height: 1.25;
+}
+
+.section-note {
+	color: #5e7184;
+	line-height: 1.4;
+	margin: 6px 0 0;
 }
 
 .authorization-badge {
@@ -528,13 +565,117 @@ h1 {
 	font-weight: 700;
 }
 
-.search-form input[type="search"] {
+.search-form input[type="search"],
+.search-form select {
 	border: 1px solid #c7d2dd;
 	border-radius: 6px;
 	color: #1d252d;
 	font: inherit;
 	padding: 10px 12px;
 	width: 100%;
+}
+
+.equipment-form {
+	display: grid;
+	gap: 18px;
+}
+
+.form-grid {
+	display: grid;
+	gap: 14px;
+	grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.form-grid-wide {
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.equipment-form label {
+	display: grid;
+	gap: 7px;
+}
+
+.equipment-form label span {
+	color: #415366;
+	font-size: 0.84rem;
+	font-weight: 700;
+}
+
+.equipment-form input,
+.equipment-form select,
+.equipment-form textarea {
+	border: 1px solid #c7d2dd;
+	border-radius: 6px;
+	color: #1d252d;
+	font: inherit;
+	padding: 10px 12px;
+	width: 100%;
+}
+
+.equipment-form textarea {
+	line-height: 1.4;
+	resize: vertical;
+}
+
+.equipment-form input:focus,
+.equipment-form select:focus,
+.equipment-form textarea:focus {
+	border-color: #23405f;
+	box-shadow: 0 0 0 3px rgba(35, 64, 95, 0.14);
+	outline: none;
+}
+
+.field-error {
+	color: #82071e;
+	font-size: 0.78rem;
+	font-weight: 700;
+}
+
+.form-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.component-form {
+	border-top: 1px solid #e6ebf0;
+	margin-top: 20px;
+	padding-top: 20px;
+}
+
+.edit-stack {
+	display: grid;
+	gap: 14px;
+}
+
+.inline-edit-card {
+	border: 1px solid #e1e7ee;
+	border-radius: 8px;
+	padding: 16px;
+}
+
+.table-subtext {
+	color: #5e7184;
+	display: block;
+	font-size: 0.82rem;
+	line-height: 1.35;
+	margin-top: 4px;
+}
+
+.difference-stack {
+	display: grid;
+	gap: 10px;
+}
+
+.difference-item {
+	display: grid;
+	gap: 3px;
+}
+
+.difference-item span {
+	color: #5e7184;
+	font-size: 0.82rem;
+	line-height: 1.35;
 }
 
 .role-picker {

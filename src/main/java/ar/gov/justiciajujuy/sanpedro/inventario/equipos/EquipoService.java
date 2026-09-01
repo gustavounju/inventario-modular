@@ -155,6 +155,38 @@ public class EquipoService {
 		return toDetalle(equipoRepository.save(equipo));
 	}
 
+	@Transactional
+	public EquipoDetalle actualizarManualmente(Long id, ActualizarEquipoCommand command) {
+		Equipo equipo = equipoRepository.findById(id)
+				.orElseThrow(() -> new EquipoNoEncontradoException(id));
+		String nombre = normalizarNombre(command.nombre());
+		equipoRepository.findByNombreIgnoreCase(nombre)
+				.filter(existente -> !existente.getId().equals(id))
+				.ifPresent(existente -> {
+					throw new EquipoDuplicadoException(nombre);
+				});
+		equipo.actualizarManualmente(
+				nombre,
+				textoOpcional(command.ultimoUsuario()),
+				textoRequerido(command.fuero(), "fuero"),
+				textoOpcional(command.ip()),
+				textoOpcional(command.sistemaOperativo()),
+				textoOpcional(command.procesador()),
+				command.ramMb(),
+				textoOpcional(command.ramDetalles()),
+				textoOpcional(command.ramSeriales()),
+				textoOpcional(command.discosModelos()),
+				textoOpcional(command.discosSeriales()),
+				textoOpcional(command.motherboardModelo()),
+				textoOpcional(command.motherboardSerial()),
+				textoOpcional(command.monitores()),
+				textoOpcional(command.teclado()),
+				textoOpcional(command.mouse()),
+				textoOpcional(command.impresora()),
+				command.activo());
+		return toDetalle(equipoRepository.save(equipo));
+	}
+
 	private EquipoResumen toResumen(Equipo equipo) {
 		return new EquipoResumen(
 				equipo.getId(),
@@ -200,7 +232,35 @@ public class EquipoService {
 		return StringUtils.hasText(valor) ? valor.trim() : null;
 	}
 
+	private String textoRequerido(String valor, String campo) {
+		if (!StringUtils.hasText(valor)) {
+			throw new IllegalArgumentException("El campo " + campo + " es obligatorio.");
+		}
+		return valor.trim();
+	}
+
 	public record ReporteInventarioCommand(
+			String nombre,
+			String ultimoUsuario,
+			String fuero,
+			String ip,
+			String sistemaOperativo,
+			String procesador,
+			Integer ramMb,
+			String ramDetalles,
+			String ramSeriales,
+			String discosModelos,
+			String discosSeriales,
+			String motherboardModelo,
+			String motherboardSerial,
+			String monitores,
+			String teclado,
+			String mouse,
+			String impresora,
+			boolean activo) {
+	}
+
+	public record ActualizarEquipoCommand(
 			String nombre,
 			String ultimoUsuario,
 			String fuero,
@@ -266,6 +326,13 @@ public class EquipoService {
 
 		public EquipoNoEncontradoException(Long id) {
 			super("Equipo no encontrado: " + id);
+		}
+	}
+
+	public static class EquipoDuplicadoException extends RuntimeException {
+
+		public EquipoDuplicadoException(String nombre) {
+			super("Ya existe un equipo con nombre: " + nombre);
 		}
 	}
 }

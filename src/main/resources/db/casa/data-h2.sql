@@ -12,10 +12,12 @@ MERGE INTO modulos (id, codigo, nombre, descripcion, orden, activo) KEY(codigo) 
   (3, 'MUEBLES', 'Muebles', 'Gestion fisica de muebles y bienes de oficina.', 30, TRUE),
   (4, 'PATRIMONIO', 'Patrimonio', 'Control patrimonial institucional y reportes administrativos.', 40, TRUE),
   (5, 'STOCK', 'Stock', 'Existencias, movimientos y disponibilidad de insumos.', 50, TRUE),
+  (10, 'ORDENES_ARMADO', 'Ordenes de Armado', 'Planificacion de equipos nuevos o mejoras con componentes esperados.', 55, TRUE),
   (6, 'COMPONENTES', 'Componentes', 'Partes, repuestos y componentes asociados a equipos.', 60, TRUE),
   (7, 'USUARIOS', 'Usuarios', 'Administracion de usuarios, roles, permisos y modulos.', 70, TRUE),
   (8, 'REPORTES', 'Reportes', 'Consultas, listados y exportaciones del sistema.', 80, TRUE),
-  (9, 'TAREAS', 'Tareas', 'Seguimiento de tareas tecnicas y operativas.', 90, TRUE);
+  (9, 'TAREAS', 'Tareas', 'Seguimiento de tareas tecnicas y operativas.', 90, TRUE),
+  (11, 'AUDITORIA', 'Auditoria', 'Eventos de cambios relevantes del sistema.', 95, TRUE);
 
 MERGE INTO roles (id, codigo, nombre, descripcion, activo) KEY(codigo) VALUES
   (1, 'ADMINISTRADOR', 'Administrador', 'Acceso total a los modulos del sistema.', TRUE),
@@ -43,3 +45,10 @@ WHERE r.codigo = 'ADMINISTRADOR';
 MERGE INTO equipos (id, nombre, ultimo_usuario, fuero, ip, sistema_operativo, procesador, ram_mb, impresora, monitoreo, activo) KEY(nombre) VALUES
   (1, 'PC-INF-001', 'gmurad', 'Informatica', '10.15.2.10', 'Windows 11 Pro', 'Intel Core i5', 16384, 'HP LaserJet', 'REPORTADO', TRUE),
   (2, 'PC-MESA-002', 'mesa.entrada', 'Mesa de ayuda', '10.15.2.11', 'Windows 10 Pro', 'Intel Core i3', 8192, NULL, 'REPORTADO', TRUE);
+
+MERGE INTO componentes (id, equipo_id, tipo, origen, estado_comparacion, descripcion, marca, modelo, serial, capacidad, ubicacion, observaciones, activo) KEY(id) VALUES
+  (1, 1, 'RAM', 'SCRIPT', 'COINCIDE', 'Modulo RAM instalado', 'Kingston', 'DDR4 2666', 'RAMSN-001', '8GB', 'Slot 1', 'Detectado por script', TRUE),
+  (2, 1, 'DISCO', 'ORDEN_ARMADO', 'ESPERADO', 'Disco esperado por orden de armado', 'Kingston', 'SA400', 'DISK-001', '480GB', 'SATA 1', 'Debe coincidir con el reporte', TRUE);
+
+MERGE INTO stock_componentes (id, tipo, estado, descripcion, marca, modelo, serial, capacidad, ubicacion, observaciones, activo) KEY(id) VALUES
+  (1, 'RAM', 'DISPONIBLE', 'Memoria RAM nueva para armado', 'Kingston', 'DDR4 2666', 'STOCK-RAM-001', '8GB', 'Deposito Informatica', 'Disponible para orden de armado', TRUE);

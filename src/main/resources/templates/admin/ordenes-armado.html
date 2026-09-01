@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Ordenes de Armado - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="ordenes-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Gemelo digital planificado</p>
+					<h1 id="ordenes-title">Ordenes de Armado</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<a class="secondary-action" th:href="@{/admin/stock}">Stock</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<p class="success-message" th:if="${creado}">Operacion de orden registrada correctamente.</p>
+
+			<section class="modules-section" aria-labelledby="selector-equipo-title">
+				<div class="section-header">
+					<div>
+						<h2 id="selector-equipo-title">Equipo de trabajo</h2>
+						<p class="section-note">Seleccione el equipo o gemelo digital sobre el que se va a planificar el armado.</p>
+					</div>
+				</div>
+				<form class="search-form" th:action="@{/admin/ordenes-armado}" method="get">
+					<label>
+						<span>Equipo</span>
+						<select name="equipoId">
+							<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
+									th:selected="${equipo.id == equipoSeleccionadoId}">PC-INF-001</option>
+						</select>
+					</label>
+					<button class="primary-action" type="submit">Ver ordenes</button>
+				</form>
+			</section>
+
+			<section class="attributes-section" aria-labelledby="ordenes-list-title">
+				<div class="section-header">
+					<div>
+						<h2 id="ordenes-list-title">Ordenes del equipo</h2>
+						<p class="section-note">Cada orden puede cargar componentes esperados para comparar despues contra el script.</p>
+					</div>
+					<span class="count-badge" th:text="${#lists.size(ordenes)} + ' ordenes'">0 ordenes</span>
+				</div>
+
+				<p class="empty-state" th:if="${#lists.isEmpty(ordenes)}">Todavia no hay ordenes para este equipo.</p>
+
+				<div class="responsive-table" th:if="${!#lists.isEmpty(ordenes)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Orden</th>
+								<th scope="col">Equipo</th>
+								<th scope="col">Estado</th>
+								<th scope="col">Observaciones</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="orden : ${ordenes}">
+								<td data-label="Orden">
+									<strong th:text="${orden.descripcion}">Armado PC</strong>
+									<span class="table-subtext" th:text="'ID ' + ${orden.id}">ID 1</span>
+								</td>
+								<td data-label="Equipo" th:text="${orden.equipoNombre}">PC-INF-001</td>
+								<td data-label="Estado">
+									<span class="authorization-badge is-pending" th:text="${orden.estado}">EN_ARMADO</span>
+								</td>
+								<td data-label="Observaciones" th:text="${orden.observaciones ?: 'Sin observaciones'}">Sin observaciones</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${!#lists.isEmpty(ordenes)}" aria-labelledby="componentes-orden-title">
+				<div class="section-header">
+					<div>
+						<h2 id="componentes-orden-title">Componentes de orden</h2>
+						<p class="section-note">Piezas esperadas y salida real del stock asociada a cada orden.</p>
+					</div>
+				</div>
+
+				<div class="edit-stack">
+					<section class="inline-edit-card" th:each="orden : ${ordenes}">
+						<div class="section-header">
+							<h2 th:text="${orden.descripcion}">Orden</h2>
+							<span class="count-badge" th:text="${#lists.size(componentesOrden[orden.id])} + ' componentes'">0 componentes</span>
+						</div>
+						<p class="empty-state" th:if="${#lists.isEmpty(componentesOrden[orden.id])}">
+							Todavia no hay componentes cargados para esta orden.
+						</p>
+						<div class="responsive-table" th:if="${!#lists.isEmpty(componentesOrden[orden.id])}">
+							<table>
+								<thead>
+									<tr>
+										<th scope="col">Tipo</th>
+										<th scope="col">Componente</th>
+										<th scope="col">Origen</th>
+										<th scope="col">Stock</th>
+										<th scope="col">Accion</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="componenteOrden : ${componentesOrden[orden.id]}">
+										<td data-label="Tipo" th:text="${componenteOrden.tipo}">RAM</td>
+										<td data-label="Componente">
+											<strong th:text="${componenteOrden.descripcion}">Memoria RAM</strong>
+											<span class="table-subtext" th:text="${componenteOrden.serial ?: 'Sin serial'}">SN-001</span>
+										</td>
+										<td data-label="Origen" th:text="${componenteOrden.origen}">ORDEN_ARMADO</td>
+										<td data-label="Stock">
+											<span th:if="${componenteOrden.estadoStock != null}" class="authorization-badge"
+													th:classappend="${componenteOrden.estadoStock.name() == 'ASIGNADO'} ? ' is-authorized' : ' is-pending'"
+													th:text="${componenteOrden.estadoStock}">RESERVADO</span>
+											<span th:unless="${componenteOrden.estadoStock != null}" class="table-subtext">Sin stock asociado</span>
+										</td>
+										<td data-label="Accion">
+											<form class="inline-action-form" th:if="${puedeEditarOrdenes and componenteOrden.estadoStock != null and componenteOrden.estadoStock.name() == 'RESERVADO'}"
+													th:action="@{/admin/ordenes-armado/componentes/{id}/confirmar-salida-stock(id=${componenteOrden.id})}" method="post">
+												<input type="hidden" name="equipoId" th:value="${equipoSeleccionadoId}">
+												<button class="secondary-action" type="submit">Confirmar salida</button>
+											</form>
+											<span class="table-subtext" th:unless="${puedeEditarOrdenes and componenteOrden.estadoStock != null and componenteOrden.estadoStock.name() == 'RESERVADO'}">Sin accion pendiente</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarOrdenes and !#lists.isEmpty(ordenes)}" aria-labelledby="editar-ordenes-title">
+				<div class="section-header">
+					<div>
+						<h2 id="editar-ordenes-title">Editar ordenes</h2>
+						<p class="section-note">Cambie estado, descripcion u observaciones segun avance el armado.</p>
+					</div>
+				</div>
+				<div class="edit-stack">
+					<form class="equipment-form inline-edit-card" th:each="orden : ${ordenes}"
+							th:action="@{/admin/ordenes-armado/{id}(id=${orden.id})}" method="post">
+						<input type="hidden" name="equipoId" th:value="${equipoSeleccionadoId}">
+						<div class="section-header">
+							<h2 th:text="${orden.descripcion}">Orden</h2>
+							<span class="count-badge" th:text="'ID ' + ${orden.id}">ID 1</span>
+						</div>
+						<div class="form-grid">
+							<label>
+								<span>Equipo</span>
+								<select name="equipoId" disabled>
+									<option th:value="${orden.equipoId}" th:text="${orden.equipoNombre}">PC-INF-001</option>
+								</select>
+							</label>
+							<label>
+								<span>Estado</span>
+								<select name="estado">
+									<option th:each="estado : ${estadosOrden}" th:value="${estado}" th:text="${estado}"
+											th:selected="${estado == orden.estado}">EN_ARMADO</option>
+								</select>
+							</label>
+							<label>
+								<span>Descripcion</span>
+								<input name="descripcion" th:value="${orden.descripcion}" maxlength="255" required>
+							</label>
+						</div>
+						<label>
+							<span>Observaciones</span>
+							<textarea name="observaciones" maxlength="500" rows="2" th:text="${orden.observaciones}"></textarea>
+						</label>
+						<div class="form-actions">
+							<button class="secondary-action" type="submit">Actualizar orden</button>
+						</div>
+					</form>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarOrdenes}" aria-labelledby="crear-orden-title">
+				<div class="section-header">
+					<h2 id="crear-orden-title">Crear orden</h2>
+					<span class="count-badge">Requiere ORDENES_ARMADO:EDITAR</span>
+				</div>
+				<form class="equipment-form" th:action="@{/admin/ordenes-armado}" th:object="${ordenForm}" method="post">
+					<div class="form-grid">
+						<label>
+							<span>Equipo</span>
+							<select th:field="*{equipoId}">
+								<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
+							</select>
+						</label>
+						<label>
+							<span>Estado</span>
+							<select th:field="*{estado}">
+								<option th:each="estado : ${estadosOrden}" th:value="${estado}" th:text="${estado}">EN_ARMADO</option>
+							</select>
+						</label>
+						<label>
+							<span>Descripcion</span>
+							<input th:field="*{descripcion}" maxlength="255" required>
+							<small class="field-error" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}">Error</small>
+						</label>
+					</div>
+					<label>
+						<span>Observaciones</span>
+						<textarea th:field="*{observaciones}" maxlength="500" rows="3"></textarea>
+					</label>
+					<div class="form-actions">
+						<button class="primary-action" type="submit">Crear orden</button>
+					</div>
+				</form>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarOrdenes and !#lists.isEmpty(ordenes)}" aria-labelledby="agregar-esperado-title">
+				<div class="section-header">
+					<div>
+						<h2 id="agregar-esperado-title">Agregar componente esperado</h2>
+						<p class="section-note">Seleccione la orden exacta donde debe quedar el componente esperado.</p>
+					</div>
+				</div>
+				<form class="equipment-form" th:action="@{/admin/ordenes-armado/componentes}" th:object="${componenteEsperadoForm}" method="post">
+					<input type="hidden" name="equipoId" th:value="${equipoSeleccionadoId}">
+					<div class="form-grid">
+						<label>
+							<span>Orden</span>
+							<select th:field="*{ordenId}">
+								<option th:each="orden : ${ordenes}" th:value="${orden.id}"
+										th:text="|ID ${orden.id} - ${orden.descripcion}|">ID 1 - Armado</option>
+							</select>
+						</label>
+						<label>
+							<span>Reservar desde stock</span>
+							<select th:field="*{stockComponenteId}">
+								<option value="">Sin reservar stock</option>
+								<option th:each="stock : ${componentesStock}" th:value="${stock.id}"
+										th:text="|${stock.tipo} - ${stock.descripcion} - ${stock.serial ?: 'sin serial'}|">RAM - Memoria</option>
+							</select>
+						</label>
+						<label>
+							<span>Tipo</span>
+							<select th:field="*{tipo}">
+								<option th:each="tipo : ${tiposComponente}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+							</select>
+						</label>
+						<label>
+							<span>Descripcion</span>
+							<input th:field="*{descripcion}" maxlength="255" required>
+							<small class="field-error" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}">Error</small>
+						</label>
+						<label>
+							<span>Marca</span>
+							<input th:field="*{marca}" maxlength="120">
+						</label>
+						<label>
+							<span>Modelo</span>
+							<input th:field="*{modelo}" maxlength="180">
+						</label>
+						<label>
+							<span>Serial</span>
+							<input th:field="*{serial}" maxlength="180">
+						</label>
+						<label>
+							<span>Capacidad</span>
+							<input th:field="*{capacidad}" maxlength="120">
+						</label>
+						<label>
+							<span>Ubicacion prevista</span>
+							<input th:field="*{ubicacion}" maxlength="120">
+						</label>
+					</div>
+					<label>
+						<span>Observaciones</span>
+						<textarea th:field="*{observaciones}" maxlength="500" rows="3"></textarea>
+					</label>
+					<div class="form-actions">
+						<button class="primary-action" type="submit">Agregar esperado</button>
+						<a class="secondary-action" th:href="@{/admin/equipos/{id}(id=${equipoSeleccionadoId})}">Ver gemelo</a>
+					</div>
+				</form>
+			</section>
+		</section>
+	</main>
+</body>
+</html>

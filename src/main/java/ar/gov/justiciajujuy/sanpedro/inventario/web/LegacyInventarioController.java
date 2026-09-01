@@ -1,6 +1,8 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.ReporteInventarioCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import org.springframework.http.HttpStatus;
@@ -23,10 +25,12 @@ public class LegacyInventarioController {
 
 	private final AuthorizationService authorizationService;
 	private final EquipoService equipoService;
+	private final ComponenteService componenteService;
 
-	public LegacyInventarioController(AuthorizationService authorizationService, EquipoService equipoService) {
+	public LegacyInventarioController(AuthorizationService authorizationService, EquipoService equipoService, ComponenteService componenteService) {
 		this.authorizationService = authorizationService;
 		this.equipoService = equipoService;
+		this.componenteService = componenteService;
 	}
 
 	@PostMapping("/submit_inventory")
@@ -89,7 +93,8 @@ public class LegacyInventarioController {
 				true
 		);
 
-		equipoService.registrarInventario(command);
+		EquipoDetalle equipo = equipoService.registrarInventario(command);
+		componenteService.registrarDetectadosDesdeReporte(equipo.id(), command);
 		return Map.of("status", "success");
 	}
 

@@ -214,4 +214,43 @@ public class Equipo {
 		this.monitoreo = "REPORTADO";
 		this.ultimoReporteEn = reportadoEn;
 	}
+
+	public void actualizarManualmente(
+			String nombre,
+			String ultimoUsuario,
+			String fuero,
+			String ip,
+			String sistemaOperativo,
+			String procesador,
+			Integer ramMb,
+			String ramDetalles,
+			String ramSeriales,
+			String discosModelos,
+			String discosSeriales,
+			String motherboardModelo,
+			String motherboardSerial,
+			String monitores,
+			String teclado,
+			String mouse,
+			String impresora,
+			boolean activo) {
+		this.nombre = nombre;
+		this.ultimoUsuario = ultimoUsuario;
+		this.fuero = fuero;
+		this.ip = ip;
+		this.sistemaOperativo = sistemaOperativo;
+		this.procesador = procesador;
+		this.ramMb = ramMb;
+		this.ramDetalles = ramDetalles;
+		this.ramSeriales = ramSeriales;
+		this.discosModelos = discosModelos;
+		this.discosSeriales = discosSeriales;
+		this.motherboardModelo = motherboardModelo;
+		this.motherboardSerial = motherboardSerial;
+		this.monitores = monitores;
+		this.teclado = teclado;
+		this.mouse = mouse;
+		this.impresora = impresora;
+		this.activo = activo;
+	}
 }

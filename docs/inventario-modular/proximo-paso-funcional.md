@@ -132,10 +132,69 @@ Primer alcance de Equipos:
 - Pantalla simple de listado. Completado en `/admin/equipos`.
 - Busqueda por nombre, usuario o fuero. Completado.
 - Tests de controlador/pantalla. Completado.
+- Detalle visual completo por equipo. Completado.
+- Edicion manual controlada por permiso `EQUIPOS:EDITAR`. Completado.
 - Conectar el script real `inventario.ps1`. Pendiente.
 - Definir autenticacion de maquina o token especifico para reportes automaticos.
-  Pendiente.
+  Completado en primera version con bearer token.
 - Importar datos iniciales desde el inventario viejo. Pendiente.
+
+### Sprint 4: Componentes y gemelo digital del equipo
+
+Estado: primera base implementada y en cierre.
+
+Decision:
+
+El gemelo digital del equipo representa la comparacion entre:
+
+- lo que el script detecta en una PC;
+- lo que stock entrega o tiene disponible;
+- lo que una orden de armado espera instalar;
+- lo que el tecnico corrige o confirma manualmente.
+
+Primera version implementada:
+
+- Migracion Flyway para tabla `componentes`.
+- Entidad, repositorio y servicio de componentes.
+- API `GET /api/v1/equipos/{equipoId}/componentes`.
+- API `POST /api/v1/equipos/{equipoId}/componentes`.
+- API `PUT /api/v1/componentes/{id}`.
+- Registro automatico de componentes detectados desde `POST /api/v1/equipos/inventario`.
+- Registro automatico de componentes detectados desde `POST /submit_inventory`.
+- Origen `RELEVAMIENTO_INICIAL` definido para maquinas viejas que se relevan al empezar
+  el inventario.
+- Seccion `Gemelo digital / Componentes` en `/admin/equipos/{id}`.
+- Formulario para cargar componentes desde el detalle del equipo.
+- Permisos `COMPONENTES:VER` y `COMPONENTES:EDITAR`.
+
+Orden confirmado de trabajo:
+
+```text
+1. Completar COMPONENTES para que el script guarde piezas detectadas. Completado.
+2. Agregar RELEVAMIENTO_INICIAL como origen para maquinas viejas. Completado como origen.
+3. Crear STOCK para cargar componentes sueltos nuevos. Primera API completada.
+4. Crear ORDENES_ARMADO. Primera API completada.
+5. Crear pantalla de comparacion del gemelo digital. Primera pantalla integrada al detalle del equipo.
+6. Crear pantallas visuales dedicadas para `STOCK` y `ORDENES_ARMADO`. Completado.
+7. Editar stock cargado. Completado.
+8. Editar ordenes de armado. Completado.
+9. Elegir orden exacta al agregar componentes esperados. Completado.
+10. Pantalla para consolidar componentes detectados como `RELEVAMIENTO_INICIAL`.
+    Completado desde el detalle del equipo.
+11. Descuento/salida real desde stock. Completado en primera version con confirmacion de
+    salida desde orden de armado.
+12. Refinar comparacion automatica esperado vs detectado. Completado en primera version
+    con cruce uno-a-uno, normalizacion de seriales y estado `REVISAR`.
+13. Auditoria transversal de cambios. Completado en primera version para componentes,
+    stock y ordenes de armado.
+14. Dashboard de diferencias. Completado en primera version con conteos, equipos
+    pendientes y enlace directo al detalle del equipo.
+```
+
+Pendiente siguiente:
+
+- Filtros y exportacion de auditoria.
+- Filtros de dashboard por estado, fuero y equipo.
 
 ## No comenzar todavia por
 
@@ -160,9 +219,13 @@ limpios de equipos. Primero datos, despues resumen visual.
 Usuarios y permisos minimos
   -> Administracion visual de usuarios/roles/modulos
   -> Equipos/API de inventario
-  -> Dashboard simple
-  -> Tareas tecnicas
+  -> Componentes y gemelo digital
   -> Stock/componentes
+  -> Ordenes de armado
+  -> Comparacion del gemelo digital
+  -> Auditoria transversal de cambios
+  -> Dashboard simple de diferencias
+  -> Tareas tecnicas
   -> Actas/reportes
 ```
 

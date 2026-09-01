@@ -150,6 +150,12 @@ La guia paso a paso para crear la base local, usuario local y verificar Flyway e
 
 - [Base de datos local Windows](docs/inventario-modular/base-datos-local-windows.md)
 
+La bitacora y el circuito actual de equipos/componentes estan documentados en:
+
+- [Bitacora del proyecto](docs/inventario-modular/bitacora-del-proyecto.md)
+- [Modulo Componentes y Gemelo Digital](docs/inventario-modular/modulo-componentes-gemelo-digital.md)
+- [Stock, ordenes de armado y comparacion](docs/inventario-modular/stock-ordenes-armado-y-comparacion.md)
+
 ## Active Directory
 
 La primera integracion de seguridad autentica usuarios contra Active Directory en modo
@@ -240,6 +246,7 @@ La documentacion del estudio inicial esta en `docs/inventario-modular`.
 Documentos principales:
 
 - [Instalacion desde cero](docs/inventario-modular/instalacion-desde-cero.md)
+- [Bitacora del proyecto](docs/inventario-modular/bitacora-del-proyecto.md)
 - [Requerimientos del sistema](docs/inventario-modular/requerimientos-sistema.md)
 - [Plan de trabajo](docs/inventario-modular/plan-de-trabajo.md)
 - [Versionado Git](docs/inventario-modular/versionado-git.md)
@@ -247,6 +254,7 @@ Documentos principales:
 - [Login Active Directory](docs/inventario-modular/login-active-directory.md)
 - [Proximo paso funcional](docs/inventario-modular/proximo-paso-funcional.md)
 - [Modulo Equipos](docs/inventario-modular/modulo-equipos.md)
+- [Modulo Componentes y Gemelo Digital](docs/inventario-modular/modulo-componentes-gemelo-digital.md)
 - [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](docs/inventario-modular/modo-local-windows-sin-dominio.md)

@@ -1,6 +1,9 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.ActualizarEquipoCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDuplicadoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoPagina;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,10 +40,12 @@ public class EquipoController {
 
 	private final AuthorizationService authorizationService;
 	private final EquipoService equipoService;
+	private final ComponenteService componenteService;
 
-	public EquipoController(AuthorizationService authorizationService, EquipoService equipoService) {
+	public EquipoController(AuthorizationService authorizationService, EquipoService equipoService, ComponenteService componenteService) {
 		this.authorizationService = authorizationService;
 		this.equipoService = equipoService;
+		this.componenteService = componenteService;
 	}
 
 	@GetMapping
@@ -66,7 +72,19 @@ public class EquipoController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody ReporteInventarioRequest request) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
-		return equipoService.registrarInventario(request.toCommand());
+		ReporteInventarioCommand command = request.toCommand();
+		EquipoDetalle equipo = equipoService.registrarInventario(command);
+		componenteService.registrarDetectadosDesdeReporte(equipo.id(), command);
+		return equipo;
+	}
+
+	@PutMapping("/{id}")
+	public EquipoDetalle actualizar(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@Valid @RequestBody ActualizarEquipoRequest request) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		return equipoService.actualizarManualmente(id, request.toCommand());
 	}
 
 	private void exigirPermiso(UserDetails userDetails, String permiso) {
@@ -78,6 +96,11 @@ public class EquipoController {
 	@ExceptionHandler(EquipoNoEncontradoException.class)
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	void equipoNoEncontrado() {
+	}
+
+	@ExceptionHandler(EquipoDuplicadoException.class)
+	@ResponseStatus(HttpStatus.CONFLICT)
+	void equipoDuplicado() {
 	}
 
 	public record ReporteInventarioRequest(
@@ -139,6 +162,87 @@ public class EquipoController {
 
 		private ReporteInventarioCommand toCommand() {
 			return new ReporteInventarioCommand(
+					nombre,
+					ultimoUsuario,
+					fuero,
+					ip,
+					sistemaOperativo,
+					procesador,
+					ramMb,
+					ramDetalles,
+					ramSeriales,
+					discosModelos,
+					discosSeriales,
+					motherboardModelo,
+					motherboardSerial,
+					monitores,
+					teclado,
+					mouse,
+					impresora,
+					activo);
+		}
+	}
+
+	public record ActualizarEquipoRequest(
+			@NotBlank
+			@Size(max = 120)
+			@Pattern(regexp = "^[a-zA-Z0-9._-]+$")
+			String nombre,
+
+			@Size(max = 120)
+			String ultimoUsuario,
+
+			@NotBlank
+			@Size(max = 120)
+			String fuero,
+
+			@Size(max = 45)
+			String ip,
+
+			@Size(max = 180)
+			String sistemaOperativo,
+
+			@Size(max = 255)
+			String procesador,
+
+			@Min(0)
+			@Max(1048576)
+			Integer ramMb,
+
+			@Size(max = 500)
+			String ramDetalles,
+
+			@Size(max = 500)
+			String ramSeriales,
+
+			@Size(max = 500)
+			String discosModelos,
+
+			@Size(max = 500)
+			String discosSeriales,
+
+			@Size(max = 255)
+			String motherboardModelo,
+
+			@Size(max = 255)
+			String motherboardSerial,
+
+			@Size(max = 500)
+			String monitores,
+
+			@Size(max = 180)
+			String teclado,
+
+			@Size(max = 180)
+			String mouse,
+
+			@Size(max = 180)
+			String impresora,
+
+			boolean activo) {
+
+		private ActualizarEquipoCommand toCommand() {
+			return new ActualizarEquipoCommand(
 					nombre,
 					ultimoUsuario,
 					fuero,
