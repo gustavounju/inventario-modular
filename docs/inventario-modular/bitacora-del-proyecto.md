@@ -1429,25 +1429,43 @@ Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-## 2026-09-01 - Correccion casa y filtros del dashboard
+## 2026-09-01 - Correccion de arranque local y filtros del dashboard
 
-Se corrigio un error detectado al abrir pantallas nuevas con el perfil `casa`.
+Se corrigio una validacion hecha contra el perfil equivocado. El flujo funcional de
+componentes, stock, ordenes, auditoria y dashboard debe probarse en Windows con perfil
+`local` y MySQL local, no con el perfil `casa`.
 
 Problema:
 
-- La base H2 persistida en `.local-data/` habia sido creada con un esquema anterior.
-- Al abrir `/admin/ordenes-armado` o `/admin/dashboard-diferencias`, Hibernate buscaba
-  columnas nuevas de `equipos`, por ejemplo `discos_modelos`, que no existian en esa
-  base local vieja.
-- El navegador mostraba `Whitelabel Error Page` con status `500`.
+- Se habia levantado el servidor con `spring-boot.run.profiles=casa`.
+- Ese perfil usa H2 de archivo y existe solo como fallback cuando MySQL local todavia no
+  esta creado.
+- La base operativa esperada para este punto del proyecto es MySQL local en
+  `127.0.0.1:3306/inventario_modular`.
 
-Solucion aplicada:
+Solucion aplicada y validada:
 
-- `db/casa/schema-h2.sql` ahora agrega columnas faltantes con
-  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
-- El seed `db/casa/data-h2.sql` carga tambien los campos nuevos de hardware usados por
-  el gemelo digital.
-- No hace falta borrar la base local H2 para recuperar el perfil `casa`.
+- Se detuvo el servidor que estaba corriendo con H2.
+- Se confirmo conectividad a MySQL local en `127.0.0.1:3306`.
+- Se levanto el servidor con perfil `local` y variables de MySQL local.
+- Flyway valido 7 migraciones y aplico `V7__auditoria_transversal.sql` sobre
+  `inventario_modular`.
+- Se verifico en `/admin` que la aplicacion informa `MySQL local`.
+
+Comando correcto para levantar en Windows con MySQL local:
+
+```powershell
+$env:INVENTARIO_DB_PRIMARY_URL='jdbc:mysql://127.0.0.1:3306/inventario_modular'
+$env:INVENTARIO_DB_PRIMARY_USER='inventario_local'
+$env:INVENTARIO_DB_PRIMARY_PASSWORD='Cambiar_Clave_Local_123!'
+$env:INVENTARIO_LDAP_ENABLED='false'
+$env:INVENTARIO_LOCAL_AUTH_ENABLED='true'
+$env:INVENTARIO_LOCAL_DB_AUTH_ENABLED='true'
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+Nota: el perfil `casa` con H2 queda solo como respaldo tecnico para una maquina sin MySQL
+local listo. No debe usarse como validacion principal de este sprint.
 
 Tambien se completo el siguiente alcance del dashboard:
 
@@ -1457,9 +1475,10 @@ Tambien se completo el siguiente alcance del dashboard:
 - Los filtros funcionan tanto en la pantalla `/admin/dashboard-diferencias` como en la
   API `/api/v1/gemelo-digital/dashboard-diferencias`.
 
-Verificacion local autenticada:
+Verificacion local autenticada contra MySQL:
 
 ```text
+/admin -> 200, mostrando MySQL local
 /admin/ordenes-armado -> 200
 /admin/dashboard-diferencias -> 200
 /admin/dashboard-diferencias?estado=FALTA&equipo=PC-INF&fuero=Informatica -> 200
