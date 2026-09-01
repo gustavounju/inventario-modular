@@ -1927,6 +1927,45 @@ git switch codex/modulo-tareas-tecnicas
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=casa"
 ```
 
+### Correccion visual del menu principal
+
+Luego de integrar `TAREAS`, `MUEBLES`, `PATRIMONIO` y `REPORTES`, el menu superior del
+panel `/admin` podia salirse de la pantalla en resoluciones chicas o medianas.
+
+Solucion aplicada:
+
+- Se amplio el ancho maximo del panel principal.
+- Se habilito `flex-wrap` en el encabezado y en las acciones.
+- Se agrego un corte responsive a `900px` para convertir las acciones en grilla.
+- Se mantuvo el comportamiento movil existente a `640px`.
+
+Archivo modificado:
+
+```text
+src/main/resources/static/css/admin.css
+```
+
+Comandos de validacion local:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+.\mvnw.cmd --batch-mode "-Dtest=AdminControllerTests" test
+.\mvnw.cmd --batch-mode -DskipTests package
+```
+
+Comandos Ubuntu por PuTTY para recibir esta correccion despues de subirla:
+
+```bash
+cd /opt/inventario-modular
+git fetch origin
+git pull --ff-only origin primeros-pasos
+sh ./mvnw --batch-mode test
+sh ./mvnw --batch-mode -DskipTests package
+sudo systemctl restart inventario-modular.service
+systemctl status inventario-modular.service --no-pager -l
+curl -I http://127.0.0.1:8081/admin
+```
+
 ## Estado actual documentado
 
 Al cierre de esta bitacora, Inventario Modular cuenta con:

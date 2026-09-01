@@ -28,7 +28,7 @@ body {
 }
 
 .status-panel {
-	width: min(100%, 760px);
+	width: min(100%, 1040px);
 	border: 1px solid #d9e0e7;
 	border-radius: 8px;
 	background: #ffffff;
@@ -44,13 +44,17 @@ body {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
+	flex-wrap: wrap;
 	gap: 18px;
 }
 
 .admin-actions {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: 10px;
+	justify-content: flex-end;
+	min-width: 0;
 }
 
 .logout-form {
@@ -69,6 +73,7 @@ body {
 	font-weight: 700;
 	padding: 9px 14px;
 	text-decoration: none;
+	white-space: nowrap;
 }
 
 .logout-form button:hover,
@@ -763,6 +768,32 @@ thead th {
 
 td {
 	overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+	.shell {
+		place-items: start center;
+	}
+
+	.panel-header {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+
+	.admin-actions {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+		justify-content: stretch;
+		width: 100%;
+	}
+
+	.logout-form,
+	.logout-form button,
+	.secondary-action,
+	.primary-action {
+		text-align: center;
+		width: 100%;
+	}
 }
 
 @media (max-width: 640px) {
