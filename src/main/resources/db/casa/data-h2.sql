@@ -17,7 +17,8 @@ MERGE INTO modulos (id, codigo, nombre, descripcion, orden, activo) KEY(codigo) 
   (7, 'USUARIOS', 'Usuarios', 'Administracion de usuarios, roles, permisos y modulos.', 70, TRUE),
   (8, 'REPORTES', 'Reportes', 'Consultas, listados y exportaciones del sistema.', 80, TRUE),
   (9, 'TAREAS', 'Tareas', 'Seguimiento de tareas tecnicas y operativas.', 90, TRUE),
-  (11, 'AUDITORIA', 'Auditoria', 'Eventos de cambios relevantes del sistema.', 95, TRUE);
+  (11, 'AUDITORIA', 'Auditoria', 'Eventos de cambios relevantes del sistema.', 95, TRUE),
+  (12, 'UBICACIONES', 'Ubicaciones', 'Oficinas, depositos, salas y racks vinculados al inventario.', 25, TRUE);
 
 MERGE INTO roles (id, codigo, nombre, descripcion, activo) KEY(codigo) VALUES
   (1, 'ADMINISTRADOR', 'Administrador', 'Acceso total a los modulos del sistema.', TRUE),
@@ -67,3 +68,9 @@ MERGE INTO muebles (id, codigo, tipo, descripcion, ubicacion, fuero, responsable
 
 MERGE INTO bienes_patrimoniales (id, numero_patrimonial, categoria, descripcion, ubicacion, fuero, custodio, estado, equipo_id, observaciones, activo) KEY(numero_patrimonial) VALUES
   (1, 'PAT-SEED-001', 'PC', 'PC patrimonial seed', 'Informatica', 'Informatica', 'admin.local', 'EN_USO', 1, 'Seed local casa', TRUE);
+
+MERGE INTO actas (id, numero, tipo, equipo_id, fecha_emision, destinatario, responsable_entrega, responsable_recepcion, detalle, estado, observaciones, activo) KEY(numero) VALUES
+  (1, 'ACT-SEED-001', 'ENTREGA', 1, DATE '2026-09-01', 'Mesa de Entradas', 'admin.local', 'mesa.entrada', 'Entrega inicial de equipo seed.', 'EMITIDA', 'Seed local casa', TRUE);
+
+MERGE INTO ubicaciones (id, codigo, nombre, tipo, fuero, responsable, edificio, piso, estado, observaciones, activo) KEY(codigo) VALUES
+  (1, 'UBI-SEED-001', 'Oficina Informatica', 'OFICINA', 'Informatica', 'admin.local', 'Centro Judicial San Pedro', 'PB', 'ACTIVA', 'Seed local casa', TRUE);

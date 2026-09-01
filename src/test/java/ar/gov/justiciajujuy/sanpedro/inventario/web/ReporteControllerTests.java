@@ -37,7 +37,9 @@ class ReporteControllerTests {
 			.andExpect(jsonPath("$.equipos").value(2))
 			.andExpect(jsonPath("$.muebles").value(1))
 			.andExpect(jsonPath("$.bienesPatrimoniales").value(1))
-			.andExpect(jsonPath("$.tareas").value(1));
+			.andExpect(jsonPath("$.tareas").value(1))
+			.andExpect(jsonPath("$.actas").value(1))
+			.andExpect(jsonPath("$.ubicaciones").value(1));
 
 		mockMvc.perform(get("/api/v1/reportes/muebles.csv").with(user(adminLocal())))
 			.andExpect(status().isOk())
@@ -48,6 +50,16 @@ class ReporteControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(content().string(containsString("numeroPatrimonial,categoria,descripcion,ubicacion,fuero,custodio,estado,equipoNombre,activo")))
 			.andExpect(content().string(containsString("PAT-SEED-001")));
+
+		mockMvc.perform(get("/api/v1/reportes/actas.csv").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("numero,tipo,equipoNombre,fechaEmision,destinatario,responsableEntrega,responsableRecepcion,estado,activo")))
+			.andExpect(content().string(containsString("ACT-SEED-001")));
+
+		mockMvc.perform(get("/api/v1/reportes/ubicaciones.csv").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("codigo,nombre,tipo,fuero,responsable,edificio,piso,estado,activo")))
+			.andExpect(content().string(containsString("UBI-SEED-001")));
 	}
 
 	@Test

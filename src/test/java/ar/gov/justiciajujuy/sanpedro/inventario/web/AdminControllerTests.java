@@ -46,6 +46,8 @@ class AdminControllerTests {
 			.andExpect(content().string(containsString("href=\"/admin/dashboard-diferencias\"")))
 			.andExpect(content().string(containsString("href=\"/admin/stock\"")))
 			.andExpect(content().string(containsString("href=\"/admin/ordenes-armado\"")))
+			.andExpect(content().string(containsString("href=\"/admin/actas\"")))
+			.andExpect(content().string(containsString("href=\"/admin/ubicaciones\"")))
 			.andExpect(content().string(containsString("href=\"/admin/auditoria\"")));
 	}
 
@@ -64,6 +66,8 @@ class AdminControllerTests {
 			.andExpect(content().string(not(containsString("href=\"/admin/dashboard-diferencias\""))))
 			.andExpect(content().string(not(containsString("href=\"/admin/stock\""))))
 			.andExpect(content().string(not(containsString("href=\"/admin/ordenes-armado\""))))
+			.andExpect(content().string(not(containsString("href=\"/admin/actas\""))))
+			.andExpect(content().string(not(containsString("href=\"/admin/ubicaciones\""))))
 			.andExpect(content().string(not(containsString("href=\"/admin/auditoria\""))));
 	}
 

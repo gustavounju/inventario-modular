@@ -256,6 +256,39 @@ Pendiente siguiente:
 - Exportacion CSV del dashboard de diferencias.
 - Filtros avanzados por fuero, custodio y ubicacion.
 
+### Sprint 7: Actas y Ubicaciones
+
+Estado: primeras versiones implementadas.
+
+Motivo:
+
+- `ACTAS` ya existia como modulo definido desde la seguridad inicial, pero faltaba
+  operarlo desde API y pantalla.
+- `UBICACIONES` ordena oficinas, depositos, salas y racks, y prepara un futuro mapa
+  interno sin tocar aun equipos/muebles/patrimonio.
+- Ambos modulos agregan valor administrativo con bajo riesgo y quedan protegidos por
+  permisos.
+
+Primera version implementada:
+
+- Migracion Flyway `V10__actas_ubicaciones.sql`.
+- Tabla `actas`.
+- Tabla `ubicaciones`.
+- API y pantalla `/admin/actas`.
+- API y pantalla `/admin/ubicaciones`.
+- Accesos desde `/admin` segun permisos.
+- Auditoria al crear y actualizar.
+- Conteos en Reportes.
+- Exportaciones CSV de actas y ubicaciones.
+- Tests de API, pantalla, permisos, menu y reportes.
+
+Pendiente siguiente:
+
+- Generar PDF/impresion formal de cada acta.
+- Usar ubicaciones como selector en equipos, muebles, patrimonio y stock.
+- Numeracion automatica de actas.
+- Reportes por ubicacion/fuero.
+
 ## No comenzar todavia por
 
 ### Stock
@@ -287,6 +320,7 @@ Usuarios y permisos minimos
   -> Dashboard simple de diferencias
   -> Tareas tecnicas
   -> Muebles/patrimonio/reportes basicos
+  -> Actas y ubicaciones
   -> Actas/reportes administrativos completos
 ```
 

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Ubicaciones - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="ubicaciones-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Mapa operativo</p>
+					<h1 id="ubicaciones-title">Ubicaciones</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<a class="secondary-action" th:href="@{/admin/muebles}">Muebles</a>
+					<a class="secondary-action" th:href="@{/admin/patrimonio}">Patrimonio</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<p class="success-message" th:if="${creado}">Ubicacion actualizada correctamente.</p>
+
+			<form class="search-form dashboard-filter-form" th:action="@{/admin/ubicaciones}" method="get">
+				<label>
+					<span>Buscar</span>
+					<input type="search" name="query" th:value="${filtroQuery}" maxlength="120">
+				</label>
+				<label>
+					<span>Tipo</span>
+					<select name="tipo">
+						<option value="">Todos</option>
+						<option th:each="tipo : ${tiposUbicacion}" th:value="${tipo}" th:text="${tipo}"
+								th:selected="${tipo == filtroTipo}">OFICINA</option>
+					</select>
+				</label>
+				<label>
+					<span>Estado</span>
+					<select name="estado">
+						<option value="">Todos</option>
+						<option th:each="estado : ${estadosUbicacion}" th:value="${estado}" th:text="${estado}"
+								th:selected="${estado == filtroEstado}">ACTIVA</option>
+					</select>
+				</label>
+				<button class="secondary-action" type="submit">Filtrar</button>
+			</form>
+
+			<section class="modules-section" aria-labelledby="ubicaciones-list-title">
+				<div class="section-header">
+					<div>
+						<h2 id="ubicaciones-list-title">Ubicaciones registradas</h2>
+						<p class="section-note">Oficinas, depositos, salas y racks donde se asignan bienes.</p>
+					</div>
+					<span class="count-badge" th:text="${#lists.size(ubicaciones)} + ' ubicaciones'">0 ubicaciones</span>
+				</div>
+
+				<p class="empty-state" th:if="${#lists.isEmpty(ubicaciones)}">Todavia no hay ubicaciones con esos filtros.</p>
+
+				<div class="responsive-table" th:if="${!#lists.isEmpty(ubicaciones)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Codigo</th>
+								<th scope="col">Ubicacion</th>
+								<th scope="col">Edificio</th>
+								<th scope="col">Responsable</th>
+								<th scope="col">Estado</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="ubicacion : ${ubicaciones}">
+								<td data-label="Codigo" th:text="${ubicacion.codigo}">INF-OFI</td>
+								<td data-label="Ubicacion">
+									<strong th:text="${ubicacion.nombre}">Informatica</strong>
+									<span class="table-subtext" th:text="${ubicacion.tipo}">OFICINA</span>
+									<span class="table-subtext" th:if="${ubicacion.observaciones}" th:text="${ubicacion.observaciones}">Observaciones</span>
+								</td>
+								<td data-label="Edificio">
+									<span th:text="${ubicacion.edificio ?: 'Sin edificio'}">Central</span>
+									<span class="table-subtext" th:text="${ubicacion.piso ?: 'Sin piso'}">PB</span>
+								</td>
+								<td data-label="Responsable">
+									<span th:text="${ubicacion.responsable ?: 'Sin responsable'}">admin.local</span>
+									<span class="table-subtext" th:text="${ubicacion.fuero ?: 'Sin fuero'}">Informatica</span>
+								</td>
+								<td data-label="Estado">
+									<span class="authorization-badge" th:classappend="${ubicacion.activo} ? ' is-authorized' : ' is-pending'"
+											th:text="${ubicacion.estado}">ACTIVA</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarUbicaciones and !#lists.isEmpty(ubicaciones)}" aria-labelledby="ubicaciones-edit-title">
+				<div class="section-header">
+					<div>
+						<h2 id="ubicaciones-edit-title">Editar ubicaciones cargadas</h2>
+						<p class="section-note">Ajuste responsable, fuero, edificio o estado operativo.</p>
+					</div>
+				</div>
+
+				<div class="edit-stack">
+					<form class="equipment-form inline-edit-card" th:each="ubicacion : ${ubicaciones}"
+							th:action="@{/admin/ubicaciones/{id}(id=${ubicacion.id})}" method="post">
+						<div class="section-header">
+							<h2 th:text="${ubicacion.codigo}">INF-OFI</h2>
+							<span class="count-badge" th:text="'ID ' + ${ubicacion.id}">ID 1</span>
+						</div>
+						<div class="form-grid">
+							<label>
+								<span>Codigo</span>
+								<input name="codigo" th:value="${ubicacion.codigo}" maxlength="80" required>
+							</label>
+							<label>
+								<span>Nombre</span>
+								<input name="nombre" th:value="${ubicacion.nombre}" maxlength="180" required>
+							</label>
+							<label>
+								<span>Tipo</span>
+								<select name="tipo">
+									<option th:each="tipo : ${tiposUbicacion}" th:value="${tipo}" th:text="${tipo}"
+											th:selected="${tipo == ubicacion.tipo}">OFICINA</option>
+								</select>
+							</label>
+							<label>
+								<span>Estado</span>
+								<select name="estado">
+									<option th:each="estado : ${estadosUbicacion}" th:value="${estado}" th:text="${estado}"
+											th:selected="${estado == ubicacion.estado}">ACTIVA</option>
+								</select>
+							</label>
+							<label>
+								<span>Fuero</span>
+								<input name="fuero" th:value="${ubicacion.fuero}" maxlength="120">
+							</label>
+							<label>
+								<span>Responsable</span>
+								<input name="responsable" th:value="${ubicacion.responsable}" maxlength="120">
+							</label>
+							<label>
+								<span>Edificio</span>
+								<input name="edificio" th:value="${ubicacion.edificio}" maxlength="120">
+							</label>
+							<label>
+								<span>Piso</span>
+								<input name="piso" th:value="${ubicacion.piso}" maxlength="40">
+							</label>
+						</div>
+						<label>
+							<span>Observaciones</span>
+							<textarea name="observaciones" maxlength="500" rows="2" th:text="${ubicacion.observaciones}"></textarea>
+						</label>
+						<label class="checkbox-row">
+							<input name="_activo" type="hidden" value="on">
+							<input name="activo" type="checkbox" value="true" th:checked="${ubicacion.activo}">
+							<span>Ubicacion activa</span>
+						</label>
+						<div class="form-actions">
+							<button class="secondary-action" type="submit">Guardar cambios</button>
+						</div>
+					</form>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarUbicaciones}" aria-labelledby="ubicacion-form-title">
+				<div class="section-header">
+					<h2 id="ubicacion-form-title">Cargar ubicacion</h2>
+					<span class="count-badge">Requiere UBICACIONES:EDITAR</span>
+				</div>
+
+				<form class="equipment-form" th:action="@{/admin/ubicaciones}" th:object="${ubicacionForm}" method="post">
+					<div class="form-grid">
+						<label>
+							<span>Codigo</span>
+							<input th:field="*{codigo}" maxlength="80" required>
+							<small class="field-error" th:if="${#fields.hasErrors('codigo')}" th:errors="*{codigo}">Error</small>
+						</label>
+						<label>
+							<span>Nombre</span>
+							<input th:field="*{nombre}" maxlength="180" required>
+							<small class="field-error" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}">Error</small>
+						</label>
+						<label>
+							<span>Tipo</span>
+							<select th:field="*{tipo}">
+								<option th:each="tipo : ${tiposUbicacion}" th:value="${tipo}" th:text="${tipo}">OFICINA</option>
+							</select>
+						</label>
+						<label>
+							<span>Estado</span>
+							<select th:field="*{estado}">
+								<option th:each="estado : ${estadosUbicacion}" th:value="${estado}" th:text="${estado}">ACTIVA</option>
+							</select>
+						</label>
+						<label>
+							<span>Fuero</span>
+							<input th:field="*{fuero}" maxlength="120">
+						</label>
+						<label>
+							<span>Responsable</span>
+							<input th:field="*{responsable}" maxlength="120">
+						</label>
+						<label>
+							<span>Edificio</span>
+							<input th:field="*{edificio}" maxlength="120">
+						</label>
+						<label>
+							<span>Piso</span>
+							<input th:field="*{piso}" maxlength="40">
+						</label>
+					</div>
+					<label>
+						<span>Observaciones</span>
+						<textarea th:field="*{observaciones}" maxlength="500" rows="3"></textarea>
+					</label>
+					<label class="checkbox-row">
+						<input name="_activo" type="hidden" value="on">
+						<input th:field="*{activo}" type="checkbox">
+						<span>Ubicacion activa</span>
+					</label>
+					<div class="form-actions">
+						<button class="primary-action" type="submit">Guardar ubicacion</button>
+					</div>
+				</form>
+			</section>
+		</section>
+	</main>
+</body>
+</html>

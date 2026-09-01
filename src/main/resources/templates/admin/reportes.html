@@ -17,6 +17,7 @@
 				<nav class="admin-actions" aria-label="Acciones administrativas">
 					<a class="secondary-action" th:href="@{/admin}">Volver</a>
 					<a class="secondary-action" th:href="@{/admin/muebles}">Muebles</a>
+					<a class="secondary-action" th:href="@{/admin/ubicaciones}">Ubicaciones</a>
 					<a class="secondary-action" th:href="@{/admin/patrimonio}">Patrimonio</a>
 					<form class="logout-form" th:action="@{/logout}" method="post">
 						<button type="submit">Salir</button>
@@ -32,7 +33,7 @@
 					</div>
 				</div>
 
-				<div class="module-grid">
+				<div class="modules-grid">
 					<article class="module-card">
 						<span class="module-icon">PC</span>
 						<div>
@@ -61,6 +62,20 @@
 							<p th:text="${resumen.tareas}">0</p>
 						</div>
 					</article>
+					<article class="module-card">
+						<span class="module-icon">AC</span>
+						<div>
+							<h2>Actas</h2>
+							<p th:text="${resumen.actas}">0</p>
+						</div>
+					</article>
+					<article class="module-card">
+						<span class="module-icon">UB</span>
+						<div>
+							<h2>Ubicaciones</h2>
+							<p th:text="${resumen.ubicaciones}">0</p>
+						</div>
+					</article>
 				</div>
 			</section>
 
@@ -77,6 +92,8 @@
 					<a class="primary-action" th:href="@{/api/v1/reportes/muebles.csv}">Muebles CSV</a>
 					<a class="secondary-action" th:href="@{/api/v1/reportes/patrimonio.csv}">Patrimonio CSV</a>
 					<a class="secondary-action" th:href="@{/api/v1/reportes/tareas.csv}">Tareas CSV</a>
+					<a class="secondary-action" th:href="@{/api/v1/reportes/actas.csv}">Actas CSV</a>
+					<a class="secondary-action" th:href="@{/api/v1/reportes/ubicaciones.csv}">Ubicaciones CSV</a>
 				</div>
 
 				<p class="empty-state" th:if="${!puedeExportarReportes}">El usuario actual puede ver reportes, pero no exportarlos.</p>

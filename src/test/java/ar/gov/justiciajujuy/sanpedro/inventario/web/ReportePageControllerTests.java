@@ -37,7 +37,9 @@ class ReportePageControllerTests {
 			.andExpect(view().name("admin/reportes"))
 			.andExpect(content().string(containsString("Resumen operativo")))
 			.andExpect(content().string(containsString("Muebles CSV")))
-			.andExpect(content().string(containsString("Patrimonio CSV")));
+			.andExpect(content().string(containsString("Patrimonio CSV")))
+			.andExpect(content().string(containsString("Actas CSV")))
+			.andExpect(content().string(containsString("Ubicaciones CSV")));
 	}
 
 	@Test

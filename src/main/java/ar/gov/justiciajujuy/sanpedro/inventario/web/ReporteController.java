@@ -54,6 +54,18 @@ public class ReporteController {
 		return csv("tareas.csv", reporteService.tareasCsv());
 	}
 
+	@GetMapping(value = "/actas.csv", produces = "text/csv")
+	public ResponseEntity<String> actasCsv(@AuthenticationPrincipal UserDetails userDetails) {
+		exigirPermiso(userDetails, PERMISO_EXPORTAR);
+		return csv("actas.csv", reporteService.actasCsv());
+	}
+
+	@GetMapping(value = "/ubicaciones.csv", produces = "text/csv")
+	public ResponseEntity<String> ubicacionesCsv(@AuthenticationPrincipal UserDetails userDetails) {
+		exigirPermiso(userDetails, PERMISO_EXPORTAR);
+		return csv("ubicaciones.csv", reporteService.ubicacionesCsv());
+	}
+
 	private ResponseEntity<String> csv(String nombre, String contenido) {
 		return ResponseEntity.ok()
 				.contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))

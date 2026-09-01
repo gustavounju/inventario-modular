@@ -3,6 +3,8 @@ package ar.gov.justiciajujuy.sanpedro.inventario.reportes;
 import java.util.Arrays;
 import java.util.List;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.actas.ActaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.actas.ActaService.ActaDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.muebles.MuebleService;
 import ar.gov.justiciajujuy.sanpedro.inventario.muebles.MuebleService.MuebleDetalle;
@@ -10,6 +12,8 @@ import ar.gov.justiciajujuy.sanpedro.inventario.patrimonio.PatrimonioService;
 import ar.gov.justiciajujuy.sanpedro.inventario.patrimonio.PatrimonioService.BienPatrimonialDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.ubicaciones.UbicacionService;
+import ar.gov.justiciajujuy.sanpedro.inventario.ubicaciones.UbicacionService.UbicacionDetalle;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,13 +23,18 @@ public class ReporteService {
 	private final MuebleService muebleService;
 	private final PatrimonioService patrimonioService;
 	private final TareaTecnicaService tareaTecnicaService;
+	private final ActaService actaService;
+	private final UbicacionService ubicacionService;
 
 	public ReporteService(EquipoRepository equipoRepository, MuebleService muebleService,
-			PatrimonioService patrimonioService, TareaTecnicaService tareaTecnicaService) {
+			PatrimonioService patrimonioService, TareaTecnicaService tareaTecnicaService, ActaService actaService,
+			UbicacionService ubicacionService) {
 		this.equipoRepository = equipoRepository;
 		this.muebleService = muebleService;
 		this.patrimonioService = patrimonioService;
 		this.tareaTecnicaService = tareaTecnicaService;
+		this.actaService = actaService;
+		this.ubicacionService = ubicacionService;
 	}
 
 	public ResumenOperativo resumen() {
@@ -33,7 +42,9 @@ public class ReporteService {
 				equipoRepository.count(),
 				muebleService.contar(),
 				patrimonioService.contar(),
-				tareaTecnicaService.contar());
+				tareaTecnicaService.contar(),
+				actaService.contar(),
+				ubicacionService.contar());
 	}
 
 	public String mueblesCsv() {
@@ -83,6 +94,40 @@ public class ReporteService {
 		return csv.toString();
 	}
 
+	public String actasCsv() {
+		StringBuilder csv = new StringBuilder("numero,tipo,equipoNombre,fechaEmision,destinatario,responsableEntrega,responsableRecepcion,estado,activo\n");
+		for (ActaDetalle acta : actaService.buscar(null, null, null)) {
+			csv.append(fila(Arrays.asList(
+					acta.numero(),
+					String.valueOf(acta.tipo()),
+					acta.equipoNombre(),
+					acta.fechaEmision() == null ? null : String.valueOf(acta.fechaEmision()),
+					acta.destinatario(),
+					acta.responsableEntrega(),
+					acta.responsableRecepcion(),
+					String.valueOf(acta.estado()),
+					String.valueOf(acta.activo()))));
+		}
+		return csv.toString();
+	}
+
+	public String ubicacionesCsv() {
+		StringBuilder csv = new StringBuilder("codigo,nombre,tipo,fuero,responsable,edificio,piso,estado,activo\n");
+		for (UbicacionDetalle ubicacion : ubicacionService.buscar(null, null, null)) {
+			csv.append(fila(Arrays.asList(
+					ubicacion.codigo(),
+					ubicacion.nombre(),
+					String.valueOf(ubicacion.tipo()),
+					ubicacion.fuero(),
+					ubicacion.responsable(),
+					ubicacion.edificio(),
+					ubicacion.piso(),
+					String.valueOf(ubicacion.estado()),
+					String.valueOf(ubicacion.activo()))));
+		}
+		return csv.toString();
+	}
+
 	private String fila(List<String> valores) {
 		return valores.stream()
 				.map(this::csv)
@@ -98,6 +143,7 @@ public class ReporteService {
 		return limpio.contains(",") || limpio.contains("\"") || limpio.contains("\n") ? "\"" + limpio + "\"" : limpio;
 	}
 
-	public record ResumenOperativo(long equipos, long muebles, long bienesPatrimoniales, long tareas) {
+	public record ResumenOperativo(long equipos, long muebles, long bienesPatrimoniales, long tareas, long actas,
+			long ubicaciones) {
 	}
 }

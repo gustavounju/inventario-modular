@@ -1,5 +1,6 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.equipos;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -11,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 
 	Optional<Equipo> findByNombreIgnoreCase(String nombre);
+
+	List<Equipo> findAllByOrderByNombreAsc();
 
 	@Query("""
 			SELECT e

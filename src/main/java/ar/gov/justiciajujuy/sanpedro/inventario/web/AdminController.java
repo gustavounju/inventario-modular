@@ -24,6 +24,8 @@ public class AdminController {
 	private static final String MODULO_ORDENES_ARMADO = "ORDENES_ARMADO";
 	private static final String MODULO_AUDITORIA = "AUDITORIA";
 	private static final String MODULO_TAREAS = "TAREAS";
+	private static final String MODULO_ACTAS = "ACTAS";
+	private static final String MODULO_UBICACIONES = "UBICACIONES";
 	private static final String MODULO_MUEBLES = "MUEBLES";
 	private static final String MODULO_PATRIMONIO = "PATRIMONIO";
 	private static final String MODULO_REPORTES = "REPORTES";
@@ -71,8 +73,12 @@ public class AdminController {
 				authorizationService.tienePermiso(userDetails, MODULO_ORDENES_ARMADO, PERMISO_VER));
 		model.addAttribute("canViewMuebles",
 				authorizationService.tienePermiso(userDetails, MODULO_MUEBLES, PERMISO_VER));
+		model.addAttribute("canViewUbicaciones",
+				authorizationService.tienePermiso(userDetails, MODULO_UBICACIONES, PERMISO_VER));
 		model.addAttribute("canViewPatrimonio",
 				authorizationService.tienePermiso(userDetails, MODULO_PATRIMONIO, PERMISO_VER));
+		model.addAttribute("canViewActas",
+				authorizationService.tienePermiso(userDetails, MODULO_ACTAS, PERMISO_VER));
 		model.addAttribute("canViewReportes",
 				authorizationService.tienePermiso(userDetails, MODULO_REPORTES, PERMISO_VER));
 		model.addAttribute("canViewAuditoria",

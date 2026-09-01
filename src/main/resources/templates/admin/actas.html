@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Actas - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="actas-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Documentacion administrativa</p>
+					<h1 id="actas-title">Actas</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<a class="secondary-action" th:href="@{/admin/equipos}">Equipos</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<p class="success-message" th:if="${creado}">Acta actualizada correctamente.</p>
+
+			<form class="search-form dashboard-filter-form" th:action="@{/admin/actas}" method="get">
+				<label>
+					<span>Buscar</span>
+					<input type="search" name="query" th:value="${filtroQuery}" maxlength="120">
+				</label>
+				<label>
+					<span>Tipo</span>
+					<select name="tipo">
+						<option value="">Todos</option>
+						<option th:each="tipo : ${tiposActa}" th:value="${tipo}" th:text="${tipo}"
+								th:selected="${tipo == filtroTipo}">ENTREGA</option>
+					</select>
+				</label>
+				<label>
+					<span>Estado</span>
+					<select name="estado">
+						<option value="">Todos</option>
+						<option th:each="estado : ${estadosActa}" th:value="${estado}" th:text="${estado}"
+								th:selected="${estado == filtroEstado}">BORRADOR</option>
+					</select>
+				</label>
+				<button class="secondary-action" type="submit">Filtrar</button>
+			</form>
+
+			<section class="modules-section" aria-labelledby="actas-list-title">
+				<div class="section-header">
+					<div>
+						<h2 id="actas-list-title">Actas registradas</h2>
+						<p class="section-note">Constancias de entrega, recepcion, devolucion, traslado o baja.</p>
+					</div>
+					<span class="count-badge" th:text="${#lists.size(actas)} + ' actas'">0 actas</span>
+				</div>
+
+				<p class="empty-state" th:if="${#lists.isEmpty(actas)}">Todavia no hay actas con esos filtros.</p>
+
+				<div class="responsive-table" th:if="${!#lists.isEmpty(actas)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Numero</th>
+								<th scope="col">Acta</th>
+								<th scope="col">Equipo</th>
+								<th scope="col">Responsables</th>
+								<th scope="col">Estado</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="acta : ${actas}">
+								<td data-label="Numero" th:text="${acta.numero}">ACT-001</td>
+								<td data-label="Acta">
+									<strong th:text="${acta.tipo}">ENTREGA</strong>
+									<span class="table-subtext" th:text="${acta.destinatario}">Destinatario</span>
+									<span class="table-subtext" th:text="${acta.fechaEmision ?: 'Sin fecha'}">2026-09-01</span>
+								</td>
+								<td data-label="Equipo" th:text="${acta.equipoNombre ?: 'Sin equipo'}">PC-INF-001</td>
+								<td data-label="Responsables">
+									<span th:text="${acta.responsableEntrega ?: 'Sin entrega'}">admin.local</span>
+									<span class="table-subtext" th:text="${acta.responsableRecepcion ?: 'Sin recepcion'}">mesa.entrada</span>
+								</td>
+								<td data-label="Estado">
+									<span class="authorization-badge" th:classappend="${acta.activo} ? ' is-authorized' : ' is-pending'"
+											th:text="${acta.estado}">BORRADOR</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarActas and !#lists.isEmpty(actas)}" aria-labelledby="actas-edit-title">
+				<div class="section-header">
+					<div>
+						<h2 id="actas-edit-title">Editar actas cargadas</h2>
+						<p class="section-note">Ajuste estado, destinatario, equipo asociado o responsables.</p>
+					</div>
+				</div>
+
+				<div class="edit-stack">
+					<form class="equipment-form inline-edit-card" th:each="acta : ${actas}"
+							th:action="@{/admin/actas/{id}(id=${acta.id})}" method="post">
+						<div class="section-header">
+							<h2 th:text="${acta.numero}">ACT-001</h2>
+							<span class="count-badge" th:text="'ID ' + ${acta.id}">ID 1</span>
+						</div>
+						<div class="form-grid">
+							<label>
+								<span>Numero</span>
+								<input name="numero" th:value="${acta.numero}" maxlength="80" required>
+							</label>
+							<label>
+								<span>Tipo</span>
+								<select name="tipo">
+									<option th:each="tipo : ${tiposActa}" th:value="${tipo}" th:text="${tipo}"
+											th:selected="${tipo == acta.tipo}">ENTREGA</option>
+								</select>
+							</label>
+							<label>
+								<span>Equipo</span>
+								<select name="equipoId">
+									<option value="">Sin equipo</option>
+									<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
+											th:selected="${equipo.id == acta.equipoId}">PC-INF-001</option>
+								</select>
+							</label>
+							<label>
+								<span>Fecha</span>
+								<input type="date" name="fechaEmision" th:value="${acta.fechaEmision}">
+							</label>
+							<label>
+								<span>Destinatario</span>
+								<input name="destinatario" th:value="${acta.destinatario}" maxlength="180" required>
+							</label>
+							<label>
+								<span>Entrega</span>
+								<input name="responsableEntrega" th:value="${acta.responsableEntrega}" maxlength="120">
+							</label>
+							<label>
+								<span>Recepcion</span>
+								<input name="responsableRecepcion" th:value="${acta.responsableRecepcion}" maxlength="120">
+							</label>
+							<label>
+								<span>Estado</span>
+								<select name="estado">
+									<option th:each="estado : ${estadosActa}" th:value="${estado}" th:text="${estado}"
+											th:selected="${estado == acta.estado}">BORRADOR</option>
+								</select>
+							</label>
+						</div>
+						<label>
+							<span>Detalle</span>
+							<textarea name="detalle" maxlength="1000" rows="3" required th:text="${acta.detalle}"></textarea>
+						</label>
+						<label>
+							<span>Observaciones</span>
+							<textarea name="observaciones" maxlength="500" rows="2" th:text="${acta.observaciones}"></textarea>
+						</label>
+						<label class="checkbox-row">
+							<input name="_activo" type="hidden" value="on">
+							<input name="activo" type="checkbox" value="true" th:checked="${acta.activo}">
+							<span>Acta activa</span>
+						</label>
+						<div class="form-actions">
+							<button class="secondary-action" type="submit">Guardar cambios</button>
+						</div>
+					</form>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarActas}" aria-labelledby="acta-form-title">
+				<div class="section-header">
+					<h2 id="acta-form-title">Cargar acta</h2>
+					<span class="count-badge">Requiere ACTAS:EDITAR</span>
+				</div>
+
+				<form class="equipment-form" th:action="@{/admin/actas}" th:object="${actaForm}" method="post">
+					<div class="form-grid">
+						<label>
+							<span>Numero</span>
+							<input th:field="*{numero}" maxlength="80" required>
+							<small class="field-error" th:if="${#fields.hasErrors('numero')}" th:errors="*{numero}">Error</small>
+						</label>
+						<label>
+							<span>Tipo</span>
+							<select th:field="*{tipo}">
+								<option th:each="tipo : ${tiposActa}" th:value="${tipo}" th:text="${tipo}">ENTREGA</option>
+							</select>
+						</label>
+						<label>
+							<span>Equipo</span>
+							<select th:field="*{equipoId}">
+								<option value="">Sin equipo</option>
+								<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
+							</select>
+						</label>
+						<label>
+							<span>Fecha</span>
+							<input type="date" th:field="*{fechaEmision}">
+						</label>
+						<label>
+							<span>Destinatario</span>
+							<input th:field="*{destinatario}" maxlength="180" required>
+							<small class="field-error" th:if="${#fields.hasErrors('destinatario')}" th:errors="*{destinatario}">Error</small>
+						</label>
+						<label>
+							<span>Entrega</span>
+							<input th:field="*{responsableEntrega}" maxlength="120">
+						</label>
+						<label>
+							<span>Recepcion</span>
+							<input th:field="*{responsableRecepcion}" maxlength="120">
+						</label>
+						<label>
+							<span>Estado</span>
+							<select th:field="*{estado}">
+								<option th:each="estado : ${estadosActa}" th:value="${estado}" th:text="${estado}">BORRADOR</option>
+							</select>
+						</label>
+					</div>
+					<label>
+						<span>Detalle</span>
+						<textarea th:field="*{detalle}" maxlength="1000" rows="4" required></textarea>
+						<small class="field-error" th:if="${#fields.hasErrors('detalle')}" th:errors="*{detalle}">Error</small>
+					</label>
+					<label>
+						<span>Observaciones</span>
+						<textarea th:field="*{observaciones}" maxlength="500" rows="3"></textarea>
+					</label>
+					<label class="checkbox-row">
+						<input name="_activo" type="hidden" value="on">
+						<input th:field="*{activo}" type="checkbox">
+						<span>Acta activa</span>
+					</label>
+					<div class="form-actions">
+						<button class="primary-action" type="submit">Guardar acta</button>
+					</div>
+				</form>
+			</section>
+		</section>
+	</main>
+</body>
+</html>

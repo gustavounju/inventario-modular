@@ -12,8 +12,10 @@ Primera version implementada:
 - API `GET /api/v1/reportes/muebles.csv`.
 - API `GET /api/v1/reportes/patrimonio.csv`.
 - API `GET /api/v1/reportes/tareas.csv`.
+- API `GET /api/v1/reportes/actas.csv`.
+- API `GET /api/v1/reportes/ubicaciones.csv`.
 - Pantalla `/admin/reportes`.
-- Resumen de equipos, muebles, bienes patrimoniales y tareas.
+- Resumen de equipos, muebles, bienes patrimoniales, tareas, actas y ubicaciones.
 - Descarga CSV protegida por `REPORTES:EXPORTAR`.
 - Permiso de pantalla `REPORTES:VER`.
 
@@ -49,6 +51,6 @@ DB_PASS="${INVENTARIO_DB_PASSWORD:-${INVENTARIO_DB_PRIMARY_PASSWORD:-}}"
 DB_HOST=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://([^:/]+).*#\1#")
 DB_NAME=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://[^/]+/([^?]+).*#\1#")
 mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" \
-  -e "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 8; SHOW TABLES LIKE '\''muebles'\''; SHOW TABLES LIKE '\''bienes_patrimoniales'\'';"
+  -e "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 8; SHOW TABLES LIKE '\''muebles'\''; SHOW TABLES LIKE '\''bienes_patrimoniales'\''; SHOW TABLES LIKE '\''actas'\''; SHOW TABLES LIKE '\''ubicaciones'\'';"
 '
 ```

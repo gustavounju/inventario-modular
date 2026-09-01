@@ -2,6 +2,8 @@ DROP TABLE IF EXISTS orden_armado_componentes;
 DROP TABLE IF EXISTS ordenes_armado;
 DROP TABLE IF EXISTS stock_componentes;
 DROP TABLE IF EXISTS componentes;
+DROP TABLE IF EXISTS actas;
+DROP TABLE IF EXISTS ubicaciones;
 DROP TABLE IF EXISTS tareas_tecnicas;
 DROP TABLE IF EXISTS bienes_patrimoniales;
 DROP TABLE IF EXISTS muebles;

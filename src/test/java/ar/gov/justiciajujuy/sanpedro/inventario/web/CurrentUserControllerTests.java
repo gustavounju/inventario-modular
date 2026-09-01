@@ -47,19 +47,21 @@ class CurrentUserControllerTests {
 			.andExpect(jsonPath("$.nombreVisible", is("Administrador Local")))
 			.andExpect(jsonPath("$.fuero", is("Desarrollo local")))
 			.andExpect(jsonPath("$.autorizado", is(true)))
-			.andExpect(jsonPath("$.modulos", hasSize(10)))
+			.andExpect(jsonPath("$.modulos", hasSize(12)))
 			.andExpect(jsonPath("$.modulos[0].codigo", is("EQUIPOS")))
 			.andExpect(jsonPath("$.modulos[0].permisos", containsInAnyOrder("ADMINISTRAR", "EDITAR", "VER")))
-			.andExpect(jsonPath("$.modulos[1].codigo", is("MUEBLES")))
-			.andExpect(jsonPath("$.modulos[2].codigo", is("PATRIMONIO")))
-			.andExpect(jsonPath("$.modulos[3].codigo", is("STOCK")))
-			.andExpect(jsonPath("$.modulos[4].codigo", is("ORDENES_ARMADO")))
-			.andExpect(jsonPath("$.modulos[5].codigo", is("COMPONENTES")))
-			.andExpect(jsonPath("$.modulos[6].codigo", is("USUARIOS")))
-			.andExpect(jsonPath("$.modulos[7].codigo", is("REPORTES")))
-			.andExpect(jsonPath("$.modulos[7].permisos", containsInAnyOrder("ADMINISTRAR", "EXPORTAR", "VER")))
-			.andExpect(jsonPath("$.modulos[8].codigo", is("TAREAS")))
-			.andExpect(jsonPath("$.modulos[9].codigo", is("AUDITORIA")));
+			.andExpect(jsonPath("$.modulos[1].codigo", is("ACTAS")))
+			.andExpect(jsonPath("$.modulos[2].codigo", is("UBICACIONES")))
+			.andExpect(jsonPath("$.modulos[3].codigo", is("MUEBLES")))
+			.andExpect(jsonPath("$.modulos[4].codigo", is("PATRIMONIO")))
+			.andExpect(jsonPath("$.modulos[5].codigo", is("STOCK")))
+			.andExpect(jsonPath("$.modulos[6].codigo", is("ORDENES_ARMADO")))
+			.andExpect(jsonPath("$.modulos[7].codigo", is("COMPONENTES")))
+			.andExpect(jsonPath("$.modulos[8].codigo", is("USUARIOS")))
+			.andExpect(jsonPath("$.modulos[9].codigo", is("REPORTES")))
+			.andExpect(jsonPath("$.modulos[9].permisos", containsInAnyOrder("ADMINISTRAR", "EXPORTAR", "VER")))
+			.andExpect(jsonPath("$.modulos[10].codigo", is("TAREAS")))
+			.andExpect(jsonPath("$.modulos[11].codigo", is("AUDITORIA")));
 	}
 
 	@Test

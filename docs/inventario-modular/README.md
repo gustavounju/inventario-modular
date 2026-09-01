@@ -40,6 +40,8 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Modulo Componentes y Gemelo Digital](./modulo-componentes-gemelo-digital.md)
 - [Stock, ordenes de armado y comparacion](./stock-ordenes-armado-y-comparacion.md)
 - [Auditoria transversal](./auditoria-transversal.md)
+- [Modulo Actas](./modulo-actas.md)
+- [Modulo Ubicaciones](./modulo-ubicaciones.md)
 - [Modulo Tareas Tecnicas](./modulo-tareas-tecnicas.md)
 - [Modulo Muebles](./modulo-muebles.md)
 - [Modulo Patrimonio](./modulo-patrimonio.md)
@@ -70,7 +72,8 @@ modulos, seed inicial, endpoints de usuario actual, API administrativa para usua
 alta local con clave BCrypt, listado/autorizacion inicial de usuarios AD, modulo
 `EQUIPOS`, modulo `COMPONENTES`, primera base de `STOCK`, `ORDENES_ARMADO` y comparacion
 del gemelo digital, primera auditoria transversal de cambios operativos, dashboard de
-diferencias y primeras versiones de `TAREAS`, `MUEBLES`, `PATRIMONIO` y `REPORTES`.
+diferencias y primeras versiones de `TAREAS`, `MUEBLES`, `PATRIMONIO`, `REPORTES`,
+`ACTAS` y `UBICACIONES`.
 
 El modo local de casa ya permite login repetido con `admin.local` sin depender de Active
 Directory. El incidente y su solucion quedaron documentados en

@@ -159,6 +159,8 @@ La bitacora y el circuito actual de equipos/componentes estan documentados en:
 - [Modulo Muebles](docs/inventario-modular/modulo-muebles.md)
 - [Modulo Patrimonio](docs/inventario-modular/modulo-patrimonio.md)
 - [Modulo Reportes](docs/inventario-modular/modulo-reportes.md)
+- [Modulo Actas](docs/inventario-modular/modulo-actas.md)
+- [Modulo Ubicaciones](docs/inventario-modular/modulo-ubicaciones.md)
 
 ## Active Directory
 
@@ -243,13 +245,15 @@ Guia tecnica:
 - [Login Active Directory](docs/inventario-modular/login-active-directory.md)
 - [ADR-004: Login Active Directory solo lectura](docs/decisions/ADR-004-login-active-directory-solo-lectura.md)
 
-### Muebles, Patrimonio y Reportes
+### Muebles, Patrimonio, Actas, Ubicaciones y Reportes
 
 Las primeras versiones de estos modulos estan disponibles en:
 
 ```text
 http://localhost:8081/admin/muebles
 http://localhost:8081/admin/patrimonio
+http://localhost:8081/admin/actas
+http://localhost:8081/admin/ubicaciones
 http://localhost:8081/admin/reportes
 ```
 
@@ -262,10 +266,18 @@ PUT  /api/v1/muebles/{id}
 GET  /api/v1/patrimonio/bienes
 POST /api/v1/patrimonio/bienes
 PUT  /api/v1/patrimonio/bienes/{id}
+GET  /api/v1/actas
+POST /api/v1/actas
+PUT  /api/v1/actas/{id}
+GET  /api/v1/ubicaciones
+POST /api/v1/ubicaciones
+PUT  /api/v1/ubicaciones/{id}
 GET  /api/v1/reportes/resumen
 GET  /api/v1/reportes/muebles.csv
 GET  /api/v1/reportes/patrimonio.csv
 GET  /api/v1/reportes/tareas.csv
+GET  /api/v1/reportes/actas.csv
+GET  /api/v1/reportes/ubicaciones.csv
 ```
 
 ## Documentacion
@@ -285,6 +297,8 @@ Documentos principales:
 - [Modulo Equipos](docs/inventario-modular/modulo-equipos.md)
 - [Modulo Componentes y Gemelo Digital](docs/inventario-modular/modulo-componentes-gemelo-digital.md)
 - [Modulo Tareas Tecnicas](docs/inventario-modular/modulo-tareas-tecnicas.md)
+- [Modulo Actas](docs/inventario-modular/modulo-actas.md)
+- [Modulo Ubicaciones](docs/inventario-modular/modulo-ubicaciones.md)
 - [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](docs/inventario-modular/modo-local-windows-sin-dominio.md)

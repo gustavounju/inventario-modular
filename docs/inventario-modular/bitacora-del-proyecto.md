@@ -2001,6 +2001,121 @@ cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
 C:\Users\gmurad\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\poppler\Library\bin\pdftoppm.exe -png -r 130 output\pdf\manual-usuario-inventario-modular.pdf tmp\pdfs\manual_usuario_page
 ```
 
+### Modulos Actas y Ubicaciones
+
+Se avanzo con dos modulos funcionales completos de bajo riesgo operativo:
+
+- `ACTAS`, para registrar constancias de entrega, recepcion, devolucion, traslado, baja u
+  otra actuacion interna.
+- `UBICACIONES`, para registrar oficinas, depositos, salas y racks donde luego podran
+  asignarse equipos, muebles, patrimonio y stock.
+
+Alcance implementado:
+
+- Migracion Flyway `V10__actas_ubicaciones.sql`.
+- Entidades, repositorios y servicios para actas y ubicaciones.
+- API REST protegida por permisos:
+
+```text
+GET  /api/v1/actas
+POST /api/v1/actas
+PUT  /api/v1/actas/{id}
+GET  /api/v1/ubicaciones
+POST /api/v1/ubicaciones
+PUT  /api/v1/ubicaciones/{id}
+```
+
+- Pantallas administrativas:
+
+```text
+/admin/actas
+/admin/ubicaciones
+```
+
+- Alta, listado, filtros y edicion desde pantalla.
+- Accesos desde `/admin` condicionados por permisos.
+- Auditoria al crear y actualizar registros.
+- Conteos en `REPORTES`.
+- Exportaciones CSV:
+
+```text
+GET /api/v1/reportes/actas.csv
+GET /api/v1/reportes/ubicaciones.csv
+```
+
+- Seeds de H2 para perfil `casa` y tests.
+- Documentacion:
+  - `docs/inventario-modular/modulo-actas.md`
+  - `docs/inventario-modular/modulo-ubicaciones.md`
+
+Comando de pruebas focalizadas ejecutado:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+.\mvnw.cmd --batch-mode "-Dtest=ActaControllerTests,UbicacionControllerTests,AdminControllerTests,ReporteControllerTests" test
+```
+
+Resultado:
+
+```text
+Tests run: 12, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Comando de suite completa ejecutado despues de ajustar la expectativa de modulos en
+`CurrentUserControllerTests`:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+.\mvnw.cmd --batch-mode test
+```
+
+Resultado:
+
+```text
+Tests run: 114, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+Comando de empaquetado ejecutado:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+.\mvnw.cmd --batch-mode -DskipTests package
+```
+
+Resultado:
+
+```text
+BUILD SUCCESS
+```
+
+Smoke local con perfil `casa`:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=casa"
+```
+
+Verificacion manual automatizada contra `http://localhost:8081`:
+
+- `/admin` contiene enlaces a `/admin/actas` y `/admin/ubicaciones`.
+- `/admin/actas` renderiza `Actas registradas`.
+- `/admin/ubicaciones` renderiza `Ubicaciones registradas`.
+
+Comandos para actualizar Ubuntu por PuTTY:
+
+```bash
+cd /opt/inventario-modular
+git fetch origin
+git pull --ff-only origin primeros-pasos
+./mvnw --batch-mode test
+./mvnw --batch-mode -DskipTests package
+sudo systemctl restart inventario-modular.service
+systemctl status inventario-modular.service --no-pager -l
+curl -s http://127.0.0.1:8081/api/v1/sistema/estado
+```
+
 ## Estado actual documentado
 
 Al cierre de esta bitacora, Inventario Modular cuenta con:
@@ -2051,6 +2166,14 @@ Al cierre de esta bitacora, Inventario Modular cuenta con:
 - Modulo `REPORTES`.
 - Pantalla `/admin/reportes`.
 - API de resumen y CSV en `/api/v1/reportes`.
+- Modulo `ACTAS`.
+- Pantalla `/admin/actas`.
+- API de actas en `/api/v1/actas`.
+- Exportacion CSV de actas en `/api/v1/reportes/actas.csv`.
+- Modulo `UBICACIONES`.
+- Pantalla `/admin/ubicaciones`.
+- API de ubicaciones en `/api/v1/ubicaciones`.
+- Exportacion CSV de ubicaciones en `/api/v1/reportes/ubicaciones.csv`.
 - Script Windows de inventario servido por la app.
 - Verificacion SHA-256 del script.
 - Documentacion de actualizacion de produccion.
@@ -2094,6 +2217,13 @@ Pendientes de muebles, patrimonio y reportes:
 - Exportacion CSV del dashboard de diferencias.
 - Reportes administrativos mas completos.
 
+Pendientes de actas y ubicaciones:
+
+- Generar PDF/impresion formal de actas.
+- Numeracion automatica de actas por anio o dependencia.
+- Usar ubicaciones como selector en equipos, muebles, patrimonio y stock.
+- Reportes por ubicacion/fuero.
+
 Pendientes de plataforma:
 
 - Definir reverse proxy/HTTPS para un despliegue real.
@@ -2119,6 +2249,8 @@ Pendientes de plataforma:
 - `docs/inventario-modular/modulo-muebles.md`
 - `docs/inventario-modular/modulo-patrimonio.md`
 - `docs/inventario-modular/modulo-reportes.md`
+- `docs/inventario-modular/modulo-actas.md`
+- `docs/inventario-modular/modulo-ubicaciones.md`
 - `docs/inventario-modular/incidente-login-local-repetido.md`
 - `docs/decisions/ADR-002-inventario-modular-api-first.md`
 - `docs/decisions/ADR-003-inventario-viejo-como-referencia-funcional.md`
