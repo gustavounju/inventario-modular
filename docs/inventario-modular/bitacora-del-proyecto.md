@@ -1869,6 +1869,39 @@ Flyway muestra V8 y V9 aplicadas con success=1
 SHOW TABLES devuelve tareas_tecnicas, muebles y bienes_patrimoniales
 ```
 
+### Publicacion en GitLab y GitHub
+
+El avance quedo commiteado y subido a los dos remotos del proyecto:
+
+```text
+Commit: 2341b1d feat: agregar tareas muebles patrimonio y reportes
+Rama: codex/modulo-tareas-tecnicas
+GitLab: https://gitlab.com/gustavoeliasm/inventario-modular
+GitHub: https://github.com/gustavounju/inventario-modular
+```
+
+Comandos ejecutados:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git commit -m "feat: agregar tareas muebles patrimonio y reportes"
+git push -u origin codex/modulo-tareas-tecnicas
+git push -u github codex/modulo-tareas-tecnicas
+git branch --set-upstream-to=origin/codex/modulo-tareas-tecnicas codex/modulo-tareas-tecnicas
+```
+
+GitLab propuso crear el Merge Request desde:
+
+```text
+https://gitlab.com/gustavoeliasm/inventario-modular/-/merge_requests/new?merge_request%5Bsource_branch%5D=codex%2Fmodulo-tareas-tecnicas
+```
+
+Sobre el alcance de esta bitacora: esta completa como relato cronologico del proyecto
+desde la creacion del repo y los primeros comandos hasta los modulos actuales. No es un
+log linea por linea de cada archivo de codigo; para eso se usa el historial Git. La
+bitacora documenta decisiones, hitos, comandos, validaciones, rutas, migraciones y
+pendientes principales.
+
 ## Estado actual documentado
 
 Al cierre de esta bitacora, Inventario Modular cuenta con:
