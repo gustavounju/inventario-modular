@@ -1,5 +1,6 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.EstadoComparacion;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.GemeloDigitalService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.GemeloDigitalService.DashboardDiferencias;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
@@ -8,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,10 +30,14 @@ public class DashboardDiferenciasController {
 	}
 
 	@GetMapping("/dashboard-diferencias")
-	public DashboardDiferencias dashboard(@AuthenticationPrincipal UserDetails userDetails) {
+	public DashboardDiferencias dashboard(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) String equipo,
+			@RequestParam(required = false) String fuero,
+			@RequestParam(required = false) EstadoComparacion estado) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para ver diferencias del gemelo digital.");
 		}
-		return gemeloDigitalService.dashboardDiferencias();
+		return gemeloDigitalService.dashboardDiferencias(equipo, fuero, estado);
 	}
 }

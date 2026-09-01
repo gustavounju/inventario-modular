@@ -189,12 +189,13 @@ Orden confirmado de trabajo:
     stock y ordenes de armado.
 14. Dashboard de diferencias. Completado en primera version con conteos, equipos
     pendientes y enlace directo al detalle del equipo.
+15. Filtros del dashboard de diferencias. Completado por estado, equipo y fuero.
 ```
 
 Pendiente siguiente:
 
+- Exportacion CSV del dashboard de diferencias.
 - Filtros y exportacion de auditoria.
-- Filtros de dashboard por estado, fuero y equipo.
 
 ## No comenzar todavia por
 

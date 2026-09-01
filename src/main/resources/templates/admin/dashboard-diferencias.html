@@ -23,6 +23,29 @@
 				</nav>
 			</header>
 
+			<form class="search-form dashboard-filter-form" th:action="@{/admin/dashboard-diferencias}" method="get">
+				<label>
+					<span>Equipo</span>
+					<input type="search" name="equipo" th:value="${equipoFiltro}" placeholder="PC-INF-001">
+				</label>
+				<label>
+					<span>Fuero</span>
+					<input type="search" name="fuero" th:value="${fueroFiltro}" placeholder="Informatica">
+				</label>
+				<label>
+					<span>Estado</span>
+					<select name="estado">
+						<option value="">Todos</option>
+						<option th:each="estado : ${estadosComparacion}" th:value="${estado}" th:text="${estado}"
+								th:selected="${estadoFiltro == estado}">FALTA</option>
+					</select>
+				</label>
+				<div class="form-actions">
+					<button class="primary-action" type="submit">Filtrar</button>
+					<a class="secondary-action" th:href="@{/admin/dashboard-diferencias}">Limpiar</a>
+				</div>
+			</form>
+
 			<section class="summary-grid dashboard-summary" aria-label="Resumen de diferencias">
 				<div>
 					<span>Faltan</span>

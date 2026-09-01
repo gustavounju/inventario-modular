@@ -1429,6 +1429,55 @@ Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
+## 2026-09-01 - Correccion casa y filtros del dashboard
+
+Se corrigio un error detectado al abrir pantallas nuevas con el perfil `casa`.
+
+Problema:
+
+- La base H2 persistida en `.local-data/` habia sido creada con un esquema anterior.
+- Al abrir `/admin/ordenes-armado` o `/admin/dashboard-diferencias`, Hibernate buscaba
+  columnas nuevas de `equipos`, por ejemplo `discos_modelos`, que no existian en esa
+  base local vieja.
+- El navegador mostraba `Whitelabel Error Page` con status `500`.
+
+Solucion aplicada:
+
+- `db/casa/schema-h2.sql` ahora agrega columnas faltantes con
+  `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
+- El seed `db/casa/data-h2.sql` carga tambien los campos nuevos de hardware usados por
+  el gemelo digital.
+- No hace falta borrar la base local H2 para recuperar el perfil `casa`.
+
+Tambien se completo el siguiente alcance del dashboard:
+
+- Filtro por estado de comparacion.
+- Filtro por nombre de equipo.
+- Filtro por fuero.
+- Los filtros funcionan tanto en la pantalla `/admin/dashboard-diferencias` como en la
+  API `/api/v1/gemelo-digital/dashboard-diferencias`.
+
+Verificacion local autenticada:
+
+```text
+/admin/ordenes-armado -> 200
+/admin/dashboard-diferencias -> 200
+/admin/dashboard-diferencias?estado=FALTA&equipo=PC-INF&fuero=Informatica -> 200
+```
+
+Comando de prueba enfocado:
+
+```powershell
+.\mvnw.cmd "-Dtest=DashboardDiferenciasControllerTests,AdminControllerTests,StockOrdenArmadoPageControllerTests" test
+```
+
+Resultado:
+
+```text
+Tests run: 13, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
 ## Estado actual documentado
 
 Al cierre de esta bitacora, Inventario Modular cuenta con:
@@ -1461,6 +1510,7 @@ Al cierre de esta bitacora, Inventario Modular cuenta con:
 - Comparacion inicial del gemelo digital en el detalle del equipo.
 - Dashboard de diferencias en `/admin/dashboard-diferencias`.
 - API de dashboard en `/api/v1/gemelo-digital/dashboard-diferencias`.
+- Filtros de dashboard por estado, equipo y fuero.
 - Modulo `AUDITORIA`.
 - Tabla `auditoria_eventos`.
 - API de eventos recientes en `/api/v1/auditoria/eventos`.
@@ -1492,7 +1542,7 @@ Pendientes del modulo Equipos:
 
 Pendientes del gemelo digital:
 
-- Filtros de dashboard por estado, fuero y equipo.
+- Exportacion CSV del dashboard de diferencias.
 - Filtros y exportacion de auditoria.
 - Auditoria especifica de cambios de usuarios, roles y autorizaciones AD.
 

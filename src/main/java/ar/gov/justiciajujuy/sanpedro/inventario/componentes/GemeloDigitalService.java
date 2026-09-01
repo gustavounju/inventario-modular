@@ -90,15 +90,28 @@ public class GemeloDigitalService {
 
 	@Transactional(readOnly = true)
 	public DashboardDiferencias dashboardDiferencias() {
+		return dashboardDiferencias(null, null, null);
+	}
+
+	@Transactional(readOnly = true)
+	public DashboardDiferencias dashboardDiferencias(String equipoQuery, String fuero, EstadoComparacion estado) {
 		Map<EstadoComparacion, Long> totales = conteosIniciales();
 		List<EquipoConDiferencias> equiposConDiferencias = new ArrayList<>();
+		String equipoFiltro = normalizarFiltro(equipoQuery);
+		String fueroFiltro = normalizarFiltro(fuero);
 
 		for (Equipo equipo : equipoRepository.findAll(Sort.by("nombre"))) {
+			if (!coincideEquipo(equipo, equipoFiltro, fueroFiltro)) {
+				continue;
+			}
 			List<ComparacionComponente> comparacion = compararEquipo(equipo.getId());
 			Map<EstadoComparacion, Long> conteosEquipo = conteosIniciales();
 			List<DiferenciaDetalle> diferencias = new ArrayList<>();
 
 			for (ComparacionComponente fila : comparacion) {
+				if (estado != null && fila.resultado() != estado) {
+					continue;
+				}
 				incrementar(totales, fila.resultado());
 				incrementar(conteosEquipo, fila.resultado());
 				if (fila.resultado() != EstadoComparacion.COINCIDE) {
@@ -139,6 +152,21 @@ public class GemeloDigitalService {
 				falta + sobra + revisar,
 				falta + sobra + revisar + coincide);
 		return new DashboardDiferencias(conteo, equiposConDiferencias);
+	}
+
+	private boolean coincideEquipo(Equipo equipo, String equipoFiltro, String fueroFiltro) {
+		return contiene(equipo.getNombre(), equipoFiltro) && contiene(equipo.getFuero(), fueroFiltro);
+	}
+
+	private boolean contiene(String valor, String filtro) {
+		return !StringUtils.hasText(filtro) || (valor != null && normalizarTexto(valor).contains(filtro));
+	}
+
+	private String normalizarFiltro(String valor) {
+		if (!StringUtils.hasText(valor)) {
+			return null;
+		}
+		return normalizarTexto(valor);
 	}
 
 	private Map<EstadoComparacion, Long> conteosIniciales() {

@@ -235,4 +235,4 @@ Comando:
 
 ## Pendiente
 
-- Agregar filtros de dashboard por estado, fuero y equipo.
+- Exportar diferencias del dashboard.

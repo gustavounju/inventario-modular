@@ -554,6 +554,11 @@ h1 {
 	margin-bottom: 18px;
 }
 
+.dashboard-filter-form {
+	grid-template-columns: repeat(3, minmax(170px, 1fr)) auto;
+	margin: 24px 0 0;
+}
+
 .search-form label {
 	display: grid;
 	gap: 7px;
@@ -792,6 +797,10 @@ td {
 	}
 
 	.search-form {
+		grid-template-columns: 1fr;
+	}
+
+	.dashboard-filter-form {
 		grid-template-columns: 1fr;
 	}
 

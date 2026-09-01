@@ -259,6 +259,9 @@ Muestra:
 - Conteo de componentes `REVISAR`.
 - Conteo de componentes `COINCIDE`.
 - Equipos con diferencias pendientes.
+- Filtro por estado de comparacion.
+- Filtro por nombre de equipo.
+- Filtro por fuero.
 - Acceso directo al detalle de cada equipo.
 
 API:
@@ -325,6 +328,7 @@ Pruebas enfocadas:
 .\mvnw.cmd "-Dtest=ComponenteControllerTests,StockOrdenArmadoControllerTests,EquipoPageControllerTests" test
 .\mvnw.cmd "-Dtest=AuditoriaControllerTests,AdminControllerTests,ComponenteControllerTests,StockOrdenArmadoControllerTests,StockOrdenArmadoPageControllerTests" test
 .\mvnw.cmd "-Dtest=DashboardDiferenciasControllerTests,AdminControllerTests,ComponenteControllerTests" test
+.\mvnw.cmd "-Dtest=DashboardDiferenciasControllerTests,AdminControllerTests,StockOrdenArmadoPageControllerTests" test
 ```
 
 Suite completa:

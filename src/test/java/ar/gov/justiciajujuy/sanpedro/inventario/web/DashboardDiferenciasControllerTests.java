@@ -49,11 +49,31 @@ class DashboardDiferenciasControllerTests {
 	}
 
 	@Test
+	void filtraDiferenciasPorEstadoEquipoYFuero() throws Exception {
+		mockMvc.perform(get("/api/v1/gemelo-digital/dashboard-diferencias")
+				.param("estado", "FALTA")
+				.param("equipo", "inf")
+				.param("fuero", "informatica")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.conteo.falta").value(1))
+			.andExpect(jsonPath("$.conteo.sobra").value(0))
+			.andExpect(jsonPath("$.conteo.revisar").value(0))
+			.andExpect(jsonPath("$.conteo.coincide").value(0))
+			.andExpect(jsonPath("$.equipos", hasSize(1)))
+			.andExpect(jsonPath("$.equipos[0].diferencias", hasSize(1)))
+			.andExpect(jsonPath("$.equipos[0].diferencias[0].resultado").value("FALTA"));
+	}
+
+	@Test
 	void muestraPantallaDeDiferenciasConAccesoAlEquipo() throws Exception {
 		mockMvc.perform(get("/admin/dashboard-diferencias").with(user(adminLocal())))
 			.andExpect(status().isOk())
 			.andExpect(view().name("admin/dashboard-diferencias"))
 			.andExpect(content().string(containsString("Dashboard de diferencias")))
+			.andExpect(content().string(containsString("name=\"equipo\"")))
+			.andExpect(content().string(containsString("name=\"fuero\"")))
+			.andExpect(content().string(containsString("name=\"estado\"")))
 			.andExpect(content().string(containsString("PC-INF-001")))
 			.andExpect(content().string(containsString("href=\"/admin/equipos/1\"")));
 	}
