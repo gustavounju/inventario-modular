@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Patrimonio - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="patrimonio-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Control institucional</p>
+					<h1 id="patrimonio-title">Patrimonio</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<a class="secondary-action" th:href="@{/admin/muebles}">Muebles</a>
+					<a class="secondary-action" th:href="@{/admin/reportes}">Reportes</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<p class="success-message" th:if="${creado}">Bien patrimonial actualizado correctamente.</p>
+
+			<form class="search-form dashboard-filter-form" th:action="@{/admin/patrimonio}" method="get">
+				<label>
+					<span>Buscar</span>
+					<input type="search" name="query" th:value="${filtroQuery}" maxlength="120">
+				</label>
+				<label>
+					<span>Estado</span>
+					<select name="estado">
+						<option value="">Todos</option>
+						<option th:each="estado : ${estadosPatrimonio}" th:value="${estado}" th:text="${estado}"
+								th:selected="${estado == filtroEstado}">EN_USO</option>
+					</select>
+				</label>
+				<button class="secondary-action" type="submit">Filtrar</button>
+			</form>
+
+			<section class="modules-section" aria-labelledby="patrimonio-list-title">
+				<div class="section-header">
+					<div>
+						<h2 id="patrimonio-list-title">Bienes patrimoniales</h2>
+						<p class="section-note">Numeros patrimoniales, custodios y relacion opcional con equipos tecnicos.</p>
+					</div>
+					<span class="count-badge" th:text="${#lists.size(bienes)} + ' bienes'">0 bienes</span>
+				</div>
+
+				<p class="empty-state" th:if="${#lists.isEmpty(bienes)}">Todavia no hay bienes patrimoniales con esos filtros.</p>
+
+				<div class="responsive-table" th:if="${!#lists.isEmpty(bienes)}">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Numero</th>
+								<th scope="col">Bien</th>
+								<th scope="col">Ubicacion</th>
+								<th scope="col">Custodio</th>
+								<th scope="col">Equipo</th>
+								<th scope="col">Estado</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="bien : ${bienes}">
+								<td data-label="Numero" th:text="${bien.numeroPatrimonial}">PJ-001</td>
+								<td data-label="Bien">
+									<strong th:text="${bien.descripcion}">PC administrativa</strong>
+									<span class="table-subtext" th:text="${bien.categoria}">PC</span>
+									<span class="table-subtext" th:if="${bien.observaciones}" th:text="${bien.observaciones}">Observaciones</span>
+								</td>
+								<td data-label="Ubicacion">
+									<span th:text="${bien.ubicacion ?: 'Sin ubicacion'}">Informatica</span>
+									<span class="table-subtext" th:text="${bien.fuero ?: 'Sin fuero'}">Civil</span>
+								</td>
+								<td data-label="Custodio" th:text="${bien.custodio ?: 'Sin custodio'}">gmurad</td>
+								<td data-label="Equipo" th:text="${bien.equipoNombre ?: 'Sin equipo'}">PC-INF-001</td>
+								<td data-label="Estado">
+									<span class="authorization-badge" th:classappend="${bien.activo} ? ' is-authorized' : ' is-pending'"
+											th:text="${bien.estado}">EN_USO</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarPatrimonio and !#lists.isEmpty(bienes)}" aria-labelledby="patrimonio-edit-title">
+				<div class="section-header">
+					<div>
+						<h2 id="patrimonio-edit-title">Editar bienes cargados</h2>
+						<p class="section-note">Mantenga actualizado custodio, ubicacion y equipo relacionado.</p>
+					</div>
+				</div>
+
+				<div class="edit-stack">
+					<form class="equipment-form inline-edit-card" th:each="bien : ${bienes}"
+							th:action="@{/admin/patrimonio/bienes/{id}(id=${bien.id})}" method="post">
+						<div class="section-header">
+							<h2 th:text="${bien.numeroPatrimonial}">PJ-001</h2>
+							<span class="count-badge" th:text="'ID ' + ${bien.id}">ID 1</span>
+						</div>
+						<div class="form-grid">
+							<label>
+								<span>Numero</span>
+								<input name="numeroPatrimonial" th:value="${bien.numeroPatrimonial}" maxlength="80" required>
+							</label>
+							<label>
+								<span>Categoria</span>
+								<input name="categoria" th:value="${bien.categoria}" maxlength="80" required>
+							</label>
+							<label>
+								<span>Descripcion</span>
+								<input name="descripcion" th:value="${bien.descripcion}" maxlength="255" required>
+							</label>
+							<label>
+								<span>Estado</span>
+								<select name="estado">
+									<option th:each="estado : ${estadosPatrimonio}" th:value="${estado}" th:text="${estado}"
+											th:selected="${estado == bien.estado}">EN_USO</option>
+								</select>
+							</label>
+							<label>
+								<span>Equipo</span>
+								<select name="equipoId">
+									<option value="">Sin equipo</option>
+									<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
+											th:selected="${equipo.id == bien.equipoId}">PC-INF-001</option>
+								</select>
+							</label>
+							<label>
+								<span>Ubicacion</span>
+								<input name="ubicacion" th:value="${bien.ubicacion}" maxlength="180">
+							</label>
+							<label>
+								<span>Fuero</span>
+								<input name="fuero" th:value="${bien.fuero}" maxlength="120">
+							</label>
+							<label>
+								<span>Custodio</span>
+								<input name="custodio" th:value="${bien.custodio}" maxlength="120">
+							</label>
+						</div>
+						<label>
+							<span>Observaciones</span>
+							<textarea name="observaciones" maxlength="500" rows="2" th:text="${bien.observaciones}"></textarea>
+						</label>
+						<label class="checkbox-row">
+							<input name="_activo" type="hidden" value="on">
+							<input name="activo" type="checkbox" value="true" th:checked="${bien.activo}">
+							<span>Bien activo</span>
+						</label>
+						<div class="form-actions">
+							<button class="secondary-action" type="submit">Guardar cambios</button>
+						</div>
+					</form>
+				</div>
+			</section>
+
+			<section class="attributes-section" th:if="${puedeEditarPatrimonio}" aria-labelledby="patrimonio-form-title">
+				<div class="section-header">
+					<h2 id="patrimonio-form-title">Cargar bien patrimonial</h2>
+					<span class="count-badge">Requiere PATRIMONIO:EDITAR</span>
+				</div>
+
+				<form class="equipment-form" th:action="@{/admin/patrimonio/bienes}" th:object="${patrimonioForm}" method="post">
+					<div class="form-grid">
+						<label>
+							<span>Numero</span>
+							<input th:field="*{numeroPatrimonial}" maxlength="80" required>
+							<small class="field-error" th:if="${#fields.hasErrors('numeroPatrimonial')}" th:errors="*{numeroPatrimonial}">Error</small>
+						</label>
+						<label>
+							<span>Categoria</span>
+							<input th:field="*{categoria}" maxlength="80" required>
+							<small class="field-error" th:if="${#fields.hasErrors('categoria')}" th:errors="*{categoria}">Error</small>
+						</label>
+						<label>
+							<span>Descripcion</span>
+							<input th:field="*{descripcion}" maxlength="255" required>
+							<small class="field-error" th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}">Error</small>
+						</label>
+						<label>
+							<span>Estado</span>
+							<select th:field="*{estado}">
+								<option th:each="estado : ${estadosPatrimonio}" th:value="${estado}" th:text="${estado}">EN_USO</option>
+							</select>
+						</label>
+						<label>
+							<span>Equipo</span>
+							<select th:field="*{equipoId}">
+								<option value="">Sin equipo</option>
+								<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
+							</select>
+						</label>
+						<label>
+							<span>Ubicacion</span>
+							<input th:field="*{ubicacion}" maxlength="180">
+						</label>
+						<label>
+							<span>Fuero</span>
+							<input th:field="*{fuero}" maxlength="120">
+						</label>
+						<label>
+							<span>Custodio</span>
+							<input th:field="*{custodio}" maxlength="120">
+						</label>
+					</div>
+					<label>
+						<span>Observaciones</span>
+						<textarea th:field="*{observaciones}" maxlength="500" rows="3"></textarea>
+					</label>
+					<label class="checkbox-row">
+						<input name="_activo" type="hidden" value="on">
+						<input th:field="*{activo}" type="checkbox">
+						<span>Bien activo</span>
+					</label>
+					<div class="form-actions">
+						<button class="primary-action" type="submit">Guardar bien</button>
+					</div>
+				</form>
+			</section>
+		</section>
+	</main>
+</body>
+</html>

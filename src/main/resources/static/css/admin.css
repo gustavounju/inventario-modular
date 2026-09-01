@@ -546,6 +546,15 @@ h1 {
 	padding: 8px 10px;
 }
 
+.inline-action-form input {
+	border: 1px solid #c7d2dd;
+	border-radius: 6px;
+	color: #1d252d;
+	font: inherit;
+	min-width: 180px;
+	padding: 8px 10px;
+}
+
 .search-form {
 	align-items: end;
 	display: grid;

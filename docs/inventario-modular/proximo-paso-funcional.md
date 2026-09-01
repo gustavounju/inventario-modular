@@ -197,6 +197,65 @@ Pendiente siguiente:
 - Exportacion CSV del dashboard de diferencias.
 - Filtros y exportacion de auditoria.
 
+### Sprint 5: Tareas tecnicas
+
+Estado: primera base implementada.
+
+Motivo:
+
+- Es el siguiente modulo operativo despues de equipos, componentes, stock y diferencias.
+- Permite registrar trabajo tecnico real sin esperar a que existan actas o reportes.
+- Puede vincularse opcionalmente a un equipo, manteniendo tambien tareas generales.
+
+Primera version implementada:
+
+- Migracion Flyway para tabla `tareas_tecnicas`.
+- Entidad, repositorio y servicio de tareas tecnicas.
+- API `GET /api/v1/tareas-tecnicas` con filtros por estado, equipo y responsable.
+- API `POST /api/v1/tareas-tecnicas`.
+- API `PATCH /api/v1/tareas-tecnicas/{id}/estado`.
+- Pantalla `/admin/tareas`.
+- Alta de tareas desde la pantalla.
+- Cambio de estado desde la pantalla.
+- Auditoria al crear y cambiar estado.
+- Tests de API y pantalla.
+
+Pendiente siguiente:
+
+- Edicion completa de tareas existentes.
+- Comentarios/historial por tarea.
+- Vistas por responsable y fuero.
+- Exportacion CSV.
+
+### Sprint 6: Muebles, Patrimonio y Reportes
+
+Estado: primeras versiones implementadas.
+
+Motivo:
+
+- `MUEBLES` y `PATRIMONIO` existen desde el diseno inicial de seguridad modular.
+- Son modulos de alcance acotado y agregan valor operativo rapido.
+- `REPORTES` permite empezar a exportar datos cargados sin esperar al dashboard final.
+
+Primera version implementada:
+
+- Migracion Flyway `V9__muebles_patrimonio_reportes.sql`.
+- Tabla `muebles`.
+- Tabla `bienes_patrimoniales`.
+- API y pantalla `/admin/muebles`.
+- API y pantalla `/admin/patrimonio`.
+- API y pantalla `/admin/reportes`.
+- Exportaciones CSV de muebles, patrimonio y tareas.
+- Resumen operativo con conteos de equipos, muebles, patrimonio y tareas.
+- Tests de API, pantalla y permisos.
+
+Pendiente siguiente:
+
+- Evitar duplicados con respuestas HTTP 409 mas claras.
+- Paginacion en listados cuando crezcan los datos.
+- Exportacion CSV del dashboard de diferencias.
+- Filtros avanzados por fuero, custodio y ubicacion.
+
 ## No comenzar todavia por
 
 ### Stock
@@ -227,6 +286,7 @@ Usuarios y permisos minimos
   -> Auditoria transversal de cambios
   -> Dashboard simple de diferencias
   -> Tareas tecnicas
-  -> Actas/reportes
+  -> Muebles/patrimonio/reportes basicos
+  -> Actas/reportes administrativos completos
 ```
 

@@ -58,3 +58,12 @@ MERGE INTO componentes (id, equipo_id, tipo, origen, estado_comparacion, descrip
 
 MERGE INTO stock_componentes (id, tipo, estado, descripcion, marca, modelo, serial, capacidad, ubicacion, observaciones, activo) KEY(id) VALUES
   (1, 'RAM', 'DISPONIBLE', 'Memoria RAM nueva para armado', 'Kingston', 'DDR4 2666', 'STOCK-RAM-001', '8GB', 'Deposito Informatica', 'Disponible para orden de armado', TRUE);
+
+MERGE INTO tareas_tecnicas (id, equipo_id, titulo, descripcion, estado, prioridad, responsable) KEY(id) VALUES
+  (1, 1, 'Revisar mantenimiento preventivo', 'Tarea de ejemplo para validar el modulo desde casa.', 'PENDIENTE', 'MEDIA', 'admin.local');
+
+MERGE INTO muebles (id, codigo, tipo, descripcion, ubicacion, fuero, responsable, estado, observaciones, activo) KEY(codigo) VALUES
+  (1, 'MUE-SEED-001', 'SILLA', 'Silla operativa de Informatica', 'Informatica', 'Informatica', 'admin.local', 'ACTIVO', 'Seed local casa', TRUE);
+
+MERGE INTO bienes_patrimoniales (id, numero_patrimonial, categoria, descripcion, ubicacion, fuero, custodio, estado, equipo_id, observaciones, activo) KEY(numero_patrimonial) VALUES
+  (1, 'PAT-SEED-001', 'PC', 'PC patrimonial seed', 'Informatica', 'Informatica', 'admin.local', 'EN_USO', 1, 'Seed local casa', TRUE);

@@ -23,6 +23,10 @@ public class AdminController {
 	private static final String MODULO_STOCK = "STOCK";
 	private static final String MODULO_ORDENES_ARMADO = "ORDENES_ARMADO";
 	private static final String MODULO_AUDITORIA = "AUDITORIA";
+	private static final String MODULO_TAREAS = "TAREAS";
+	private static final String MODULO_MUEBLES = "MUEBLES";
+	private static final String MODULO_PATRIMONIO = "PATRIMONIO";
+	private static final String MODULO_REPORTES = "REPORTES";
 	private static final String PERMISO_ADMINISTRAR = "ADMINISTRAR";
 	private static final String PERMISO_VER = "VER";
 
@@ -65,8 +69,16 @@ public class AdminController {
 				authorizationService.tienePermiso(userDetails, MODULO_STOCK, PERMISO_VER));
 		model.addAttribute("canViewOrdenesArmado",
 				authorizationService.tienePermiso(userDetails, MODULO_ORDENES_ARMADO, PERMISO_VER));
+		model.addAttribute("canViewMuebles",
+				authorizationService.tienePermiso(userDetails, MODULO_MUEBLES, PERMISO_VER));
+		model.addAttribute("canViewPatrimonio",
+				authorizationService.tienePermiso(userDetails, MODULO_PATRIMONIO, PERMISO_VER));
+		model.addAttribute("canViewReportes",
+				authorizationService.tienePermiso(userDetails, MODULO_REPORTES, PERMISO_VER));
 		model.addAttribute("canViewAuditoria",
 				authorizationService.tienePermiso(userDetails, MODULO_AUDITORIA, PERMISO_VER));
+		model.addAttribute("canViewTareas",
+				authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_VER));
 		model.addAttribute("canManageUsers",
 				authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR));
 		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));

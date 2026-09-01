@@ -1497,6 +1497,378 @@ Tests run: 13, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
+## 2026-09-01 - Modulo Tareas Tecnicas
+
+Se agrego la primera version del modulo `TAREAS` para registrar trabajo operativo del
+equipo de Informatica. El alcance inicial es deliberadamente chico: alta de tareas,
+listado con filtros, cambio de estado y asociacion opcional con un equipo.
+
+Archivos principales:
+
+- `src/main/resources/db/migration/V8__tareas_tecnicas.sql`
+- `src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/tareas/`
+- `src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaController.java`
+- `src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaPageController.java`
+- `src/main/resources/templates/admin/tareas.html`
+- `docs/inventario-modular/modulo-tareas-tecnicas.md`
+
+Rutas agregadas:
+
+```text
+/admin/tareas
+GET   /api/v1/tareas-tecnicas
+POST  /api/v1/tareas-tecnicas
+PATCH /api/v1/tareas-tecnicas/{id}/estado
+```
+
+Verificacion local:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+.\mvnw.cmd --batch-mode "-Dtest=TareaTecnicaControllerTests,TareaTecnicaPageControllerTests" test
+.\mvnw.cmd --batch-mode test
+.\mvnw.cmd --batch-mode -DskipTests package
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=casa"
+```
+
+Resultado:
+
+```text
+Tests run: 96, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+target/inventario-modular-0.0.1-SNAPSHOT.jar generado correctamente
+```
+
+Verificacion HTTP local:
+
+```powershell
+Invoke-WebRequest -UseBasicParsing -Method Head http://localhost:8081/login
+Invoke-WebRequest -UseBasicParsing http://localhost:8081/api/v1/sistema/estado
+```
+
+Resultado observado:
+
+```text
+/login -> 200 OK
+/api/v1/sistema/estado -> 200 OK, estado OPERATIVO
+/admin/tareas -> 302 hacia login cuando no hay sesion, esperado por seguridad
+```
+
+### Comandos para subir el cambio desde Windows
+
+Ejecutar despues de revisar el diff y confirmar que la rama esta lista:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git status --short --branch
+git add README.md docs/inventario-modular/README.md docs/inventario-modular/proximo-paso-funcional.md docs/inventario-modular/bitacora-del-proyecto.md docs/inventario-modular/modulo-tareas-tecnicas.md src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/tareas src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaPageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/AdminController.java src/main/resources/db/migration/V8__tareas_tecnicas.sql src/main/resources/db/casa/data-h2.sql src/main/resources/db/casa/schema-h2.sql src/main/resources/static/css/admin.css src/main/resources/templates/admin/index.html src/main/resources/templates/admin/tareas.html src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/CurrentUserControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaPageControllerTests.java src/test/resources/sql/limpiar-seguridad-modular-test.sql src/test/resources/sql/seguridad-modular-test.sql
+git diff --staged --check
+git commit -m "feat: agregar modulo de tareas tecnicas"
+git push -u origin codex/modulo-tareas-tecnicas
+git push -u github codex/modulo-tareas-tecnicas
+```
+
+Despues de mergear a `primeros-pasos` en GitLab, sincronizar tambien GitHub:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git switch primeros-pasos
+git pull --ff-only origin primeros-pasos
+git push github primeros-pasos
+```
+
+### Comandos para actualizar Ubuntu por PuTTY
+
+Inventario Modular en produccion usa `/opt/inventario-modular`, el servicio
+`inventario-modular.service`, puerto `8081`, y MySQL remoto `10.15.0.62`. No usar
+`/opt/inventario`, `deploy_ubuntu.sh` ni `inventario.service`, porque pertenecen al Flask
+legado.
+
+Primero confirmar estado y que el servidor esta parado en el repo correcto:
+
+```bash
+cd /opt/inventario-modular
+pwd
+git remote -v
+git branch --show-current
+git status --short
+git log -1 --oneline
+```
+
+Ver que cambios entrarian desde GitLab:
+
+```bash
+git fetch origin
+git log --oneline HEAD..origin/primeros-pasos
+git diff --name-only HEAD..origin/primeros-pasos
+```
+
+Si aparece `src/main/resources/db/migration/V8__tareas_tecnicas.sql`, hacer backup antes
+de reiniciar porque Flyway aplicara una migracion nueva sobre MySQL.
+
+Backup compatible con el usuario limitado de aplicacion:
+
+```bash
+sudo bash -c '
+set -euo pipefail
+source /etc/inventario-modular/inventario-modular.env
+
+DB_URL="${INVENTARIO_DB_URL:-${INVENTARIO_DB_PRIMARY_URL:-}}"
+DB_USER="${INVENTARIO_DB_USER:-${INVENTARIO_DB_PRIMARY_USER:-}}"
+DB_PASS="${INVENTARIO_DB_PASSWORD:-${INVENTARIO_DB_PRIMARY_PASSWORD:-}}"
+
+DB_HOST=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://([^:/]+).*#\1#")
+DB_NAME=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://[^/]+/([^?]+).*#\1#")
+
+BACKUP_DIR="/opt/backups/inventario-modular"
+mkdir -p "$BACKUP_DIR"
+BACKUP="$BACKUP_DIR/${DB_NAME}_$(date +%Y%m%d_%H%M%S).sql.gz"
+
+mysqldump --single-transaction --skip-lock-tables --no-tablespaces \
+  -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" | gzip > "$BACKUP"
+
+gzip -t "$BACKUP"
+ls -lh "$BACKUP"
+'
+```
+
+Actualizar codigo:
+
+```bash
+cd /opt/inventario-modular
+git pull --ff-only origin primeros-pasos
+git log -1 --oneline
+```
+
+Compilar y generar `.jar`:
+
+```bash
+cd /opt/inventario-modular
+sh ./mvnw --batch-mode test
+sh ./mvnw --batch-mode -DskipTests package
+ls -lh target/*.jar
+```
+
+Reiniciar solo el servicio modular:
+
+```bash
+sudo systemctl restart inventario-modular.service
+systemctl status inventario-modular.service --no-pager -l
+sudo journalctl -u inventario-modular.service -n 160 --no-pager
+```
+
+Verificar aplicacion y migracion:
+
+```bash
+curl -I http://127.0.0.1:8081
+curl -s http://127.0.0.1:8081/api/v1/sistema/estado
+
+sudo bash -c '
+set -euo pipefail
+source /etc/inventario-modular/inventario-modular.env
+
+DB_URL="${INVENTARIO_DB_URL:-${INVENTARIO_DB_PRIMARY_URL:-}}"
+DB_USER="${INVENTARIO_DB_USER:-${INVENTARIO_DB_PRIMARY_USER:-}}"
+DB_PASS="${INVENTARIO_DB_PASSWORD:-${INVENTARIO_DB_PRIMARY_PASSWORD:-}}"
+DB_HOST=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://([^:/]+).*#\1#")
+DB_NAME=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://[^/]+/([^?]+).*#\1#")
+
+mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" \
+  -e "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 5; SHOW TABLES LIKE '\''tareas_tecnicas'\'';"
+'
+```
+
+Verificacion esperada:
+
+```text
+HTTP/1.1 302
+Location: http://127.0.0.1:8081/admin
+Flyway muestra V8 aplicada con success=1
+SHOW TABLES LIKE 'tareas_tecnicas' devuelve la tabla
+```
+
+Pendientes del modulo:
+
+- Editar titulo, descripcion, prioridad y responsable de tareas existentes.
+- Comentarios o novedades por tarea.
+- Vistas por responsable y fuero.
+- Exportacion CSV.
+
+## 2026-09-01 - Modulos Muebles, Patrimonio y Reportes
+
+Se avanzaron tres modulos verticales de alcance acotado para sumar valor operativo sin
+esperar al modulo de actas.
+
+Acciones realizadas:
+
+- Se agrego la migracion `V9__muebles_patrimonio_reportes.sql`.
+- Se creo la tabla `muebles`.
+- Se creo la tabla `bienes_patrimoniales`.
+- Se reforzaron permisos para `MUEBLES`, `PATRIMONIO` y `REPORTES`.
+- Se agrego API de muebles:
+  - `GET /api/v1/muebles`
+  - `POST /api/v1/muebles`
+  - `PUT /api/v1/muebles/{id}`
+- Se agrego API de patrimonio:
+  - `GET /api/v1/patrimonio/bienes`
+  - `POST /api/v1/patrimonio/bienes`
+  - `PUT /api/v1/patrimonio/bienes/{id}`
+- Se agrego API de reportes:
+  - `GET /api/v1/reportes/resumen`
+  - `GET /api/v1/reportes/muebles.csv`
+  - `GET /api/v1/reportes/patrimonio.csv`
+  - `GET /api/v1/reportes/tareas.csv`
+- Se agregaron pantallas:
+  - `/admin/muebles`
+  - `/admin/patrimonio`
+  - `/admin/reportes`
+- El panel `/admin` ahora muestra accesos a Muebles, Patrimonio y Reportes segun permiso.
+- Se agregaron pruebas de API, pantalla y permisos.
+
+Comando de prueba enfocado:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+.\mvnw.cmd --batch-mode "-Dtest=MuebleControllerTests,MueblePageControllerTests,PatrimonioControllerTests,PatrimonioPageControllerTests,ReporteControllerTests,ReportePageControllerTests,CurrentUserControllerTests" test
+```
+
+Resultado:
+
+```text
+Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+### Comandos para subir el cambio desde Windows
+
+Ejecutar despues de revisar el diff y confirmar que la rama esta lista:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git status --short --branch
+git add README.md docs/inventario-modular/README.md docs/inventario-modular/proximo-paso-funcional.md docs/inventario-modular/bitacora-del-proyecto.md docs/inventario-modular/modulo-muebles.md docs/inventario-modular/modulo-patrimonio.md docs/inventario-modular/modulo-reportes.md src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/muebles src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/patrimonio src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/reportes src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MuebleController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MueblePageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioPageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReporteController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReportePageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/AdminController.java src/main/resources/db/migration/V9__muebles_patrimonio_reportes.sql src/main/resources/db/casa/data-h2.sql src/main/resources/db/casa/schema-h2.sql src/main/resources/templates/admin/index.html src/main/resources/templates/admin/muebles.html src/main/resources/templates/admin/patrimonio.html src/main/resources/templates/admin/reportes.html src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MuebleControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MueblePageControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioPageControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReporteControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReportePageControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/CurrentUserControllerTests.java src/test/resources/sql/limpiar-seguridad-modular-test.sql src/test/resources/sql/seguridad-modular-test.sql
+git diff --staged --check
+git commit -m "feat: agregar muebles patrimonio y reportes"
+git push -u origin codex/modulo-tareas-tecnicas
+git push -u github codex/modulo-tareas-tecnicas
+```
+
+Despues de mergear a `primeros-pasos` en GitLab, sincronizar tambien GitHub:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git switch primeros-pasos
+git pull --ff-only origin primeros-pasos
+git push github primeros-pasos
+```
+
+### Comandos para actualizar Ubuntu por PuTTY
+
+Inventario Modular en produccion usa `/opt/inventario-modular`, el servicio
+`inventario-modular.service`, puerto `8081`, y MySQL remoto `10.15.0.62`. No usar
+`/opt/inventario`, `deploy_ubuntu.sh` ni `inventario.service`, porque pertenecen al Flask
+legado.
+
+Confirmar estado del repo correcto:
+
+```bash
+cd /opt/inventario-modular
+pwd
+git remote -v
+git branch --show-current
+git status --short
+git log -1 --oneline
+```
+
+Ver que cambios entrarian desde GitLab:
+
+```bash
+git fetch origin
+git log --oneline HEAD..origin/primeros-pasos
+git diff --name-only HEAD..origin/primeros-pasos
+```
+
+Si aparece `V8__tareas_tecnicas.sql` o `V9__muebles_patrimonio_reportes.sql`, hacer backup
+antes de reiniciar porque Flyway aplicara migraciones nuevas sobre MySQL.
+
+```bash
+sudo bash -c '
+set -euo pipefail
+source /etc/inventario-modular/inventario-modular.env
+
+DB_URL="${INVENTARIO_DB_URL:-${INVENTARIO_DB_PRIMARY_URL:-}}"
+DB_USER="${INVENTARIO_DB_USER:-${INVENTARIO_DB_PRIMARY_USER:-}}"
+DB_PASS="${INVENTARIO_DB_PASSWORD:-${INVENTARIO_DB_PRIMARY_PASSWORD:-}}"
+
+DB_HOST=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://([^:/]+).*#\1#")
+DB_NAME=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://[^/]+/([^?]+).*#\1#")
+
+BACKUP_DIR="/opt/backups/inventario-modular"
+mkdir -p "$BACKUP_DIR"
+BACKUP="$BACKUP_DIR/${DB_NAME}_$(date +%Y%m%d_%H%M%S).sql.gz"
+
+mysqldump --single-transaction --skip-lock-tables --no-tablespaces \
+  -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" | gzip > "$BACKUP"
+
+gzip -t "$BACKUP"
+ls -lh "$BACKUP"
+'
+```
+
+Actualizar codigo:
+
+```bash
+cd /opt/inventario-modular
+git pull --ff-only origin primeros-pasos
+git log -1 --oneline
+```
+
+Compilar y probar en Ubuntu:
+
+```bash
+cd /opt/inventario-modular
+sh ./mvnw --batch-mode test
+sh ./mvnw --batch-mode -DskipTests package
+ls -lh target/*.jar
+```
+
+Reiniciar solo el servicio modular:
+
+```bash
+sudo systemctl restart inventario-modular.service
+systemctl status inventario-modular.service --no-pager -l
+sudo journalctl -u inventario-modular.service -n 180 --no-pager
+```
+
+Verificar aplicacion y migraciones:
+
+```bash
+curl -I http://127.0.0.1:8081
+curl -s http://127.0.0.1:8081/api/v1/sistema/estado
+
+sudo bash -c '
+set -euo pipefail
+source /etc/inventario-modular/inventario-modular.env
+
+DB_URL="${INVENTARIO_DB_URL:-${INVENTARIO_DB_PRIMARY_URL:-}}"
+DB_USER="${INVENTARIO_DB_USER:-${INVENTARIO_DB_PRIMARY_USER:-}}"
+DB_PASS="${INVENTARIO_DB_PASSWORD:-${INVENTARIO_DB_PRIMARY_PASSWORD:-}}"
+DB_HOST=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://([^:/]+).*#\1#")
+DB_NAME=$(echo "$DB_URL" | sed -E "s#^jdbc:mysql://[^/]+/([^?]+).*#\1#")
+
+mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" \
+  -e "SELECT version, description, success FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 8; SHOW TABLES LIKE '\''tareas_tecnicas'\''; SHOW TABLES LIKE '\''muebles'\''; SHOW TABLES LIKE '\''bienes_patrimoniales'\'';"
+'
+```
+
+Verificacion esperada:
+
+```text
+Servicio inventario-modular.service activo
+Flyway muestra V8 y V9 aplicadas con success=1
+SHOW TABLES devuelve tareas_tecnicas, muebles y bienes_patrimoniales
+```
+
 ## Estado actual documentado
 
 Al cierre de esta bitacora, Inventario Modular cuenta con:
@@ -1535,6 +1907,18 @@ Al cierre de esta bitacora, Inventario Modular cuenta con:
 - API de eventos recientes en `/api/v1/auditoria/eventos`.
 - Pantalla `/admin/auditoria`.
 - Registro transversal de cambios en componentes, stock y ordenes de armado.
+- Modulo `TAREAS`.
+- Pantalla `/admin/tareas`.
+- API de tareas tecnicas en `/api/v1/tareas-tecnicas`.
+- Modulo `MUEBLES`.
+- Pantalla `/admin/muebles`.
+- API de muebles en `/api/v1/muebles`.
+- Modulo `PATRIMONIO`.
+- Pantalla `/admin/patrimonio`.
+- API de bienes patrimoniales en `/api/v1/patrimonio/bienes`.
+- Modulo `REPORTES`.
+- Pantalla `/admin/reportes`.
+- API de resumen y CSV en `/api/v1/reportes`.
 - Script Windows de inventario servido por la app.
 - Verificacion SHA-256 del script.
 - Documentacion de actualizacion de produccion.
@@ -1565,6 +1949,19 @@ Pendientes del gemelo digital:
 - Filtros y exportacion de auditoria.
 - Auditoria especifica de cambios de usuarios, roles y autorizaciones AD.
 
+Pendientes del modulo Tareas:
+
+- Edicion completa de tareas existentes.
+- Comentarios/historial por tarea.
+- Vistas por responsable y fuero.
+
+Pendientes de muebles, patrimonio y reportes:
+
+- Respuestas HTTP 409 claras para codigos o numeros patrimoniales duplicados.
+- Paginacion y filtros avanzados cuando crezca el volumen de datos.
+- Exportacion CSV del dashboard de diferencias.
+- Reportes administrativos mas completos.
+
 Pendientes de plataforma:
 
 - Definir reverse proxy/HTTPS para un despliegue real.
@@ -1586,6 +1983,10 @@ Pendientes de plataforma:
 - `docs/inventario-modular/auditoria-transversal.md`
 - `docs/inventario-modular/script-inventario-windows.md`
 - `docs/inventario-modular/actualizacion-produccion-inventario-modular.md`
+- `docs/inventario-modular/modulo-tareas-tecnicas.md`
+- `docs/inventario-modular/modulo-muebles.md`
+- `docs/inventario-modular/modulo-patrimonio.md`
+- `docs/inventario-modular/modulo-reportes.md`
 - `docs/inventario-modular/incidente-login-local-repetido.md`
 - `docs/decisions/ADR-002-inventario-modular-api-first.md`
 - `docs/decisions/ADR-003-inventario-viejo-como-referencia-funcional.md`

@@ -155,6 +155,10 @@ La bitacora y el circuito actual de equipos/componentes estan documentados en:
 - [Bitacora del proyecto](docs/inventario-modular/bitacora-del-proyecto.md)
 - [Modulo Componentes y Gemelo Digital](docs/inventario-modular/modulo-componentes-gemelo-digital.md)
 - [Stock, ordenes de armado y comparacion](docs/inventario-modular/stock-ordenes-armado-y-comparacion.md)
+- [Modulo Tareas Tecnicas](docs/inventario-modular/modulo-tareas-tecnicas.md)
+- [Modulo Muebles](docs/inventario-modular/modulo-muebles.md)
+- [Modulo Patrimonio](docs/inventario-modular/modulo-patrimonio.md)
+- [Modulo Reportes](docs/inventario-modular/modulo-reportes.md)
 
 ## Active Directory
 
@@ -239,6 +243,31 @@ Guia tecnica:
 - [Login Active Directory](docs/inventario-modular/login-active-directory.md)
 - [ADR-004: Login Active Directory solo lectura](docs/decisions/ADR-004-login-active-directory-solo-lectura.md)
 
+### Muebles, Patrimonio y Reportes
+
+Las primeras versiones de estos modulos estan disponibles en:
+
+```text
+http://localhost:8081/admin/muebles
+http://localhost:8081/admin/patrimonio
+http://localhost:8081/admin/reportes
+```
+
+APIs principales:
+
+```text
+GET  /api/v1/muebles
+POST /api/v1/muebles
+PUT  /api/v1/muebles/{id}
+GET  /api/v1/patrimonio/bienes
+POST /api/v1/patrimonio/bienes
+PUT  /api/v1/patrimonio/bienes/{id}
+GET  /api/v1/reportes/resumen
+GET  /api/v1/reportes/muebles.csv
+GET  /api/v1/reportes/patrimonio.csv
+GET  /api/v1/reportes/tareas.csv
+```
+
 ## Documentacion
 
 La documentacion del estudio inicial esta en `docs/inventario-modular`.
@@ -255,6 +284,7 @@ Documentos principales:
 - [Proximo paso funcional](docs/inventario-modular/proximo-paso-funcional.md)
 - [Modulo Equipos](docs/inventario-modular/modulo-equipos.md)
 - [Modulo Componentes y Gemelo Digital](docs/inventario-modular/modulo-componentes-gemelo-digital.md)
+- [Modulo Tareas Tecnicas](docs/inventario-modular/modulo-tareas-tecnicas.md)
 - [Cierre de jornada Windows](docs/inventario-modular/cierre-jornada-windows.md)
 - [Runbook Ubuntu por PuTTY](docs/inventario-modular/runbook-manana-ubuntu-putty.md)
 - [Modo local Windows sin dominio](docs/inventario-modular/modo-local-windows-sin-dominio.md)

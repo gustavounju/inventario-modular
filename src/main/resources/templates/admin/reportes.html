@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Reportes - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel admin-users-panel" aria-labelledby="reportes-title">
+			<header class="panel-header">
+				<div>
+					<p class="eyebrow">Control operativo</p>
+					<h1 id="reportes-title">Reportes</h1>
+				</div>
+				<nav class="admin-actions" aria-label="Acciones administrativas">
+					<a class="secondary-action" th:href="@{/admin}">Volver</a>
+					<a class="secondary-action" th:href="@{/admin/muebles}">Muebles</a>
+					<a class="secondary-action" th:href="@{/admin/patrimonio}">Patrimonio</a>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit">Salir</button>
+					</form>
+				</nav>
+			</header>
+
+			<section class="modules-section" aria-labelledby="reportes-resumen-title">
+				<div class="section-header">
+					<div>
+						<h2 id="reportes-resumen-title">Resumen operativo</h2>
+						<p class="section-note">Conteos principales del inventario modular para control diario.</p>
+					</div>
+				</div>
+
+				<div class="module-grid">
+					<article class="module-card">
+						<span class="module-icon">PC</span>
+						<div>
+							<h2>Equipos</h2>
+							<p th:text="${resumen.equipos}">0</p>
+						</div>
+					</article>
+					<article class="module-card">
+						<span class="module-icon">MU</span>
+						<div>
+							<h2>Muebles</h2>
+							<p th:text="${resumen.muebles}">0</p>
+						</div>
+					</article>
+					<article class="module-card">
+						<span class="module-icon">PA</span>
+						<div>
+							<h2>Patrimonio</h2>
+							<p th:text="${resumen.bienesPatrimoniales}">0</p>
+						</div>
+					</article>
+					<article class="module-card">
+						<span class="module-icon">TA</span>
+						<div>
+							<h2>Tareas</h2>
+							<p th:text="${resumen.tareas}">0</p>
+						</div>
+					</article>
+				</div>
+			</section>
+
+			<section class="attributes-section" aria-labelledby="reportes-export-title">
+				<div class="section-header">
+					<div>
+						<h2 id="reportes-export-title">Exportaciones CSV</h2>
+						<p class="section-note">Archivos livianos para abrir en planillas o enviar a administracion.</p>
+					</div>
+					<span class="count-badge" th:if="${puedeExportarReportes}">Requiere REPORTES:EXPORTAR</span>
+				</div>
+
+				<div class="admin-actions" th:if="${puedeExportarReportes}">
+					<a class="primary-action" th:href="@{/api/v1/reportes/muebles.csv}">Muebles CSV</a>
+					<a class="secondary-action" th:href="@{/api/v1/reportes/patrimonio.csv}">Patrimonio CSV</a>
+					<a class="secondary-action" th:href="@{/api/v1/reportes/tareas.csv}">Tareas CSV</a>
+				</div>
+
+				<p class="empty-state" th:if="${!puedeExportarReportes}">El usuario actual puede ver reportes, pero no exportarlos.</p>
+			</section>
+		</section>
+	</main>
+</body>
+</html>
