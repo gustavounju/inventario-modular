@@ -1902,6 +1902,31 @@ log linea por linea de cada archivo de codigo; para eso se usa el historial Git.
 bitacora documenta decisiones, hitos, comandos, validaciones, rutas, migraciones y
 pendientes principales.
 
+### Diagnostico si no aparecen los modulos nuevos
+
+Si el panel `/admin` muestra solo `Equipos`, `Diferencias`, `Stock`, `Ordenes`,
+`Auditoria` y `Usuarios`, la aplicacion esta corriendo con una revision anterior a los
+modulos `TAREAS`, `MUEBLES`, `PATRIMONIO` y `REPORTES`.
+
+Verificar en Windows:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git branch --show-current
+git log -3 --oneline --decorate
+```
+
+El codigo con los modulos nuevos debe estar en `2f2cdda` o posterior. Si se esta en
+`primeros-pasos` antes de integrar la rama, solo apareceran los modulos viejos.
+
+Para probar localmente sin esperar el merge:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+git switch codex/modulo-tareas-tecnicas
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=casa"
+```
+
 ## Estado actual documentado
 
 Al cierre de esta bitacora, Inventario Modular cuenta con:
