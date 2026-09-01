@@ -1966,6 +1966,41 @@ systemctl status inventario-modular.service --no-pager -l
 curl -I http://127.0.0.1:8081/admin
 ```
 
+### Manual de usuario en PDF
+
+Se genero un primer manual de usuario para explicar el uso operativo actual del sistema.
+El documento cubre:
+
+- Ingreso al sistema.
+- Alta y control de equipos.
+- Alta/autorizacion de usuarios.
+- Stock y ordenes de armado.
+- Significado del tablero `Diferencias`.
+- Tareas tecnicas.
+- Muebles, patrimonio y reportes.
+- Reglas practicas de seguridad.
+- Comandos Ubuntu por PuTTY.
+
+Archivo generado:
+
+```text
+output/pdf/manual-usuario-inventario-modular.pdf
+```
+
+Comando para regenerarlo desde Windows:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+C:\Users\gmurad\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe docs\inventario-modular\generar_manual_usuario.py
+```
+
+Comando usado para renderizar y revisar visualmente el PDF:
+
+```powershell
+cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+C:\Users\gmurad\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\poppler\Library\bin\pdftoppm.exe -png -r 130 output\pdf\manual-usuario-inventario-modular.pdf tmp\pdfs\manual_usuario_page
+```
+
 ## Estado actual documentado
 
 Al cierre de esta bitacora, Inventario Modular cuenta con:
