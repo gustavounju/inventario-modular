@@ -1,5 +1,7 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService.ApkInfo;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService.DominioUsuarios;
@@ -10,14 +12,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ContentDisposition;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,17 +28,16 @@ public class TareaMovilController {
     private final AuthorizationService authorization;
     private final ActiveDirectoryDomainService activeDirectoryDomainService;
     private final TareaAvisoService avisos;
-    private final FileSystemResource apk;
+    private final ApkDistributionService apkDistributionService;
 
     public TareaMovilController(AuthorizationService authorization,
             ActiveDirectoryDomainService activeDirectoryDomainService,
             TareaAvisoService avisos,
-            @Value("${inventario.movil.apk-path:output/android/inventario-tareas-lan-piloto.apk}") String apkPath) {
+            ApkDistributionService apkDistributionService) {
         this.authorization = authorization;
         this.activeDirectoryDomainService = activeDirectoryDomainService;
         this.avisos = avisos;
-        // La ruta es configuracion del servidor, nunca un parametro de descarga controlado por el cliente.
-        this.apk = new FileSystemResource(apkPath);
+        this.apkDistributionService = apkDistributionService;
     }
 
     @GetMapping("/movil/login")
@@ -46,21 +46,35 @@ public class TareaMovilController {
     }
 
     @GetMapping({"/movil", "/movil/tareas"})
-    public String tareas(@AuthenticationPrincipal UserDetails user, Model model) {
+    public String tareas(@AuthenticationPrincipal UserDetails user,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            Model model) {
         exigirPermiso(user);
-        model.addAttribute("apkDisponible", apk.isReadable());
+        boolean appInstalada = userAgent != null && userAgent.contains("InventarioLAN/1");
+        model.addAttribute("appInstalada", appInstalada);
+        model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
+        model.addAttribute("apkInfo", apkDistributionService.info());
         return "movil/tareas";
     }
 
     @GetMapping("/api/v1/movil/apk")
     public ResponseEntity<Resource> descargarApk(@AuthenticationPrincipal UserDetails user) {
-        exigirPermiso(user);
-        if (!apk.isReadable()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "APK no disponible.");
+        exigirUsuarioAutorizado(user);
+        Resource apk = apkDistributionService.resource();
+        if (!apkDistributionService.isAvailable()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "APK no disponible.");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(apk.getFilename()).build().toString())
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .contentType(MediaType.parseMediaType("application/vnd.android.package-archive"))
                 .body(apk);
+    }
+
+    @GetMapping("/api/v1/movil/apk/info")
+    @ResponseBody
+    public ApkInfo apkInfo(@AuthenticationPrincipal UserDetails user, HttpServletResponse response) {
+        exigirUsuarioAutorizado(user);
+        response.setHeader("Cache-Control", "no-store");
+        return apkDistributionService.info();
     }
 
     @GetMapping("/api/v1/movil/sesion")
@@ -100,6 +114,12 @@ public class TareaMovilController {
     private void exigirPermiso(UserDetails user) {
         if (!authorization.tienePermiso(user, "TAREAS", "VER")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para ver tareas.");
+        }
+    }
+
+    private void exigirUsuarioAutorizado(UserDetails user) {
+        if (!authorization.obtenerUsuarioActual(user).autorizado()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no autorizado para descargar la APK.");
         }
     }
 

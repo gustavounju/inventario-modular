@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.config.RuntimeModeService;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService.UsuarioActual;
@@ -36,16 +37,19 @@ public class AdminController {
 	private final String version;
 	private final AuthorizationService authorizationService;
 	private final RuntimeModeService runtimeModeService;
+	private final ApkDistributionService apkDistributionService;
 
 	public AdminController(
 			@Value("${spring.application.name}") String applicationName,
 			@Value("${inventario.version}") String version,
 			AuthorizationService authorizationService,
-			RuntimeModeService runtimeModeService) {
+			RuntimeModeService runtimeModeService,
+			ApkDistributionService apkDistributionService) {
 		this.applicationName = applicationName;
 		this.version = version;
 		this.authorizationService = authorizationService;
 		this.runtimeModeService = runtimeModeService;
+		this.apkDistributionService = apkDistributionService;
 	}
 
 	@GetMapping("/")
@@ -85,6 +89,8 @@ public class AdminController {
 				authorizationService.tienePermiso(userDetails, MODULO_AUDITORIA, PERMISO_VER));
 		model.addAttribute("canViewTareas",
 				authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_VER));
+		model.addAttribute("apkDisponible", apkDistributionService.isAvailable());
+		model.addAttribute("apkInfo", apkDistributionService.info());
 		model.addAttribute("canManageUsers",
 				authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR));
 		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));

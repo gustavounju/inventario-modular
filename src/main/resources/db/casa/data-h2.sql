@@ -45,6 +45,15 @@ CROSS JOIN modulos m
 CROSS JOIN permisos p
 WHERE r.codigo = 'ADMINISTRADOR';
 
+MERGE INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) KEY(rol_id, modulo_id, permiso_id)
+SELECT r.id, m.id, p.id
+FROM roles r
+CROSS JOIN modulos m
+CROSS JOIN permisos p
+WHERE r.codigo = 'TECNICO'
+  AND m.codigo = 'TAREAS'
+  AND p.codigo IN ('VER', 'EDITAR');
+
 MERGE INTO equipos (
   id, nombre, ultimo_usuario, fuero, ip, sistema_operativo, procesador, ram_mb,
   ram_detalles, ram_seriales, discos_modelos, discos_seriales, motherboard_modelo,

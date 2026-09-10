@@ -36,6 +36,11 @@ a.icon-button { display: inline-flex; align-items: center; justify-content: cent
 .metrics div:nth-child(3) { border-color: #13745c; }
 .metrics strong { font-size: 24px; font-variant-numeric: tabular-nums; }
 .metrics span { font-size: 12px; color: #586b62; }
+.apk-install-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -2px 0 16px; padding: 12px; border: 1px solid #b9ded0; border-left: 4px solid #13745c; border-radius: 8px; background: #eef8f3; }
+.apk-install-panel div { display: grid; gap: 3px; min-width: 0; }
+.apk-install-panel strong { color: #0b5c47; font-size: 14px; }
+.apk-install-panel span { color: #586b62; font-size: 12px; overflow-wrap: anywhere; }
+.apk-install-link { flex: 0 0 auto; min-width: 132px; text-decoration: none; }
 .list-tools { display: flex; gap: 8px; margin-bottom: 14px; }
 .search { flex: 1; position: relative; min-width: 0; }
 .search .lucide { position: absolute; top: 13px; left: 10px; color: #62736c; }
@@ -84,6 +89,8 @@ dt { color: #62736c; } dd { margin: 0; overflow-wrap: anywhere; }
     .search { flex-basis: 100%; }
     #new-task { flex: 1; }
     .metrics div { padding-inline: 8px; }
+    .apk-install-panel { align-items: stretch; flex-direction: column; }
+    .apk-install-link { width: 100%; }
     .filters button { padding-inline: 10px; font-size: 12px; }
     .task-row { padding-block: 11px; }
 }

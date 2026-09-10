@@ -64,6 +64,20 @@ class TareaMovilControllerTests {
         mvc.perform(get("/api/v1/movil/avisos")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/movil/apk")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/movil/apk").with(user("sin.permisos"))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/movil/apk/info").with(user("sin.permisos"))).andExpect(status().isForbidden());
+        jdbc.update("INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (99, 'solo.autorizado', 'Solo Autorizado', 'Informatica', 'AD', TRUE)");
+        mvc.perform(get("/api/v1/movil/apk/info").with(user("admin.local"))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponible").isBoolean());
+        mvc.perform(get("/api/v1/movil/apk/info").with(user("solo.autorizado"))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponible").isBoolean());
+        jdbc.update("INSERT INTO roles (id, codigo, nombre, descripcion, activo) VALUES (2, 'TECNICO', 'Tecnico', 'Acceso operativo a tareas tecnicas.', TRUE)");
+        jdbc.update("INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (100, 'tecnico.movil', 'Tecnico Movil', 'Informatica', 'AD', TRUE)");
+        jdbc.update("INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (100, 2)");
+        new ResourceDatabasePopulator(new ClassPathResource("db/migration/V16__permisos_tecnico_tareas_movil.sql")).execute(dataSource);
+        mvc.perform(get("/movil/tareas").with(user("tecnico.movil"))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Nueva tarea")));
+        mvc.perform(get("/api/v1/movil/sesion").with(user("tecnico.movil"))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.puedeEditar").value(true));
         mvc.perform(get("/api/v1/movil/avisos").with(user("sin.permisos"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/movil/usuarios-dominio?q=me").with(user("sin.permisos"))).andExpect(status().isForbidden());
         mvc.perform(get("/movil/tareas").with(user("sin.permisos"))).andExpect(status().isForbidden());

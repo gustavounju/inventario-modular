@@ -20,9 +20,15 @@
 				<div>
 					<strong>Visor de tareas para administración</strong>
 					<span>Panel completo para controlar pendientes, realizadas del día, responsables, usuarios solicitantes y comentarios.</span>
+					<span class="apk-meta" th:if="${apkDisponible and apkInfo != null}"
+						th:text="${'APK disponible · ' + #numbers.formatDecimal(apkInfo.bytes / 1024.0 / 1024.0, 1, 1) + ' MB'}">APK disponible</span>
 				</div>
 				<a class="primary-action" th:href="@{/admin/tareas/visor}">Abrir visor de tareas</a>
 				<a class="secondary-action" th:href="@{/movil/tareas}">Tareas en el celular</a>
+				<a class="secondary-action apk-download-action" th:if="${apkDisponible}" th:href="@{/api/v1/movil/apk}">
+					<span aria-hidden="true">APK</span>
+					Descargar APK
+				</a>
 			</section>
 
 			<!-- 🧭 LA BRÚJULA DEL OPERADOR: Recorrido Natural de los Circuitos Judiciales e Informáticos -->

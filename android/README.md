@@ -11,7 +11,9 @@ Google Play Services, analitica ni servidores de notificaciones externos.
 3. Ingresar con una cuenta local o de dominio con permisos TAREAS/VER y TAREAS/EDITAR.
 4. Descargar la APK desde el icono de celular. La descarga requiere autenticacion.
 5. Instalarla mediante el mecanismo interno autorizado para los telefonos.
-6. En la APK, configurar la direccion del servidor sin rutas. Ingresar con el usuario tecnico.
+6. En la APK piloto, el servidor de prueba queda preconfigurado como
+   `http://192.168.1.8:8081`. Si cambia la IP, corregirla en **Ajustes > Servidor**
+   sin rutas. Ingresar con el usuario tecnico.
 7. Activar **Avisos**, aceptar el permiso de notificaciones y configurar bateria sin
    restricciones. En algunos fabricantes tambien se necesita permitir inicio automatico.
 8. Usar **Ajustes > Probar sonido** para comprobar el canal y el volumen.
@@ -40,8 +42,22 @@ No se ignoran errores TLS ni se desactiva la verificacion del nombre del servido
 - No se guarda la clave en la APK. Se reutiliza la sesion del ingreso web; si vence, se
   revocan permisos o se cierra sesion, es necesario ingresar y activar avisos nuevamente.
 - La notificacion permanente indica conexion y permite detener avisos. El servicio
-  mantiene un bloqueo parcial de CPU durante la jornada; esto consume bateria. Al detener
-  avisos se libera. No se inicia automaticamente al reiniciar el telefono o forzar el cierre.
+  mantiene un bloqueo parcial de CPU y Wi-Fi durante la jornada; esto consume bateria. Al
+  detener avisos se libera. No se inicia automaticamente al reiniciar el telefono o forzar
+  el cierre.
+- Para recibir con pantalla bloqueada, activar **Avisos** y aceptar quitar la app de la
+  optimizacion de bateria cuando Android lo solicite. En Xiaomi/MIUI, Samsung u otros
+  fabricantes puede hacer falta habilitar ademas ejecucion en segundo plano o inicio
+  automatico desde los ajustes propios del equipo.
+- En **Ajustes > Diagnostico**, la app muestra servidor, usuario, permiso de edicion,
+  estado de avisos, version instalada y datos de la APK publicada. El SHA-256 queda
+  solo como dato tecnico para verificar que la APK descargada coincide con la publicada.
+- El canal **Nuevas tareas** usa un tono propio de la APK (`tareas_lan_alert.wav`) para
+  distinguirlo del sonido general del celular. Si Android conserva un canal anterior,
+  reinstalar o revisar el canal de notificaciones de **Tareas LAN**.
+- En **Ajustes > Descargar actualizacion**, la app descarga la APK publicada por el
+  servidor usando la sesion activa del WebView. Al terminar, Android muestra la
+  notificacion de descarga para iniciar la instalacion manual.
 - El permiso de bateria y las restricciones del fabricante afectan el funcionamiento en
   reposo. No se garantiza sonido si el usuario fuerza el cierre, apaga el Wi-Fi, silencia
   el canal o activa No molestar. La prueba con pantalla bloqueada debe hacerse en los
@@ -71,6 +87,8 @@ Para publicar el piloto local, copiarlo a
 `output/android/inventario-tareas-lan-piloto.apk` en la raiz de Inventario Modular.
 Esa carpeta no se incluye en Git. El servidor tambien admite configurar
 `INVENTARIO_MOVIL_APK_PATH` con una ruta absoluta a la APK distribuida internamente.
+El endpoint autenticado `/api/v1/movil/apk/info` expone disponibilidad, nombre, tamano,
+fecha y SHA-256 para diagnostico de instalacion y actualizaciones.
 
 La firma debug solo sirve para el piloto. Conservar fuera de Git la clave de firma
 institucional y configurar firma de release antes de distribuir una version productiva.

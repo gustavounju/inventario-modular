@@ -7,7 +7,17 @@ Primera version: 10 de septiembre de 2026.
 - Modulo independiente: `/movil/tareas`.
 - Ingreso local/Active Directory: `/movil/login`.
 - Descarga autenticada de Android: `/api/v1/movil/apk`, disponible cuando existe el archivo configurado.
+- Metadata autenticada de Android: `/api/v1/movil/apk/info`, usada por diagnostico y actualizaciones.
 - En el Panel General hay un acceso **Tareas en el celular** junto al visor.
+
+El criterio queda separado en dos caminos:
+
+- Navegador del celular: portal de ingreso, prueba y descarga de la APK.
+- APK instalada: modo operativo del tecnico. Abre directo `/movil/tareas`, reutiliza la
+  sesion del WebView y redirige cualquier caida accidental en `/admin` hacia el modulo movil.
+
+Cuando el servidor detecta el User-Agent `InventarioLAN/1`, oculta la tarjeta de descarga
+de APK y la huella SHA-256. Ese dato queda reservado para diagnostico de distribucion.
 
 El visor de administracion actualiza fichas y contadores cada 30 segundos con **En vivo**.
 Conserva los filtros de la direccion abierta y pausa la actualizacion al editar un
@@ -46,6 +56,10 @@ tienen Flyway desactivado. Para otro perfil, ejecutar V15 mediante el mecanismo 
 migracion de ese entorno antes de habilitar esta version. No se modificaron datos del
 servidor del trabajo durante el desarrollo local.
 
+La migracion `V16__permisos_tecnico_tareas_movil.sql` otorga a `TECNICO` los permisos
+`TAREAS/VER` y `TAREAS/EDITAR`. Sin esa asignacion, un tecnico puede autenticarse pero
+recibe 403 al abrir la APK o consultar los avisos.
+
 Ejemplo de variable en la unidad systemd existente, usando la ruta real del archivo:
 
 ```ini
@@ -72,6 +86,10 @@ la respuesta marca `disponible=false` si LDAP esta deshabilitado o no se pudo co
 `siguiente`. El cliente guarda el cursor luego de procesar el lote. La consulta puede
 repetirse tras una desconexion; el servidor no elimina avisos al consultarlos.
 
+`GET /api/v1/movil/apk/info` devuelve disponibilidad, nombre, tamano, fecha y SHA-256
+de la APK publicada. Requiere usuario autorizado, pero no permiso `TAREAS/VER`, para
+permitir diagnosticar una instalacion antes de resolver permisos del modulo.
+
 Los avisos son anuncios de creacion para usuarios habilitados en TAREAS. No hay aun
 seleccion de destinatarios por sede ni confirmacion de lectura por tecnico. Las
 operaciones posteriores de la tarea se siguen consultando por la API existente.
@@ -80,7 +98,21 @@ operaciones posteriores de la tarea se siguen consultando por la API existente.
 
 Ver [guia de la APK](../../android/README.md). La web funciona en el navegador;
 los avisos de fondo requieren activar el servicio Android y configurar el telefono.
-No se validaron dispositivos fisicos, iOS ni entrega durante Doze en esta PC.
+
+La variante piloto `0.1.3-piloto` queda preconfigurada con `http://192.168.1.8:8081`.
+En produccion la direccion debe venir de configuracion institucional y usar HTTPS.
+
+El servicio Android de avisos:
+
+- Consulta `/api/v1/movil/avisos` durante la jornada activada por el tecnico.
+- Mantiene `PARTIAL_WAKE_LOCK` y `WifiLock` mientras los avisos estan activos.
+- Usa el canal `tareas-nuevas-v3` con tono propio `tareas_lan_alert.wav`.
+- Solicita quitar la app de optimizacion de bateria para mejorar entrega con pantalla bloqueada.
+
+Android puede demorar notificaciones si el fabricante restringe segundo plano, inicio
+automatico, Wi-Fi en reposo, No molestar o el canal de notificaciones. En esos casos hay
+que ajustar el telefono aunque el codigo del servicio este activo. No se validaron iOS
+ni todos los modos Doze/fabricante en esta PC.
 
 Pruebas automatizadas del servidor:
 

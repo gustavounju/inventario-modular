@@ -15,7 +15,7 @@
     <header class="mobile-header">
         <div><span class="brand">INVENTARIO MODULAR</span><h1>Tareas</h1></div>
         <div class="header-actions">
-            <a id="download-apk" th:if="${apkDisponible}" class="icon-button" th:href="@{/api/v1/movil/apk}" aria-label="Descargar APK de prueba" title="Descargar APK de prueba"><i data-lucide="smartphone"></i></a>
+            <a id="download-apk" th:if="${apkDisponible}" class="icon-button" th:href="@{/api/v1/movil/apk}" aria-label="Descargar APK" title="Descargar APK"><i data-lucide="smartphone"></i></a>
             <button id="sound" class="icon-button" type="button" aria-label="Activar sonido en esta pantalla" title="Activar sonido en esta pantalla" aria-pressed="false"><i data-lucide="bell-off"></i></button>
             <form th:action="@{/logout}" method="post"><button class="icon-button" title="Cerrar sesion" aria-label="Cerrar sesion"><i data-lucide="log-out"></i></button></form>
         </div>
@@ -26,6 +26,13 @@
             <div><strong id="pending-count">0</strong><span>Pendientes</span></div>
             <div><strong id="mine-count">0</strong><span>A mi cargo</span></div>
             <div><strong id="done-count">0</strong><span>Realizadas hoy</span></div>
+        </section>
+        <section class="apk-install-panel" th:if="${apkDisponible}" aria-label="Instalacion de la app">
+            <div>
+                <strong>App Tareas LAN</strong>
+                <span>APK lista para instalar o actualizar este telefono.</span>
+            </div>
+            <a class="primary apk-install-link" th:href="@{/api/v1/movil/apk}"><i data-lucide="download"></i><span>Descargar APK</span></a>
         </section>
         <div class="list-tools">
             <label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="Buscar tarea, equipo o usuario" aria-label="Buscar tarea, equipo o usuario"></label>

@@ -3,13 +3,16 @@ package ar.gov.justiciajujuy.tareaslan;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.View;
@@ -24,6 +27,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.Toast;
+import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,7 +41,7 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        base = getPreferences(MODE_PRIVATE).getString("server", "");
+        base = getPreferences(MODE_PRIVATE).getString("server", BuildConfig.DEFAULT_SERVER);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.WHITE);
@@ -72,7 +76,13 @@ public class MainActivity extends Activity {
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return !LanClient.sameOrigin(base, request.getUrl().toString());
+                if (!LanClient.sameOrigin(base, request.getUrl().toString())) return true;
+                String path = request.getUrl().getPath();
+                if ("/".equals(path) || (path != null && path.startsWith("/admin"))) {
+                    view.loadUrl(base + "/movil/tareas");
+                    return true;
+                }
+                return false;
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 if (LanClient.sameOrigin(base, request.getUrl().toString())) return null;
@@ -80,10 +90,12 @@ public class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 String path = Uri.parse(url).getPath();
-                if ("/movil/login".equals(path) || "/login".equals(path) || "/".equals(path)) {
+                if ("/movil/login".equals(path) || "/login".equals(path) || "/".equals(path)
+                        || (path != null && path.startsWith("/admin"))) {
                     stopService(new Intent(MainActivity.this, AvisosService.class));
                     setAlerts(false);
-                    if ("/".equals(path)) web.loadUrl(base + "/movil/login");
+                    if ("/".equals(path) || "/login".equals(path)) web.loadUrl(base + "/movil/login");
+                    else if (path.startsWith("/admin")) web.loadUrl(base + "/movil/tareas");
                 }
             }
         });
@@ -115,6 +127,7 @@ public class MainActivity extends Activity {
         worker.execute(() -> {
             try {
                 LanClient.requireLan(base);
+                // La APK es el modo operativo del tecnico: siempre aterriza en la pantalla movil.
                 runOnUiThread(() -> web.loadUrl(base + "/movil/tareas" + (id > 0 ? "?tarea=" + id : "")));
             } catch (Exception e) { runOnUiThread(() -> toast("No se pudo conectar al servidor de la intranet. Revise Ajustes.")); }
         });
@@ -124,10 +137,10 @@ public class MainActivity extends Activity {
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
-        input.setHint(BuildConfig.DEBUG ? "http://192.168.1.10:8081" : "https://inventario.interno");
+        input.setHint(BuildConfig.DEBUG ? "http://192.168.1.8:8081" : "https://inventario.interno");
         input.setText(base);
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Servidor de la intranet").setView(input)
-                .setPositiveButton("Conectar", null).setNegativeButton("Cancelar", null).create();
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Servidor de tareas").setView(input)
+                .setPositiveButton("Abrir tareas", null).setNegativeButton("Cancelar", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             try {
                 String next = LanClient.normalize(input.getText().toString());
@@ -142,16 +155,75 @@ public class MainActivity extends Activity {
     }
 
     private void settings() {
-        String[] options = { "Servidor", "Bateria", "Notificaciones", "Probar sonido", "Actualizar" };
+        String[] options = { "Servidor", "Diagnostico", "Descargar actualizacion", "Bateria", "Notificaciones", "Probar sonido", "Recargar tareas" };
         new AlertDialog.Builder(this).setTitle("Tareas LAN").setItems(options, (dialog, which) -> {
             switch (which) {
                 case 0 -> configureServer();
-                case 1 -> startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
-                case 2 -> startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
-                case 3 -> AvisosService.testSound(this);
-                case 4 -> loadTask(0);
+                case 1 -> diagnostics();
+                case 2 -> downloadApkUpdate();
+                case 3 -> openBatterySettings();
+                case 4 -> startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
+                case 5 -> AvisosService.testSound(this);
+                case 6 -> loadTask(0);
             }
         }).show();
+    }
+
+    private void diagnostics() {
+        if (base.isEmpty()) {
+            toast("Configure el servidor de la intranet.");
+            return;
+        }
+        worker.execute(() -> {
+            String message;
+            try {
+                JSONObject session = LanClient.get(base, "/api/v1/movil/sesion");
+                JSONObject apk = LanClient.get(base, "/api/v1/movil/apk/info");
+                JSONObject user = session.getJSONObject("usuario");
+                String sha = apk.optString("sha256", "");
+                message = "Servidor: " + base
+                        + "\nUsuario: " + user.optString("username", "sin sesion")
+                        + "\nEditar tareas: " + yesNo(session.optBoolean("puedeEditar"))
+                        + "\nAvisos activos: " + yesNo(AvisosService.running)
+                        + "\nVersion instalada: " + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")"
+                        + "\nAPK publicada: " + (apk.optBoolean("disponible") ? apk.optString("nombre", "disponible") : "no disponible")
+                        + "\nTamano APK: " + formatBytes(apk.optLong("bytes", 0))
+                        + "\nSHA-256: " + (sha.length() > 16 ? sha.substring(0, 16) + "..." : sha);
+            } catch (Exception e) {
+                message = "No se pudo completar el diagnostico.\n\nRevise servidor, red, sesion y permisos.";
+            }
+            String result = message;
+            runOnUiThread(() -> new AlertDialog.Builder(this).setTitle("Diagnostico Tareas LAN")
+                    .setMessage(result).setPositiveButton("Cerrar", null).show());
+        });
+    }
+
+    private void downloadApkUpdate() {
+        if (base.isEmpty()) {
+            toast("Configure el servidor de la intranet.");
+            return;
+        }
+        worker.execute(() -> {
+            try {
+                JSONObject apk = LanClient.get(base, "/api/v1/movil/apk/info");
+                if (!apk.optBoolean("disponible")) throw new IllegalStateException("APK no disponible.");
+                String fileName = apk.optString("nombre", "inventario-tareas-lan-piloto.apk");
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(base + "/api/v1/movil/apk"));
+                request.setTitle("Tareas LAN");
+                request.setDescription("Descargando actualizacion piloto");
+                request.setMimeType("application/vnd.android.package-archive");
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+                request.addRequestHeader("Accept", "application/vnd.android.package-archive");
+                String cookies = CookieManager.getInstance().getCookie(base);
+                if (cookies != null) request.addRequestHeader("Cookie", cookies);
+                DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                manager.enqueue(request);
+                runOnUiThread(() -> toast("Descarga iniciada. Abra la notificacion al finalizar para instalar."));
+            } catch (Exception e) {
+                runOnUiThread(() -> toast("Ingrese al sistema y verifique permisos antes de descargar la actualizacion."));
+            }
+        });
     }
 
     private void enableAlerts() {
@@ -172,12 +244,22 @@ public class MainActivity extends Activity {
                     if (!getSystemService(PowerManager.class).isIgnoringBatteryOptimizations(getPackageName())) {
                         new AlertDialog.Builder(this).setTitle("Avisos con pantalla bloqueada")
                                 .setMessage("Permita el uso de bateria sin restricciones para recibir avisos durante la jornada.")
-                                .setPositiveButton("Abrir bateria", (d, w) -> startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)))
+                                .setPositiveButton("Abrir bateria", (d, w) -> openBatterySettings())
                                 .setNegativeButton("Ahora no", null).show();
                     }
                 });
             } catch (Exception e) { runOnUiThread(() -> { setAlerts(false); toast("Ingrese con su usuario y verifique la conexion antes de activar avisos."); }); }
         });
+    }
+
+    private void openBatterySettings() {
+        Intent direct = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                .setData(Uri.parse("package:" + getPackageName()));
+        try {
+            startActivity(direct);
+        } catch (Exception e) {
+            startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+        }
     }
 
     @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
@@ -194,6 +276,14 @@ public class MainActivity extends Activity {
         worker.shutdownNow();
         web.destroy();
         super.onDestroy();
+    }
+
+    private String yesNo(boolean value) { return value ? "si" : "no"; }
+
+    private String formatBytes(long bytes) {
+        if (bytes <= 0) return "sin datos";
+        if (bytes < 1024 * 1024) return Math.max(1, bytes / 1024) + " KB";
+        return String.format(java.util.Locale.US, "%.1f MB", bytes / 1024.0 / 1024.0);
     }
 
     private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_LONG).show(); }

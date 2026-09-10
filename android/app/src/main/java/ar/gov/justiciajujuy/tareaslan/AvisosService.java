@@ -9,8 +9,11 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioAttributes;
+import android.net.Uri;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.net.wifi.WifiManager;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.concurrent.Executors;
@@ -20,9 +23,10 @@ import java.util.concurrent.TimeUnit;
 public class AvisosService extends Service {
     static volatile boolean running;
     private static final String CONNECTION = "conexion-lan";
-    private static final String TASKS = "tareas-nuevas";
+    private static final String TASKS = "tareas-nuevas-v3";
     private ScheduledExecutorService worker;
     private PowerManager.WakeLock wakeLock;
+    private WifiManager.WifiLock wifiLock;
     private String base, username, cursorKey;
     private SharedPreferences preferences;
     private long retrySeconds = 10;
@@ -32,6 +36,12 @@ public class AvisosService extends Service {
         manager.createNotificationChannel(new NotificationChannel(CONNECTION, "Conexion a la intranet", NotificationManager.IMPORTANCE_LOW));
         NotificationChannel tasks = new NotificationChannel(TASKS, "Nuevas tareas", NotificationManager.IMPORTANCE_HIGH);
         tasks.enableVibration(true);
+        tasks.setVibrationPattern(new long[] { 0, 450, 180, 450 });
+        // Cada cambio de sonido usa un canal nuevo; Android conserva la configuracion del canal ya creado.
+        tasks.setSound(Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.tareas_lan_alert),
+                new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+        tasks.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         tasks.setDescription("Avisos de tareas creadas en el servidor institucional.");
         manager.createNotificationChannel(tasks);
     }
@@ -58,10 +68,18 @@ public class AvisosService extends Service {
         running = true;
         // Solo durante la jornada activada por el tecnico. Se libera al detener el servicio.
         wakeLock = getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TareasLAN:avisos");
+        wakeLock.setReferenceCounted(false);
         wakeLock.acquire();
+        // En algunos equipos el Wi-Fi entra en ahorro con pantalla bloqueada aunque la CPU siga despierta.
+        WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
+        if (wifi != null) {
+            wifiLock = wifi.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "TareasLAN:wifi");
+            wifiLock.setReferenceCounted(false);
+            wifiLock.acquire();
+        }
         worker = Executors.newSingleThreadScheduledExecutor();
         worker.execute(this::poll);
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     private Notification connection(String text) {
@@ -116,7 +134,9 @@ public class AvisosService extends Service {
         PendingIntent open = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification notice = new Notification.Builder(this, TASKS).setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle("Nueva tarea #" + taskId).setContentText(event.getString("titulo"))
-                .setContentIntent(open).setAutoCancel(true).setOnlyAlertOnce(true).setVisibility(Notification.VISIBILITY_PRIVATE).build();
+                .setContentIntent(open).setAutoCancel(true).setOnlyAlertOnce(false)
+                .setPriority(Notification.PRIORITY_HIGH).setCategory(Notification.CATEGORY_MESSAGE)
+                .setVisibility(Notification.VISIBILITY_PUBLIC).build();
         getSystemService(NotificationManager.class).notify("tarea-" + event.getLong("id"), 2, notice);
     }
 
@@ -124,6 +144,7 @@ public class AvisosService extends Service {
         running = false;
         if (worker != null) worker.shutdownNow();
         if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
+        if (wifiLock != null && wifiLock.isHeld()) wifiLock.release();
         super.onDestroy();
     }
 
