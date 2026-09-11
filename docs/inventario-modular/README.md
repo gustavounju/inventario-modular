@@ -28,6 +28,8 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Traspaso de tareas, visor y Android LAN (10/09/2026)](./traspaso-tareas-lan-2026-09-10.md)
 - [Instalacion de esta entrega sin Internet](./instalacion-tareas-lan-2026-09-10.md)
 - [PDF de traspaso e instalacion](../../output/pdf/traspaso-tareas-lan.pdf)
+- [Despliegue Ubuntu y publicacion de APK](./despliegue-ubuntu-y-apk.md)
+- [PDF despliegue Ubuntu y APK](../../output/pdf/despliegue-ubuntu-y-apk.pdf)
 - [Modulo movil y avisos internos](./tareas-moviles-lan.md)
 - [APK Android y prueba de campo](../../android/README.md)
 - [Instalacion desde cero](./instalacion-desde-cero.md)

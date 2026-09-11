@@ -2673,3 +2673,80 @@ Pendientes:
 - Si el celular no abre `http://IP-DE-LA-PC:8081/movil/login`, habilitar firewall de
   Windows para TCP `8081` o revisar aislamiento/VLAN del Wi-Fi institucional.
 - Probar busqueda AD real con una cuenta lectora autorizada.
+
+## 2026-09-10 - Cierre operativo: APK LAN, formularios moviles y despliegue Ubuntu
+
+Se cerro una tanda de ajustes sobre la experiencia movil de tecnicos y se dejo
+documentado el procedimiento de continuidad para trabajar desde otra IA o desde otra
+estacion de desarrollo.
+
+Cambios funcionales realizados:
+
+- La APK quedo orientada a uso operativo directo: al abrir o tocar avisos aterriza en
+  `/movil/tareas`, no en la web general.
+- Se mantuvo soporte HTTP LAN para laboratorio por IP en la variante `lanRelease`.
+- La app muestra version instalada y consulta version publicada desde el servidor.
+- Desde **Ajustes** puede descargar la actualizacion publicada por Ubuntu cuando existe
+  una APK configurada por `INVENTARIO_MOVIL_APK_PATH`.
+- El canal de avisos de nuevas tareas usa sonido propio `tareas_lan_alert.wav`.
+- Se elimino la parte de IA para alta movil de tareas.
+- En el celular el tecnico ya no carga `Usuario solicitante` ni `Titulo`; el sistema usa
+  automaticamente el usuario logueado como solicitante/dueño operativo y genera un titulo
+  interno a partir del problema.
+
+Cambios de criterio operativo:
+
+- GitLab queda como fuente de codigo y documentacion.
+- Windows queda como estacion recomendada para generar la APK Android.
+- Ubuntu Server queda como servidor de ejecucion y publicacion de la APK.
+- La APK operativa se copia a una ruta estable del servidor, por ejemplo
+  `/opt/inventario-modular/distribucion/tareas-lan.apk`.
+- La ruta real de la APK se configura fuera de Git en
+  `/etc/inventario-modular/inventario-modular.env`.
+
+Documentacion agregada:
+
+- `docs/inventario-modular/despliegue-ubuntu-y-apk.md`
+- `output/pdf/despliegue-ubuntu-y-apk.pdf`
+- Actualizacion de `docs/inventario-modular/actualizacion-produccion-inventario-modular.md`
+- Actualizacion del indice `docs/inventario-modular/README.md`
+
+Comandos principales documentados para Ubuntu:
+
+```bash
+cd /opt/inventario-modular
+git fetch origin
+git checkout primeros-pasos
+git pull --ff-only origin primeros-pasos
+sh ./mvnw --batch-mode test
+sh ./mvnw --batch-mode -DskipTests package
+sudo systemctl restart inventario-modular.service
+```
+
+Comandos principales documentados para APK:
+
+```powershell
+cd C:\Users\Gustavo\Documents\ChatGPT\Inventario-Modular\android
+.\gradlew.bat :app:assembleLanRelease
+```
+
+Ruta de publicacion recomendada:
+
+```bash
+/opt/inventario-modular/distribucion/tareas-lan.apk
+```
+
+Variable de entorno:
+
+```env
+INVENTARIO_MOVIL_APK_PATH=/opt/inventario-modular/distribucion/tareas-lan.apk
+```
+
+Verificacion local realizada antes de documentar:
+
+```powershell
+.\mvnw.cmd -q "-Dtest=TareaMovilControllerTests,TareaTecnicaControllerTests,TareaTecnicaPageControllerTests" test
+```
+
+Resultado: pruebas especificas de tareas y movil en verde. Luego se genero documentacion
+y PDF para que el procedimiento quede disponible en GitLab.

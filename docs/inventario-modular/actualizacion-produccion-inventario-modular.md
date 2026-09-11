@@ -102,6 +102,50 @@ sh ./mvnw --batch-mode -DskipTests package
 
 La salida esperada de tests debe terminar en `BUILD SUCCESS`.
 
+## Publicar APK para tecnicos
+
+La APK no se compila en el Ubuntu productivo. Se genera primero en Windows con Gradle,
+se firma como `lanRelease` y luego se copia al servidor para que Inventario Modular la
+publique desde un endpoint autenticado.
+
+Ruta estable recomendada:
+
+```text
+/opt/inventario-modular/distribucion/tareas-lan.apk
+```
+
+Crear carpeta y permisos:
+
+```bash
+sudo mkdir -p /opt/inventario-modular/distribucion
+sudo chmod 755 /opt/inventario-modular/distribucion
+```
+
+Copiar la APK con WinSCP. Si se copia primero al home del operador:
+
+```bash
+sudo cp /home/TU_USUARIO/tareas-lan.apk /opt/inventario-modular/distribucion/tareas-lan.apk
+sudo chown root:root /opt/inventario-modular/distribucion/tareas-lan.apk
+sudo chmod 644 /opt/inventario-modular/distribucion/tareas-lan.apk
+```
+
+Configurar en `/etc/inventario-modular/inventario-modular.env`:
+
+```env
+INVENTARIO_MOVIL_APK_PATH=/opt/inventario-modular/distribucion/tareas-lan.apk
+```
+
+Despues de cambiar el archivo de entorno o reemplazar la APK publicada:
+
+```bash
+sudo systemctl restart inventario-modular.service
+curl -I http://127.0.0.1:8081/api/v1/movil/apk
+```
+
+La descarga requiere login y permiso de tareas. Un `401`, `403` o redireccion a login
+desde `curl` sin sesion puede ser normal; la prueba final debe hacerse desde la APK o
+desde navegador movil con usuario tecnico autorizado.
+
 ## Reiniciar solo Inventario Modular
 
 ```bash
