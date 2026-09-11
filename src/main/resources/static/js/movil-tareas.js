@@ -9,8 +9,8 @@
     let session, tasks = [], selected, editing, filter = 'pending', limit = 40;
     let cursor, cursorKey, busy = false, audio, sound = false, stopped = false;
     // Los previews de comentarios se cargan aparte para no retrasar el listado principal de tareas.
-    let renderToken = 0, domainTimer, dictationMode = 'task';
-    const commentPreviewCache = new Map(), domainUsers = new Map();
+    let renderToken = 0;
+    const commentPreviewCache = new Map();
     const icons = () => window.lucide?.createIcons();
     const isOpen = task => ['PENDIENTE', 'EN_PROCESO'].includes(task.estado);
     const owns = task => task.responsable?.toLowerCase() === session.usuario.username.toLowerCase();
@@ -166,69 +166,37 @@
         const defaults = task || { solicitanteUsername: session.usuario.username, solicitanteNombre: session.usuario.nombreVisible, solicitanteFuero: session.usuario.fuero, prioridad: 'MEDIA' };
         for (const control of form.elements) if (control.name && defaults[control.name] != null) control.value = defaults[control.name];
         $('responsable-field').hidden = !session.administrador;
-        $('solicitante-help').textContent = 'Escriba al menos 1 caracter para buscar en AD.';
         $('voice-problem').hidden = !native || !session.puedeEditar;
         message('', false, 'form-message');
         $('task-dialog').showModal();
     }
-    function parseDictation(text) {
+    function titleFromProblem(text) {
         const clean = (text || '').trim().replace(/\s+/g, ' ');
-        const requesterMatch = clean.match(/\b(?:solicita|solicitante|pidio|pidió|pide|para|de)\s+([^,.;]+?)(?:\s+(?:por|porque|que|indica|dice|tiene|no|se)\b|[,.;]|$)/i);
-        const requester = requesterMatch ? requesterMatch[1].trim() : session.usuario.nombreVisible;
-        let issue = clean;
+        let issue = clean || 'Tarea tecnica';
         const issueMatch = clean.match(/\b(?:problema|inconveniente|falla|fallo|error|porque|que|indica|dice)\b\s*(.+)$/i);
         if (issueMatch) issue = issueMatch[1].trim();
-        const title = issue.length > 90 ? issue.slice(0, 87).trim() + '...' : issue;
-        return { requester, title: title || 'Tarea dictada', description: clean };
+        return issue.length > 90 ? issue.slice(0, 87).trim() + '...' : issue;
     }
-    function fillDictation(parsed, note) {
-        openForm();
+    function fillProblemDictation(text, note) {
         const form = $('task-form');
-        form.elements.titulo.value = parsed.title;
-        form.elements.descripcion.value = parsed.description;
-        form.elements.solicitanteNombre.value = parsed.requester;
-        form.elements.solicitanteUsername.value = (parsed.username || parsed.requester).toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]+/g, '.').replace(/^\.+|\.+$/g, '') || session.usuario.username;
-        form.elements.solicitanteFuero.value = session.usuario.fuero || 'Sin fuero informado';
-        $('solicitante-help').textContent = 'Datos cargados desde dictado. Revise solicitante y problema antes de guardar.';
-        if (parsed.priority) form.elements.prioridad.value = parsed.priority;
-        message(note || 'Dictado cargado. Revise los datos antes de guardar.', false, 'form-message');
-    }
-    function fillProblemDictation(parsed, note) {
-        const form = $('task-form');
-        form.elements.titulo.value = parsed.title || form.elements.titulo.value || 'Tarea dictada';
-        form.elements.descripcion.value = parsed.description || form.elements.descripcion.value;
-        if (parsed.priority) form.elements.prioridad.value = parsed.priority;
+        form.elements.descripcion.value = (text || '').trim();
+        form.elements.titulo.value = titleFromProblem(text);
         message(note || 'Problema dictado. Revise antes de guardar.', false, 'form-message');
     }
-    async function applyDictation(text) {
-        const local = parseDictation(text);
-        if (dictationMode === 'problem') {
-            fillProblemDictation(local, 'Problema dictado. Consultando IA del servidor...');
-        } else {
-            fillDictation(local, 'Dictado cargado. Consultando IA del servidor...');
-        }
-        try {
-            const ai = await request('api/v1/movil/dictado/interpretar', 'POST', { texto: text });
-            const parsed = {
-                requester: ai.solicitanteNombre || local.requester,
-                username: ai.solicitanteUsername,
-                title: ai.titulo || local.title,
-                description: ai.descripcion || local.description,
-                priority: ai.prioridad || 'MEDIA'
-            };
-            if (dictationMode === 'problem') fillProblemDictation(parsed, ai.mensaje || 'IA aplicada al problema. Revise antes de guardar.');
-            else fillDictation(parsed, ai.mensaje || 'IA aplicada. Revise los datos antes de guardar.');
-        } catch (error) {
-            message('Dictado cargado sin IA: ' + error.message, false, 'form-message');
-        } finally {
-            dictationMode = 'task';
-        }
+    function applyDictation(text) {
+        if (!$('task-dialog').open) openForm();
+        fillProblemDictation(text, 'Problema dictado. Revise antes de guardar.');
     }
     $('task-form').onsubmit = event => {
         event.preventDefault();
         act(async () => {
             const data = Object.fromEntries(new FormData(event.target));
+            data.descripcion = data.descripcion?.trim() || '';
+            // En movil el tecnico carga el problema; titulo y solicitante quedan derivados para cumplir el contrato API.
+            data.titulo = titleFromProblem(data.descripcion);
+            data.solicitanteUsername = editing?.solicitanteUsername || session.usuario.username;
+            data.solicitanteNombre = editing?.solicitanteNombre || session.usuario.nombreVisible;
+            data.solicitanteFuero = editing?.solicitanteFuero || session.usuario.fuero || 'Sin fuero informado';
             data.equipoId = editing?.equipoId || null;
             data.responsable = data.responsable?.trim() || null;
             const saved = await request(api + (editing ? '/' + editing.id : ''), editing ? 'PUT' : 'POST', data);
@@ -267,12 +235,11 @@
     $('edit-task').onclick = () => openForm(selected);
     $('new-task').onclick = () => openForm();
     $('voice-task').onclick = () => {
-        dictationMode = 'task';
+        openForm();
         if (window.TareasLan?.dictarTarea) window.TareasLan.dictarTarea();
         else message('El dictado esta disponible desde la APK instalada.', true);
     };
     $('voice-problem').onclick = () => {
-        dictationMode = 'problem';
         if (window.TareasLan?.dictarTarea) window.TareasLan.dictarTarea();
         else message('El dictado esta disponible desde la APK instalada.', true, 'form-message');
     };
@@ -285,49 +252,6 @@
         filter = button.dataset.filter; limit = 40; $('list-title').textContent = button.textContent;
         document.querySelectorAll('[data-filter]').forEach(b => b.setAttribute('aria-pressed', String(b === button))); render();
     });
-    function applySolicitante(username) {
-        const user = domainUsers.get((username || '').trim().toLowerCase());
-        if (!user) return;
-        $('task-form').elements.solicitanteUsername.value = user.username || '';
-        $('task-form').elements.solicitanteNombre.value = user.nombreVisible || '';
-        $('task-form').elements.solicitanteFuero.value = user.fuero || '';
-        $('solicitante-help').textContent = 'Solicitante obtenido desde AD.';
-    }
-    async function searchSolicitantes(query) {
-        const clean = query.trim();
-        const options = $('solicitante-options');
-        if (clean.length < 1) {
-            options.replaceChildren();
-            $('solicitante-help').textContent = 'Escriba al menos 1 caracter para buscar en AD.';
-            return;
-        }
-        $('solicitante-help').textContent = 'Buscando usuarios de AD...';
-        // La app movil no mantiene una copia de AD; solo consulta al servidor con sesion autenticada.
-        const result = await request('api/v1/movil/usuarios-dominio?q=' + encodeURIComponent(clean));
-        options.replaceChildren();
-        domainUsers.clear();
-        if (!result.disponible) {
-            $('solicitante-help').textContent = result.mensaje || 'No se pudo consultar AD.';
-            return;
-        }
-        for (const user of result.usuarios || []) {
-            domainUsers.set((user.username || '').toLowerCase(), user);
-            const option = element('option');
-            option.value = user.username;
-            option.label = [user.username, user.nombreVisible, user.fuero].filter(Boolean).join(' - ');
-            options.append(option);
-        }
-        $('solicitante-help').textContent = result.usuarios.length ? 'Seleccione un usuario para completar nombre y fuero.' : 'No se encontraron usuarios.';
-        applySolicitante($('task-form').elements.solicitanteUsername.value);
-    }
-    $('solicitante-username-input').addEventListener('input', event => {
-        clearTimeout(domainTimer);
-        domainTimer = setTimeout(() => searchSolicitantes(event.target.value).catch(error => {
-            $('solicitante-help').textContent = error.message || 'No se pudo consultar AD.';
-        }), 350);
-    });
-    $('solicitante-username-input').addEventListener('change', event => applySolicitante(event.target.value));
-    $('solicitante-username-input').addEventListener('blur', event => applySolicitante(event.target.value));
     function beep() {
         if (!audio || audio.state !== 'running') return;
         const oscillator = audio.createOscillator(), gain = audio.createGain();

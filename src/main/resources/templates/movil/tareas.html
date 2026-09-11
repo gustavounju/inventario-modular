@@ -37,7 +37,7 @@
         <div class="list-tools">
             <label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="Buscar tarea, equipo o usuario" aria-label="Buscar tarea, equipo o usuario"></label>
             <button id="new-task" class="primary" type="button" hidden><i data-lucide="plus"></i><span>Nueva tarea</span></button>
-            <button id="voice-task" class="secondary" type="button" hidden><i data-lucide="mic"></i><span>Dictar</span></button>
+            <button id="voice-task" class="secondary" type="button" hidden><i data-lucide="mic"></i><span>Dictar problema</span></button>
             <button id="refresh" class="icon-button" title="Actualizar" aria-label="Actualizar"><i data-lucide="refresh-cw"></i></button>
         </div>
         <nav class="filters" aria-label="Filtrar tareas">
@@ -83,18 +83,13 @@
     <dialog id="task-dialog" aria-labelledby="form-title">
         <header class="dialog-header"><h2 id="form-title">Nueva tarea</h2><button class="icon-button" data-close="task-dialog" aria-label="Cerrar formulario" title="Cerrar"><i data-lucide="x"></i></button></header>
         <form id="task-form" class="dialog-body">
-            <label>Titulo<input name="titulo" maxlength="180" required></label>
-            <label>Descripcion<textarea name="descripcion" maxlength="1000" rows="3"></textarea></label>
+            <input name="titulo" type="hidden">
+            <input name="solicitanteUsername" type="hidden">
+            <input name="solicitanteNombre" type="hidden">
+            <input name="solicitanteFuero" type="hidden">
+            <label>Problema a solucionar<textarea name="descripcion" maxlength="1000" rows="4" required></textarea></label>
             <button id="voice-problem" class="secondary" type="button" hidden><i data-lucide="mic"></i><span>Dictar problema</span></button>
             <label>Prioridad<select name="prioridad"><option value="BAJA">Baja</option><option value="MEDIA" selected>Media</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select></label>
-            <label>Usuario solicitante
-                <input id="solicitante-username-input" name="solicitanteUsername" maxlength="120" required
-                       list="solicitante-options" autocomplete="off" autocapitalize="none" spellcheck="false">
-                <datalist id="solicitante-options"></datalist>
-                <small id="solicitante-help" class="field-help">Escriba al menos 1 caracter para buscar en AD.</small>
-            </label>
-            <label>Nombre del solicitante<input name="solicitanteNombre" maxlength="180" required></label>
-            <label>Fuero u oficina<input name="solicitanteFuero" maxlength="120" required></label>
             <label id="responsable-field">Responsable<input name="responsable" maxlength="120" placeholder="Sin tomar" autocapitalize="none"></label>
             <p id="form-message" class="message error" role="alert" hidden></p>
             <button class="primary" type="submit">Guardar tarea</button>

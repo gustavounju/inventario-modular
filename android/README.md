@@ -71,13 +71,11 @@ No se ignoran errores TLS ni se desactiva la verificacion del nombre del servido
   puede suspenderla en segundo plano; ese sonido no reemplaza al servicio Android.
 - No hay trabajo sin conexion: los formularios necesitan al servidor. El sistema conserva
   avisos pendientes, no una copia de las tareas para editar fuera de linea.
-- En el formulario de nueva tarea, el flujo recomendado es elegir primero el solicitante
-  desde Active Directory. La busqueda comienza con 1 caracter y al seleccionar usuario se
-  completa nombre y fuero. Despues, **Dictar problema** envia solo el texto del problema al
-  servidor para proponer titulo, descripcion y prioridad sin cambiar el solicitante elegido.
-- El boton general **Dictar** envia el texto reconocido al servidor. Si la IA real esta
-  habilitada, el backend interpreta solicitante, titulo, descripcion y prioridad; si no,
-  se usa una interpretacion local basica para no bloquear la carga.
+- En el formulario movil de nueva tarea, el tecnico solo carga el problema y la prioridad.
+  El sistema usa el usuario logueado como solicitante y genera un titulo interno corto
+  desde el problema para mantener compatibilidad con el backend.
+- El boton **Dictar problema** usa el reconocimiento de voz del telefono para completar el
+  problema. No consulta servicios de IA ni guarda claves externas.
 - La app limita sus peticiones al origen configurado y rechaza servidores con direcciones
   publicas. El aislamiento completo se aplica ademas en firewall, VLAN y Wi-Fi institucional.
 
@@ -101,25 +99,6 @@ Esa carpeta no se incluye en Git. El servidor tambien admite configurar
 `INVENTARIO_MOVIL_APK_PATH` con una ruta absoluta a la APK distribuida internamente.
 El endpoint autenticado `/api/v1/movil/apk/info` expone disponibilidad, nombre, tamano,
 fecha y SHA-256 para diagnostico de instalacion y actualizaciones.
-
-## IA para dictado
-
-La APK no guarda claves de IA. Para activar interpretacion real desde el servidor:
-
-```properties
-INVENTARIO_IA_OPENAI_ENABLED=true
-OPENAI_API_KEY=sk-...
-INVENTARIO_IA_OPENAI_MODEL=gpt-4.1-mini
-```
-
-El endpoint interno `POST /api/v1/movil/dictado/interpretar` requiere sesion y permiso
-`TAREAS/EDITAR`. Si la IA no esta configurada o falla, responde con origen `LOCAL`.
-
-La clave de OpenAI se crea en el panel de API de OpenAI y se configura solo como variable
-del servidor. Como alternativa sin costo por consulta, el sistema conserva la
-interpretacion `LOCAL`, que alcanza para pruebas simples. Una IA local gratuita tambien
-es posible con un modelo instalado en el servidor, pero requiere CPU/RAM suficientes y
-un conector propio; no conviene cargar eso dentro de la APK de los tecnicos.
 
 La firma debug solo sirve para el piloto. Conservar fuera de Git la clave de firma
 institucional y configurar firma de release antes de distribuir una version productiva.

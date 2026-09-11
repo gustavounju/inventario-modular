@@ -34,10 +34,10 @@ El listado movil muestra una vista previa de hasta dos comentarios por tarea. La
 hace despues de pintar la lista para que la pantalla siga respondiendo rapido en celulares
 con Wi-Fi institucional irregular.
 
-El campo **Usuario solicitante** consulta Active Directory desde el servidor mediante
-`/api/v1/movil/usuarios-dominio?q=...`. Al elegir un usuario se completan usuario, nombre
-visible y fuero/oficina. Si LDAP no esta disponible o faltan credenciales lectoras, el
-formulario conserva carga manual.
+El formulario movil de nueva tarea evita pedir datos repetidos al tecnico: solo muestra
+problema y prioridad. El usuario logueado queda como solicitante/dueno operativo y el
+cliente genera un titulo interno corto desde el problema para mantener el contrato de
+`/api/v1/tareas-tecnicas`.
 
 ## Servidor Linux
 
@@ -102,22 +102,9 @@ en tareas tomadas se dirigen al responsable. No hay aun seleccion de destinatari
 sede ni confirmacion de lectura por tecnico. Las operaciones posteriores de la tarea se
 siguen consultando por la API existente.
 
-Desde la APK Android se habilita un boton **Dictar** para abrir el reconocimiento de
-voz del telefono y precargar una nueva tarea. El texto se envia a
-`POST /api/v1/movil/dictado/interpretar`: si `INVENTARIO_IA_OPENAI_ENABLED=true` y el
-servidor tiene `OPENAI_API_KEY`, se consulta IA real desde el backend; si no, se usa una
-extraccion local basica. La APK nunca guarda claves de IA.
-
-El flujo principal para evitar errores de identidad es buscar el solicitante en Active
-Directory desde el campo **Usuario solicitante**. La consulta comienza con 1 caracter y,
-al seleccionar un usuario, se completan nombre y fuero. Luego el tecnico puede usar
-**Dictar problema**, que completa titulo/descripcion/prioridad sin reemplazar el
-solicitante ya elegido.
-
-El modo local no tiene costo ni dependencia externa, pero entiende menos variantes del
-dictado. Una alternativa gratuita con IA real es ejecutar un modelo local en el servidor
-y conectar este endpoint a ese servicio; requiere revisar rendimiento, privacidad y
-mantenimiento antes de ponerlo en jornada.
+Desde la APK Android se habilita **Dictar problema** para abrir el reconocimiento de voz
+del telefono y completar la descripcion. No hay consulta a IA externa; la voz solo
+convierte audio en texto en el dispositivo y el sistema deriva un titulo breve.
 
 ## Instalacion Android y prueba de campo
 
