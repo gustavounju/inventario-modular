@@ -180,18 +180,34 @@
         const title = issue.length > 90 ? issue.slice(0, 87).trim() + '...' : issue;
         return { requester, title: title || 'Tarea dictada', description: clean };
     }
-    function applyDictation(text) {
+    function fillDictation(parsed, note) {
         openForm();
-        const parsed = parseDictation(text);
         const form = $('task-form');
         form.elements.titulo.value = parsed.title;
         form.elements.descripcion.value = parsed.description;
         form.elements.solicitanteNombre.value = parsed.requester;
-        form.elements.solicitanteUsername.value = parsed.requester.toLowerCase()
+        form.elements.solicitanteUsername.value = (parsed.username || parsed.requester).toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]+/g, '.').replace(/^\.+|\.+$/g, '') || session.usuario.username;
         form.elements.solicitanteFuero.value = session.usuario.fuero || 'Sin fuero informado';
         $('solicitante-help').textContent = 'Datos cargados desde dictado. Revise solicitante y problema antes de guardar.';
-        message('Dictado cargado. Revise los datos antes de guardar.', false, 'form-message');
+        if (parsed.priority) form.elements.prioridad.value = parsed.priority;
+        message(note || 'Dictado cargado. Revise los datos antes de guardar.', false, 'form-message');
+    }
+    async function applyDictation(text) {
+        const local = parseDictation(text);
+        fillDictation(local, 'Dictado cargado. Consultando IA del servidor...');
+        try {
+            const ai = await request('api/v1/movil/dictado/interpretar', 'POST', { texto: text });
+            fillDictation({
+                requester: ai.solicitanteNombre || local.requester,
+                username: ai.solicitanteUsername,
+                title: ai.titulo || local.title,
+                description: ai.descripcion || local.description,
+                priority: ai.prioridad || 'MEDIA'
+            }, ai.mensaje || 'IA aplicada. Revise los datos antes de guardar.');
+        } catch (error) {
+            message('Dictado cargado sin IA: ' + error.message, false, 'form-message');
+        }
     }
     $('task-form').onsubmit = event => {
         event.preventDefault();

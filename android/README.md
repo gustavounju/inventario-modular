@@ -51,8 +51,10 @@ No se ignoran errores TLS ni se desactiva la verificacion del nombre del servido
   fabricantes puede hacer falta habilitar ademas ejecucion en segundo plano o inicio
   automatico desde los ajustes propios del equipo.
 - En **Ajustes > Diagnostico**, la app muestra servidor, usuario, permiso de edicion,
-  estado de avisos, version instalada y datos de la APK publicada. El SHA-256 queda
+  estado de avisos, version instalada, version publicada y datos de la APK publicada. El SHA-256 queda
   solo como dato tecnico para verificar que la APK descargada coincide con la publicada.
+- La barra superior de la APK muestra la version instalada para reconocer rapidamente
+  si el telefono ya tiene la entrega correcta.
 - El canal **Nuevas tareas** usa un tono propio de la APK (`tareas_lan_alert.wav`) para
   distinguirlo del sonido general del celular. Si Android conserva un canal anterior,
   reinstalar o revisar el canal de notificaciones de **Tareas LAN**.
@@ -67,6 +69,9 @@ No se ignoran errores TLS ni se desactiva la verificacion del nombre del servido
   puede suspenderla en segundo plano; ese sonido no reemplaza al servicio Android.
 - No hay trabajo sin conexion: los formularios necesitan al servidor. El sistema conserva
   avisos pendientes, no una copia de las tareas para editar fuera de linea.
+- El boton **Dictar** envia el texto reconocido al servidor. Si la IA real esta habilitada,
+  el backend interpreta solicitante, titulo, descripcion y prioridad; si no, se usa una
+  interpretacion local basica para no bloquear la carga.
 - La app limita sus peticiones al origen configurado y rechaza servidores con direcciones
   publicas. El aislamiento completo se aplica ademas en firewall, VLAN y Wi-Fi institucional.
 
@@ -90,6 +95,19 @@ Esa carpeta no se incluye en Git. El servidor tambien admite configurar
 `INVENTARIO_MOVIL_APK_PATH` con una ruta absoluta a la APK distribuida internamente.
 El endpoint autenticado `/api/v1/movil/apk/info` expone disponibilidad, nombre, tamano,
 fecha y SHA-256 para diagnostico de instalacion y actualizaciones.
+
+## IA para dictado
+
+La APK no guarda claves de IA. Para activar interpretacion real desde el servidor:
+
+```properties
+INVENTARIO_IA_OPENAI_ENABLED=true
+OPENAI_API_KEY=sk-...
+INVENTARIO_IA_OPENAI_MODEL=gpt-4.1-mini
+```
+
+El endpoint interno `POST /api/v1/movil/dictado/interpretar` requiere sesion y permiso
+`TAREAS/EDITAR`. Si la IA no esta configurada o falla, responde con origen `LOCAL`.
 
 La firma debug solo sirve para el piloto. Conservar fuera de Git la clave de firma
 institucional y configurar firma de release antes de distribuir una version productiva.

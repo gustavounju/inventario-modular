@@ -27,6 +27,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
@@ -59,6 +60,12 @@ public class MainActivity extends Activity {
         alerts.setText("Avisos  ");
         alerts.setMinHeight((int) (48 * getResources().getDisplayMetrics().density));
         toolbar.addView(alerts, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView version = new TextView(this);
+        version.setText("v" + BuildConfig.VERSION_NAME);
+        version.setTextColor(Color.DKGRAY);
+        version.setGravity(android.view.Gravity.CENTER);
+        version.setPadding(8, 0, 8, 0);
+        toolbar.addView(version);
         Button settings = new Button(this);
         settings.setText("Ajustes");
         toolbar.addView(settings);
@@ -191,6 +198,7 @@ public class MainActivity extends Activity {
                         + "\nAvisos activos: " + yesNo(AvisosService.running)
                         + "\nVersion instalada: " + BuildConfig.VERSION_NAME + " (" + BuildConfig.VERSION_CODE + ")"
                         + "\nAPK publicada: " + (apk.optBoolean("disponible") ? apk.optString("nombre", "disponible") : "no disponible")
+                        + "\nVersion publicada: " + apk.optString("version", "sin dato")
                         + "\nTamano APK: " + formatBytes(apk.optLong("bytes", 0))
                         + "\nSHA-256: " + (sha.length() > 16 ? sha.substring(0, 16) + "..." : sha);
             } catch (Exception e) {

@@ -18,10 +18,13 @@ import org.springframework.stereotype.Service;
 public class ApkDistributionService {
 
 	private final FileSystemResource apk;
+	private final String versionPublicada;
 
 	public ApkDistributionService(
-			@Value("${inventario.movil.apk-path:output/android/tecnico-taller-san-pedro-lan-release.apk}") String apkPath) {
+			@Value("${inventario.movil.apk-path:output/android/tecnico-taller-san-pedro-lan-release.apk}") String apkPath,
+			@Value("${inventario.movil.apk-version:desconocida}") String versionPublicada) {
 		this.apk = new FileSystemResource(apkPath);
+		this.versionPublicada = versionPublicada;
 	}
 
 	public FileSystemResource resource() {
@@ -34,15 +37,15 @@ public class ApkDistributionService {
 
 	public ApkInfo info() {
 		if (!isAvailable()) {
-			return new ApkInfo(false, apk.getPath(), null, 0, null, null);
+			return new ApkInfo(false, apk.getPath(), null, versionPublicada, 0, null, null);
 		}
 		try {
 			var path = apk.getFile().toPath();
 			// La huella se expone para diagnostico de distribucion, no como dato de uso diario.
-			return new ApkInfo(true, path.toString(), apk.getFilename(), Files.size(path),
+			return new ApkInfo(true, path.toString(), apk.getFilename(), versionPublicada, Files.size(path),
 					Files.getLastModifiedTime(path).toInstant(), sha256(path));
 		} catch (IOException ex) {
-			return new ApkInfo(false, apk.getPath(), apk.getFilename(), 0, null, null);
+			return new ApkInfo(false, apk.getPath(), apk.getFilename(), versionPublicada, 0, null, null);
 		}
 	}
 
@@ -59,7 +62,7 @@ public class ApkDistributionService {
 		}
 	}
 
-	public record ApkInfo(boolean disponible, String ruta, String nombre, long bytes, Instant actualizadoEn,
+	public record ApkInfo(boolean disponible, String ruta, String nombre, String version, long bytes, Instant actualizadoEn,
 			String sha256) {
 	}
 }

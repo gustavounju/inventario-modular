@@ -21,7 +21,7 @@
         </div>
     </header>
     <main class="mobile-main">
-        <div class="session-line"><span id="username">Cargando usuario...</span><span id="connection" role="status">Conectando...</span></div>
+        <div class="session-line"><span id="username">Cargando usuario...</span><span class="apk-version" th:text="'APK ' + ${apkInfo.version}">APK</span><span id="connection" role="status">Conectando...</span></div>
         <section class="metrics" aria-label="Resumen de tareas">
             <div><strong id="pending-count">0</strong><span>Pendientes</span></div>
             <div><strong id="mine-count">0</strong><span>A mi cargo</span></div>
@@ -30,7 +30,7 @@
         <section class="apk-install-panel" th:if="${apkDisponible}" aria-label="Instalacion de la app">
             <div>
                 <strong>App Tareas LAN</strong>
-                <span>APK lista para instalar o actualizar este telefono.</span>
+                <span th:text="'Version publicada ' + ${apkInfo.version} + '. APK lista para instalar o actualizar este telefono.'">APK lista para instalar o actualizar este telefono.</span>
             </div>
             <a class="primary apk-install-link" th:href="@{/api/v1/movil/apk}"><i data-lucide="download"></i><span>Descargar APK</span></a>
         </section>

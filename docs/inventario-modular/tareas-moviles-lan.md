@@ -92,8 +92,9 @@ la respuesta marca `disponible=false` si LDAP esta deshabilitado o no se pudo co
 repetirse tras una desconexion; el servidor no elimina avisos al consultarlos.
 
 `GET /api/v1/movil/apk/info` devuelve disponibilidad, nombre, tamano, fecha y SHA-256
-de la APK publicada. Requiere usuario autorizado, pero no permiso `TAREAS/VER`, para
-permitir diagnosticar una instalacion antes de resolver permisos del modulo.
+de la APK publicada, junto con `version`. Requiere usuario autorizado, pero no permiso
+`TAREAS/VER`, para permitir diagnosticar una instalacion antes de resolver permisos del
+modulo.
 
 Los avisos cubren creacion de tareas y comentarios. La creacion y los comentarios en
 tareas sin responsable se anuncian a todos los tecnicos habilitados; los comentarios
@@ -102,17 +103,17 @@ sede ni confirmacion de lectura por tecnico. Las operaciones posteriores de la t
 siguen consultando por la API existente.
 
 Desde la APK Android se habilita un boton **Dictar** para abrir el reconocimiento de
-voz del telefono y precargar una nueva tarea. Esta primera version extrae solicitante,
-titulo y descripcion con reglas simples en el cliente; una extraccion con IA real debe
-definirse como servicio del servidor o integracion aprobada antes de usarla con datos
-institucionales.
+voz del telefono y precargar una nueva tarea. El texto se envia a
+`POST /api/v1/movil/dictado/interpretar`: si `INVENTARIO_IA_OPENAI_ENABLED=true` y el
+servidor tiene `OPENAI_API_KEY`, se consulta IA real desde el backend; si no, se usa una
+extraccion local basica. La APK nunca guarda claves de IA.
 
 ## Instalacion Android y prueba de campo
 
 Ver [guia de la APK](../../android/README.md). La web funciona en el navegador;
 los avisos de fondo requieren activar el servicio Android y configurar el telefono.
 
-La variante LAN firmada `0.1.6-lan` queda preconfigurada con `http://192.168.1.8:8081`.
+La variante LAN firmada `0.1.7-lan` queda preconfigurada con `http://192.168.1.8:8081`.
 En produccion la direccion debe venir de configuracion institucional; HTTPS sigue siendo
 el objetivo recomendado cuando exista dominio o certificado institucional.
 

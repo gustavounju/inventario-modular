@@ -2,6 +2,8 @@ package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService;
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService.ApkInfo;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.DictadoTareaAiService;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.DictadoTareaAiService.InterpretacionDictado;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService.DominioUsuarios;
@@ -18,7 +20,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,15 +33,18 @@ public class TareaMovilController {
     private final ActiveDirectoryDomainService activeDirectoryDomainService;
     private final TareaAvisoService avisos;
     private final ApkDistributionService apkDistributionService;
+    private final DictadoTareaAiService dictadoTareaAiService;
 
     public TareaMovilController(AuthorizationService authorization,
             ActiveDirectoryDomainService activeDirectoryDomainService,
             TareaAvisoService avisos,
-            ApkDistributionService apkDistributionService) {
+            ApkDistributionService apkDistributionService,
+            DictadoTareaAiService dictadoTareaAiService) {
         this.authorization = authorization;
         this.activeDirectoryDomainService = activeDirectoryDomainService;
         this.avisos = avisos;
         this.apkDistributionService = apkDistributionService;
+        this.dictadoTareaAiService = dictadoTareaAiService;
     }
 
     @GetMapping("/movil/login")
@@ -111,6 +118,24 @@ public class TareaMovilController {
         return activeDirectoryDomainService.buscarUsuarios(query);
     }
 
+    @PostMapping("/api/v1/movil/dictado/interpretar")
+    @ResponseBody
+    public InterpretacionDictado interpretarDictado(@AuthenticationPrincipal UserDetails user,
+            @RequestBody DictadoRequest request, HttpServletResponse response) {
+        exigirPermiso(user);
+        if (!authorization.tienePermiso(user, "TAREAS", "EDITAR")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear tareas.");
+        }
+        var usuario = authorization.obtenerUsuarioActual(user);
+        response.setHeader("Cache-Control", "no-store");
+        try {
+            return dictadoTareaAiService.interpretar(request == null ? null : request.texto(),
+                    usuario.username(), usuario.nombreVisible(), usuario.fuero());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+    }
+
     private void exigirPermiso(UserDetails user) {
         if (!authorization.tienePermiso(user, "TAREAS", "VER")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para ver tareas.");
@@ -124,4 +149,5 @@ public class TareaMovilController {
     }
 
     public record SesionMovil(AuthorizationService.UsuarioActual usuario, boolean puedeEditar, boolean administrador) { }
+    public record DictadoRequest(String texto) { }
 }
