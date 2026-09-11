@@ -9,7 +9,7 @@
     let session, tasks = [], selected, editing, filter = 'pending', limit = 40;
     let cursor, cursorKey, busy = false, audio, sound = false, stopped = false;
     // Los previews de comentarios se cargan aparte para no retrasar el listado principal de tareas.
-    let renderToken = 0, domainTimer;
+    let renderToken = 0, domainTimer, dictationMode = 'task';
     const commentPreviewCache = new Map(), domainUsers = new Map();
     const icons = () => window.lucide?.createIcons();
     const isOpen = task => ['PENDIENTE', 'EN_PROCESO'].includes(task.estado);
@@ -166,7 +166,8 @@
         const defaults = task || { solicitanteUsername: session.usuario.username, solicitanteNombre: session.usuario.nombreVisible, solicitanteFuero: session.usuario.fuero, prioridad: 'MEDIA' };
         for (const control of form.elements) if (control.name && defaults[control.name] != null) control.value = defaults[control.name];
         $('responsable-field').hidden = !session.administrador;
-        $('solicitante-help').textContent = 'Escriba al menos 2 caracteres para buscar en AD.';
+        $('solicitante-help').textContent = 'Escriba al menos 1 caracter para buscar en AD.';
+        $('voice-problem').hidden = !native || !session.puedeEditar;
         message('', false, 'form-message');
         $('task-dialog').showModal();
     }
@@ -193,20 +194,35 @@
         if (parsed.priority) form.elements.prioridad.value = parsed.priority;
         message(note || 'Dictado cargado. Revise los datos antes de guardar.', false, 'form-message');
     }
+    function fillProblemDictation(parsed, note) {
+        const form = $('task-form');
+        form.elements.titulo.value = parsed.title || form.elements.titulo.value || 'Tarea dictada';
+        form.elements.descripcion.value = parsed.description || form.elements.descripcion.value;
+        if (parsed.priority) form.elements.prioridad.value = parsed.priority;
+        message(note || 'Problema dictado. Revise antes de guardar.', false, 'form-message');
+    }
     async function applyDictation(text) {
         const local = parseDictation(text);
-        fillDictation(local, 'Dictado cargado. Consultando IA del servidor...');
+        if (dictationMode === 'problem') {
+            fillProblemDictation(local, 'Problema dictado. Consultando IA del servidor...');
+        } else {
+            fillDictation(local, 'Dictado cargado. Consultando IA del servidor...');
+        }
         try {
             const ai = await request('api/v1/movil/dictado/interpretar', 'POST', { texto: text });
-            fillDictation({
+            const parsed = {
                 requester: ai.solicitanteNombre || local.requester,
                 username: ai.solicitanteUsername,
                 title: ai.titulo || local.title,
                 description: ai.descripcion || local.description,
                 priority: ai.prioridad || 'MEDIA'
-            }, ai.mensaje || 'IA aplicada. Revise los datos antes de guardar.');
+            };
+            if (dictationMode === 'problem') fillProblemDictation(parsed, ai.mensaje || 'IA aplicada al problema. Revise antes de guardar.');
+            else fillDictation(parsed, ai.mensaje || 'IA aplicada. Revise los datos antes de guardar.');
         } catch (error) {
             message('Dictado cargado sin IA: ' + error.message, false, 'form-message');
+        } finally {
+            dictationMode = 'task';
         }
     }
     $('task-form').onsubmit = event => {
@@ -251,8 +267,14 @@
     $('edit-task').onclick = () => openForm(selected);
     $('new-task').onclick = () => openForm();
     $('voice-task').onclick = () => {
+        dictationMode = 'task';
         if (window.TareasLan?.dictarTarea) window.TareasLan.dictarTarea();
         else message('El dictado esta disponible desde la APK instalada.', true);
+    };
+    $('voice-problem').onclick = () => {
+        dictationMode = 'problem';
+        if (window.TareasLan?.dictarTarea) window.TareasLan.dictarTarea();
+        else message('El dictado esta disponible desde la APK instalada.', true, 'form-message');
     };
     window.addEventListener('tareas-lan-dictado', event => applyDictation(event.detail));
     $('search').oninput = () => { limit = 40; render(); };
@@ -274,9 +296,9 @@
     async function searchSolicitantes(query) {
         const clean = query.trim();
         const options = $('solicitante-options');
-        if (clean.length < 2) {
+        if (clean.length < 1) {
             options.replaceChildren();
-            $('solicitante-help').textContent = 'Escriba al menos 2 caracteres para buscar en AD.';
+            $('solicitante-help').textContent = 'Escriba al menos 1 caracter para buscar en AD.';
             return;
         }
         $('solicitante-help').textContent = 'Buscando usuarios de AD...';

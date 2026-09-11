@@ -71,9 +71,13 @@ No se ignoran errores TLS ni se desactiva la verificacion del nombre del servido
   puede suspenderla en segundo plano; ese sonido no reemplaza al servicio Android.
 - No hay trabajo sin conexion: los formularios necesitan al servidor. El sistema conserva
   avisos pendientes, no una copia de las tareas para editar fuera de linea.
-- El boton **Dictar** envia el texto reconocido al servidor. Si la IA real esta habilitada,
-  el backend interpreta solicitante, titulo, descripcion y prioridad; si no, se usa una
-  interpretacion local basica para no bloquear la carga.
+- En el formulario de nueva tarea, el flujo recomendado es elegir primero el solicitante
+  desde Active Directory. La busqueda comienza con 1 caracter y al seleccionar usuario se
+  completa nombre y fuero. Despues, **Dictar problema** envia solo el texto del problema al
+  servidor para proponer titulo, descripcion y prioridad sin cambiar el solicitante elegido.
+- El boton general **Dictar** envia el texto reconocido al servidor. Si la IA real esta
+  habilitada, el backend interpreta solicitante, titulo, descripcion y prioridad; si no,
+  se usa una interpretacion local basica para no bloquear la carga.
 - La app limita sus peticiones al origen configurado y rechaza servidores con direcciones
   publicas. El aislamiento completo se aplica ademas en firewall, VLAN y Wi-Fi institucional.
 

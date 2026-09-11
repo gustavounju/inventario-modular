@@ -108,6 +108,12 @@ voz del telefono y precargar una nueva tarea. El texto se envia a
 servidor tiene `OPENAI_API_KEY`, se consulta IA real desde el backend; si no, se usa una
 extraccion local basica. La APK nunca guarda claves de IA.
 
+El flujo principal para evitar errores de identidad es buscar el solicitante en Active
+Directory desde el campo **Usuario solicitante**. La consulta comienza con 1 caracter y,
+al seleccionar un usuario, se completan nombre y fuero. Luego el tecnico puede usar
+**Dictar problema**, que completa titulo/descripcion/prioridad sin reemplazar el
+solicitante ya elegido.
+
 El modo local no tiene costo ni dependencia externa, pero entiende menos variantes del
 dictado. Una alternativa gratuita con IA real es ejecutar un modelo local en el servidor
 y conectar este endpoint a ese servicio; requiere revisar rendimiento, privacidad y

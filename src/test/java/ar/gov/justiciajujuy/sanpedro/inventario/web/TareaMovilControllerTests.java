@@ -85,7 +85,7 @@ class TareaMovilControllerTests {
                 .andExpect(status().isForbidden());
         mvc.perform(get("/movil/tareas").with(user("sin.permisos"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/movil/avisos?despuesDe=-1").with(user("admin.local"))).andExpect(status().isBadRequest());
-        mvc.perform(get("/api/v1/movil/usuarios-dominio?q=me").with(user("admin.local"))).andExpect(status().isOk())
+        mvc.perform(get("/api/v1/movil/usuarios-dominio?q=m").with(user("admin.local"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.consultaRealizada").value(true));
         mvc.perform(get("/api/v1/tareas-tecnicas/1/comentarios").with(user("admin.local"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].comentario").value("Comentario inicial de seguimiento."));
