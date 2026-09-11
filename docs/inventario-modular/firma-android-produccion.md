@@ -40,8 +40,9 @@ archivos en un medio institucional protegido.
 
 La variante `debug` sigue siendo piloto y acepta HTTP LAN. La variante `lanRelease`
 queda firmada con clave institucional, no agrega sufijo al paquete y acepta HTTP LAN
-para pruebas de campo por IP. La variante `release` queda firmada si existe el archivo
-local de secretos, pero mantiene `cleartext=false`; para uso real requiere HTTPS confiable.
+para pruebas de campo por IP, incluyendo un `network_security_config` propio que permite
+cleartext. La variante `release` queda firmada si existe el archivo local de secretos,
+pero mantiene `cleartext=false`; para uso real requiere HTTPS confiable.
 
 Desde `android/`:
 
