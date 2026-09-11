@@ -108,12 +108,17 @@ voz del telefono y precargar una nueva tarea. El texto se envia a
 servidor tiene `OPENAI_API_KEY`, se consulta IA real desde el backend; si no, se usa una
 extraccion local basica. La APK nunca guarda claves de IA.
 
+El modo local no tiene costo ni dependencia externa, pero entiende menos variantes del
+dictado. Una alternativa gratuita con IA real es ejecutar un modelo local en el servidor
+y conectar este endpoint a ese servicio; requiere revisar rendimiento, privacidad y
+mantenimiento antes de ponerlo en jornada.
+
 ## Instalacion Android y prueba de campo
 
 Ver [guia de la APK](../../android/README.md). La web funciona en el navegador;
 los avisos de fondo requieren activar el servicio Android y configurar el telefono.
 
-La variante LAN firmada `0.1.7-lan` queda preconfigurada con `http://192.168.1.8:8081`.
+La variante LAN firmada `0.1.8-lan` queda preconfigurada con `http://192.168.1.8:8081`.
 En produccion la direccion debe venir de configuracion institucional; HTTPS sigue siendo
 el objetivo recomendado cuando exista dominio o certificado institucional.
 
@@ -123,6 +128,9 @@ El servicio Android de avisos:
 - Mantiene `PARTIAL_WAKE_LOCK` y `WifiLock` mientras los avisos estan activos.
 - Usa el canal `tareas-nuevas-v3` con tono propio `tareas_lan_alert.wav`.
 - Solicita quitar la app de optimizacion de bateria para mejorar entrega con pantalla bloqueada.
+- En **Ajustes**, consulta la version publicada y muestra **Actualizar a v...** cuando
+  el servidor tiene una APK distinta de la instalada. El toque inicia la descarga con la
+  misma sesion activa.
 
 Android puede demorar notificaciones si el fabricante restringe segundo plano, inicio
 automatico, Wi-Fi en reposo, No molestar o el canal de notificaciones. En esos casos hay

@@ -61,6 +61,8 @@ No se ignoran errores TLS ni se desactiva la verificacion del nombre del servido
 - En **Ajustes > Descargar actualizacion**, la app descarga la APK publicada por el
   servidor usando la sesion activa del WebView. Al terminar, Android muestra la
   notificacion de descarga para iniciar la instalacion manual.
+- Al abrir **Ajustes**, la app consulta la version publicada. Si es distinta de la
+  instalada, el menu muestra **Actualizar a v...** y el toque inicia la descarga.
 - El permiso de bateria y las restricciones del fabricante afectan el funcionamiento en
   reposo. No se garantiza sonido si el usuario fuerza el cierre, apaga el Wi-Fi, silencia
   el canal o activa No molestar. La prueba con pantalla bloqueada debe hacerse en los
@@ -109,6 +111,12 @@ INVENTARIO_IA_OPENAI_MODEL=gpt-4.1-mini
 El endpoint interno `POST /api/v1/movil/dictado/interpretar` requiere sesion y permiso
 `TAREAS/EDITAR`. Si la IA no esta configurada o falla, responde con origen `LOCAL`.
 
+La clave de OpenAI se crea en el panel de API de OpenAI y se configura solo como variable
+del servidor. Como alternativa sin costo por consulta, el sistema conserva la
+interpretacion `LOCAL`, que alcanza para pruebas simples. Una IA local gratuita tambien
+es posible con un modelo instalado en el servidor, pero requiere CPU/RAM suficientes y
+un conector propio; no conviene cargar eso dentro de la APK de los tecnicos.
+
 La firma debug solo sirve para el piloto. Conservar fuera de Git la clave de firma
 institucional y configurar firma de release antes de distribuir una version productiva.
 
@@ -139,7 +147,7 @@ No habia un dispositivo fisico conectado al desarrollar este piloto: el sonido y
 recepcion con pantalla bloqueada quedan pendientes de esa prueba de campo.
 
 Ultima verificacion del 10/09/2026: `assembleLanRelease` completo sin errores y la firma
-fue verificada con `apksigner`. El APK publicado corresponde a la version `0.1.6-lan`.
+fue verificada con `apksigner`. El APK publicado corresponde a la version `0.1.8-lan`.
 No equivale a una auditoria de seguridad aprobada; revisar antes de la distribucion
 general.
 

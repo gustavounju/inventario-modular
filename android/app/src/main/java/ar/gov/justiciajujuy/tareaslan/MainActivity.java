@@ -166,8 +166,34 @@ public class MainActivity extends Activity {
     }
 
     private void settings() {
-        String[] options = { "Servidor", "Diagnostico", "Descargar actualizacion", "Bateria", "Notificaciones", "Probar sonido", "Recargar tareas" };
-        new AlertDialog.Builder(this).setTitle("Tareas LAN").setItems(options, (dialog, which) -> {
+        if (base.isEmpty()) {
+            showSettings("Buscar actualizacion", "Servidor no configurado.");
+            return;
+        }
+        worker.execute(() -> {
+            String updateLabel = "Buscar actualizacion";
+            String subtitle = "Instalada v" + BuildConfig.VERSION_NAME;
+            try {
+                JSONObject apk = LanClient.get(base, "/api/v1/movil/apk/info");
+                String published = apk.optString("version", "");
+                // La comparacion se hace por version legible del servidor; Android igual valida la firma al instalar.
+                boolean available = apk.optBoolean("disponible") && !published.isBlank()
+                        && !published.equalsIgnoreCase(BuildConfig.VERSION_NAME);
+                updateLabel = available ? "Actualizar a v" + published : "Buscar actualizacion";
+                subtitle = available ? "Instalada v" + BuildConfig.VERSION_NAME + " | publicada v" + published
+                        : "Instalada v" + BuildConfig.VERSION_NAME;
+            } catch (Exception ignored) {
+                subtitle = "Instalada v" + BuildConfig.VERSION_NAME + " | sin conexion de diagnostico";
+            }
+            String finalUpdateLabel = updateLabel;
+            String finalSubtitle = subtitle;
+            runOnUiThread(() -> showSettings(finalUpdateLabel, finalSubtitle));
+        });
+    }
+
+    private void showSettings(String updateLabel, String subtitle) {
+        String[] options = { "Servidor", "Diagnostico", updateLabel, "Bateria", "Notificaciones", "Probar sonido", "Recargar tareas" };
+        new AlertDialog.Builder(this).setTitle("Tareas LAN").setMessage(subtitle).setItems(options, (dialog, which) -> {
             switch (which) {
                 case 0 -> configureServer();
                 case 1 -> diagnostics();
