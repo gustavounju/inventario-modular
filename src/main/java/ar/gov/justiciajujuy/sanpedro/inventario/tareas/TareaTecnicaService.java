@@ -164,6 +164,7 @@ public class TareaTecnicaService {
 				textoRequerido(command.comentario(), "comentario")));
 		auditoriaService.registrar("TAREAS", "COMENTAR", "TareaTecnica", tarea.getId(),
 				"Comentario agregado a tarea tecnica " + tarea.getId() + ".");
+		avisoService.registrarComentario(tarea, comentario.getAutor());
 		return toComentarioDetalle(comentario);
 	}
 

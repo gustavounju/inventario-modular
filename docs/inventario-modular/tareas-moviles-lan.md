@@ -60,6 +60,11 @@ La migracion `V16__permisos_tecnico_tareas_movil.sql` otorga a `TECNICO` los per
 `TAREAS/VER` y `TAREAS/EDITAR`. Sin esa asignacion, un tecnico puede autenticarse pero
 recibe 403 al abrir la APK o consultar los avisos.
 
+La migracion `V17__avisos_comentarios_destinatarios.sql` agrega tipo de aviso y
+destinatario opcional. Una creacion de tarea queda como aviso general. Un comentario
+en tarea sin responsable queda como aviso general; un comentario en tarea tomada queda
+dirigido al responsable.
+
 Ejemplo de variable en la unidad systemd existente, usando la ruta real del archivo:
 
 ```ini
@@ -90,17 +95,26 @@ repetirse tras una desconexion; el servidor no elimina avisos al consultarlos.
 de la APK publicada. Requiere usuario autorizado, pero no permiso `TAREAS/VER`, para
 permitir diagnosticar una instalacion antes de resolver permisos del modulo.
 
-Los avisos son anuncios de creacion para usuarios habilitados en TAREAS. No hay aun
-seleccion de destinatarios por sede ni confirmacion de lectura por tecnico. Las
-operaciones posteriores de la tarea se siguen consultando por la API existente.
+Los avisos cubren creacion de tareas y comentarios. La creacion y los comentarios en
+tareas sin responsable se anuncian a todos los tecnicos habilitados; los comentarios
+en tareas tomadas se dirigen al responsable. No hay aun seleccion de destinatarios por
+sede ni confirmacion de lectura por tecnico. Las operaciones posteriores de la tarea se
+siguen consultando por la API existente.
+
+Desde la APK Android se habilita un boton **Dictar** para abrir el reconocimiento de
+voz del telefono y precargar una nueva tarea. Esta primera version extrae solicitante,
+titulo y descripcion con reglas simples en el cliente; una extraccion con IA real debe
+definirse como servicio del servidor o integracion aprobada antes de usarla con datos
+institucionales.
 
 ## Instalacion Android y prueba de campo
 
 Ver [guia de la APK](../../android/README.md). La web funciona en el navegador;
 los avisos de fondo requieren activar el servicio Android y configurar el telefono.
 
-La variante piloto `0.1.3-piloto` queda preconfigurada con `http://192.168.1.8:8081`.
-En produccion la direccion debe venir de configuracion institucional y usar HTTPS.
+La variante LAN firmada `0.1.6-lan` queda preconfigurada con `http://192.168.1.8:8081`.
+En produccion la direccion debe venir de configuracion institucional; HTTPS sigue siendo
+el objetivo recomendado cuando exista dominio o certificado institucional.
 
 El servicio Android de avisos:
 

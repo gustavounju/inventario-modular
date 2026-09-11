@@ -10,5 +10,7 @@ CREATE TABLE IF NOT EXISTS tareas_avisos (
   tarea_id BIGINT NOT NULL,
   titulo VARCHAR(180) NOT NULL,
   autor VARCHAR(120),
+  tipo VARCHAR(40) NOT NULL DEFAULT 'CREACION',
+  destinatario_username VARCHAR(120),
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

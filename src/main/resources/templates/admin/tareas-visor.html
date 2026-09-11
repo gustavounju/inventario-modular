@@ -136,7 +136,8 @@
 								<input type="hidden" name="origen" value="visor">
 								<button class="secondary-action" type="submit">Tomar</button>
 							</form>
-							<form class="task-inline-form" th:action="@{/admin/tareas/{id}/estado(id=${tarea.id})}" method="post">
+							<form class="task-inline-form" th:if="${tarea.estado.name() == 'PENDIENTE' or tarea.estado.name() == 'EN_PROCESO'}"
+								  th:action="@{/admin/tareas/{id}/estado(id=${tarea.id})}" method="post">
 								<input type="hidden" name="origen" value="visor">
 								<select name="estado" aria-label="Estado">
 									<option th:each="estado : ${estadosTarea}" th:value="${estado}" th:text="${estado}"

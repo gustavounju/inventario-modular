@@ -132,8 +132,9 @@ public class AvisosService extends Service {
                 .setData(android.net.Uri.parse("tareaslan://tarea/" + taskId))
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent open = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        boolean comment = "COMENTARIO".equalsIgnoreCase(event.optString("tipo"));
         Notification notice = new Notification.Builder(this, TASKS).setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("Nueva tarea #" + taskId).setContentText(event.getString("titulo"))
+                .setContentTitle((comment ? "Nuevo comentario #" : "Nueva tarea #") + taskId).setContentText(event.getString("titulo"))
                 .setContentIntent(open).setAutoCancel(true).setOnlyAlertOnce(false)
                 .setPriority(Notification.PRIORITY_HIGH).setCategory(Notification.CATEGORY_MESSAGE)
                 .setVisibility(Notification.VISIBILITY_PUBLIC).build();

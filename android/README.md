@@ -11,7 +11,7 @@ Google Play Services, analitica ni servidores de notificaciones externos.
 3. Ingresar con una cuenta local o de dominio con permisos TAREAS/VER y TAREAS/EDITAR.
 4. Descargar la APK desde el icono de celular. La descarga requiere autenticacion.
 5. Instalarla mediante el mecanismo interno autorizado para los telefonos.
-6. En la APK piloto, el servidor de prueba queda preconfigurado como
+6. En la APK LAN firmada, el servidor de prueba queda preconfigurado como
    `http://192.168.1.8:8081`. Si cambia la IP, corregirla en **Ajustes > Servidor**
    sin rutas. Ingresar con el usuario tecnico.
 7. Activar **Avisos**, aceptar el permiso de notificaciones y configurar bateria sin
@@ -20,8 +20,8 @@ Google Play Services, analitica ni servidores de notificaciones externos.
 9. Desde una PC con otra cuenta administradora, crear una tarea. El telefono debe mostrar
    un aviso sonoro y permitir abrir esa tarea al tocarlo.
 
-La APK piloto acepta HTTP de la LAN para las pruebas locales. La variante release exige
-HTTPS. No usar el piloto HTTP con credenciales de dominio reales en produccion.
+La APK LAN firmada acepta HTTP de la red local para pruebas por IP. La variante release
+general exige HTTPS. No usar HTTP con credenciales de dominio reales en produccion.
 Para produccion se necesita certificado del servidor emitido por la CA institucional,
 CA instalada en los telefonos y una APK release firmada con clave institucional.
 No se ignoran errores TLS ni se desactiva la verificacion del nombre del servidor.
@@ -31,11 +31,12 @@ No se ignoran errores TLS ni se desactiva la verificacion del nombre del servido
 - Android 8 o posterior, con Android System WebView actualizado (Chromium 103 o superior).
 - El servicio consulta la intranet cada 10 segundos, con reintentos de hasta 60 segundos
   cuando se pierde la conexion. En esta version se usa consulta periodica HTTP, no WebSocket.
-- Avisos al crear tareas desde PC, visor, API o movil. Los cambios de estado y comentarios
-  se consultan en el modulo, pero no generan sonido en esta version.
-- Los usuarios con TAREAS/VER pueden consultar los avisos de nuevas tareas, coherente con
-  la visibilidad actual del modulo. El dispositivo no hace sonar las tareas creadas por su
-  propio usuario. Probar siempre con administrador y tecnico distintos.
+- Avisos al crear tareas desde PC, visor, API o movil. Los comentarios tambien generan
+  aviso: si la tarea no tiene responsable suenan los tecnicos habilitados; si esta tomada,
+  suena solo el responsable.
+- Los usuarios con TAREAS/VER pueden consultar los avisos de tareas y comentarios,
+  coherente con la visibilidad actual del modulo. El dispositivo no hace sonar los avisos
+  creados por su propio usuario. Probar siempre con administrador y tecnico distintos.
 - El primer inicio toma el punto actual y no hace sonar el historial. Las desconexiones
   posteriores conservan el cursor por servidor y usuario para recuperar lo pendiente.
 - Los avisos se guardan en la misma transaccion que la tarea. Un rollback no deja un aviso.
@@ -119,12 +120,10 @@ ingreso/permisos/avisos/rollback/paginacion/toma simultanea, y comprobacion web 
 No habia un dispositivo fisico conectado al desarrollar este piloto: el sonido y la
 recepcion con pantalla bloqueada quedan pendientes de esa prueba de campo.
 
-Ultima verificacion del 10/09/2026: assembleDebug y lintDebug completaron sin errores.
-Lint reporto 9 advertencias: dos por commit sincrono de preferencias (se usa en el
-worker para guardar el cursor antes de avanzar), JavaScript habilitado en WebView,
-dos por aceptar CA del usuario, HTTP de debug, reglas de respaldo para versiones
-anteriores a Android 12 y dos textos nativos sin recursos de traduccion. No equivalen
-a una auditoria de seguridad aprobada; revisar antes de la distribucion general.
+Ultima verificacion del 10/09/2026: `assembleLanRelease` completo sin errores y la firma
+fue verificada con `apksigner`. El APK publicado corresponde a la version `0.1.6-lan`.
+No equivale a una auditoria de seguridad aprobada; revisar antes de la distribucion
+general.
 
 La guia de firma y despliegue offline esta en
 [Instalacion de tareas LAN](../docs/inventario-modular/instalacion-tareas-lan-2026-09-10.md).

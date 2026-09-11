@@ -201,7 +201,8 @@
 									<td data-label="Cambio" th:if="${puedeEditarTareas}">
 										<div style="display: flex; flex-direction: column; gap: 8px;">
 											<!-- Formulario para cambiar estado -->
-											<form class="inline-action-form" th:action="@{/admin/tareas/{id}/estado(id=${tarea.id})}" method="post" style="display: flex; gap: 6px; align-items: center;">
+											<form class="inline-action-form" th:if="${tarea.estado.name() == 'PENDIENTE' or tarea.estado.name() == 'EN_PROCESO'}"
+												  th:action="@{/admin/tareas/{id}/estado(id=${tarea.id})}" method="post" style="display: flex; gap: 6px; align-items: center;">
 												<select name="estado" style="font-size: 0.8rem; padding: 4px;">
 													<option th:each="estado : ${estadosTarea}" th:value="${estado}" th:text="${estado}"
 															th:selected="${estado == tarea.estado}">PENDIENTE</option>

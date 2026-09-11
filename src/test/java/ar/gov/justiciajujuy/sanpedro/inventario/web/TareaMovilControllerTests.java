@@ -102,7 +102,7 @@ class TareaMovilControllerTests {
         // Inicializar un telefono nuevo no hace sonar todas las tareas anteriores.
         mvc.perform(get("/api/v1/movil/avisos").with(user("admin.local"))).andExpect(jsonPath("$.siguiente").value(1)).andExpect(jsonPath("$.avisos").isEmpty());
         new ResourceDatabasePopulator(new ClassPathResource("db/migration/V15__avisos_tareas_lan.sql")).execute(dataSource);
-        assertThat(avisos.consultar(0L).avisos()).hasSize(1);
+        assertThat(avisos.consultar(0L, "admin.local").avisos()).hasSize(1);
     }
 
     @Test void rollbackDeTareaNoDejaAvisosFantasma() {
@@ -112,8 +112,8 @@ class TareaMovilControllerTests {
             tx.setRollbackOnly();
         });
         assertThat(tareas.contar()).isEqualTo(total);
-        assertThat(avisos.consultar(0L).avisos()).isEmpty();
-        assertThat(avisos.consultar(null).siguiente()).isZero();
+        assertThat(avisos.consultar(0L, "admin.local").avisos()).isEmpty();
+        assertThat(avisos.consultar(null, "admin.local").siguiente()).isZero();
     }
 
     @Test void paginaAvisosEnOrdenYRecuperaCursorDeBaseRestaurada() {
@@ -121,11 +121,32 @@ class TareaMovilControllerTests {
             jdbc.update("INSERT INTO tareas_avisos (id,tarea_id,titulo,autor) VALUES (?,?,?,?)", i, 1L, "Tarea", "admin.local");
         }
         jdbc.update("UPDATE tareas_aviso_secuencia SET ultimo_id = 105 WHERE id = 1");
-        var primera = avisos.consultar(0L);
+        var primera = avisos.consultar(0L, "admin.local");
         assertThat(primera.avisos()).hasSize(100);
         assertThat(primera.siguiente()).isEqualTo(100);
-        assertThat(avisos.consultar(primera.siguiente()).avisos()).hasSize(5);
-        assertThat(avisos.consultar(900L).siguiente()).isEqualTo(105);
+        assertThat(avisos.consultar(primera.siguiente(), "admin.local").avisos()).hasSize(5);
+        assertThat(avisos.consultar(900L, "admin.local").siguiente()).isEqualTo(105);
+    }
+
+    @Test void comentariosGeneranAvisosBroadcastODirigidos() throws Exception {
+        var libre = tareas.crear(new TareaTecnicaService.GuardarTareaTecnicaCommand(1L, "Libre", null, "mesa", "Mesa", "Oficina", null, null, "admin.local"));
+        tareas.comentar(libre.id(), new TareaTecnicaService.AgregarComentarioTareaCommand("admin.local", "Comentario general"));
+        var broadcast = avisos.consultar(0L, "tecnico.uno").avisos();
+        assertThat(broadcast).anySatisfy(aviso -> {
+            assertThat(aviso.tareaId()).isEqualTo(libre.id());
+            assertThat(aviso.tipo()).isEqualTo("COMENTARIO");
+            assertThat(aviso.destinatarioUsername()).isNull();
+        });
+
+        var tomada = tareas.crear(new TareaTecnicaService.GuardarTareaTecnicaCommand(1L, "Tomada", null, "mesa", "Mesa", "Oficina", null, "tecnico.uno", "admin.local"));
+        tareas.comentar(tomada.id(), new TareaTecnicaService.AgregarComentarioTareaCommand("admin.local", "Comentario dirigido"));
+        assertThat(avisos.consultar(0L, "tecnico.uno").avisos()).anySatisfy(aviso -> {
+            assertThat(aviso.tareaId()).isEqualTo(tomada.id());
+            assertThat(aviso.tipo()).isEqualTo("COMENTARIO");
+            assertThat(aviso.destinatarioUsername()).isEqualTo("tecnico.uno");
+        });
+        assertThat(avisos.consultar(0L, "tecnico.dos").avisos())
+                .noneMatch(aviso -> aviso.tareaId() == tomada.id() && "COMENTARIO".equals(aviso.tipo()));
     }
 
     @Test void dosTecnicosNoPuedenTomarLaMismaTarea() throws Exception {

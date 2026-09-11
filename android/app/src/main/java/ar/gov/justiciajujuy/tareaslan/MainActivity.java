@@ -16,6 +16,7 @@ import android.os.Environment;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.CookieManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -29,10 +30,12 @@ import android.widget.Switch;
 import android.widget.Toast;
 import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
+    private static final int REQUEST_DICTATION = 21;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private WebView web;
     private Switch alerts;
@@ -73,6 +76,7 @@ public class MainActivity extends Activity {
         web.getSettings().setSafeBrowsingEnabled(false);
         web.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " InventarioLAN/1");
+        web.addJavascriptInterface(new VoiceBridge(), "TareasLan");
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -264,8 +268,24 @@ public class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(request, permissions, results);
-        if (request == 10 && results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) enableAlerts();
-        else setAlerts(false);
+        if (request == 10) {
+            if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) enableAlerts();
+            else setAlerts(false);
+        } else if (request == REQUEST_DICTATION && results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
+            new VoiceBridge().dictarTarea();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_DICTATION) return;
+        if (resultCode != RESULT_OK || data == null) return;
+        ArrayList<String> matches = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
+        if (matches == null || matches.isEmpty()) return;
+        String text = matches.get(0);
+        web.post(() -> web.evaluateJavascript(
+                "window.dispatchEvent(new CustomEvent('tareas-lan-dictado',{detail:" + JSONObject.quote(text) + "}));",
+                null));
     }
 
     @Override public void onBackPressed() {
@@ -287,4 +307,31 @@ public class MainActivity extends Activity {
     }
 
     private void toast(String text) { Toast.makeText(this, text, Toast.LENGTH_LONG).show(); }
+
+    public class VoiceBridge {
+        @JavascriptInterface public void dictarTarea() {
+            runOnUiThread(() -> {
+                try {
+                    if (Build.VERSION.SDK_INT >= 23
+                            && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(new String[] { Manifest.permission.RECORD_AUDIO }, REQUEST_DICTATION);
+                        return;
+                    }
+                    Intent intent = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                                    android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "es-AR")
+                            .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT,
+                                    "Dicte solicitante y problema a resolver");
+                    startActivityForResult(intent, REQUEST_DICTATION);
+                } catch (Exception e) {
+                    toast("El telefono no tiene reconocimiento de voz disponible.");
+                }
+            });
+        }
+
+        @JavascriptInterface public String disponible() {
+            return "true";
+        }
+    }
 }

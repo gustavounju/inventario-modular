@@ -369,5 +369,6 @@ CREATE TABLE tareas_aviso_secuencia (id INTEGER PRIMARY KEY, ultimo_id BIGINT NO
 INSERT INTO tareas_aviso_secuencia (id, ultimo_id) VALUES (1, 0);
 CREATE TABLE tareas_avisos (
   id BIGINT PRIMARY KEY, tarea_id BIGINT NOT NULL, titulo VARCHAR(180) NOT NULL,
-  autor VARCHAR(120), creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  autor VARCHAR(120), tipo VARCHAR(40) NOT NULL DEFAULT 'CREACION', destinatario_username VARCHAR(120),
+  creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

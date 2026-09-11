@@ -138,7 +138,8 @@
             $('detail-meta').append(element('dt', key), element('dd', value || '-'));
         }
         $('take-task').hidden = !session.puedeEditar || !!task.responsable || !isOpen(task);
-        for (const id of ['edit-task', 'delete-task', 'state-form', 'comment-form']) $(id).hidden = !mayEdit(task);
+        for (const id of ['edit-task', 'delete-task', 'comment-form']) $(id).hidden = !mayEdit(task);
+        $('state-form').hidden = !mayEdit(task) || !isOpen(task);
         $('state-form').elements.estado.value = isOpen(task) ? 'PENDIENTE' : task.estado;
         $('state-form').elements.observacionesCierre.value = task.observacionesCierre || '';
         $('comment-form').reset();
@@ -168,6 +169,29 @@
         $('solicitante-help').textContent = 'Escriba al menos 2 caracteres para buscar en AD.';
         message('', false, 'form-message');
         $('task-dialog').showModal();
+    }
+    function parseDictation(text) {
+        const clean = (text || '').trim().replace(/\s+/g, ' ');
+        const requesterMatch = clean.match(/\b(?:solicita|solicitante|pidio|pidió|pide|para|de)\s+([^,.;]+?)(?:\s+(?:por|porque|que|indica|dice|tiene|no|se)\b|[,.;]|$)/i);
+        const requester = requesterMatch ? requesterMatch[1].trim() : session.usuario.nombreVisible;
+        let issue = clean;
+        const issueMatch = clean.match(/\b(?:problema|inconveniente|falla|fallo|error|porque|que|indica|dice)\b\s*(.+)$/i);
+        if (issueMatch) issue = issueMatch[1].trim();
+        const title = issue.length > 90 ? issue.slice(0, 87).trim() + '...' : issue;
+        return { requester, title: title || 'Tarea dictada', description: clean };
+    }
+    function applyDictation(text) {
+        openForm();
+        const parsed = parseDictation(text);
+        const form = $('task-form');
+        form.elements.titulo.value = parsed.title;
+        form.elements.descripcion.value = parsed.description;
+        form.elements.solicitanteNombre.value = parsed.requester;
+        form.elements.solicitanteUsername.value = parsed.requester.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]+/g, '.').replace(/^\.+|\.+$/g, '') || session.usuario.username;
+        form.elements.solicitanteFuero.value = session.usuario.fuero || 'Sin fuero informado';
+        $('solicitante-help').textContent = 'Datos cargados desde dictado. Revise solicitante y problema antes de guardar.';
+        message('Dictado cargado. Revise los datos antes de guardar.', false, 'form-message');
     }
     $('task-form').onsubmit = event => {
         event.preventDefault();
@@ -210,6 +234,11 @@
     };
     $('edit-task').onclick = () => openForm(selected);
     $('new-task').onclick = () => openForm();
+    $('voice-task').onclick = () => {
+        if (window.TareasLan?.dictarTarea) window.TareasLan.dictarTarea();
+        else message('El dictado esta disponible desde la APK instalada.', true);
+    };
+    window.addEventListener('tareas-lan-dictado', event => applyDictation(event.detail));
     $('search').oninput = () => { limit = 40; render(); };
     $('more').onclick = () => { limit += 40; render(); };
     $('refresh').onclick = () => (session ? refresh() : start()).then(() => message('Lista actualizada.')).catch(error => message(error.message, true));
@@ -288,7 +317,9 @@
             const batch = await request('api/v1/movil/avisos' + (cursor != null ? '?despuesDe=' + cursor : ''));
             const incoming = batch.avisos.filter(a => a.autor?.toLowerCase() !== session.usuario.username.toLowerCase());
             if (incoming.length && !native) {
-                message(incoming.length === 1 ? 'Nueva tarea: ' + incoming[0].titulo : incoming.length + ' tareas nuevas.');
+                const first = incoming[0];
+                const prefix = first.tipo === 'COMENTARIO' ? 'Nuevo comentario: ' : 'Nueva tarea: ';
+                message(incoming.length === 1 ? prefix + first.titulo : incoming.length + ' avisos nuevos.');
                 if (sound) beep();
             }
             cursor = batch.siguiente;
@@ -304,6 +335,7 @@
             session = await request('api/v1/movil/sesion');
             $('username').textContent = session.usuario.nombreVisible + ' | ' + session.usuario.username;
             $('new-task').hidden = !session.puedeEditar;
+            $('voice-task').hidden = !native || !session.puedeEditar;
             cursorKey = 'tareas.cursor.' + base + '.' + session.usuario.username;
             try { const value = localStorage.getItem(cursorKey); if (value !== null && /^\d+$/.test(value)) cursor = Number(value); } catch { /* Almacenamiento opcional. */ }
             await refresh();

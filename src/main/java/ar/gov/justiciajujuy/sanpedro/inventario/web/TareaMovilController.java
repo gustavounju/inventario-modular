@@ -96,7 +96,7 @@ public class TareaMovilController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cursor invalido.");
         }
         response.setHeader("Cache-Control", "no-store");
-        return avisos.consultar(despuesDe);
+        return avisos.consultar(despuesDe, user.getUsername());
     }
 
     @GetMapping("/api/v1/movil/usuarios-dominio")
