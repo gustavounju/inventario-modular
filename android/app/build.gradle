@@ -1,4 +1,16 @@
+import java.util.Properties
+
 plugins { id 'com.android.application' }
+
+def releaseSigningProps = new Properties()
+def releaseSigningPropsFile = rootProject.file("../.local-secrets/android/release-signing.properties")
+if (releaseSigningPropsFile.exists()) {
+    releaseSigningPropsFile.withInputStream { releaseSigningProps.load(it) }
+}
+def hasReleaseSigning = releaseSigningProps['storeFile']
+        && releaseSigningProps['storePassword']
+        && releaseSigningProps['keyAlias']
+        && releaseSigningProps['keyPassword']
 
 android {
     namespace 'ar.gov.justiciajujuy.tareaslan'
@@ -12,6 +24,17 @@ android {
         manifestPlaceholders = [cleartext: 'false']
         buildConfigField 'String', 'DEFAULT_SERVER', '""'
     }
+    signingConfigs {
+        releaseInstitutional {
+            if (hasReleaseSigning) {
+                storeFile file(releaseSigningProps['storeFile'])
+                storePassword releaseSigningProps['storePassword']
+                keyAlias releaseSigningProps['keyAlias']
+                keyPassword releaseSigningProps['keyPassword']
+                storeType releaseSigningProps.getProperty('storeType', 'pkcs12')
+            }
+        }
+    }
     buildTypes {
         debug {
             applicationIdSuffix '.piloto'
@@ -19,7 +42,22 @@ android {
             manifestPlaceholders = [cleartext: 'true']
             buildConfigField 'String', 'DEFAULT_SERVER', '"http://192.168.1.8:8081"'
         }
-        release { minifyEnabled false }
+        release {
+            minifyEnabled false
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.releaseInstitutional
+            }
+        }
+        lanRelease {
+            initWith release
+            matchingFallbacks = ['release']
+            versionNameSuffix '-lan'
+            manifestPlaceholders = [cleartext: 'true']
+            buildConfigField 'String', 'DEFAULT_SERVER', '"http://192.168.1.8:8081"'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.releaseInstitutional
+            }
+        }
     }
     buildFeatures { buildConfig true }
     compileOptions {

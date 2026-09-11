@@ -207,7 +207,7 @@ public class MainActivity extends Activity {
             try {
                 JSONObject apk = LanClient.get(base, "/api/v1/movil/apk/info");
                 if (!apk.optBoolean("disponible")) throw new IllegalStateException("APK no disponible.");
-                String fileName = apk.optString("nombre", "inventario-tareas-lan-piloto.apk");
+                String fileName = apk.optString("nombre", "tecnico-taller-san-pedro-lan-release.apk");
                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(base + "/api/v1/movil/apk"));
                 request.setTitle("Tareas LAN");
                 request.setDescription("Descargando actualizacion piloto");

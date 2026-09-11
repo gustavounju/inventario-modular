@@ -83,8 +83,8 @@ $env:ANDROID_HOME = 'C:\ruta\al\android-sdk'
 En Linux: `./gradlew assembleDebug lintDebug`. Con dependencias previamente preparadas,
 agregar `--offline`. La salida es `app/build/outputs/apk/debug/app-debug.apk`.
 
-Para publicar el piloto local, copiarlo a
-`output/android/inventario-tareas-lan-piloto.apk` en la raiz de Inventario Modular.
+Para publicar la version LAN firmada, copiar `app/build/outputs/apk/lanRelease/app-lanRelease.apk`
+a `output/android/tecnico-taller-san-pedro-lan-release.apk` en la raiz de Inventario Modular.
 Esa carpeta no se incluye en Git. El servidor tambien admite configurar
 `INVENTARIO_MOVIL_APK_PATH` con una ruta absoluta a la APK distribuida internamente.
 El endpoint autenticado `/api/v1/movil/apk/info` expone disponibilidad, nombre, tamano,

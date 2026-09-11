@@ -20,7 +20,7 @@ public class ApkDistributionService {
 	private final FileSystemResource apk;
 
 	public ApkDistributionService(
-			@Value("${inventario.movil.apk-path:output/android/inventario-tareas-lan-piloto.apk}") String apkPath) {
+			@Value("${inventario.movil.apk-path:output/android/tecnico-taller-san-pedro-lan-release.apk}") String apkPath) {
 		this.apk = new FileSystemResource(apkPath);
 	}
 
