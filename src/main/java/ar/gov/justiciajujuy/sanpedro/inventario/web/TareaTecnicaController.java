@@ -10,7 +10,12 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.Agreg
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.CambiarEstadoTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.EquipoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.GuardarTareaTecnicaCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.RegistrarUsoStockCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoDisponibleParaTareaException;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoEncontradoException;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockDisponibleDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaComentarioDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaStockUsoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaNoEncontradaException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaYaAsignadaException;
@@ -61,6 +66,12 @@ public class TareaTecnicaController {
 		return tareaTecnicaService.buscar(estado, equipoId, responsable);
 	}
 
+	@GetMapping("/stock-disponible")
+	public List<StockDisponibleDetalle> stockDisponible(@AuthenticationPrincipal UserDetails userDetails) {
+		exigirPermiso(userDetails, PERMISO_VER);
+		return tareaTecnicaService.stockDisponibleParaTareas();
+	}
+
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public TareaTecnicaDetalle crear(
@@ -95,7 +106,7 @@ public class TareaTecnicaController {
 			@Valid @RequestBody CambiarEstadoTareaRequest request) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		exigirTareaPropiaOAdministrador(userDetails, id);
-		return tareaTecnicaService.cambiarEstado(id, request.toCommand());
+		return tareaTecnicaService.cambiarEstado(id, request.toCommand(), userDetails.getUsername());
 	}
 
 	@DeleteMapping("/{id}")
@@ -127,6 +138,25 @@ public class TareaTecnicaController {
 		return tareaTecnicaService.comentar(id, request.toCommand(userDetails.getUsername()));
 	}
 
+	@GetMapping("/{id}/stock")
+	public List<TareaStockUsoDetalle> stockUsado(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		exigirPermiso(userDetails, PERMISO_VER);
+		return tareaTecnicaService.stockUsado(id);
+	}
+
+	@PostMapping("/{id}/stock")
+	@ResponseStatus(HttpStatus.CREATED)
+	public TareaStockUsoDetalle registrarUsoStock(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@Valid @RequestBody RegistrarUsoStockRequest request) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirTareaPropiaOAdministrador(userDetails, id);
+		return tareaTecnicaService.registrarUsoStock(id, request.toCommand(userDetails.getUsername()));
+	}
+
 	private void exigirPermiso(UserDetails userDetails, String permiso) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_TAREAS, permiso)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para operar tareas tecnicas.");
@@ -143,12 +173,13 @@ public class TareaTecnicaController {
 		}
 	}
 
-	@ExceptionHandler({TareaTecnicaNoEncontradaException.class, EquipoNoEncontradoException.class})
+	@ExceptionHandler({TareaTecnicaNoEncontradaException.class, EquipoNoEncontradoException.class,
+			StockComponenteNoEncontradoException.class})
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	void noEncontrado() {
 	}
 
-	@ExceptionHandler(TareaTecnicaYaAsignadaException.class)
+	@ExceptionHandler({TareaTecnicaYaAsignadaException.class, StockComponenteNoDisponibleParaTareaException.class})
 	@ResponseStatus(HttpStatus.CONFLICT)
 	void yaAsignada() {
 	}
@@ -192,6 +223,15 @@ public class TareaTecnicaController {
 
 		private AgregarComentarioTareaCommand toCommand(String autor) {
 			return new AgregarComentarioTareaCommand(autor, comentario);
+		}
+	}
+
+	public record RegistrarUsoStockRequest(
+			@NotNull Long stockComponenteId,
+			@Size(max = 500) String observacion) {
+
+		private RegistrarUsoStockCommand toCommand(String registradoPor) {
+			return new RegistrarUsoStockCommand(stockComponenteId, registradoPor, observacion);
 		}
 	}
 }

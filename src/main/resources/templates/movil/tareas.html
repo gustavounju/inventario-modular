@@ -16,6 +16,7 @@
         <div><span class="brand">INVENTARIO MODULAR</span><h1>Tareas</h1></div>
         <div class="header-actions">
             <a id="download-apk" th:if="${apkDisponible}" class="icon-button" th:href="@{/api/v1/movil/apk}" aria-label="Descargar APK" title="Descargar APK"><i data-lucide="smartphone"></i></a>
+            <a th:if="${puedeVerStock}" class="icon-button" th:href="@{/movil/stock}" aria-label="Stock" title="Stock"><i data-lucide="scan-barcode"></i></a>
             <button id="sound" class="icon-button" type="button" aria-label="Activar sonido en esta pantalla" title="Activar sonido en esta pantalla" aria-pressed="false"><i data-lucide="bell-off"></i></button>
             <form th:action="@{/logout}" method="post"><button class="icon-button" title="Cerrar sesion" aria-label="Cerrar sesion"><i data-lucide="log-out"></i></button></form>
         </div>
@@ -70,6 +71,15 @@
                 <label>Resultado u observaciones<textarea name="observacionesCierre" rows="2" maxlength="1000"></textarea></label>
                 <button type="submit" class="primary">Guardar estado</button>
             </form>
+            <section id="stock-section">
+                <h3>Stock usado</h3>
+                <div id="stock-used"></div>
+                <form id="stock-form">
+                    <label>Componente<select name="stockComponenteId" required><option value="">Seleccionar stock</option></select></label>
+                    <label>Observación<input name="observacion" maxlength="500" placeholder="Motivo o destino"></label>
+                    <button class="secondary" type="submit"><i data-lucide="package-check"></i>Registrar stock</button>
+                </form>
+            </section>
             <h3>Comentarios</h3>
             <div id="comments"></div>
             <form id="comment-form">

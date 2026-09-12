@@ -242,6 +242,38 @@ class TareaTecnicaControllerTests {
 	}
 
 	@Test
+	void registraStockUsadoEnTareaYLoQuitaDeDisponibles() throws Exception {
+		String usoStock = """
+				{
+				  "stockComponenteId": 1,
+				  "observacion": "Cambio de memoria en mesa de entrada."
+				}
+				""";
+
+		mockMvc.perform(get("/api/v1/tareas-tecnicas/stock-disponible").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.id == 1 && @.estado == 'DISPONIBLE')]", hasSize(1)));
+
+		mockMvc.perform(post("/api/v1/tareas-tecnicas/1/stock")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(usoStock))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.stockComponenteId").value(1))
+			.andExpect(jsonPath("$.tipo").value("RAM"))
+			.andExpect(jsonPath("$.registradoPor").value("admin.local"));
+
+		mockMvc.perform(get("/api/v1/tareas-tecnicas/1/stock").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.stockComponenteId == 1)]", hasSize(1)));
+
+		mockMvc.perform(get("/api/v1/tareas-tecnicas/stock-disponible").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.id == 1)]").isEmpty());
+	}
+
+	@Test
 	void bloqueaTareasSinPermiso() throws Exception {
 		mockMvc.perform(get("/api/v1/tareas-tecnicas").with(user(usuarioSinPermisos())))
 			.andExpect(status().isForbidden());

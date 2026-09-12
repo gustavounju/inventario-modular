@@ -6,7 +6,7 @@
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
     const csrfHeader = document.querySelector('meta[name="csrf-header"]').content;
     const native = navigator.userAgent.includes('InventarioLAN/');
-    let session, tasks = [], selected, editing, filter = 'pending', limit = 40;
+    let session, tasks = [], selected, editing, filter = 'pending', limit = 40, stockAvailable = [];
     let cursor, cursorKey, busy = false, audio, sound = false, stopped = false;
     // Los previews de comentarios se cargan aparte para no retrasar el listado principal de tareas.
     let renderToken = 0;
@@ -99,6 +99,33 @@
             $('comments').append(item);
         }
     }
+    async function stockUsed(id) {
+        const list = await request(api + '/' + id + '/stock');
+        $('stock-used').replaceChildren();
+        if (!list.length) $('stock-used').append(element('p', 'Sin stock registrado.', 'muted'));
+        for (const uso of list) {
+            const item = element('article', null, 'comment');
+            const serial = uso.serial ? ' | ' + uso.serial : '';
+            const note = uso.observacion ? ' | ' + uso.observacion : '';
+            item.append(element('small', uso.registradoPor + ' | ' + date(uso.creadoEn)),
+                element('p', '#' + uso.stockComponenteId + ' ' + uso.tipo + ' - ' + uso.descripcion + serial + note));
+            $('stock-used').append(item);
+        }
+    }
+    function renderStockOptions() {
+        const select = $('stock-form').elements.stockComponenteId;
+        select.replaceChildren();
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = stockAvailable.length ? 'Seleccionar stock' : 'Sin stock disponible';
+        select.append(empty);
+        for (const stock of stockAvailable) {
+            const option = document.createElement('option');
+            option.value = stock.id;
+            option.textContent = '#' + stock.id + ' ' + stock.tipo + ' - ' + stock.descripcion + (stock.serial ? ' (' + stock.serial + ')' : '');
+            select.append(option);
+        }
+    }
     function renderCommentPreview(id, list) {
         const preview = $('comments-preview-' + id);
         if (!preview) return;
@@ -140,13 +167,19 @@
         $('take-task').hidden = !session.puedeEditar || !!task.responsable || !isOpen(task);
         for (const id of ['edit-task', 'delete-task', 'comment-form']) $(id).hidden = !mayEdit(task);
         $('state-form').hidden = !mayEdit(task) || !isOpen(task);
+        $('stock-form').hidden = !mayEdit(task) || !isOpen(task) || !stockAvailable.length;
+        $('stock-section').hidden = !mayEdit(task) && !session.puedeEditar;
         $('state-form').elements.estado.value = isOpen(task) ? 'PENDIENTE' : task.estado;
         $('state-form').elements.observacionesCierre.value = task.observacionesCierre || '';
         $('comment-form').reset();
+        $('stock-form').reset();
+        renderStockOptions();
         message('', false, 'detail-message');
         $('comments').textContent = 'Cargando comentarios...';
+        $('stock-used').textContent = 'Cargando stock...';
         if (!$('detail-dialog').open) $('detail-dialog').showModal();
         try { await comments(task.id); } catch (error) { message(error.message, true, 'detail-message'); }
+        try { await stockUsed(task.id); } catch (error) { message(error.message, true, 'detail-message'); }
     }
     async function act(action, target = 'detail-message') {
         if (busy) return;
@@ -228,6 +261,18 @@
             event.target.reset(); await comments(selected.id); message('Comentario guardado.', false, 'detail-message');
         });
     };
+    $('stock-form').onsubmit = event => {
+        event.preventDefault();
+        act(async () => {
+            await request(api + '/' + selected.id + '/stock', 'POST', Object.fromEntries(new FormData(event.target)));
+            stockAvailable = await request(api + '/stock-disponible');
+            event.target.reset();
+            renderStockOptions();
+            await stockUsed(selected.id);
+            await refresh();
+            message('Stock registrado en la tarea.', false, 'detail-message');
+        });
+    };
     $('delete-task').onclick = () => {
         if (!confirm('Eliminar la tarea #' + selected.id + ' y sus comentarios?')) return;
         act(async () => { await request(api + '/' + selected.id, 'DELETE'); $('detail-dialog').close(); await refresh(); message('Tarea eliminada.'); });
@@ -298,6 +343,7 @@
             $('username').textContent = session.usuario.nombreVisible + ' | ' + session.usuario.username;
             $('new-task').hidden = !session.puedeEditar;
             $('voice-task').hidden = !native || !session.puedeEditar;
+            stockAvailable = session.puedeEditar ? await request(api + '/stock-disponible') : [];
             cursorKey = 'tareas.cursor.' + base + '.' + session.usuario.username;
             try { const value = localStorage.getItem(cursorKey); if (value !== null && /^\d+$/.test(value)) cursor = Number(value); } catch { /* Almacenamiento opcional. */ }
             await refresh();

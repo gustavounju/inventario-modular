@@ -1,6 +1,9 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.stock;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.Componente;
@@ -28,8 +31,9 @@ public class StockService {
 	public List<StockComponenteDetalle> listarDisponiblesYActivos() {
 		var componentes = stockComponenteRepository.findByActivoTrueOrderByTipoAscDescripcionAsc();
 		// El stock no guarda equipo_id: el vinculo operativo se reconstruye por serial.
-		// Si una pieza quedo ASIGNADO pero ya no existe en ningun equipo, se libera.
-		componentes.forEach(this::liberarAsignadoSinVinculoActivo);
+		// El vinculo activo manda sobre el estado visible: evita piezas "disponibles"
+		// que ya estan instaladas, y libera asignaciones viejas sin equipo activo.
+		componentes.forEach(this::sincronizarEstadoConVinculoActivo);
 		return componentes.stream()
 				.map(this::toDetalle)
 				.toList();
@@ -39,10 +43,48 @@ public class StockService {
 	public StockComponenteDetalle crear(GuardarStockComponenteCommand command) {
 		StockComponente componente = new StockComponente(command.tipo(), textoRequerido(command.descripcion(), "descripcion"));
 		aplicarCampos(componente, command);
+		componente.registrarIngreso(textoOpcional(command.ingresadoPor()));
 		StockComponente guardado = stockComponenteRepository.save(componente);
 		auditoriaService.registrar("STOCK", "CREAR", "StockComponente", guardado.getId(),
-				"Componente de stock " + guardado.getTipo() + " creado con estado " + guardado.getEstado() + ".");
+				"Componente de stock " + guardado.getTipo() + " creado con estado " + guardado.getEstado()
+						+ (StringUtils.hasText(guardado.getIngresadoPor()) ? " por " + guardado.getIngresadoPor() : "") + ".");
 		return toDetalle(guardado);
+	}
+
+	@Transactional
+	public List<StockComponenteDetalle> crearPendientesDesdeCodigos(CrearStockPendienteLoteCommand command) {
+		Set<String> codigos = command.codigos().stream()
+				.map(this::textoOpcional)
+				.filter(StringUtils::hasText)
+				.collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+		if (codigos.isEmpty()) {
+			throw new LoteStockSinDatosException();
+		}
+		List<StockComponente> componentes = new ArrayList<>();
+		for (String codigo : codigos) {
+			StockComponente componente = new StockComponente(TipoComponente.PENDIENTE, "Pendiente de completar - " + codigo);
+			componente.actualizar(
+					TipoComponente.PENDIENTE,
+					EstadoStockComponente.DISPONIBLE,
+					"Pendiente de completar - " + codigo,
+					null,
+					null,
+					codigo,
+					null,
+					null,
+					null,
+					null,
+					null,
+					"Lote escaneado desde celular. Completar datos desde Stock web.",
+					true);
+			componente.registrarIngreso(textoOpcional(command.ingresadoPor()));
+			componente.marcarPendiente();
+			componentes.add(componente);
+		}
+		List<StockComponente> guardados = stockComponenteRepository.saveAll(componentes);
+		auditoriaService.registrar("STOCK", "CREAR_LOTE_PENDIENTE", "StockComponente", null,
+				"Escaneo rapido creo " + guardados.size() + " componentes pendientes de completar.");
+		return guardados.stream().map(this::toDetalle).toList();
 	}
 
 	@Transactional
@@ -54,6 +96,55 @@ public class StockService {
 		auditoriaService.registrar("STOCK", "ACTUALIZAR", "StockComponente", guardado.getId(),
 				"Componente de stock " + guardado.getTipo() + " actualizado con estado " + guardado.getEstado() + ".");
 		return toDetalle(guardado);
+	}
+
+	@Transactional
+	public int actualizarDatosAdministrativosEnLote(ActualizarStockLoteCommand command) {
+		Set<Long> ids = command.ids().stream()
+				.filter(id -> id != null && id > 0)
+				.collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+		if (ids.isEmpty()) {
+			throw new LoteStockSinSeleccionException();
+		}
+		String remito = textoOpcional(command.remito());
+		String ordenCompra = textoOpcional(command.ordenCompra());
+		String proveedor = textoOpcional(command.proveedor());
+		String descripcion = textoOpcional(command.descripcion());
+		String marca = textoOpcional(command.marca());
+		String modelo = textoOpcional(command.modelo());
+		String capacidad = textoOpcional(command.capacidad());
+		String observaciones = textoOpcional(command.observaciones());
+		boolean hayTipo = command.tipo() != null;
+		boolean hayEstado = command.estado() != null;
+		if (!hayTipo && !hayEstado && !StringUtils.hasText(descripcion) && !StringUtils.hasText(marca)
+				&& !StringUtils.hasText(modelo) && !StringUtils.hasText(capacidad) && !StringUtils.hasText(remito)
+				&& !StringUtils.hasText(ordenCompra) && !StringUtils.hasText(proveedor) && !StringUtils.hasText(observaciones)) {
+			throw new LoteStockSinDatosException();
+		}
+		List<StockComponente> componentes = stockComponenteRepository.findAllById(ids);
+		if (componentes.size() != ids.size()) {
+			throw new LoteStockConComponentesInvalidosException();
+		}
+		for (StockComponente componente : componentes) {
+			componente.actualizar(
+					hayTipo ? command.tipo() : componente.getTipo(),
+					hayEstado ? command.estado() : componente.getEstado(),
+					StringUtils.hasText(descripcion) ? descripcion : componente.getDescripcion(),
+					StringUtils.hasText(marca) ? marca : componente.getMarca(),
+					StringUtils.hasText(modelo) ? modelo : componente.getModelo(),
+					componente.getSerial(),
+					StringUtils.hasText(capacidad) ? capacidad : componente.getCapacidad(),
+					StringUtils.hasText(remito) ? remito : componente.getRemito(),
+					StringUtils.hasText(ordenCompra) ? ordenCompra : componente.getOrdenCompra(),
+					StringUtils.hasText(proveedor) ? proveedor : componente.getProveedor(),
+					componente.getUbicacion(),
+					StringUtils.hasText(observaciones) ? observaciones : componente.getObservaciones(),
+					componente.isActivo());
+		}
+		stockComponenteRepository.saveAll(componentes);
+		auditoriaService.registrar("STOCK", "ACTUALIZAR_LOTE", "StockComponente", null,
+				"Datos tecnicos y administrativos actualizados en " + componentes.size() + " componentes de stock.");
+		return componentes.size();
 	}
 
 	@Transactional
@@ -140,6 +231,8 @@ public class StockService {
 				componente.getRemito(),
 				componente.getOrdenCompra(),
 				componente.getProveedor(),
+				componente.getIngresadoPor(),
+				componente.isDatosCompletos(),
 				componente.getUbicacion(),
 				componente.getObservaciones(),
 				vinculo == null ? null : vinculo.getEquipo().getId(),
@@ -148,10 +241,42 @@ public class StockService {
 				componente.isActivo());
 	}
 
+	private void sincronizarEstadoConVinculoActivo(StockComponente componente) {
+		if (!StringUtils.hasText(componente.getSerial())) {
+			return;
+		}
+		var vinculo = buscarVinculoActivo(componente);
+		if (vinculo != null) {
+			marcarAsignadoConVinculoActivo(componente, vinculo);
+			return;
+		}
+		liberarAsignadoSinVinculoActivo(componente);
+	}
+
+	private void marcarAsignadoConVinculoActivo(StockComponente componente, Componente vinculo) {
+		if (componente.getEstado() == EstadoStockComponente.ASIGNADO) {
+			return;
+		}
+		componente.actualizar(
+				componente.getTipo(),
+				EstadoStockComponente.ASIGNADO,
+				componente.getDescripcion(),
+				componente.getMarca(),
+				componente.getModelo(),
+				componente.getSerial(),
+				componente.getCapacidad(),
+				componente.getRemito(),
+				componente.getOrdenCompra(),
+				componente.getProveedor(),
+				componente.getUbicacion(),
+				observacionConNota(componente.getObservaciones(), "Asignado automáticamente: tiene equipo activo vinculado (" + vinculo.getEquipo().getNombre() + ")."),
+				componente.isActivo());
+		auditoriaService.registrar("STOCK", "ASIGNAR_POR_VINCULO", "StockComponente", componente.getId(),
+				"Stock marcado como ASIGNADO porque tiene equipo activo vinculado: " + componente.getDescripcion() + ".");
+	}
+
 	private void liberarAsignadoSinVinculoActivo(StockComponente componente) {
-		if (componente.getEstado() != EstadoStockComponente.ASIGNADO
-				|| !StringUtils.hasText(componente.getSerial())
-				|| buscarVinculoActivo(componente) != null) {
+		if (componente.getEstado() != EstadoStockComponente.ASIGNADO) {
 			return;
 		}
 		componente.liberar();
@@ -210,9 +335,35 @@ public class StockService {
 			String remito,
 			String ordenCompra,
 			String proveedor,
+			String ingresadoPor,
 			String ubicacion,
 			String observaciones,
 			boolean activo) {
+	}
+
+	public record CrearStockPendienteLoteCommand(
+			List<String> codigos,
+			String ingresadoPor) {
+		public CrearStockPendienteLoteCommand {
+			codigos = codigos == null ? List.of() : List.copyOf(codigos);
+		}
+	}
+
+	public record ActualizarStockLoteCommand(
+			List<Long> ids,
+			TipoComponente tipo,
+			EstadoStockComponente estado,
+			String descripcion,
+			String marca,
+			String modelo,
+			String capacidad,
+			String remito,
+			String ordenCompra,
+			String proveedor,
+			String observaciones) {
+		public ActualizarStockLoteCommand {
+			ids = ids == null ? List.of() : List.copyOf(ids);
+		}
 	}
 
 	public record StockComponenteDetalle(
@@ -227,6 +378,8 @@ public class StockService {
 			String remito,
 			String ordenCompra,
 			String proveedor,
+			String ingresadoPor,
+			boolean datosCompletos,
 			String ubicacion,
 			String observaciones,
 			Long equipoId,
@@ -253,6 +406,24 @@ public class StockService {
 
 		public StockComponenteNoReservadoException(Long id) {
 			super("Componente de stock no reservado: " + id);
+		}
+	}
+
+	public static class LoteStockSinSeleccionException extends RuntimeException {
+		public LoteStockSinSeleccionException() {
+			super("Debe seleccionar al menos un componente de stock.");
+		}
+	}
+
+	public static class LoteStockSinDatosException extends RuntimeException {
+		public LoteStockSinDatosException() {
+			super("Debe informar al menos un dato administrativo para aplicar.");
+		}
+	}
+
+	public static class LoteStockConComponentesInvalidosException extends RuntimeException {
+		public LoteStockConComponentesInvalidosException() {
+			super("La seleccion contiene componentes inexistentes.");
 		}
 	}
 }

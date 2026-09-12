@@ -129,6 +129,13 @@
 								<p th:text="${comentario.comentario}">Comentario de avance.</p>
 							</div>
 						</section>
+						<section class="task-comments" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}" aria-label="Stock usado en tarea">
+							<div th:each="uso : ${stockPorTarea[tarea.id]}" class="task-comment">
+								<strong th:text="'Stock #' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">Stock</strong>
+								<span th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : ''}">09/09/2026 10:00</span>
+								<p th:text="${uso.descripcion + (uso.serial != null ? ' | Serial ' + uso.serial : '') + (uso.observacion != null ? ' | ' + uso.observacion : '')}">Uso de stock.</p>
+							</div>
+						</section>
 						<p class="table-subtext" th:if="${comentariosPorTarea[tarea.id] == null or #lists.isEmpty(comentariosPorTarea[tarea.id])}">Sin comentarios cargados.</p>
 
 						<div class="task-row-actions" th:if="${puedeEditarTareas}">
@@ -150,6 +157,16 @@
 								<input type="hidden" name="origen" value="visor">
 								<input name="comentario" maxlength="1000" required placeholder="Agregar comentario">
 								<button class="secondary-action" type="submit">Comentar</button>
+							</form>
+							<form class="task-inline-form" th:if="${!#lists.isEmpty(stockDisponibleParaTareas)}" th:action="@{/admin/tareas/{id}/stock(id=${tarea.id})}" method="post">
+								<input type="hidden" name="origen" value="visor">
+								<select name="stockComponenteId" aria-label="Stock usado" required>
+									<option value="">Usar stock</option>
+									<option th:each="stock : ${stockDisponibleParaTareas}" th:value="${stock.id}"
+											th:text="'#' + ${stock.id} + ' ' + ${stock.tipo} + ' - ' + ${stock.descripcion}">Stock</option>
+								</select>
+								<input name="observacion" maxlength="500" placeholder="Motivo o destino">
+								<button class="secondary-action" type="submit">Registrar stock</button>
 							</form>
 							<form th:action="@{/admin/tareas/{id}/eliminar(id=${tarea.id})}" method="post" onsubmit="return confirm('¿Eliminar esta tarea y sus comentarios?');">
 								<input type="hidden" name="origen" value="visor">

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#13745c">
+    <meta name="csrf-token" th:content="${_csrf.token}">
+    <meta name="csrf-header" th:content="${_csrf.headerName}">
+    <title>Stock | Inventario Modular</title>
+    <link rel="stylesheet" th:href="@{/css/movil.css}">
+    <script defer th:src="@{/js/lucide.min.js}"></script>
+    <script defer th:src="@{/js/movil-stock.js}"></script>
+</head>
+<body th:attr="data-base=@{/}">
+    <header class="mobile-header">
+        <div><span class="brand">INVENTARIO MODULAR</span><h1>Stock</h1></div>
+        <div class="header-actions">
+            <a class="icon-button" th:href="@{/movil/tareas}" aria-label="Tareas" title="Tareas"><i data-lucide="clipboard-list"></i></a>
+            <a id="download-apk" th:if="${apkDisponible}" class="icon-button" th:href="@{/api/v1/movil/apk}" aria-label="Descargar APK" title="Descargar APK"><i data-lucide="smartphone"></i></a>
+            <form th:action="@{/logout}" method="post"><button class="icon-button" title="Cerrar sesion" aria-label="Cerrar sesion"><i data-lucide="log-out"></i></button></form>
+        </div>
+    </header>
+    <main class="mobile-main stock-mobile">
+        <div class="session-line"><span id="username">Cargando usuario...</span><span class="apk-version" th:text="'APK ' + ${apkInfo.version}">APK</span><span id="connection" role="status">Conectando...</span></div>
+        <section class="metrics" aria-label="Resumen de stock">
+            <div><strong id="available-count">0</strong><span>Disponibles</span></div>
+            <div><strong id="reserved-count">0</strong><span>Reservados</span></div>
+            <div><strong id="assigned-count">0</strong><span>Asignados</span></div>
+        </section>
+        <section id="apk-update-panel" class="apk-install-panel" aria-label="Actualizacion de la app" hidden>
+            <div>
+                <strong>APK disponible</strong>
+                <span id="apk-update-text">Hay una nueva version para instalar.</span>
+            </div>
+            <a id="apk-update" class="primary apk-install-link" th:href="@{/api/v1/movil/apk}"><i data-lucide="download"></i><span>Actualizar APK</span></a>
+        </section>
+        <section class="quick-scan-panel" aria-labelledby="quick-scan-title">
+            <div class="quick-scan-header">
+                <div>
+                    <h2 id="quick-scan-title">Escaneo rápido</h2>
+                    <p class="muted">Escanee varios códigos y envíelos como pendientes para completar desde la web.</p>
+                </div>
+                <span id="quick-count" class="badge">0 códigos</span>
+            </div>
+            <div class="scan-row">
+                <label>Código<input id="quick-code" maxlength="180" autocomplete="off" inputmode="text"></label>
+                <button id="scan-quick-code" class="primary icon-button scan-button" type="button" title="Escanear para lote" aria-label="Escanear para lote"><i data-lucide="scan-line"></i></button>
+            </div>
+            <div class="quick-actions">
+                <button id="add-quick-code" type="button"><i data-lucide="plus"></i><span>Agregar</span></button>
+                <button id="send-quick-codes" class="primary" type="button"><i data-lucide="send"></i><span>Enviar lote</span></button>
+                <button id="clear-quick-codes" type="button"><i data-lucide="eraser"></i><span>Limpiar</span></button>
+            </div>
+            <div id="quick-list" class="quick-code-list" aria-live="polite"></div>
+        </section>
+        <form id="stock-entry-form" class="stock-entry">
+            <div class="scan-row">
+                <label>Código de barra o serie<input name="serial" maxlength="180" autocomplete="off" inputmode="text" required></label>
+                <button id="scan-code" class="primary icon-button scan-button" type="button" title="Escanear código" aria-label="Escanear código"><i data-lucide="scan-barcode"></i></button>
+            </div>
+            <input name="descripcion" type="hidden">
+            <label>Tipo de componente
+                <select name="tipo" required>
+                    <option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+                </select>
+            </label>
+            <div class="two-columns">
+                <label>Modelo<input name="modelo" maxlength="180"></label>
+                <label>Capacidad<input name="capacidad" maxlength="120"></label>
+            </div>
+            <details class="optional-fields">
+                <summary>Más datos</summary>
+                <div class="optional-fields-grid">
+                    <label>Marca<input name="marca" maxlength="120"></label>
+                    <label>Remito<input name="remito" maxlength="80"></label>
+                    <label>Orden de compra<input name="ordenCompra" maxlength="80"></label>
+                    <label>Proveedor<input name="proveedor" maxlength="150"></label>
+                    <label>Observaciones<textarea name="observaciones" maxlength="500" rows="2"></textarea></label>
+                </div>
+            </details>
+            <p id="message" class="message" role="status" hidden></p>
+            <button id="save-stock" class="primary" type="submit"><i data-lucide="package-plus"></i><span>Guardar en stock</span></button>
+        </form>
+        <div class="list-heading"><h2>Últimos ingresos</h2><span id="result-count" class="muted"></span></div>
+        <section id="stock-list" aria-busy="true"></section>
+        <p id="empty" class="empty" hidden>No hay stock cargado.</p>
+    </main>
+</body>
+</html>

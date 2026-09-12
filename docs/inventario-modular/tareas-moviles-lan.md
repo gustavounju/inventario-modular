@@ -111,7 +111,7 @@ convierte audio en texto en el dispositivo y el sistema deriva un titulo breve.
 Ver [guia de la APK](../../android/README.md). La web funciona en el navegador;
 los avisos de fondo requieren activar el servicio Android y configurar el telefono.
 
-La variante LAN firmada `0.1.8-lan` queda preconfigurada con `http://192.168.1.8:8081`.
+La variante LAN firmada `0.1.10-lan` queda preconfigurada con `http://192.168.1.8:8081`.
 En produccion la direccion debe venir de configuracion institucional; HTTPS sigue siendo
 el objetivo recomendado cuando exista dominio o certificado institucional.
 

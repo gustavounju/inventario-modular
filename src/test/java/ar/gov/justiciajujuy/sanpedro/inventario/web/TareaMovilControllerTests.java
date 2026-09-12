@@ -74,15 +74,32 @@ class TareaMovilControllerTests {
         jdbc.update("INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (100, 'tecnico.movil', 'Tecnico Movil', 'Informatica', 'AD', TRUE)");
         jdbc.update("INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (100, 2)");
         new ResourceDatabasePopulator(new ClassPathResource("db/migration/V16__permisos_tecnico_tareas_movil.sql")).execute(dataSource);
+        new ResourceDatabasePopulator(new ClassPathResource("db/migration/V19__permisos_tecnico_stock_movil.sql")).execute(dataSource);
         mvc.perform(get("/movil/tareas").with(user("tecnico.movil"))).andExpect(status().isOk())
-                .andExpect(content().string(containsString("Nueva tarea")));
+                .andExpect(content().string(containsString("Nueva tarea")))
+                .andExpect(content().string(containsString("/movil/stock")));
         mvc.perform(get("/api/v1/movil/sesion").with(user("tecnico.movil"))).andExpect(status().isOk())
-                .andExpect(jsonPath("$.puedeEditar").value(true));
+                .andExpect(jsonPath("$.puedeEditar").value(true))
+                .andExpect(jsonPath("$.puedeEditarStock").value(true));
+        mvc.perform(get("/movil/stock").with(user("tecnico.movil"))).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Guardar en stock")))
+                .andExpect(content().string(containsString("scan-barcode")));
+        mvc.perform(get("/api/v1/movil/stock/sesion").with(user("tecnico.movil"))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.puedeEditarStock").value(true));
+        mvc.perform(post("/api/v1/stock/componentes").with(user("tecnico.movil")).with(csrf()).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"tipo":"MONITOR","estado":"DISPONIBLE","descripcion":"Monitor ingresado por escaneo BC-001",
+                         "serial":"BC-001","activo":true}
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.serial").value("BC-001"))
+                .andExpect(jsonPath("$.ingresadoPor").value("tecnico.movil"));
         mvc.perform(get("/api/v1/movil/avisos").with(user("sin.permisos"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/movil/usuarios-dominio?q=me").with(user("sin.permisos"))).andExpect(status().isForbidden());
         mvc.perform(get("/movil/tareas").with(user("sin.permisos"))).andExpect(status().isForbidden());
+        mvc.perform(get("/movil/stock").with(user("sin.permisos"))).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/movil/avisos?despuesDe=-1").with(user("admin.local"))).andExpect(status().isBadRequest());
-        mvc.perform(get("/api/v1/movil/usuarios-dominio?q=m").with(user("admin.local"))).andExpect(status().isOk())
+        mvc.perform(get("/api/v1/movil/usuarios-dominio?q=me").with(user("admin.local"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.consultaRealizada").value(true));
         mvc.perform(get("/api/v1/tareas-tecnicas/1/comentarios").with(user("admin.local"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].comentario").value("Comentario inicial de seguimiento."));

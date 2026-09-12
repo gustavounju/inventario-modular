@@ -1,5 +1,6 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService;
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService.ApkInfo;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
@@ -54,7 +55,21 @@ public class TareaMovilController {
         model.addAttribute("appInstalada", appInstalada);
         model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
         model.addAttribute("apkInfo", apkDistributionService.info());
+        model.addAttribute("puedeVerStock", authorization.tienePermiso(user, "STOCK", "VER"));
         return "movil/tareas";
+    }
+
+    @GetMapping("/movil/stock")
+    public String stock(@AuthenticationPrincipal UserDetails user,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            Model model) {
+        exigirPermisoStock(user, "VER");
+        boolean appInstalada = userAgent != null && userAgent.contains("InventarioLAN/1");
+        model.addAttribute("appInstalada", appInstalada);
+        model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
+        model.addAttribute("apkInfo", apkDistributionService.info());
+        model.addAttribute("tiposComponente", TipoComponente.values());
+        return "movil/stock";
     }
 
     @GetMapping("/api/v1/movil/apk")
@@ -84,7 +99,18 @@ public class TareaMovilController {
         response.setHeader("Cache-Control", "no-store");
         return new SesionMovil(authorization.obtenerUsuarioActual(user),
                 authorization.tienePermiso(user, "TAREAS", "EDITAR"),
-                authorization.puedeAdministrarUsuarios(user));
+                authorization.puedeAdministrarUsuarios(user),
+                authorization.tienePermiso(user, "STOCK", "VER"),
+                authorization.tienePermiso(user, "STOCK", "EDITAR"));
+    }
+
+    @GetMapping("/api/v1/movil/stock/sesion")
+    @ResponseBody
+    public SesionStockMovil sesionStock(@AuthenticationPrincipal UserDetails user, HttpServletResponse response) {
+        exigirPermisoStock(user, "VER");
+        response.setHeader("Cache-Control", "no-store");
+        return new SesionStockMovil(authorization.obtenerUsuarioActual(user),
+                authorization.tienePermiso(user, "STOCK", "EDITAR"));
     }
 
     @GetMapping("/api/v1/movil/avisos")
@@ -117,11 +143,20 @@ public class TareaMovilController {
         }
     }
 
+    private void exigirPermisoStock(UserDetails user, String permiso) {
+        if (!authorization.tienePermiso(user, "STOCK", permiso)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para operar stock.");
+        }
+    }
+
     private void exigirUsuarioAutorizado(UserDetails user) {
         if (!authorization.obtenerUsuarioActual(user).autorizado()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no autorizado para descargar la APK.");
         }
     }
 
-    public record SesionMovil(AuthorizationService.UsuarioActual usuario, boolean puedeEditar, boolean administrador) { }
+    public record SesionMovil(AuthorizationService.UsuarioActual usuario, boolean puedeEditar, boolean administrador,
+            boolean puedeVerStock, boolean puedeEditarStock) { }
+
+    public record SesionStockMovil(AuthorizationService.UsuarioActual usuario, boolean puedeEditarStock) { }
 }

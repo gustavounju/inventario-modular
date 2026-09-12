@@ -25,7 +25,7 @@ import org.springframework.util.StringUtils;
 public class ActiveDirectoryDomainService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ActiveDirectoryDomainService.class);
-	private static final int MIN_QUERY_LENGTH = 1;
+	private static final int MIN_QUERY_LENGTH = 2;
 	private static final String ATTRIBUTE_NAME_PATTERN = "[a-zA-Z][a-zA-Z0-9-]*";
 
 	private final ActiveDirectoryProperties properties;

@@ -77,6 +77,7 @@ dt { color: #62736c; } dd { margin: 0; overflow-wrap: anywhere; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .danger { color: #a13930; }
 #state-form, #comment-form { padding-top: 14px; border-top: 1px solid #dbe3de; }
+#stock-section { padding-top: 14px; border-top: 1px solid #dbe3de; display: grid; gap: 10px; }
 .comment { padding: 10px 0; border-bottom: 1px solid #e4eae6; }
 .comment p { font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 4px; }
 .comment small { color: #62736c; }
@@ -84,6 +85,21 @@ dt { color: #62736c; } dd { margin: 0; overflow-wrap: anywhere; }
 .mobile-login { max-width: 400px; margin: 10vh auto; padding: 24px; }
 .mobile-login h1 { font-size: 32px; margin-block: 12px 4px; }
 .mobile-login form { margin-top: 28px; }
+.stock-mobile { display: grid; gap: 14px; }
+.stock-entry { padding-bottom: 16px; border-bottom: 1px solid #dbe3de; }
+.quick-scan-panel { display: grid; gap: 12px; padding: 12px; border: 1px solid #b9ded0; border-left: 4px solid #13745c; border-radius: 8px; background: #eef8f3; }
+.quick-scan-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.quick-scan-header div { display: grid; gap: 4px; min-width: 0; }
+.quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.quick-code-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 20px; }
+.quick-code-pill { min-height: 34px; max-width: 100%; padding: 6px 8px; border-color: #b9ded0; color: #0b5c47; background: #fff; font-size: 12px; overflow-wrap: anywhere; }
+.quick-code-pill::after { content: " ×"; font-weight: 800; }
+.scan-row, .two-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: end; }
+.scan-row { grid-template-columns: minmax(0, 1fr) 52px; }
+.scan-button { width: 52px; height: 44px; }
+.optional-fields { border-top: 1px solid #dbe3de; padding-top: 4px; }
+.optional-fields summary { min-height: 42px; display: flex; align-items: center; font-weight: 700; color: #13745c; }
+.optional-fields-grid { display: grid; gap: 12px; padding-top: 8px; }
 [hidden] { display: none !important; }
 @media (max-width: 480px) {
     .list-tools { flex-wrap: wrap; }
@@ -94,4 +110,7 @@ dt { color: #62736c; } dd { margin: 0; overflow-wrap: anywhere; }
     .apk-install-link { width: 100%; }
     .filters button { padding-inline: 10px; font-size: 12px; }
     .task-row { padding-block: 11px; }
+    .two-columns { grid-template-columns: 1fr; }
+    .quick-actions { grid-template-columns: 1fr; }
+    .quick-scan-header { align-items: stretch; flex-direction: column; }
 }

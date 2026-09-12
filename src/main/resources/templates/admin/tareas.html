@@ -172,6 +172,12 @@
 											<span class="table-subtext" th:each="comentario : ${comentariosPorTarea[tarea.id]}"
 													th:text="${comentario.autor + ': ' + comentario.comentario}" style="display: block; margin-bottom: 2px;">admin.local: Se revisó cableado</span>
 										</div>
+										<div class="comment-thread" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+											 style="margin-top: 8px; border-left: 2px solid #16a34a; padding-left: 8px;">
+											<span class="table-subtext" th:each="uso : ${stockPorTarea[tarea.id]}"
+													th:text="'Stock usado: #' + ${uso.stockComponenteId} + ' ' + ${uso.tipo} + ' - ' + ${uso.descripcion}"
+													style="display: block; margin-bottom: 2px; color: #4ade80; font-weight: 600;">Stock usado</span>
+										</div>
 									</td>
 									<td data-label="Solicitante">
 										<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Juan Pérez</strong>
@@ -214,6 +220,16 @@
 											<form class="inline-action-form" th:action="@{/admin/tareas/{id}/comentarios(id=${tarea.id})}" method="post" style="display: flex; gap: 6px; align-items: center;">
 												<input name="comentario" maxlength="1000" required placeholder="Agregar nota de avance..." style="font-size: 0.8rem; padding: 4px; flex: 1;">
 												<button class="secondary-action" type="submit" style="font-size: 0.78rem; padding: 4px 8px;">Comentar</button>
+											</form>
+											<form class="inline-action-form" th:if="${!#lists.isEmpty(stockDisponibleParaTareas)}"
+												  th:action="@{/admin/tareas/{id}/stock(id=${tarea.id})}" method="post" style="display: flex; gap: 6px; align-items: center;">
+												<select name="stockComponenteId" required style="font-size: 0.8rem; padding: 4px; min-width: 180px;">
+													<option value="">Usar stock...</option>
+													<option th:each="stock : ${stockDisponibleParaTareas}" th:value="${stock.id}"
+															th:text="'#' + ${stock.id} + ' ' + ${stock.tipo} + ' - ' + ${stock.descripcion} + (${stock.serial} != null ? ' (' + ${stock.serial} + ')' : '')">Stock</option>
+												</select>
+												<input name="observacion" maxlength="500" placeholder="Motivo o destino..." style="font-size: 0.8rem; padding: 4px; flex: 1;">
+												<button class="secondary-action" type="submit" style="font-size: 0.78rem; padding: 4px 8px;">Registrar stock</button>
 											</form>
 											<!-- Formulario para eliminar tarea -->
 											<div style="display: flex; justify-content: flex-end;">

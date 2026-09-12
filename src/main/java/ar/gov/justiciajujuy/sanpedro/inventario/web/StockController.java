@@ -6,6 +6,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService;
+import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.CrearStockPendienteLoteCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.GuardarStockComponenteCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.StockComponenteDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.StockComponenteNoDisponibleException;
@@ -57,7 +58,16 @@ public class StockController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody GuardarStockComponenteRequest request) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
-		return stockService.crear(request.toCommand());
+		return stockService.crear(request.toCommand(userDetails.getUsername()));
+	}
+
+	@PostMapping("/lote-rapido")
+	@ResponseStatus(HttpStatus.CREATED)
+	public List<StockComponenteDetalle> crearLoteRapido(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody CrearStockPendienteLoteRequest request) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		return stockService.crearPendientesDesdeCodigos(request.toCommand(userDetails.getUsername()));
 	}
 
 	@DeleteMapping("/{id}")
@@ -100,9 +110,15 @@ public class StockController {
 			@Size(max = 500) String observaciones,
 			boolean activo) {
 
-		private GuardarStockComponenteCommand toCommand() {
+		private GuardarStockComponenteCommand toCommand(String ingresadoPor) {
 			return new GuardarStockComponenteCommand(
-					tipo, estado, descripcion, marca, modelo, serial, capacidad, remito, ordenCompra, proveedor, ubicacion, observaciones, activo);
+					tipo, estado, descripcion, marca, modelo, serial, capacidad, remito, ordenCompra, proveedor, ingresadoPor, ubicacion, observaciones, activo);
+		}
+	}
+
+	public record CrearStockPendienteLoteRequest(List<String> codigos) {
+		private CrearStockPendienteLoteCommand toCommand(String ingresadoPor) {
+			return new CrearStockPendienteLoteCommand(codigos, ingresadoPor);
 		}
 	}
 }

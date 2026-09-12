@@ -7,6 +7,9 @@ import java.util.List;
 import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
+import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
+import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponente;
+import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponenteRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -18,19 +21,25 @@ public class TareaTecnicaService {
 
 	private final TareaTecnicaRepository tareaTecnicaRepository;
 	private final TareaTecnicaComentarioRepository comentarioRepository;
+	private final TareaStockUsoRepository stockUsoRepository;
 	private final EquipoRepository equipoRepository;
+	private final StockComponenteRepository stockComponenteRepository;
 	private final AuditoriaService auditoriaService;
 	private final TareaAvisoService avisoService;
 
 	public TareaTecnicaService(
 			TareaTecnicaRepository tareaTecnicaRepository,
 			TareaTecnicaComentarioRepository comentarioRepository,
+			TareaStockUsoRepository stockUsoRepository,
 			EquipoRepository equipoRepository,
+			StockComponenteRepository stockComponenteRepository,
 			AuditoriaService auditoriaService,
 			TareaAvisoService avisoService) {
 		this.tareaTecnicaRepository = tareaTecnicaRepository;
 		this.comentarioRepository = comentarioRepository;
+		this.stockUsoRepository = stockUsoRepository;
 		this.equipoRepository = equipoRepository;
+		this.stockComponenteRepository = stockComponenteRepository;
 		this.auditoriaService = auditoriaService;
 		this.avisoService = avisoService;
 	}
@@ -70,6 +79,23 @@ public class TareaTecnicaService {
 		validarExistencia(tareaId);
 		return comentarioRepository.findByTareaIdOrderByCreadoEnDescIdDesc(tareaId).stream()
 				.map(this::toComentarioDetalle)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<StockDisponibleDetalle> stockDisponibleParaTareas() {
+		return stockComponenteRepository.findByActivoTrueOrderByTipoAscDescripcionAsc().stream()
+				.filter(componente -> componente.getEstado() == EstadoStockComponente.DISPONIBLE
+						|| componente.getEstado() == EstadoStockComponente.RESERVADO)
+				.map(this::toStockDisponibleDetalle)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<TareaStockUsoDetalle> stockUsado(Long tareaId) {
+		validarExistencia(tareaId);
+		return stockUsoRepository.findByTareaIdOrderByCreadoEnDescIdDesc(tareaId).stream()
+				.map(this::toStockUsoDetalle)
 				.toList();
 	}
 
@@ -125,6 +151,7 @@ public class TareaTecnicaService {
 		tarea.tomar(responsableNormalizado);
 		auditoriaService.registrar("TAREAS", "TOMAR", "TareaTecnica", tarea.getId(),
 				"Tarea tecnica " + tarea.getId() + " tomada por " + responsableNormalizado + ".");
+		avisoService.registrarAsignacion(tarea, responsableNormalizado);
 		return toDetalle(tarea);
 	}
 
@@ -145,12 +172,18 @@ public class TareaTecnicaService {
 
 	@Transactional
 	public TareaTecnicaDetalle cambiarEstado(Long id, CambiarEstadoTareaCommand command) {
+		return cambiarEstado(id, command, null);
+	}
+
+	@Transactional
+	public TareaTecnicaDetalle cambiarEstado(Long id, CambiarEstadoTareaCommand command, String autor) {
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
 		EstadoTareaTecnica estado = command.estado() == null ? EstadoTareaTecnica.PENDIENTE : command.estado();
 		tarea.cambiarEstado(estado, textoOpcional(command.observacionesCierre()));
 		auditoriaService.registrar("TAREAS", "CAMBIAR_ESTADO", "TareaTecnica", tarea.getId(),
 				"Tarea tecnica " + tarea.getId() + " cambio a " + estado + ".");
+		avisoService.registrarCambioEstado(tarea, textoOpcional(autor));
 		return toDetalle(tarea);
 	}
 
@@ -166,6 +199,28 @@ public class TareaTecnicaService {
 				"Comentario agregado a tarea tecnica " + tarea.getId() + ".");
 		avisoService.registrarComentario(tarea, comentario.getAutor());
 		return toComentarioDetalle(comentario);
+	}
+
+	@Transactional
+	public TareaStockUsoDetalle registrarUsoStock(Long id, RegistrarUsoStockCommand command) {
+		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
+				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
+		StockComponente componente = stockComponenteRepository.findById(command.stockComponenteId())
+				.orElseThrow(() -> new StockComponenteNoEncontradoException(command.stockComponenteId()));
+		if (!componente.isActivo() || componente.getEstado() == EstadoStockComponente.ASIGNADO
+				|| componente.getEstado() == EstadoStockComponente.BAJA) {
+			throw new StockComponenteNoDisponibleParaTareaException(command.stockComponenteId());
+		}
+		componente.asignar();
+		TareaStockUso uso = stockUsoRepository.save(new TareaStockUso(
+				tarea,
+				componente,
+				textoRequerido(command.registradoPor(), "registradoPor"),
+				textoOpcional(command.observacion())));
+		auditoriaService.registrar("TAREAS", "USAR_STOCK", "TareaTecnica", tarea.getId(),
+				"Tarea tecnica " + tarea.getId() + " uso stock #" + componente.getId() + " (" + componente.getDescripcion() + ").");
+		avisoService.registrarStockUsado(tarea, command.registradoPor());
+		return toStockUsoDetalle(uso);
 	}
 
 	@Transactional
@@ -230,6 +285,35 @@ public class TareaTecnicaService {
 				comentario.getCreadoEn());
 	}
 
+	private StockDisponibleDetalle toStockDisponibleDetalle(StockComponente componente) {
+		return new StockDisponibleDetalle(
+				componente.getId(),
+				componente.getTipo().name(),
+				componente.getEstado().name(),
+				componente.getDescripcion(),
+				componente.getMarca(),
+				componente.getModelo(),
+				componente.getSerial(),
+				componente.getCapacidad(),
+				componente.getUbicacion());
+	}
+
+	private TareaStockUsoDetalle toStockUsoDetalle(TareaStockUso uso) {
+		StockComponente componente = uso.getStockComponente();
+		return new TareaStockUsoDetalle(
+				uso.getId(),
+				componente.getId(),
+				componente.getTipo().name(),
+				componente.getDescripcion(),
+				componente.getMarca(),
+				componente.getModelo(),
+				componente.getSerial(),
+				componente.getCapacidad(),
+				uso.getRegistradoPor(),
+				uso.getObservacion(),
+				uso.getCreadoEn());
+	}
+
 	private String textoOpcional(String valor) {
 		return StringUtils.hasText(valor) ? valor.trim() : null;
 	}
@@ -263,6 +347,12 @@ public class TareaTecnicaService {
 			String comentario) {
 	}
 
+	public record RegistrarUsoStockCommand(
+			Long stockComponenteId,
+			String registradoPor,
+			String observacion) {
+	}
+
 	public record TareaTecnicaDetalle(
 			Long id,
 			Long equipoId,
@@ -286,6 +376,32 @@ public class TareaTecnicaService {
 			Long tareaId,
 			String autor,
 			String comentario,
+			LocalDateTime creadoEn) {
+	}
+
+	public record StockDisponibleDetalle(
+			Long id,
+			String tipo,
+			String estado,
+			String descripcion,
+			String marca,
+			String modelo,
+			String serial,
+			String capacidad,
+			String ubicacion) {
+	}
+
+	public record TareaStockUsoDetalle(
+			Long id,
+			Long stockComponenteId,
+			String tipo,
+			String descripcion,
+			String marca,
+			String modelo,
+			String serial,
+			String capacidad,
+			String registradoPor,
+			String observacion,
 			LocalDateTime creadoEn) {
 	}
 
@@ -319,6 +435,18 @@ public class TareaTecnicaService {
 	public static class EquipoNoEncontradoException extends RuntimeException {
 		public EquipoNoEncontradoException(Long id) {
 			super("Equipo no encontrado: " + id);
+		}
+	}
+
+	public static class StockComponenteNoEncontradoException extends RuntimeException {
+		public StockComponenteNoEncontradoException(Long id) {
+			super("Componente de stock no encontrado: " + id);
+		}
+	}
+
+	public static class StockComponenteNoDisponibleParaTareaException extends RuntimeException {
+		public StockComponenteNoDisponibleParaTareaException(Long id) {
+			super("Componente de stock no disponible para tarea: " + id);
 		}
 	}
 }

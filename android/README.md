@@ -130,7 +130,7 @@ No habia un dispositivo fisico conectado al desarrollar este piloto: el sonido y
 recepcion con pantalla bloqueada quedan pendientes de esa prueba de campo.
 
 Ultima verificacion del 10/09/2026: `assembleLanRelease` completo sin errores y la firma
-fue verificada con `apksigner`. El APK publicado corresponde a la version `0.1.8-lan`.
+fue verificada con `apksigner`. El APK publicado corresponde a la version `0.1.10-lan`.
 No equivale a una auditoria de seguridad aprobada; revisar antes de la distribucion
 general.
 

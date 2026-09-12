@@ -12,8 +12,8 @@
 			<header th:replace="~{admin/nav :: topbar('Módulo funcional', 'Stock de Componentes', 'stock')}"></header>
 
 			<!-- Barra Superior de Acciones de Stock -->
-			<div class="page-top-actions" style="display: flex; justify-content: flex-end; align-items: center; margin: 4px 0 10px;">
-				<span class="count-badge" th:text="${totalStock} + ' componentes en depósito'">0 componentes</span>
+			<div class="page-top-actions stock-page-actions">
+				<span class="count-badge" th:text="${totalStock} + ' componentes en stock'">0 componentes</span>
 			</div>
 
 			<!-- Banner Contextual de Siguientes Pasos tras Guardar Componente -->
@@ -22,7 +22,7 @@
 				<div class="workflow-banner-content">
 					<strong>¡Componente de stock registrado correctamente!</strong>
 					<p>
-						La pieza ya está registrada en el depósito informático y disponible para ser reservada en una orden de trabajo.
+						La pieza ya está registrada en stock y disponible para ser reservada en una orden de trabajo.
 					</p>
 					<div class="workflow-next-actions">
 						<span>👉 <strong>Siguiente paso natural recomendado:</strong></span>
@@ -38,75 +38,33 @@
 					</div>
 				</div>
 			</div>
-
-			<!-- Stepper Visual del Circuito de Stock y Depósito (4 Pasos) -->
-			<section class="workflow-stepper" aria-label="Circuito de Gestión de Stock">
-				<!-- Paso 1: Ingreso a Depósito -->
-				<div class="workflow-step" th:classappend="${totalStock > 0} ? ' is-done' : ' is-current'">
-					<div class="step-header">
-						<span class="step-badge">1</span>
-						<span class="authorization-badge" th:classappend="${totalStock > 0} ? ' is-authorized' : ' is-pending'"
-							  th:text="${totalStock > 0} ? 'ALTA REGISTRADA ✅' : 'PENDIENTE ⚠️'">
-							PENDIENTE
-						</span>
-					</div>
-					<h3 class="step-title">1. Ingreso y Recepción</h3>
-					<p class="step-desc">
-						Alta en inventario con número de serie único, marca, modelo, remito de entrega o proveedor.
-					</p>
-					<div class="step-action-area">
-						<button type="button" class="primary-action" th:if="${puedeEditarStock}" onclick="switchTab('nuevo')" style="width: 100%; font-size: 0.85rem; padding: 7px 10px;">
-							➕ Ingresar Pieza
-						</button>
-					</div>
+			<div class="workflow-banner" th:if="${loteActualizado != null}">
+				<div class="workflow-banner-icon">📄</div>
+				<div class="workflow-banner-content">
+					<strong th:text="${loteActualizado} + ' componentes actualizados en lote.'">Componentes actualizados en lote.</strong>
+					<p>Los datos administrativos seleccionados quedaron aplicados al stock marcado.</p>
 				</div>
-
-				<!-- Paso 2: Disponibilidad en Depósito -->
-				<div class="workflow-step" th:classappend="${disponiblesCount > 0} ? ' is-done' : ''">
-					<div class="step-header">
-						<span class="step-badge">2</span>
-						<span class="count-badge" th:text="${disponiblesCount} + ' en estante'">0 en estante</span>
-					</div>
-					<h3 class="step-title">2. Stock en Taller</h3>
-					<p class="step-desc">
-						Piezas físicas disponibles en depósito listas para mantenimiento preventivo o correctivo.
-					</p>
-					<div class="step-action-area">
-						<button type="button" class="secondary-action" onclick="switchTab('disponibles')" style="width: 100%; font-size: 0.85rem; padding: 7px 10px;">
-							📋 Ver Disponibles
-						</button>
-					</div>
-				</div>
-
-
-
-				<!-- Paso 3: Asignación y Gemelo Digital -->
-				<div class="workflow-step" th:classappend="${asignadosCount > 0} ? ' is-done' : ''">
-					<div class="step-header">
-						<span class="step-badge">3</span>
-						<span class="authorization-badge is-authorized" th:text="${asignadosCount} + ' INSTALADOS'">EN EQUIPOS 🖥️</span>
-					</div>
-					<h3 class="step-title">4. Asignación y Gemelo</h3>
-					<p class="step-desc">
-						Pieza instalada físicamente en la PC y confirmada por el reporte del Gemelo Digital en vivo.
-					</p>
-					<div class="step-action-area">
-						<a class="secondary-action" th:if="${puedeVerEquipos}" th:href="@{/admin/equipos}" style="width: 100%; text-align: center; font-size: 0.85rem; padding: 7px 10px;">
-							🖥️ Ver Catálogo de Equipos
-						</a>
-					</div>
-				</div>
-			</section>
+			</div>
+			<div class="message error" th:if="${errorLote != null}" style="margin-bottom: 16px;">
+				<span th:if="${errorLote == 'seleccion'}">Seleccione al menos un componente.</span>
+				<span th:if="${errorLote == 'datos'}">Ingrese remito, orden de compra o proveedor antes de aplicar.</span>
+				<span th:if="${errorLote == 'componentes'}">La selección contiene componentes inexistentes.</span>
+			</div>
 
 			<!-- Resumen Estadístico de Stock (Tarjetas Métricas Interactivas con navegación a pestañas y módulos vinculados) -->
-			<section class="summary-grid" aria-label="Resumen de componentes en stock">
+			<section class="summary-grid stock-metrics" aria-label="Resumen de componentes en stock">
+				<div class="metric-card border-cyan" th:if="${pendientesCount > 0}" onclick="switchTab('pendientes')" role="button" tabindex="0" title="Completar códigos pendientes">
+					<span class="metric-card-title">PENDIENTES</span>
+					<strong class="metric-card-value" style="color: #22d3ee;" th:text="${pendientesCount}">0</strong>
+					<span class="metric-card-action" style="color: #22d3ee;">Completar ➜</span>
+				</div>
 				<!-- Tarjeta Azul: Total Componentes - Inventario global de piezas físicas registradas -->
 				<div class="metric-card border-blue" onclick="switchTab('disponibles')" role="button" tabindex="0" title="Ver catálogo completo de componentes">
-					<span class="metric-card-title">TOTAL</span>
+					<span class="metric-card-title">STOCK</span>
 					<strong class="metric-card-value" style="color: var(--text-link);" th:text="${totalStock}">0</strong>
 					<span class="metric-card-action" style="color: #60a5fa;">Ver stock ➜</span>
 				</div>
-				<!-- Tarjeta Verde: Stock Disponible - Piezas físicas en depósito listas para armados o reparaciones -->
+				<!-- Tarjeta Verde: Stock Disponible - Piezas físicas listas para armados o reparaciones -->
 				<div class="metric-card border-green" onclick="switchTab('disponibles')" role="button" tabindex="0" title="Ver componentes disponibles en taller">
 					<span class="metric-card-title">DISPONIBLES</span>
 					<strong class="metric-card-value" style="color: #4ade80;" th:text="${disponiblesCount}">0</strong>
@@ -119,7 +77,7 @@
 					<span class="metric-card-action" style="color: #facc15;">En armado</span>
 				</div>
 
-				<!-- Tarjeta Naranja: Instalados en PC - Piezas que salieron de depósito y se auditan activas en computadoras -->
+				<!-- Tarjeta Naranja: Instalados en PC - Piezas que salieron de stock y se auditan activas en computadoras -->
 				<a class="metric-card border-orange" th:if="${puedeVerEquipos}" th:href="@{/admin/equipos}" title="Ver catálogo de equipos con hardware instalado">
 					<span class="metric-card-title">INSTALADOS</span>
 					<strong class="metric-card-value" style="color: #fb923c;" th:text="${asignadosCount}">0</strong>
@@ -132,21 +90,161 @@
 				</div>
 			</section>
 
+			<div class="workflow-banner" th:if="${pendientesCount > 0}">
+				<div class="workflow-banner-icon">🧾</div>
+				<div class="workflow-banner-content">
+					<strong th:text="${pendientesCount} + ' componentes pendientes de completar.'">Componentes pendientes de completar.</strong>
+					<p>Seleccione los códigos escaneados desde celular y aplique tipo, descripción, marca, modelo, capacidad, remito, orden de compra o proveedor en lote.</p>
+				</div>
+			</div>
+
 			<!-- Pestañas de Navegación Limpia (Subnav Tabs) -->
 			<nav class="subnav-tabs" role="tablist" aria-label="Secciones de Stock">
-				<button type="button" id="tab-btn-disponibles" class="subnav-tab is-active" role="tab" aria-selected="true" aria-controls="pane-disponibles" onclick="switchTab('disponibles')">
+				<button type="button" id="tab-btn-pendientes" class="subnav-tab" th:if="${pendientesCount > 0}"
+						th:classappend="${pendientesCount > 0} ? ' is-active' : ''" role="tab"
+						th:attr="aria-selected=${pendientesCount > 0}" aria-controls="pane-pendientes" onclick="switchTab('pendientes')">
+					🧾 Pendientes de completar (<span th:text="${pendientesCount}">0</span>)
+				</button>
+				<button type="button" id="tab-btn-disponibles" class="subnav-tab" th:classappend="${pendientesCount == 0} ? ' is-active' : ''"
+						role="tab" th:attr="aria-selected=${pendientesCount == 0}" aria-controls="pane-disponibles" onclick="switchTab('disponibles')">
 					📦 Componentes en Stock (<span th:text="${totalStock}">0</span>)
 				</button>
 				<button type="button" id="tab-btn-nuevo" class="subnav-tab" th:if="${puedeEditarStock}" role="tab" aria-selected="false" aria-controls="pane-nuevo" onclick="switchTab('nuevo')">
 					➕ Ingresar Nueva Pieza
 				</button>
-				<button type="button" id="tab-btn-edicion" class="subnav-tab" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}" role="tab" aria-selected="false" aria-controls="pane-edicion" onclick="switchTab('edicion')">
-					✏️ Modificar Piezas Cargadas
-				</button>
 			</nav>
 
+			<div id="pane-pendientes" class="tab-pane stock-workspace" th:if="${pendientesCount > 0}" th:classappend="${pendientesCount > 0} ? ' is-active' : ''"
+					role="tabpanel" aria-labelledby="tab-btn-pendientes">
+				<section class="modules-section" aria-labelledby="stock-pending-title">
+					<div class="section-header">
+						<div>
+							<h2 id="stock-pending-title">Pendientes de completar</h2>
+							<p class="section-note">Códigos escaneados desde celular que esperan tipo, descripción, marca, modelo, capacidad, remito, orden de compra o proveedor.</p>
+						</div>
+						<span class="count-badge" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
+					</div>
+
+					<form id="stock-pending-bulk-form" class="equipment-form stock-bulk-panel stock-bulk-panel-pending" th:if="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}"
+							th:action="@{/admin/stock/componentes/lote}" method="post">
+						<div class="stock-bulk-heading">
+							<div>
+								<strong>Completar lote escaneado</strong>
+								<span>Seleccione códigos y cargue los datos comunes una sola vez.</span>
+							</div>
+							<span class="stock-bulk-chip">Pasa a Stock al guardar</span>
+						</div>
+						<div class="form-grid">
+							<label>
+								<span>Tipo de Componente</span>
+								<select name="tipo">
+									<option value="">No cambiar</option>
+									<option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+								</select>
+							</label>
+							<label>
+								<span>Estado</span>
+								<select name="estado">
+									<option value="">No cambiar</option>
+									<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}">DISPONIBLE</option>
+								</select>
+							</label>
+							<label style="grid-column: 1 / -1;">
+								<span>Descripción Técnica</span>
+								<input name="descripcion" placeholder="Ej: Cartucho de tinta Epson 664 negro / Monitor LED 22 pulgadas" maxlength="255">
+							</label>
+							<label>
+								<span>Marca</span>
+								<input name="marca" placeholder="Ej: Epson, HP, Samsung..." maxlength="120">
+							</label>
+							<label>
+								<span>Modelo</span>
+								<input name="modelo" placeholder="Ej: 664 BK, E1920H..." maxlength="180">
+							</label>
+							<label>
+								<span>Capacidad / Medida</span>
+								<input name="capacidad" placeholder="Ej: Negro, 22 pulgadas, 8GB..." maxlength="120">
+							</label>
+							<label>
+								<span>N° de Remito</span>
+								<input name="remito" placeholder="Ej: R-0001-00084321" maxlength="80">
+							</label>
+							<label>
+								<span>Orden de Compra</span>
+								<input name="ordenCompra" placeholder="Ej: OC-2025-089" maxlength="80">
+							</label>
+							<label>
+								<span>Proveedor</span>
+								<input name="proveedor" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
+							</label>
+							<label style="grid-column: 1 / -1;">
+								<span>Observaciones</span>
+								<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
+							</label>
+						</div>
+						<div class="form-actions stock-action-strip">
+							<button class="primary-action" type="submit">Completar seleccionados</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+						</div>
+					</form>
+
+					<div class="responsive-table stock-table-wrap" th:if="${!#lists.isEmpty(componentesPendientes)}">
+						<table>
+							<thead>
+								<tr>
+									<th scope="col" th:if="${puedeEditarStock}">Sel.</th>
+									<th scope="col">Código escaneado</th>
+									<th scope="col">Tipo</th>
+									<th scope="col">Descripción Técnica</th>
+									<th scope="col">Ingresado por</th>
+									<th scope="col">Remito / O. Compra</th>
+									<th scope="col">Estado</th>
+									<th scope="col">Acciones</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="componente : ${componentesPendientes}">
+									<td data-label="Seleccionar" th:if="${puedeEditarStock}">
+										<input data-stock-pending-check form="stock-pending-bulk-form" type="checkbox" name="componentesIds" th:value="${componente.id}"
+												th:aria-label="|Seleccionar pendiente ${componente.id}|">
+									</td>
+									<td data-label="Código escaneado">
+										<code th:text="${componente.serial ?: 'Sin código'}" style="font-size: 0.85rem; color: var(--text-link);">TINTA-001</code>
+									</td>
+									<td data-label="Tipo">
+										<span class="stock-type-chip is-pending-data" th:text="${componente.tipo}">PENDIENTE</span>
+									</td>
+									<td data-label="Descripción">
+										<strong th:text="${componente.descripcion}">Pendiente de completar</strong>
+										<span class="table-subtext" th:if="${componente.observaciones}" th:text="${componente.observaciones}">Observaciones</span>
+									</td>
+									<td data-label="Ingresado por" th:text="${componente.ingresadoPor ?: '-'}">usuario3</td>
+									<td data-label="Remito / O. Compra">
+										<div th:if="${componente.remito != null or componente.ordenCompra != null}">
+											<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">📄 Rem: <span th:text="${componente.remito}">R-001</span></span>
+											<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">🛒 OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
+											<span th:if="${componente.proveedor}" style="display: block; font-size: 0.75rem; color: var(--text-muted);" th:text="${componente.proveedor}">Banghó</span>
+										</div>
+										<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+									</td>
+									<td data-label="Estado">
+										<span class="authorization-badge stock-status-badge is-pending" th:text="${componente.estado}">DISPONIBLE</span>
+									</td>
+									<td data-label="Acciones">
+										<form th:if="${puedeEditarStock}" th:action="@{/admin/stock/{id}/eliminar(id=${componente.id})}" method="post" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta pieza pendiente?');">
+											<button type="submit" class="secondary-action button-danger-subtle compact-row-action">🗑️ Eliminar</button>
+										</form>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</section>
+			</div>
+
 			<!-- Panel 1: Lista de Componentes Disponibles -->
-			<div id="pane-disponibles" class="tab-pane is-active" role="tabpanel" aria-labelledby="tab-btn-disponibles">
+			<div id="pane-disponibles" class="tab-pane stock-workspace" th:classappend="${pendientesCount == 0} ? ' is-active' : ''" role="tabpanel" aria-labelledby="tab-btn-disponibles">
 				<section class="modules-section" aria-labelledby="stock-list-title">
 					<div class="section-header">
 						<div>
@@ -160,72 +258,218 @@
 						Todavía no hay componentes cargados en stock. Utiliza la pestaña <strong>"➕ Ingresar Nueva Pieza"</strong> para dar de alta discos, memorias o periféricos.
 					</p>
 
-					<div class="responsive-table" th:if="${!#lists.isEmpty(componentesStock)}">
+					<form id="stock-bulk-form" class="equipment-form stock-bulk-panel" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}"
+							th:action="@{/admin/stock/componentes/lote}" method="post">
+						<div class="stock-bulk-heading">
+							<div>
+								<strong>Aplicar datos al lote</strong>
+								<span>Use selección múltiple para remito, OC, proveedor o datos técnicos compartidos.</span>
+							</div>
+							<span class="stock-bulk-chip">No pisa campos vacíos</span>
+						</div>
+						<div class="form-grid">
+							<label>
+								<span>Tipo de Componente</span>
+								<select name="tipo">
+									<option value="">No cambiar</option>
+									<option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+								</select>
+							</label>
+							<label>
+								<span>Estado</span>
+								<select name="estado">
+									<option value="">No cambiar</option>
+									<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}">DISPONIBLE</option>
+								</select>
+							</label>
+							<label style="grid-column: 1 / -1;">
+								<span>Descripción Técnica</span>
+								<input name="descripcion" placeholder="Ej: Cartucho de tinta Epson 664 negro / Monitor LED 22 pulgadas" maxlength="255">
+							</label>
+							<label>
+								<span>Marca</span>
+								<input name="marca" placeholder="Ej: Epson, HP, Samsung..." maxlength="120">
+							</label>
+							<label>
+								<span>Modelo</span>
+								<input name="modelo" placeholder="Ej: 664 BK, E1920H..." maxlength="180">
+							</label>
+							<label>
+								<span>Capacidad / Medida</span>
+								<input name="capacidad" placeholder="Ej: Negro, 22 pulgadas, 8GB..." maxlength="120">
+							</label>
+							<label>
+								<span>N° de Remito</span>
+								<input name="remito" placeholder="Ej: R-0001-00084321" maxlength="80">
+							</label>
+							<label>
+								<span>Orden de Compra</span>
+								<input name="ordenCompra" placeholder="Ej: OC-2025-089" maxlength="80">
+							</label>
+							<label>
+								<span>Proveedor</span>
+								<input name="proveedor" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
+							</label>
+							<label style="grid-column: 1 / -1;">
+								<span>Observaciones</span>
+								<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
+							</label>
+						</div>
+						<div class="form-actions stock-action-strip">
+							<button class="primary-action" type="submit">Aplicar a seleccionados</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+						</div>
+					</form>
+
+					<div class="responsive-table stock-table-wrap" th:if="${!#lists.isEmpty(componentesStock)}">
 						<table>
 							<thead>
 								<tr>
+									<th scope="col" th:if="${puedeEditarStock}">Sel.</th>
 									<th scope="col">Tipo</th>
 									<th scope="col">Descripción Técnica</th>
 									<th scope="col">Marca / Modelo / Capacidad</th>
 									<th scope="col">N° Serial</th>
 									<th scope="col">Remito / O. Compra</th>
-									<th scope="col">Ubicación Física</th>
+									<th scope="col">Ingresado por</th>
 									<th scope="col">Vinculado a</th>
 									<th scope="col">Estado</th>
 									<th scope="col">Acciones</th>
 								</tr>
 							</thead>
 							<tbody>
-								<tr th:each="componente : ${componentesStock}">
-									<td data-label="Tipo">
-										<span class="step-badge" style="width: auto; height: auto; padding: 3px 8px; border-radius: 4px; white-space: nowrap;" th:text="${componente.tipo}">RAM</span>
-									</td>
-									<td data-label="Descripción">
-										<strong th:text="${componente.descripcion}">Memoria RAM</strong>
-										<span class="table-subtext" th:if="${componente.observaciones}" th:text="${componente.observaciones}">Observaciones</span>
-									</td>
-									<td data-label="Marca / Modelo">
-										<span th:text="${componente.marca ?: 'Genérico'}">Kingston</span>
-										<span class="table-subtext" th:text="${(componente.modelo ?: '') + ' ' + (componente.capacidad ?: '')}">DDR4 8GB</span>
-									</td>
-									<td data-label="N° Serial">
-										<code th:text="${componente.serial ?: 'Sin serial'}" style="font-size: 0.85rem; color: var(--text-link);">SN-001</code>
-									</td>
-									<td data-label="Remito / O. Compra">
-										<div th:if="${componente.remito != null or componente.ordenCompra != null}">
-											<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">📄 Rem: <span th:text="${componente.remito}">R-001</span></span>
-											<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">🛒 OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
-											<span th:if="${componente.proveedor}" style="display: block; font-size: 0.75rem; color: var(--text-muted);" th:text="${componente.proveedor}">Banghó</span>
-										</div>
-										<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
-									</td>
-									<td data-label="Ubicación" th:text="${componente.ubicacion ?: 'Depósito'}">Depósito</td>
-									<td data-label="Vinculado a">
-										<div th:if="${componente.equipoId != null}">
-											<a th:if="${puedeVerEquipos}" th:href="@{/admin/equipos/{id}(id=${componente.equipoId})}" style="color: var(--text-link); font-weight: 700;" th:text="${componente.equipoNombre}">PC-INF-001</a>
-											<strong th:unless="${puedeVerEquipos}" th:text="${componente.equipoNombre}">PC-INF-001</strong>
-											<span class="table-subtext" th:if="${componente.ultimoUsuarioEquipo}" th:text="|Usuario: ${componente.ultimoUsuarioEquipo}|">Usuario</span>
-										</div>
-										<span th:if="${componente.equipoId == null and componente.estado.name() == 'ASIGNADO'}" class="authorization-badge is-rejected">Sin vínculo activo</span>
-										<span th:if="${componente.equipoId == null and componente.estado.name() != 'ASIGNADO'}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
-									</td>
-									<td data-label="Estado">
-										<span class="authorization-badge" th:classappend="${componente.estado.name() == 'DISPONIBLE'} ? ' is-authorized' : ' is-pending'"
-												th:text="${componente.estado}">DISPONIBLE</span>
-									</td>
-									<td data-label="Acciones">
-										<div style="display: flex; gap: 6px; flex-wrap: wrap;">
-
-											<form th:if="${puedeEditarStock}" th:action="@{/admin/stock/{id}/eliminar(id=${componente.id})}" method="post" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta pieza del stock?');">
-												<button type="submit" class="secondary-action button-danger-subtle" style="font-size: 0.8rem; padding: 5px 9px;"
-														th:disabled="${componente.estado.name() == 'ASIGNADO'}"
-														th:title="${componente.estado.name() == 'ASIGNADO' ? 'No se puede eliminar porque está asignado e instalado en un equipo. Desvincúlalo desde la ficha del equipo primero.' : 'Eliminar pieza del stock'}">
-													🗑️ Eliminar
+								<th:block th:each="componente : ${componentesStock}">
+									<tr>
+										<td data-label="Seleccionar" th:if="${puedeEditarStock}">
+											<input data-stock-check form="stock-bulk-form" type="checkbox" name="componentesIds" th:value="${componente.id}"
+													th:data-pendiente="${!componente.datosCompletos}" th:aria-label="|Seleccionar componente ${componente.id}|">
+										</td>
+										<td data-label="Tipo">
+											<span class="stock-type-chip" th:classappend="${!componente.datosCompletos} ? ' is-pending-data'" th:text="${componente.tipo}">RAM</span>
+											<span class="table-subtext" th:if="${!componente.datosCompletos}">Pendiente</span>
+										</td>
+										<td data-label="Descripción">
+											<strong th:text="${componente.descripcion}">Memoria RAM</strong>
+											<span class="table-subtext" th:if="${componente.observaciones}" th:text="${componente.observaciones}">Observaciones</span>
+										</td>
+										<td data-label="Marca / Modelo">
+											<span th:text="${componente.marca ?: 'Genérico'}">Kingston</span>
+											<span class="table-subtext" th:text="${(componente.modelo ?: '') + ' ' + (componente.capacidad ?: '')}">DDR4 8GB</span>
+										</td>
+										<td data-label="N° Serial">
+											<code th:text="${componente.serial ?: 'Sin serial'}" style="font-size: 0.85rem; color: var(--text-link);">SN-001</code>
+										</td>
+										<td data-label="Remito / O. Compra">
+											<div th:if="${componente.remito != null or componente.ordenCompra != null}">
+												<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">📄 Rem: <span th:text="${componente.remito}">R-001</span></span>
+												<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">🛒 OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
+												<span th:if="${componente.proveedor}" style="display: block; font-size: 0.75rem; color: var(--text-muted);" th:text="${componente.proveedor}">Banghó</span>
+											</div>
+											<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+										</td>
+										<td data-label="Ingresado por" th:text="${componente.ingresadoPor ?: '-'}">usuario3</td>
+										<td data-label="Vinculado a">
+											<div th:if="${componente.equipoId != null}">
+												<a th:if="${puedeVerEquipos}" th:href="@{/admin/equipos/{id}(id=${componente.equipoId})}" style="color: var(--text-link); font-weight: 700;" th:text="${componente.equipoNombre}">PC-INF-001</a>
+												<strong th:unless="${puedeVerEquipos}" th:text="${componente.equipoNombre}">PC-INF-001</strong>
+												<span class="table-subtext" th:if="${componente.ultimoUsuarioEquipo}" th:text="|Usuario: ${componente.ultimoUsuarioEquipo}|">Usuario</span>
+											</div>
+											<span th:if="${componente.equipoId == null and componente.estado.name() == 'ASIGNADO'}" class="authorization-badge is-rejected">Sin vínculo activo</span>
+											<span th:if="${componente.equipoId == null and componente.estado.name() != 'ASIGNADO'}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+										</td>
+										<td data-label="Estado">
+											<span class="authorization-badge stock-status-badge" th:classappend="${componente.estado.name() == 'DISPONIBLE' ? ' is-authorized' : (componente.estado.name() == 'ASIGNADO' ? ' is-assigned' : ' is-reserved')}"
+													th:text="${componente.estado}">DISPONIBLE</span>
+										</td>
+										<td data-label="Acciones">
+											<div style="display: flex; gap: 6px; flex-wrap: wrap;">
+												<button type="button" th:if="${puedeEditarStock}" class="secondary-action compact-row-action"
+														th:attr="onclick=|toggleStockEdit(${componente.id})|">
+													✏️ Editar
 												</button>
+												<form th:if="${puedeEditarStock}" th:action="@{/admin/stock/{id}/eliminar(id=${componente.id})}" method="post" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta pieza del stock?');">
+													<button type="submit" class="secondary-action button-danger-subtle compact-row-action"
+															th:disabled="${componente.estado.name() == 'ASIGNADO'}"
+															th:title="${componente.estado.name() == 'ASIGNADO' ? 'No se puede eliminar porque está asignado e instalado en un equipo. Desvincúlalo desde la ficha del equipo primero.' : 'Eliminar pieza del stock'}">
+														🗑️ Eliminar
+													</button>
+												</form>
+											</div>
+										</td>
+									</tr>
+									<tr th:if="${puedeEditarStock}" class="stock-edit-row" th:id="|stock-edit-${componente.id}|" hidden>
+										<td th:colspan="${puedeEditarStock ? 10 : 9}">
+											<form class="equipment-form inline-edit-card" th:action="@{/admin/stock/componentes/{id}(id=${componente.id})}" method="post">
+												<div class="section-header">
+													<h2 th:text="${componente.descripcion}">Memoria RAM</h2>
+													<span class="count-badge" th:text="'ID ' + ${componente.id}">ID 1</span>
+												</div>
+												<div class="form-grid">
+													<label>
+														<span>Tipo</span>
+														<select name="tipo">
+															<option th:each="tipo : ${tiposComponente}" th:value="${tipo}" th:text="${tipo}"
+																	th:selected="${tipo == componente.tipo}">RAM</option>
+														</select>
+													</label>
+													<label>
+														<span>Estado</span>
+														<select name="estado">
+															<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}"
+																	th:selected="${estado == componente.estado}">DISPONIBLE</option>
+														</select>
+													</label>
+													<label style="grid-column: 1 / -1;">
+														<span>Descripción</span>
+														<input name="descripcion" th:value="${componente.descripcion}" maxlength="255" required>
+													</label>
+													<label>
+														<span>Marca</span>
+														<input name="marca" th:value="${componente.marca}" maxlength="120">
+													</label>
+													<label>
+														<span>Modelo</span>
+														<input name="modelo" th:value="${componente.modelo}" maxlength="180">
+													</label>
+													<label>
+														<span>N° Serial</span>
+														<input name="serial" th:value="${componente.serial}" maxlength="180">
+													</label>
+													<label>
+														<span>Capacidad</span>
+														<input name="capacidad" th:value="${componente.capacidad}" maxlength="120">
+													</label>
+													<label>
+														<span>N° de Remito</span>
+														<input name="remito" th:value="${componente.remito}" placeholder="Ej: R-0001-00084321" maxlength="80">
+													</label>
+													<label>
+														<span>Orden de Compra</span>
+														<input name="ordenCompra" th:value="${componente.ordenCompra}" placeholder="Ej: OC-2025-089" maxlength="80">
+													</label>
+													<label>
+														<span>Proveedor</span>
+														<input name="proveedor" th:value="${componente.proveedor}" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
+													</label>
+												</div>
+												<label>
+													<span>Observaciones</span>
+													<textarea name="observaciones" maxlength="500" rows="2" th:text="${componente.observaciones}"></textarea>
+												</label>
+												<label class="checkbox-row">
+													<input name="_activo" type="hidden" value="on">
+													<input name="activo" type="checkbox" value="true" th:checked="${componente.activo}">
+													<span>Pieza activa</span>
+												</label>
+												<div class="form-actions">
+													<button class="secondary-action" type="submit">💾 Guardar Cambios</button>
+													<button class="secondary-action" type="button" th:attr="onclick=|toggleStockEdit(${componente.id}, false)|">Cancelar</button>
+												</div>
 											</form>
-										</div>
-									</td>
-								</tr>
+										</td>
+									</tr>
+								</th:block>
 							</tbody>
 						</table>
 					</div>
@@ -238,9 +482,8 @@
 					<div class="section-header">
 						<div>
 							<h2 id="stock-form-title">Alta de Componente en Stock</h2>
-							<p class="section-note">Registra una pieza física que ingresa al depósito o taller para que esté disponible en armado.</p>
+							<p class="section-note">Registra una pieza física que ingresa al stock del taller para que esté disponible en armado.</p>
 						</div>
-						<span class="count-badge">Depósito Central</span>
 					</div>
 
 					<form class="equipment-form" th:action="@{/admin/stock/componentes}" th:object="${stockForm}" method="post">
@@ -248,7 +491,7 @@
 							<label>
 								<span>Tipo de Componente *</span>
 								<select th:field="*{tipo}">
-									<option th:each="tipo : ${tiposComponente}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+									<option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
 								</select>
 							</label>
 							<label>
@@ -290,14 +533,6 @@
 								<span>Proveedor</span>
 								<input th:field="*{proveedor}" placeholder="Ej: PC Arts / Compumundo / Banghó..." maxlength="150">
 							</label>
-							<label>
-								<span>Ubicación Física en Depósito</span>
-								<select th:field="*{ubicacion}">
-									<option value="">Depósito Central</option>
-									<option th:each="ubicacion : ${ubicacionesActivas}" th:value="${ubicacion.nombre}"
-											th:text="${ubicacion.nombre + ' (' + ubicacion.codigo + ')'}">Estante Taller</option>
-								</select>
-							</label>
 						</div>
 						<label>
 							<span>Observaciones Técnicas</span>
@@ -309,101 +544,10 @@
 							<span>Pieza activa en el sistema</span>
 						</label>
 						<div class="form-actions">
-							<button class="primary-action" type="submit">💾 Guardar Pieza en Depósito</button>
+							<button class="primary-action" type="submit">💾 Guardar Pieza en Stock</button>
 							<button type="button" class="secondary-action" onclick="switchTab('disponibles')">Cancelar</button>
 						</div>
 					</form>
-				</section>
-			</div>
-
-			<!-- Panel 3: Modificar Stock Existente -->
-			<div id="pane-edicion" class="tab-pane" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}" role="tabpanel" aria-labelledby="tab-btn-edicion">
-				<section class="attributes-section" aria-labelledby="stock-edit-title">
-					<div class="section-header">
-						<div>
-							<h2 id="stock-edit-title">Modificar Componentes Cargados</h2>
-							<p class="section-note">Corrija datos de componentes sueltos antes de reservarlos o asignarlos a una máquina.</p>
-						</div>
-					</div>
-
-					<div class="edit-stack">
-						<form class="equipment-form inline-edit-card" th:each="componente : ${componentesStock}"
-								th:action="@{/admin/stock/componentes/{id}(id=${componente.id})}" method="post">
-							<div class="section-header">
-								<h2 th:text="${componente.descripcion}">Memoria RAM</h2>
-								<span class="count-badge" th:text="'ID ' + ${componente.id}">ID 1</span>
-							</div>
-							<div class="form-grid">
-								<label>
-									<span>Tipo</span>
-									<select name="tipo">
-										<option th:each="tipo : ${tiposComponente}" th:value="${tipo}" th:text="${tipo}"
-												th:selected="${tipo == componente.tipo}">RAM</option>
-									</select>
-								</label>
-								<label>
-									<span>Estado</span>
-									<select name="estado">
-										<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}"
-												th:selected="${estado == componente.estado}">DISPONIBLE</option>
-									</select>
-								</label>
-								<label style="grid-column: 1 / -1;">
-									<span>Descripción</span>
-									<input name="descripcion" th:value="${componente.descripcion}" maxlength="255" required>
-								</label>
-								<label>
-									<span>Marca</span>
-									<input name="marca" th:value="${componente.marca}" maxlength="120">
-								</label>
-								<label>
-									<span>Modelo</span>
-									<input name="modelo" th:value="${componente.modelo}" maxlength="180">
-								</label>
-								<label>
-									<span>N° Serial</span>
-									<input name="serial" th:value="${componente.serial}" maxlength="180">
-								</label>
-								<label>
-									<span>Capacidad</span>
-									<input name="capacidad" th:value="${componente.capacidad}" maxlength="120">
-								</label>
-								<label>
-									<span>N° de Remito</span>
-									<input name="remito" th:value="${componente.remito}" placeholder="Ej: R-0001-00084321" maxlength="80">
-								</label>
-								<label>
-									<span>Orden de Compra</span>
-									<input name="ordenCompra" th:value="${componente.ordenCompra}" placeholder="Ej: OC-2025-089" maxlength="80">
-								</label>
-								<label>
-									<span>Proveedor</span>
-									<input name="proveedor" th:value="${componente.proveedor}" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
-								</label>
-								<label>
-									<span>Ubicación</span>
-									<select name="ubicacion">
-										<option value="">Depósito Central</option>
-										<option th:each="ubicacion : ${ubicacionesActivas}" th:value="${ubicacion.nombre}"
-												th:text="${ubicacion.nombre + ' (' + ubicacion.codigo + ')'}"
-												th:selected="${ubicacion.nombre == componente.ubicacion}">Depósito</option>
-									</select>
-								</label>
-							</div>
-							<label>
-								<span>Observaciones</span>
-								<textarea name="observaciones" maxlength="500" rows="2" th:text="${componente.observaciones}"></textarea>
-							</label>
-							<label class="checkbox-row">
-								<input name="_activo" type="hidden" value="on">
-								<input name="activo" type="checkbox" value="true" th:checked="${componente.activo}">
-								<span>Pieza activa</span>
-							</label>
-							<div class="form-actions">
-								<button class="secondary-action" type="submit">💾 Guardar Cambios</button>
-							</div>
-						</form>
-					</div>
 				</section>
 			</div>
 
@@ -413,7 +557,10 @@
 	<!-- Script de Pestañas Interactivas Liviano y Accesible -->
 	<script>
 		function switchTab(tabId) {
-			const tabs = ['disponibles', 'nuevo', 'edicion'];
+			const tabs = ['pendientes', 'disponibles', 'nuevo'];
+			if (!document.getElementById('tab-btn-' + tabId) || !document.getElementById('pane-' + tabId)) {
+				tabId = 'disponibles';
+			}
 			tabs.forEach(function(id) {
 				const btn = document.getElementById('tab-btn-' + id);
 				const pane = document.getElementById('pane-' + id);
@@ -434,12 +581,25 @@
 			}
 		}
 
+		function toggleStockEdit(id, forceOpen) {
+			const row = document.getElementById('stock-edit-' + id);
+			if (!row) return;
+			const shouldOpen = forceOpen === undefined ? row.hidden : forceOpen;
+			document.querySelectorAll('.stock-edit-row').forEach(function(editRow) {
+				if (editRow !== row) editRow.hidden = true;
+			});
+			row.hidden = !shouldOpen;
+			if (shouldOpen) {
+				row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			}
+		}
+
 		window.addEventListener('DOMContentLoaded', function() {
 			const hash = window.location.hash;
 			if (hash === '#tab-nuevo') {
 				switchTab('nuevo');
-			} else if (hash === '#tab-edicion') {
-				switchTab('edicion');
+			} else if (hash === '#tab-pendientes') {
+				switchTab('pendientes');
 			} else if (hash === '#tab-disponibles') {
 				switchTab('disponibles');
 			}

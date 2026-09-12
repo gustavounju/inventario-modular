@@ -5,9 +5,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -29,8 +32,12 @@ import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.core.content.FileProvider;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,6 +49,17 @@ public class MainActivity extends Activity {
     private Switch alerts;
     private String base = "";
     private boolean updatingSwitch;
+    private long apkDownloadId = -1L;
+    private String apkDownloadName = "";
+    private boolean receiverRegistered;
+    private final BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())
+                    && intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) == apkDownloadId) {
+                openDownloadedApk();
+            }
+        }
+    };
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -82,8 +100,14 @@ public class MainActivity extends Activity {
         web.getSettings().setGeolocationEnabled(false);
         web.getSettings().setSafeBrowsingEnabled(false);
         web.getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        web.getSettings().setUserAgentString(web.getSettings().getUserAgentString() + " InventarioLAN/1");
+        web.getSettings().setUserAgentString(web.getSettings().getUserAgentString()
+                + " InventarioLAN/1 InventarioLANVersion/" + BuildConfig.VERSION_NAME);
         web.addJavascriptInterface(new VoiceBridge(), "TareasLan");
+        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+            if (LanClient.sameOrigin(base, url) && Uri.parse(url).getPath().equals("/api/v1/movil/apk")) {
+                downloadApkUpdate();
+            }
+        });
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -251,15 +275,48 @@ public class MainActivity extends Activity {
                 request.setDescription("Descargando actualizacion piloto");
                 request.setMimeType("application/vnd.android.package-archive");
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+                request.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, fileName);
                 request.addRequestHeader("Accept", "application/vnd.android.package-archive");
                 String cookies = CookieManager.getInstance().getCookie(base);
                 if (cookies != null) request.addRequestHeader("Cookie", cookies);
                 DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-                manager.enqueue(request);
-                runOnUiThread(() -> toast("Descarga iniciada. Abra la notificacion al finalizar para instalar."));
+                apkDownloadName = fileName;
+                apkDownloadId = manager.enqueue(request);
+                ensureDownloadReceiver();
+                runOnUiThread(() -> toast("Descarga iniciada. Al finalizar se abrira el instalador."));
             } catch (Exception e) {
                 runOnUiThread(() -> toast("Ingrese al sistema y verifique permisos antes de descargar la actualizacion."));
+            }
+        });
+    }
+
+    private void ensureDownloadReceiver() {
+        if (receiverRegistered) return;
+        IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(downloadReceiver, filter);
+        receiverRegistered = true;
+    }
+
+    private void openDownloadedApk() {
+        worker.execute(() -> {
+            try {
+                DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                try (Cursor cursor = manager.query(new DownloadManager.Query().setFilterById(apkDownloadId))) {
+                    if (cursor == null || !cursor.moveToFirst()
+                            || cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) != DownloadManager.STATUS_SUCCESSFUL) {
+                        runOnUiThread(() -> toast("No se pudo completar la descarga de la actualizacion."));
+                        return;
+                    }
+                }
+                File file = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), apkDownloadName);
+                Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".files", file);
+                Intent install = new Intent(Intent.ACTION_VIEW)
+                        .setDataAndType(uri, "application/vnd.android.package-archive")
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(install);
+            } catch (Exception e) {
+                runOnUiThread(() -> toast("Descarga lista. Abra la notificacion para instalar la actualizacion."));
             }
         });
     }
@@ -312,6 +369,11 @@ public class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        IntentResult scan = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (scan != null) {
+            dispatchBarcode(scan.getContents());
+            return;
+        }
         if (requestCode != REQUEST_DICTATION) return;
         if (resultCode != RESULT_OK || data == null) return;
         ArrayList<String> matches = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
@@ -322,12 +384,25 @@ public class MainActivity extends Activity {
                 null));
     }
 
+    private void dispatchBarcode(String code) {
+        if (code == null || code.isBlank()) return;
+        String script = "if(window.__inventarioStockApplyScan){window.__inventarioStockApplyScan("
+                + JSONObject.quote(code)
+                + ")}else{window.dispatchEvent(new CustomEvent('inventario-stock-scan',{detail:"
+                + JSONObject.quote(code)
+                + "}));}";
+        web.post(() -> web.evaluateJavascript(
+                script,
+                null));
+    }
+
     @Override public void onBackPressed() {
         if (web.canGoBack()) web.goBack(); else super.onBackPressed();
     }
 
     @Override protected void onDestroy() {
         worker.shutdownNow();
+        if (receiverRegistered) unregisterReceiver(downloadReceiver);
         web.destroy();
         super.onDestroy();
     }
@@ -366,6 +441,30 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface public String disponible() {
             return "true";
+        }
+
+        @JavascriptInterface public String versionInstalada() {
+            return BuildConfig.VERSION_NAME;
+        }
+
+        @JavascriptInterface public void actualizarApk() {
+            downloadApkUpdate();
+        }
+
+        @JavascriptInterface public void escanearCodigo() {
+            runOnUiThread(() -> {
+                try {
+                    new IntentIntegrator(MainActivity.this)
+                            .setCaptureActivity(PortraitCaptureActivity.class)
+                            .setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES)
+                            .setPrompt("Escanee el codigo del componente")
+                            .setBeepEnabled(true)
+                            .setOrientationLocked(true)
+                            .initiateScan();
+                } catch (Exception e) {
+                    toast("No se pudo abrir la camara. Ingrese el codigo manualmente.");
+                }
+            });
         }
     }
 }

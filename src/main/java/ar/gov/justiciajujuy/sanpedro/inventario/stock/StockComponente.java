@@ -52,6 +52,12 @@ public class StockComponente {
 	@Column(length = 120)
 	private String proveedor; // Razón social o nombre comercial del proveedor adjudicado
 
+	@Column(name = "ingresado_por", length = 120)
+	private String ingresadoPor;
+
+	@Column(name = "datos_completos", nullable = false)
+	private boolean datosCompletos = true;
+
 	@Column(length = 120)
 	private String ubicacion;
 
@@ -91,6 +97,15 @@ public class StockComponente {
 		this.ubicacion = ubicacion;
 		this.observaciones = observaciones;
 		this.activo = activo;
+		this.datosCompletos = calcularDatosCompletos();
+	}
+
+	public void registrarIngreso(String ingresadoPor) {
+		this.ingresadoPor = ingresadoPor;
+	}
+
+	public void marcarPendiente() {
+		this.datosCompletos = false;
 	}
 
 	public void reservar() {
@@ -149,6 +164,14 @@ public class StockComponente {
 		return proveedor;
 	}
 
+	public String getIngresadoPor() {
+		return ingresadoPor;
+	}
+
+	public boolean isDatosCompletos() {
+		return datosCompletos;
+	}
+
 	public String getUbicacion() {
 		return ubicacion;
 	}
@@ -159,5 +182,12 @@ public class StockComponente {
 
 	public boolean isActivo() {
 		return activo;
+	}
+
+	private boolean calcularDatosCompletos() {
+		return tipo != TipoComponente.PENDIENTE
+				&& descripcion != null
+				&& !descripcion.isBlank()
+				&& !descripcion.toLowerCase(java.util.Locale.ROOT).contains("pendiente");
 	}
 }

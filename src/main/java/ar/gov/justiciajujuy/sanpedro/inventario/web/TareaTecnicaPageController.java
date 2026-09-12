@@ -18,7 +18,9 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.AgregarComentarioTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.CambiarEstadoTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.GuardarTareaTecnicaCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.RegistrarUsoStockCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaComentarioDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaStockUsoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -157,7 +159,7 @@ public class TareaTecnicaPageController {
 			RedirectAttributes redirectAttributes) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		exigirTareaPropiaOAdministrador(userDetails, id);
-		tareaTecnicaService.cambiarEstado(id, new CambiarEstadoTareaCommand(estado, observacionesCierre));
+		tareaTecnicaService.cambiarEstado(id, new CambiarEstadoTareaCommand(estado, observacionesCierre), userDetails.getUsername());
 		redirectAttributes.addAttribute("creado", "1");
 		return redireccionTareas(origen);
 	}
@@ -189,13 +191,33 @@ public class TareaTecnicaPageController {
 		return redireccionTareas(origen);
 	}
 
+	@PostMapping("/admin/tareas/{id}/stock")
+	public String registrarUsoStock(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam Long stockComponenteId,
+			@RequestParam(required = false) String observacion,
+			@RequestParam(required = false) String origen,
+			RedirectAttributes redirectAttributes) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirTareaPropiaOAdministrador(userDetails, id);
+		tareaTecnicaService.registrarUsoStock(id,
+				new RegistrarUsoStockCommand(stockComponenteId, userDetails.getUsername(), observacion));
+		redirectAttributes.addAttribute("creado", "1");
+		return redireccionTareas(origen);
+	}
+
 	private void prepararModelo(Model model, UserDetails userDetails, TareaForm tareaForm,
 			EstadoTareaTecnica estado, Long equipoId, String responsable) {
 		List<TareaTecnicaDetalle> tareas = tareaTecnicaService.buscar(estado, equipoId, responsable);
 		Map<Long, List<TareaComentarioDetalle>> comentariosPorTarea = tareas.stream()
 				.collect(Collectors.toMap(TareaTecnicaDetalle::id, tarea -> tareaTecnicaService.comentarios(tarea.id())));
+		Map<Long, List<TareaStockUsoDetalle>> stockPorTarea = tareas.stream()
+				.collect(Collectors.toMap(TareaTecnicaDetalle::id, tarea -> tareaTecnicaService.stockUsado(tarea.id())));
 		model.addAttribute("tareas", tareas);
 		model.addAttribute("comentariosPorTarea", comentariosPorTarea);
+		model.addAttribute("stockPorTarea", stockPorTarea);
+		model.addAttribute("stockDisponibleParaTareas", tareaTecnicaService.stockDisponibleParaTareas());
 		model.addAttribute("resumenTareas", tareaTecnicaService.resumenDelDia());
 		model.addAttribute("tareaForm", tareaForm);
 		model.addAttribute("equipos", equipoRepository.buscar(null, org.springframework.data.domain.Pageable.unpaged()).getContent().stream()
