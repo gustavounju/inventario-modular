@@ -27,6 +27,14 @@ El sistema administra:
 La idea funcional central es mantener un inventario fisico y un gemelo digital: lo que esta
 cargado administrativamente debe poder compararse con lo detectado o instalado realmente.
 
+La metodologia rectora queda definida como **ITAM/CMDB de taller**: `Equipo` es el activo,
+los componentes administrativos son la configuracion esperada, lo reportado por script es la
+configuracion detectada, `GemeloDigitalService` consolida la vista CMDB, las diferencias
+generan decision/trabajo, `StockComponente` representa capacidad de reparacion,
+`TareaTecnica` representa accion operativa y actas/auditoria/comentarios son evidencia.
+Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
+`docs/decisions/ADR-009-metodologia-itam-cmdb-de-taller.md`.
+
 ## 2. Reglas de negocio clave
 
 - La base principal es MySQL.
@@ -131,6 +139,19 @@ cargado administrativamente debe poder compararse con lo detectado o instalado r
 | `REPORTES` | Exportes, CSV y reportes | `ReporteService`, `ReporteController` |
 | `AUDITORIA` | Registro de eventos y movimientos | `AuditoriaService`, controladores de auditoria |
 | `APK LAN` | App Android para tecnicos | `android/app`, `MainActivity`, `PortraitCaptureActivity` |
+
+### Mapa ITAM/CMDB vigente
+
+| Capa | Implementacion actual |
+|---|---|
+| Activo | `Equipo`, `equipos`, `/admin/equipos` |
+| Configuracion esperada | `Componente` cargado por admin/stock/orden |
+| Configuracion detectada | Script Windows, `/api/v1/equipos/inventario` |
+| Gemelo digital | `GemeloDigitalService`, dashboard de diferencias |
+| Diferencia | Comparacion entre esperado y detectado |
+| Stock | `StockComponente`, `/admin/stock`, `/movil/stock` |
+| Trabajo tecnico | `TareaTecnica`, APK, visor publico |
+| Evidencia | `Acta`, `AuditoriaService`, comentarios, stock usado |
 
 ### Modulo funcional: Stock de Componentes
 
@@ -371,12 +392,16 @@ y verificar fecha, host, rama y backup.
 | 2026-09 | Escaneo rapido con pendientes | Cargar 20 monitores o 60 cartuchos sin tipear datos repetidos |
 | 2026-09 | Autenticacion local de base activa en perfil local | La APK debe aceptar tecnicos locales como `usuario3` durante pruebas LAN |
 | 2026-09 | Mesa Tecnica Oscura como UI vigente | El servidor web debe sentirse como centro de control de taller/informatica |
+| 2026-09 | Metodologia ITAM/CMDB de taller | Ordenar activos, configuracion, gemelos, stock, tareas y evidencia |
 
 ## 12. Que no tocar sin cuidado
 
 - No revertir migraciones ya aplicadas.
 - No borrar columnas existentes sin plan de migracion y backup.
 - No cambiar permisos/roles sin revisar `AuthorizationService`, usuarios reales y tests.
+- No agregar modulos o pantallas sueltas sin ubicarlas en el mapa ITAM/CMDB: activo,
+  configuracion esperada, configuracion detectada, gemelo, diferencia, stock, trabajo tecnico,
+  evidencia o reporte de decision.
 - No convertir `usuario3` en lector si el pedido vigente es que sea tecnico.
 - No desactivar `inventario.local-db-auth.enabled` en el perfil local sin probar login movil de
   un tecnico local; si se desactiva, usuarios como `usuario3` dejan de entrar por la APK.
@@ -454,6 +479,8 @@ Leer estos documentos segun la tarea:
 - `docs/inventario-modular/actualizacion-produccion-inventario-modular.md`: actualizacion productiva.
 - `docs/inventario-modular/usuarios-locales-y-active-directory.md`: usuarios locales y AD.
 - `docs/inventario-modular/seguridad-modular-inicial.md`: permisos y seguridad.
+- `docs/inventario-modular/metodologia-itam-cmdb-taller.md`: mapa ITAM/CMDB de taller.
+- `docs/decisions/ADR-009-metodologia-itam-cmdb-de-taller.md`: decision arquitectonica.
 
 ## 15. Como debe trabajar una IA en este repo
 

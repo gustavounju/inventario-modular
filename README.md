@@ -171,6 +171,7 @@ La guia paso a paso para crear la base local, usuario local y verificar Flyway e
 
 La bitacora y el circuito actual de equipos/componentes estan documentados en:
 
+- [Metodologia ITAM/CMDB de taller](docs/inventario-modular/metodologia-itam-cmdb-taller.md)
 - [Bitacora del proyecto](docs/inventario-modular/bitacora-del-proyecto.md)
 - [Modulo Componentes y Gemelo Digital](docs/inventario-modular/modulo-componentes-gemelo-digital.md)
 - [Stock, ordenes de armado y comparacion](docs/inventario-modular/stock-ordenes-armado-y-comparacion.md)
@@ -342,6 +343,7 @@ La documentacion del estudio inicial esta en `docs/inventario-modular`.
 Documentos principales:
 
 - [Instalacion desde cero](docs/inventario-modular/instalacion-desde-cero.md)
+- [Metodologia ITAM/CMDB de taller](docs/inventario-modular/metodologia-itam-cmdb-taller.md)
 - [Bitacora del proyecto](docs/inventario-modular/bitacora-del-proyecto.md)
 - [Requerimientos del sistema](docs/inventario-modular/requerimientos-sistema.md)
 - [Plan de trabajo](docs/inventario-modular/plan-de-trabajo.md)
@@ -361,6 +363,7 @@ Documentos principales:
 - [Script de inventario Windows](docs/inventario-modular/script-inventario-windows.md)
 - [Actualizacion produccion Inventario Modular](docs/inventario-modular/actualizacion-produccion-inventario-modular.md)
 - [Incidente login local repetido](docs/inventario-modular/incidente-login-local-repetido.md)
+- [ADR-009: Metodologia ITAM/CMDB de taller](docs/decisions/ADR-009-metodologia-itam-cmdb-de-taller.md)
 
 ## Repositorios
 

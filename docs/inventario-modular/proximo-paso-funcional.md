@@ -311,6 +311,50 @@ Pendiente siguiente:
 - Reportes por ubicacion/fuero.
 - Consolidar pruebas de regresion para rutas antiguas removidas o renombradas.
 
+### Sprint 9: Consolidacion ITAM/CMDB de taller
+
+Estado: metodologia adoptada y documentada.
+
+Motivo:
+
+- El sistema ya tiene activos, componentes, gemelo digital, stock, tareas, actas y
+  auditoria.
+- El siguiente salto no es agregar pantallas sueltas, sino ordenar cada funcion dentro de
+  una metodologia ITAM/CMDB adaptada al taller.
+- El administrador necesita decidir con informacion viva: que equipo esta en riesgo, que
+  diferencia requiere trabajo, que stock permite resolver, que tarea esta pendiente y que
+  evidencia respalda el cierre.
+
+Decision:
+
+- Ver [Metodologia ITAM/CMDB de taller](./metodologia-itam-cmdb-taller.md).
+- Ver [ADR-009](../decisions/ADR-009-metodologia-itam-cmdb-de-taller.md).
+
+Primer alcance recomendado:
+
+- Ficha ITAM/CMDB por equipo:
+  - activo;
+  - configuracion esperada;
+  - configuracion detectada;
+  - diferencias abiertas;
+  - tareas vinculadas;
+  - stock usado;
+  - actas/evidencia;
+  - auditoria reciente.
+- Accion para convertir una diferencia del gemelo en tarea tecnica sugerida.
+- Reporte de equipos con diferencias abiertas y sin tarea asociada.
+- Reporte de equipos sin reporte reciente.
+- Reporte de stock disponible para resolver tareas abiertas.
+- Estados de ciclo de vida del activo: taller, uso, revision, reservado, baja pendiente y baja.
+
+Regla:
+
+```text
+Cada mejora nueva debe ubicarse en una capa:
+activo -> configuracion esperada -> configuracion detectada -> gemelo -> diferencia
+-> stock -> trabajo tecnico -> evidencia -> reporte de decision
+```
+
 ## Estado de modulos que ya no son pendientes iniciales
 
 ### Stock

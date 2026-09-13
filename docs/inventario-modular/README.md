@@ -43,6 +43,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
 - [Incidente login local repetido](./incidente-login-local-repetido.md)
 - [Usuarios locales y Active Directory](./usuarios-locales-y-active-directory.md)
+- [Metodologia ITAM/CMDB de taller](./metodologia-itam-cmdb-taller.md)
 - [Modulo Equipos](./modulo-equipos.md)
 - [Modulo Componentes y Gemelo Digital](./modulo-componentes-gemelo-digital.md)
 - [Stock, ordenes de armado y comparacion](./stock-ordenes-armado-y-comparacion.md)
@@ -62,6 +63,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Decision sobre autorizacion modular inicial](../decisions/ADR-006-autorizacion-modular-inicial.md)
 - [Decision sobre identidades, autenticacion y autorizacion](../decisions/ADR-007-identidades-autenticacion-autorizacion.md)
 - [Decision sobre componentes y gemelo digital](../decisions/ADR-008-componentes-y-gemelo-digital-del-equipo.md)
+- [Decision sobre metodologia ITAM/CMDB de taller](../decisions/ADR-009-metodologia-itam-cmdb-de-taller.md)
 
 ## Alcance inicial
 
