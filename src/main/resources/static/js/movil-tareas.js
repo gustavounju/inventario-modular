@@ -8,6 +8,8 @@
     const native = navigator.userAgent.includes('InventarioLAN/');
     let session, tasks = [], selected, editing, filter = 'pending', limit = 40, stockAvailable = [];
     let cursor, cursorKey, busy = false, audio, sound = false, stopped = false;
+    let applicantSearchTimer;
+    const applicantOptions = new Map();
     // Los previews de comentarios se cargan aparte para no retrasar el listado principal de tareas.
     let renderToken = 0;
     const commentPreviewCache = new Map();
@@ -112,6 +114,64 @@
             $('stock-used').append(item);
         }
     }
+    function applicantLabel(user) {
+        const name = user.nombreVisible || user.username || '';
+        const username = user.username ? ' (' + user.username + ')' : '';
+        const fuero = user.fuero ? ' - ' + user.fuero : '';
+        return name + username + fuero;
+    }
+    function rememberApplicant(user) {
+        const label = applicantLabel(user);
+        applicantOptions.set(label.toLocaleLowerCase(), user);
+        if (user.username) applicantOptions.set(user.username.toLocaleLowerCase(), user);
+        if (user.nombreVisible) applicantOptions.set(user.nombreVisible.toLocaleLowerCase(), user);
+        return label;
+    }
+    function setApplicant(user, label) {
+        const form = $('task-form');
+        form.elements.solicitanteUsername.value = (user.username || label || '').trim().slice(0, 120);
+        form.elements.solicitanteNombre.value = (user.nombreVisible || label || user.username || '').trim().slice(0, 180);
+        form.elements.solicitanteFuero.value = (user.fuero || session.usuario.fuero || 'Sin fuero informado').trim().slice(0, 120);
+        $('solicitante-search').value = label || applicantLabel(user);
+    }
+    function syncApplicantFromInput() {
+        const input = $('solicitante-search').value.trim();
+        const match = applicantOptions.get(input.toLocaleLowerCase());
+        if (match) {
+            setApplicant(match, applicantLabel(match));
+            $('solicitante-help').textContent = 'Solicitante seleccionado desde Active Directory.';
+            return true;
+        }
+        if (!input) return false;
+        setApplicant({ username: input, nombreVisible: input, fuero: session.usuario.fuero || 'Sin fuero informado' }, input);
+        $('solicitante-help').textContent = 'Solicitante cargado manualmente.';
+        return true;
+    }
+    async function searchApplicants(query) {
+        const options = $('solicitante-options');
+        if (query.length < 2) {
+            options.replaceChildren();
+            $('solicitante-help').textContent = 'Escriba al menos 2 letras para buscar en AD, o cargue el nombre manualmente.';
+            return;
+        }
+        try {
+            const result = await request('api/v1/movil/usuarios-dominio?q=' + encodeURIComponent(query));
+            options.replaceChildren();
+            applicantOptions.clear();
+            for (const user of result.usuarios || []) {
+                const option = document.createElement('option');
+                option.value = rememberApplicant(user);
+                options.append(option);
+            }
+            if (result.disponible && result.usuarios?.length) {
+                $('solicitante-help').textContent = result.usuarios.length + ' coincidencias de AD. Elija una o continue manualmente.';
+            } else {
+                $('solicitante-help').textContent = result.mensaje || 'Sin coincidencias de AD; puede cargar el solicitante manualmente.';
+            }
+        } catch {
+            $('solicitante-help').textContent = 'No se pudo consultar AD; puede cargar el solicitante manualmente.';
+        }
+    }
     function renderStockOptions() {
         const select = $('stock-form').elements.stockComponenteId;
         select.replaceChildren();
@@ -198,6 +258,11 @@
         $('form-title').textContent = task ? 'Editar tarea #' + task.id : 'Nueva tarea';
         const defaults = task || { solicitanteUsername: session.usuario.username, solicitanteNombre: session.usuario.nombreVisible, solicitanteFuero: session.usuario.fuero, prioridad: 'MEDIA' };
         for (const control of form.elements) if (control.name && defaults[control.name] != null) control.value = defaults[control.name];
+        setApplicant({
+            username: defaults.solicitanteUsername,
+            nombreVisible: defaults.solicitanteNombre,
+            fuero: defaults.solicitanteFuero
+        }, defaults.solicitanteNombre || defaults.solicitanteUsername || '');
         $('responsable-field').hidden = !session.administrador;
         $('voice-problem').hidden = !native || !session.puedeEditar;
         message('', false, 'form-message');
@@ -225,11 +290,12 @@
         act(async () => {
             const data = Object.fromEntries(new FormData(event.target));
             data.descripcion = data.descripcion?.trim() || '';
-            // En movil el tecnico carga el problema; titulo y solicitante quedan derivados para cumplir el contrato API.
+            if (!syncApplicantFromInput()) throw new Error('Indique quien solicito la ayuda.');
+            data.solicitanteUsername = data.solicitanteUsername?.trim();
+            data.solicitanteNombre = data.solicitanteNombre?.trim();
+            data.solicitanteFuero = data.solicitanteFuero?.trim() || 'Sin fuero informado';
+            // En movil el tecnico carga el problema; el titulo queda derivado para cumplir el contrato API.
             data.titulo = titleFromProblem(data.descripcion);
-            data.solicitanteUsername = editing?.solicitanteUsername || session.usuario.username;
-            data.solicitanteNombre = editing?.solicitanteNombre || session.usuario.nombreVisible;
-            data.solicitanteFuero = editing?.solicitanteFuero || session.usuario.fuero || 'Sin fuero informado';
             data.equipoId = editing?.equipoId || null;
             data.responsable = data.responsable?.trim() || null;
             const saved = await request(api + (editing ? '/' + editing.id : ''), editing ? 'PUT' : 'POST', data);
@@ -258,7 +324,11 @@
         act(async () => {
             await request(api + '/' + selected.id + '/comentarios', 'POST', Object.fromEntries(new FormData(event.target)));
             commentPreviewCache.delete(selected.id);
-            event.target.reset(); await comments(selected.id); message('Comentario guardado.', false, 'detail-message');
+            event.target.reset();
+            await comments(selected.id);
+            await refresh();
+            selected = tasks.find(t => t.id === selected.id) || selected;
+            message('Comentario guardado.', false, 'detail-message');
         });
     };
     $('stock-form').onsubmit = event => {
@@ -279,6 +349,12 @@
     };
     $('edit-task').onclick = () => openForm(selected);
     $('new-task').onclick = () => openForm();
+    $('solicitante-search').addEventListener('input', event => {
+        clearTimeout(applicantSearchTimer);
+        const value = event.target.value.trim();
+        applicantSearchTimer = setTimeout(() => searchApplicants(value), 300);
+    });
+    $('solicitante-search').addEventListener('change', syncApplicantFromInput);
     $('voice-task').onclick = () => {
         openForm();
         if (window.TareasLan?.dictarTarea) window.TareasLan.dictarTarea();

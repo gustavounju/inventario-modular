@@ -58,7 +58,10 @@ class TareaMovilControllerTests {
 
     @Test void pantallaIndependienteYPermisos() throws Exception {
         mvc.perform(get("/movil/tareas").with(user("admin.local"))).andExpect(status().isOk())
-                .andExpect(content().string(containsString("Nueva tarea"))).andExpect(content().string(not(containsString("app-sidebar"))));
+                .andExpect(content().string(containsString("Nueva tarea")))
+                .andExpect(content().string(containsString("id=\"solicitante-search\"")))
+                .andExpect(content().string(containsString("Escriba apellido, nombre o usuario de AD")))
+                .andExpect(content().string(not(containsString("app-sidebar"))));
         mvc.perform(get("/api/v1/movil/sesion").with(user("admin.local"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.usuario.username").value("admin.local")).andExpect(jsonPath("$.puedeEditar").value(true));
         mvc.perform(get("/api/v1/movil/avisos")).andExpect(status().isUnauthorized());
@@ -105,6 +108,45 @@ class TareaMovilControllerTests {
                 .andExpect(jsonPath("$[0].comentario").value("Comentario inicial de seguimiento."));
         mvc.perform(post("/api/v1/tareas-tecnicas").with(user("admin.local")).contentType(MediaType.APPLICATION_JSON).content(NUEVA))
                 .andExpect(status().isCreated());
+    }
+
+    @Test void creacionMovilPermiteSolicitanteDistintoDelTecnicoLogueadoYComentariosVisiblesEnVisor() throws Exception {
+        jdbc.update("INSERT INTO roles (id, codigo, nombre, descripcion, activo) VALUES (20, 'TECNICO_MOVIL_TEST', 'Tecnico movil test', 'Opera tareas desde la APK.', TRUE)");
+        jdbc.update("INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (120, 'tecnico.apk', 'Tecnico APK', 'Informatica', 'AD', TRUE)");
+        jdbc.update("INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (120, 20)");
+        jdbc.update("INSERT INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) VALUES (20, 9, 1), (20, 9, 3)");
+        String tarea = """
+                {"titulo":"Impresora sin imprimir", "descripcion":"La doctora Perez no puede imprimir.",
+                 "solicitanteUsername":"dperez", "solicitanteNombre":"Doctora Perez",
+                 "solicitanteFuero":"Oficina de Gestion Judicial", "prioridad":"MEDIA"}
+                """;
+
+        String json = mvc.perform(post("/api/v1/tareas-tecnicas")
+                        .with(user("tecnico.apk"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(tarea))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.solicitanteUsername").value("dperez"))
+                .andExpect(jsonPath("$.solicitanteNombre").value("Doctora Perez"))
+                .andExpect(jsonPath("$.responsable").value("tecnico.apk"))
+                .andReturn().getResponse().getContentAsString();
+
+        Number id = com.jayway.jsonpath.JsonPath.read(json, "$.id");
+
+        mvc.perform(post("/api/v1/tareas-tecnicas/{id}/comentarios", id.longValue())
+                        .with(user("tecnico.apk"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"comentario":"Comentario cargado desde APK movil."}
+                                """))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/admin/tareas/visor"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Doctora Perez")))
+                .andExpect(content().string(containsString("Comentario cargado desde APK movil.")));
     }
 
     @Test void creacionDesdeApiGeneraAvisoRecuperableSinDuplicar() throws Exception {

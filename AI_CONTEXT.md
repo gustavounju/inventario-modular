@@ -48,6 +48,9 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
 - `usuario3` debe quedar como tecnico.
 - La APK LAN es una WebView Android con funciones nativas para escaneo, avisos y actualizacion.
 - La app movil consume las pantallas `/movil/tareas` y `/movil/stock`.
+- En `/movil/tareas`, al crear una tarea, el solicitante no debe forzarse al usuario logueado:
+  el tecnico puede buscar predictivamente usuarios de AD o escribir manualmente quien pidio
+  ayuda. El responsable si puede seguir siendo el tecnico logueado cuando no es administrador.
 - El scanner de la APK debe abrir en vertical.
 - El tecnico puede escanear codigo de barra o serie desde el celular para sumar stock.
 - Al cargar stock desde el celular, se debe guardar que usuario lo ingreso.
@@ -245,6 +248,17 @@ Decision de UI vigente:
 3. Si hay version nueva, la pantalla movil muestra "APK disponible".
 4. La actualizacion puede disparar descarga/instalacion desde Android.
 5. La APK actual no debe depender de Play Store.
+
+### Tareas dictadas desde APK
+
+1. El tecnico puede dictar el problema desde la APK.
+2. Antes de guardar debe poder indicar manualmente o por busqueda predictiva quien solicito la
+   ayuda.
+3. La busqueda predictiva usa `/api/v1/movil/usuarios-dominio?q=...` y consulta AD cuando esta
+   disponible.
+4. Si AD no responde o no hay coincidencia, el campo acepta carga manual para no frenar el trabajo.
+5. Los comentarios agregados desde la APK deben aparecer en el visor publico
+   `/admin/tareas/visor`.
 
 ## 7. Base de datos
 

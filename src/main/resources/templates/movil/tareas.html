@@ -97,6 +97,13 @@
             <input name="solicitanteUsername" type="hidden">
             <input name="solicitanteNombre" type="hidden">
             <input name="solicitanteFuero" type="hidden">
+            <label>Solicitante
+                <input id="solicitante-search" type="search" list="solicitante-options" maxlength="180"
+                       autocomplete="off" autocapitalize="words"
+                       placeholder="Escriba apellido, nombre o usuario de AD" required>
+                <datalist id="solicitante-options"></datalist>
+                <span id="solicitante-help" class="field-help">Puede elegir un usuario de AD o escribir manualmente quien pidio ayuda.</span>
+            </label>
             <label>Problema a solucionar<textarea name="descripcion" maxlength="1000" rows="4" required></textarea></label>
             <button id="voice-problem" class="secondary" type="button" hidden><i data-lucide="mic"></i><span>Dictar problema</span></button>
             <label>Prioridad<select name="prioridad"><option value="BAJA">Baja</option><option value="MEDIA" selected>Media</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select></label>
