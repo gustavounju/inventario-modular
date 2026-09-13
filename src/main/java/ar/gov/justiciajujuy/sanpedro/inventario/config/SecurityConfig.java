@@ -9,6 +9,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.ldap.core.LdapOperations;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
@@ -70,6 +71,7 @@ public class SecurityConfig {
 					"/", "/login", "/movil/login", "/logout",
 					"/css/**", "/js/**", "/images/**", "/scripts/**", "/webjars/**", "/favicon.ico"
 				).permitAll()
+				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor").permitAll()
 				.requestMatchers("/submit_inventory").authenticated()
 				.anyRequest().authenticated()
 			)

@@ -7,6 +7,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -90,6 +91,28 @@ class TareaTecnicaPageControllerTests {
 	}
 
 	@Test
+	void visorDedicadoEsPublicoSoloLectura() throws Exception {
+		mockMvc.perform(get("/admin/tareas/visor"))
+			.andExpect(status().isOk())
+			.andExpect(view().name("admin/tareas-visor"))
+			.andExpect(content().string(containsString("Seguimiento completo del trabajo diario")))
+			.andExpect(content().string(containsString("Revisar mantenimiento preventivo")))
+			.andExpect(content().string(not(containsString("Nueva tarea"))))
+			.andExpect(content().string(not(containsString("Guardar tarea"))))
+			.andExpect(content().string(not(containsString("Agregar comentario"))))
+			.andExpect(content().string(not(containsString("Eliminar"))));
+	}
+
+	@Test
+	void usuarioSinPermisosPuedeVerVisorSinAcciones() throws Exception {
+		mockMvc.perform(get("/admin/tareas/visor").with(user(usuarioSinPermisos())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Seguimiento completo del trabajo diario")))
+			.andExpect(content().string(not(containsString("Nueva tarea"))))
+			.andExpect(content().string(not(containsString("Guardar tarea"))));
+	}
+
+	@Test
 	void accionesDesdeVisorRegresanAlVisor() throws Exception {
 		mockMvc.perform(post("/admin/tareas/1/comentarios")
 				.with(user(adminLocal()))
@@ -98,6 +121,38 @@ class TareaTecnicaPageControllerTests {
 				.param("origen", "visor"))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(redirectedUrlPattern("/admin/tareas/visor?creado=*"));
+	}
+
+	@Test
+	void accionesDesdeVisorRequierenSesion() throws Exception {
+		mockMvc.perform(post("/admin/tareas/1/comentarios")
+				.with(csrf())
+				.param("comentario", "No deberia guardar sin sesion.")
+				.param("origen", "visor"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrl("/login"));
+	}
+
+	@Test
+	@Sql(statements = {
+			"INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (50, 'tecnico.tareas', 'Tecnico Tareas', 'Informatica', 'AD', TRUE)",
+			"INSERT INTO roles (id, codigo, nombre, descripcion, activo) VALUES (50, 'TECNICO_TAREAS_TEST', 'Tecnico tareas test', 'Permisos de tareas sin administracion.', TRUE)",
+			"INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (50, 50)",
+			"INSERT INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) VALUES (50, 9, 1), (50, 9, 3)"
+	})
+	void accionesDesdeVisorRequierenAdministradorAunqueTengaPermisoEditarTareas() throws Exception {
+		mockMvc.perform(get("/admin/tareas/visor").with(user(tecnicoTareas())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Seguimiento completo del trabajo diario")))
+			.andExpect(content().string(not(containsString("Nueva tarea"))))
+			.andExpect(content().string(not(containsString("Guardar tarea"))));
+
+		mockMvc.perform(post("/admin/tareas/1/comentarios")
+				.with(user(tecnicoTareas()))
+				.with(csrf())
+				.param("comentario", "Intento tecnico sin rol administrador.")
+				.param("origen", "visor"))
+			.andExpect(status().isForbidden());
 	}
 
 	@Test
@@ -209,6 +264,16 @@ class TareaTecnicaPageControllerTests {
 				List.of(new SimpleGrantedAuthority("ROLE_USER")),
 				"Usuario Sin Permisos",
 				"Mesa de ayuda",
+				Map.of("origen", List.of("AD_TEST")));
+	}
+
+	private ActiveDirectoryUserDetails tecnicoTareas() {
+		return new ActiveDirectoryUserDetails(
+				"tecnico.tareas",
+				"unused",
+				List.of(new SimpleGrantedAuthority("ROLE_USER")),
+				"Tecnico Tareas",
+				"Informatica",
 				Map.of("origen", List.of("AD_TEST")));
 	}
 }

@@ -91,7 +91,6 @@ public class TareaTecnicaPageController {
 			@RequestParam(required = false) Long equipoId,
 			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String creado) {
-		exigirPermiso(userDetails, PERMISO_VER);
 		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable);
 		model.addAttribute("creado", "1".equals(creado));
 		return "admin/tareas-visor";
@@ -105,7 +104,7 @@ public class TareaTecnicaPageController {
 			BindingResult bindingResult,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirAdministradorTareas(userDetails);
 		tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
 		if (bindingResult.hasErrors()) {
 			prepararModelo(model, userDetails, tareaForm, null, null, null);
@@ -125,7 +124,7 @@ public class TareaTecnicaPageController {
 			BindingResult bindingResult,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirAdministradorTareas(userDetails);
 		exigirTareaPropiaOAdministrador(userDetails, id);
 		tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
 		if (bindingResult.hasErrors()) {
@@ -143,7 +142,7 @@ public class TareaTecnicaPageController {
 			@PathVariable Long id,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirAdministradorTareas(userDetails);
 		tareaTecnicaService.tomar(id, userDetails.getUsername());
 		redirectAttributes.addAttribute("creado", "1");
 		return redireccionTareas(origen);
@@ -157,7 +156,7 @@ public class TareaTecnicaPageController {
 			@RequestParam(required = false) String observacionesCierre,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirAdministradorTareas(userDetails);
 		exigirTareaPropiaOAdministrador(userDetails, id);
 		tareaTecnicaService.cambiarEstado(id, new CambiarEstadoTareaCommand(estado, observacionesCierre), userDetails.getUsername());
 		redirectAttributes.addAttribute("creado", "1");
@@ -170,7 +169,7 @@ public class TareaTecnicaPageController {
 			@PathVariable Long id,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirAdministradorTareas(userDetails);
 		exigirTareaPropiaOAdministrador(userDetails, id);
 		tareaTecnicaService.eliminar(id);
 		redirectAttributes.addFlashAttribute("eliminado", true);
@@ -184,7 +183,7 @@ public class TareaTecnicaPageController {
 			@RequestParam @NotBlank @Size(max = 1000) String comentario,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirAdministradorTareas(userDetails);
 		exigirTareaPropiaOAdministrador(userDetails, id);
 		tareaTecnicaService.comentar(id, new AgregarComentarioTareaCommand(userDetails.getUsername(), comentario));
 		redirectAttributes.addAttribute("creado", "1");
@@ -199,7 +198,7 @@ public class TareaTecnicaPageController {
 			@RequestParam(required = false) String observacion,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirAdministradorTareas(userDetails);
 		exigirTareaPropiaOAdministrador(userDetails, id);
 		tareaTecnicaService.registrarUsoStock(id,
 				new RegistrarUsoStockCommand(stockComponenteId, userDetails.getUsername(), observacion));
@@ -231,12 +230,12 @@ public class TareaTecnicaPageController {
 		model.addAttribute("filtroEstado", estado);
 		model.addAttribute("filtroEquipoId", equipoId);
 		model.addAttribute("filtroResponsable", responsable);
-		boolean puedeEditarTareas = authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_EDITAR);
-		boolean puedeAsignarResponsable = authorizationService.puedeAdministrarUsuarios(userDetails);
+		boolean puedeEditarTareas = puedeAdministrarTareas(userDetails);
+		boolean puedeAsignarResponsable = puedeEditarTareas;
 		List<UsuarioDominio> solicitantes = solicitantesParaTareas();
 		model.addAttribute("puedeEditarTareas", puedeEditarTareas);
 		model.addAttribute("puedeAsignarResponsable", puedeAsignarResponsable);
-		model.addAttribute("usuarioActual", userDetails.getUsername());
+		model.addAttribute("usuarioActual", userDetails != null ? userDetails.getUsername() : "");
 		model.addAttribute("solicitantes", solicitantes);
 		model.addAttribute("fuerosDisponibles", fuerosParaTareas(solicitantes));
 		model.addAttribute("tecnicosAsignables", usuarioManagementService.listarTecnicosAsignables());
@@ -275,6 +274,16 @@ public class TareaTecnicaPageController {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_TAREAS, permiso)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para operar tareas tecnicas.");
 		}
+	}
+
+	private void exigirAdministradorTareas(UserDetails userDetails) {
+		if (!puedeAdministrarTareas(userDetails)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo un administrador puede operar tareas tecnicas.");
+		}
+	}
+
+	private boolean puedeAdministrarTareas(UserDetails userDetails) {
+		return userDetails != null && authorizationService.puedeAdministrarUsuarios(userDetails);
 	}
 
 	private void exigirTareaPropiaOAdministrador(UserDetails userDetails, Long tareaId) {

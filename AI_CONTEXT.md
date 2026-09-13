@@ -385,6 +385,8 @@ y verificar fecha, host, rama y backup.
 - No publicar la APK anonimamente; debe respetar login/permisos.
 - No romper `/movil/tareas` ni `/movil/stock`, porque la APK depende de esas rutas.
 - No cambiar el contrato de `/api/v1/stock/componentes` sin revisar la APK/pantalla movil.
+- No cerrar `/admin/tareas/visor`: es un visor publico de solo lectura. Crear tareas,
+  comentar, tomar, cambiar estado, usar stock o eliminar requiere sesion y rol administrador.
 - No volver a mostrar "deposito" o "ubicacion fisica" como dato principal de stock disponible.
 - No eliminar `ingresado_por`; es clave para trazabilidad de altas desde celular.
 - No eliminar `datos_completos` ni `TipoComponente.PENDIENTE`; sostienen el flujo de escaneo rapido.
