@@ -43,7 +43,7 @@ class StockPageControllerTests {
 		mockMvc.perform(get("/admin/stock").with(user(adminLocal())))
 				.andExpect(status().isOk())
 				.andExpect(content().string(containsString("Aplicar a seleccionados")))
-				.andExpect(content().string(containsString("✏️ Editar")))
+				.andExpect(content().string(containsString("Editar")))
 				.andExpect(content().string(containsString("stock-type-chip")))
 				.andExpect(content().string(not(containsString("Modificar Piezas Cargadas"))))
 				.andExpect(content().string(not(containsString("tab-btn-edicion"))));
@@ -93,7 +93,7 @@ class StockPageControllerTests {
 				.andExpect(content().string(containsString("pane-pendientes")))
 				.andExpect(content().string(containsString("Completar seleccionados")))
 				.andExpect(content().string(containsString("Falta para Stock")))
-				.andExpect(content().string(containsString("Tipo real")))
+				.andExpect(content().string(containsString("Tipo de componente")))
 				.andExpect(content().string(containsString("Descripcion real")));
 
 		Long tintaUnoId = jdbcTemplate.queryForObject(

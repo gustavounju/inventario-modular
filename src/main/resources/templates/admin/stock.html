@@ -14,35 +14,33 @@
 			<!-- Barra Superior de Acciones de Stock -->
 			<div class="page-top-actions stock-page-actions">
 				<span class="count-badge" th:text="${totalStock} + ' componentes en stock'">0 componentes</span>
+				<div class="stock-page-commandbar">
+					<button type="button" class="secondary-action" th:if="${pendientesCount > 0}" onclick="switchTab('pendientes')">Ver pendientes</button>
+					<button type="button" class="secondary-action" onclick="switchTab('disponibles')">Ver stock</button>
+					<button type="button" class="primary-action" th:if="${puedeEditarStock}" onclick="switchTab('nuevo')">Ingresar pieza</button>
+				</div>
 			</div>
 
 			<!-- Banner Contextual de Siguientes Pasos tras Guardar Componente -->
 			<div class="workflow-banner" th:if="${creado}">
-				<div class="workflow-banner-icon">📦</div>
 				<div class="workflow-banner-content">
-					<strong>¡Componente de stock registrado correctamente!</strong>
-					<p>
-						La pieza ya está registrada en stock y disponible para ser reservada en una orden de trabajo.
-					</p>
+					<strong>Componente registrado correctamente.</strong>
 					<div class="workflow-next-actions">
-						<span>👉 <strong>Siguiente paso natural recomendado:</strong></span>
 						<a class="primary-action" th:href="@{/admin/equipos}">
-							🛠️ Instalar en un Equipo
+							Instalar en equipo
 						</a>
 						<button type="button" class="secondary-action" onclick="switchTab('disponibles')">
-							📋 Ver Lista de Stock
+							Ver stock
 						</button>
 						<button type="button" class="secondary-action" th:if="${puedeEditarStock}" onclick="switchTab('nuevo')">
-							➕ Ingresar Otra Pieza
+							Ingresar otra pieza
 						</button>
 					</div>
 				</div>
 			</div>
 			<div class="workflow-banner" th:if="${loteActualizado != null}">
-				<div class="workflow-banner-icon">📄</div>
 				<div class="workflow-banner-content">
 					<strong th:text="${loteActualizado} + ' componentes actualizados en lote.'">Componentes actualizados en lote.</strong>
-					<p>Los datos administrativos seleccionados quedaron aplicados al stock marcado.</p>
 				</div>
 			</div>
 			<div class="message error" th:if="${errorLote != null}" style="margin-bottom: 16px;">
@@ -56,19 +54,19 @@
 				<div class="metric-card border-cyan" th:if="${pendientesCount > 0}" onclick="switchTab('pendientes')" role="button" tabindex="0" title="Completar códigos pendientes">
 					<span class="metric-card-title">PENDIENTES</span>
 					<strong class="metric-card-value" style="color: #22d3ee;" th:text="${pendientesCount}">0</strong>
-					<span class="metric-card-action" style="color: #22d3ee;">Completar ➜</span>
+					<span class="metric-card-action" style="color: #22d3ee;">Completar</span>
 				</div>
 				<!-- Tarjeta Azul: Total Componentes - Inventario global de piezas físicas registradas -->
 				<div class="metric-card border-blue" onclick="switchTab('disponibles')" role="button" tabindex="0" title="Ver catálogo completo de componentes">
 					<span class="metric-card-title">STOCK</span>
 					<strong class="metric-card-value" style="color: var(--text-link);" th:text="${totalStock}">0</strong>
-					<span class="metric-card-action" style="color: #60a5fa;">Ver stock ➜</span>
+					<span class="metric-card-action" style="color: #60a5fa;">Ver stock</span>
 				</div>
 				<!-- Tarjeta Verde: Stock Disponible - Piezas físicas listas para armados o reparaciones -->
 				<div class="metric-card border-green" onclick="switchTab('disponibles')" role="button" tabindex="0" title="Ver componentes disponibles en taller">
 					<span class="metric-card-title">DISPONIBLES</span>
 					<strong class="metric-card-value" style="color: #4ade80;" th:text="${disponiblesCount}">0</strong>
-					<span class="metric-card-action" style="color: #4ade80;">Listos en taller ➜</span>
+					<span class="metric-card-action" style="color: #4ade80;">Listos en taller</span>
 				</div>
 				<!-- Tarjeta Amarilla: Reservados para Armado - Piezas comprometidas en armado en curso -->
 				<div class="metric-card border-yellow">
@@ -81,7 +79,7 @@
 				<a class="metric-card border-orange" th:if="${puedeVerEquipos}" th:href="@{/admin/equipos}" title="Ver catálogo de equipos con hardware instalado">
 					<span class="metric-card-title">INSTALADOS</span>
 					<strong class="metric-card-value" style="color: #fb923c;" th:text="${asignadosCount}">0</strong>
-					<span class="metric-card-action" style="color: #fb923c;">Ver en PC ➜</span>
+					<span class="metric-card-action" style="color: #fb923c;">Ver en PC</span>
 				</a>
 				<div class="metric-card border-orange" th:unless="${puedeVerEquipos}">
 					<span class="metric-card-title">INSTALADOS</span>
@@ -91,10 +89,12 @@
 			</section>
 
 			<div class="workflow-banner" th:if="${pendientesCount > 0}">
-				<div class="workflow-banner-icon">🧾</div>
 				<div class="workflow-banner-content">
 					<strong th:text="${pendientesCount} + ' componentes pendientes de completar.'">Componentes pendientes de completar.</strong>
-					<p>Seleccione los códigos escaneados desde celular y aplique tipo, descripción, marca, modelo, capacidad, remito, orden de compra o proveedor en lote.</p>
+					<div class="workflow-next-actions" th:if="${puedeEditarStock}">
+						<button type="button" class="primary-action" onclick="switchTab('pendientes'); toggleFunctionPanel('stock-pending-bulk-form', true);">Completar seleccionados</button>
+						<button type="button" class="secondary-action" onclick="switchTab('pendientes')">Revisar tabla</button>
+					</div>
 				</div>
 			</div>
 
@@ -103,14 +103,14 @@
 				<button type="button" id="tab-btn-pendientes" class="subnav-tab" th:if="${pendientesCount > 0}"
 						th:classappend="${pendientesCount > 0} ? ' is-active' : ''" role="tab"
 						th:attr="aria-selected=${pendientesCount > 0}" aria-controls="pane-pendientes" onclick="switchTab('pendientes')">
-					🧾 Pendientes de completar (<span th:text="${pendientesCount}">0</span>)
+					PEND Pendientes (<span th:text="${pendientesCount}">0</span>)
 				</button>
 				<button type="button" id="tab-btn-disponibles" class="subnav-tab" th:classappend="${pendientesCount == 0} ? ' is-active' : ''"
 						role="tab" th:attr="aria-selected=${pendientesCount == 0}" aria-controls="pane-disponibles" onclick="switchTab('disponibles')">
-					📦 Componentes en Stock (<span th:text="${totalStock}">0</span>)
+					STK Componentes (<span th:text="${totalStock}">0</span>)
 				</button>
 				<button type="button" id="tab-btn-nuevo" class="subnav-tab" th:if="${puedeEditarStock}" role="tab" aria-selected="false" aria-controls="pane-nuevo" onclick="switchTab('nuevo')">
-					➕ Ingresar Nueva Pieza
+					NEW Ingresar pieza
 				</button>
 			</nav>
 
@@ -120,17 +120,23 @@
 					<div class="section-header">
 						<div>
 							<h2 id="stock-pending-title">Pendientes de completar</h2>
-							<p class="section-note">Códigos escaneados desde celular que esperan tipo, descripción, marca, modelo, capacidad, remito, orden de compra o proveedor.</p>
+							<p class="section-note">Seleccione registros y abra la función que necesite.</p>
 						</div>
-						<span class="count-badge" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
+						<div class="stock-function-bar" th:if="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}">
+							<span class="count-badge" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
+							<button type="button" class="primary-action" data-panel-toggle="stock-pending-bulk-form" onclick="toggleFunctionPanel('stock-pending-bulk-form')">Completar seleccionados</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+						</div>
+						<span class="count-badge" th:unless="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
 					</div>
 
 					<form id="stock-pending-bulk-form" class="equipment-form stock-bulk-panel stock-bulk-panel-pending" th:if="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}"
-							th:action="@{/admin/stock/componentes/lote}" method="post">
+							th:action="@{/admin/stock/componentes/lote}" method="post" hidden>
 						<div class="stock-bulk-heading">
 							<div>
 								<strong>Completar lote escaneado</strong>
-								<span>Seleccione códigos y cargue los datos comunes una sola vez.</span>
+								<span>Los campos vacíos no pisan datos ya cargados.</span>
 							</div>
 							<span class="stock-bulk-chip">Pasa a Stock al guardar</span>
 						</div>
@@ -183,9 +189,8 @@
 							</label>
 						</div>
 						<div class="form-actions stock-action-strip">
-							<button class="primary-action" type="submit">Completar seleccionados</button>
-							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
-							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+							<button class="primary-action" type="submit">Guardar lote seleccionado</button>
+							<button class="secondary-action" type="button" onclick="toggleFunctionPanel('stock-pending-bulk-form', false)">Cerrar panel</button>
 						</div>
 					</form>
 
@@ -222,15 +227,15 @@
 									</td>
 									<td data-label="Falta para Stock">
 										<div class="missing-fields-stack" th:if="${!#lists.isEmpty(componente.camposFaltantes)}">
-											<span class="missing-field-chip" th:each="campo : ${componente.camposFaltantes}" th:text="${campo}">Tipo real</span>
+											<span class="missing-field-chip" th:each="campo : ${componente.camposFaltantes}" th:text="${campo}">Tipo de componente</span>
 										</div>
 										<span class="authorization-badge is-authorized" th:if="${#lists.isEmpty(componente.camposFaltantes)}">Listo al guardar</span>
 									</td>
 									<td data-label="Ingresado por" th:text="${componente.ingresadoPor ?: '-'}">usuario3</td>
 									<td data-label="Remito / O. Compra">
 										<div th:if="${componente.remito != null or componente.ordenCompra != null}">
-											<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">📄 Rem: <span th:text="${componente.remito}">R-001</span></span>
-											<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">🛒 OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
+											<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">Rem: <span th:text="${componente.remito}">R-001</span></span>
+											<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
 											<span th:if="${componente.proveedor}" style="display: block; font-size: 0.75rem; color: var(--text-muted);" th:text="${componente.proveedor}">Banghó</span>
 										</div>
 										<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
@@ -240,7 +245,7 @@
 									</td>
 									<td data-label="Acciones">
 										<form th:if="${puedeEditarStock}" th:action="@{/admin/stock/{id}/eliminar(id=${componente.id})}" method="post" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta pieza pendiente?');">
-											<button type="submit" class="secondary-action button-danger-subtle compact-row-action">🗑️ Eliminar</button>
+											<button type="submit" class="secondary-action button-danger-subtle compact-row-action">Eliminar</button>
 										</form>
 									</td>
 								</tr>
@@ -256,21 +261,27 @@
 					<div class="section-header">
 						<div>
 							<h2 id="stock-list-title">Componentes disponibles</h2>
-							<p class="section-note">Piezas listas para ser reservadas e instaladas en los equipos mediante órdenes de armado.</p>
+							<p class="section-note">Tabla principal de piezas disponibles, reservadas o instaladas.</p>
 						</div>
-						<span class="count-badge" th:text="${#lists.size(componentesStock)} + ' piezas'">0 piezas</span>
+						<div class="stock-function-bar" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}">
+							<span class="count-badge" th:text="${#lists.size(componentesStock)} + ' piezas'">0 piezas</span>
+							<button type="button" class="primary-action" data-panel-toggle="stock-bulk-form" onclick="toggleFunctionPanel('stock-bulk-form')">Aplicar datos</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
+							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+						</div>
+						<span class="count-badge" th:unless="${puedeEditarStock and !#lists.isEmpty(componentesStock)}" th:text="${#lists.size(componentesStock)} + ' piezas'">0 piezas</span>
 					</div>
 
 					<p class="empty-state" th:if="${#lists.isEmpty(componentesStock)}">
-						Todavía no hay componentes cargados en stock. Utiliza la pestaña <strong>"➕ Ingresar Nueva Pieza"</strong> para dar de alta discos, memorias o periféricos.
+						Todavía no hay componentes cargados en stock. Utiliza la pestaña <strong>"NEW Ingresar pieza"</strong> para dar de alta discos, memorias o periféricos.
 					</p>
 
 					<form id="stock-bulk-form" class="equipment-form stock-bulk-panel" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}"
-							th:action="@{/admin/stock/componentes/lote}" method="post">
+							th:action="@{/admin/stock/componentes/lote}" method="post" hidden>
 						<div class="stock-bulk-heading">
 							<div>
 								<strong>Aplicar datos al lote</strong>
-								<span>Use selección múltiple para remito, OC, proveedor o datos técnicos compartidos.</span>
+								<span>Seleccione filas y aplique datos compartidos sin abrir cada registro.</span>
 							</div>
 							<span class="stock-bulk-chip">No pisa campos vacíos</span>
 						</div>
@@ -324,8 +335,7 @@
 						</div>
 						<div class="form-actions stock-action-strip">
 							<button class="primary-action" type="submit">Aplicar a seleccionados</button>
-							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
-							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+							<button class="secondary-action" type="button" onclick="toggleFunctionPanel('stock-bulk-form', false)">Cerrar panel</button>
 						</div>
 					</form>
 
@@ -369,8 +379,8 @@
 										</td>
 										<td data-label="Remito / O. Compra">
 											<div th:if="${componente.remito != null or componente.ordenCompra != null}">
-												<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">📄 Rem: <span th:text="${componente.remito}">R-001</span></span>
-												<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">🛒 OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
+												<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">Rem: <span th:text="${componente.remito}">R-001</span></span>
+												<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
 												<span th:if="${componente.proveedor}" style="display: block; font-size: 0.75rem; color: var(--text-muted);" th:text="${componente.proveedor}">Banghó</span>
 											</div>
 											<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
@@ -393,13 +403,13 @@
 											<div style="display: flex; gap: 6px; flex-wrap: wrap;">
 												<button type="button" th:if="${puedeEditarStock}" class="secondary-action compact-row-action"
 														th:attr="onclick=|toggleStockEdit(${componente.id})|">
-													✏️ Editar
+													Editar
 												</button>
 												<form th:if="${puedeEditarStock}" th:action="@{/admin/stock/{id}/eliminar(id=${componente.id})}" method="post" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta pieza del stock?');">
 													<button type="submit" class="secondary-action button-danger-subtle compact-row-action"
 															th:disabled="${componente.estado.name() == 'ASIGNADO'}"
 															th:title="${componente.estado.name() == 'ASIGNADO' ? 'No se puede eliminar porque está asignado e instalado en un equipo. Desvincúlalo desde la ficha del equipo primero.' : 'Eliminar pieza del stock'}">
-														🗑️ Eliminar
+														Eliminar
 													</button>
 												</form>
 											</div>
@@ -470,7 +480,7 @@
 													<span>Pieza activa</span>
 												</label>
 												<div class="form-actions">
-													<button class="secondary-action" type="submit">💾 Guardar Cambios</button>
+													<button class="secondary-action" type="submit">Guardar cambios</button>
 													<button class="secondary-action" type="button" th:attr="onclick=|toggleStockEdit(${componente.id}, false)|">Cancelar</button>
 												</div>
 											</form>
@@ -551,7 +561,7 @@
 							<span>Pieza activa en el sistema</span>
 						</label>
 						<div class="form-actions">
-							<button class="primary-action" type="submit">💾 Guardar Pieza en Stock</button>
+							<button class="primary-action" type="submit">Guardar pieza en Stock</button>
 							<button type="button" class="secondary-action" onclick="switchTab('disponibles')">Cancelar</button>
 						</div>
 					</form>
@@ -598,6 +608,19 @@
 			row.hidden = !shouldOpen;
 			if (shouldOpen) {
 				row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			}
+		}
+
+		function toggleFunctionPanel(panelId, forceOpen) {
+			const panel = document.getElementById(panelId);
+			if (!panel) return;
+			const shouldOpen = forceOpen === undefined ? panel.hidden : forceOpen;
+			panel.hidden = !shouldOpen;
+			document.querySelectorAll('[data-panel-toggle="' + panelId + '"]').forEach(function(button) {
+				button.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+			});
+			if (shouldOpen) {
+				panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			}
 		}
 

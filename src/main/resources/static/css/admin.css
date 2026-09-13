@@ -2214,9 +2214,36 @@ dialog::backdrop {
    ========================================================== */
 .stock-page-actions {
 	display: flex;
+	gap: 12px;
 	justify-content: flex-end;
 	align-items: center;
+	flex-wrap: wrap;
 	margin: 4px 0 10px;
+}
+
+.stock-page-commandbar,
+.stock-function-bar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.stock-page-commandbar {
+	justify-content: flex-end;
+}
+
+.stock-function-bar {
+	justify-content: flex-end;
+	margin-left: auto;
+}
+
+.stock-function-bar .primary-action,
+.stock-function-bar .secondary-action,
+.stock-page-commandbar .primary-action,
+.stock-page-commandbar .secondary-action {
+	min-height: 32px;
+	padding: 6px 11px;
 }
 
 .stock-metrics {
@@ -2272,6 +2299,10 @@ dialog::backdrop {
 	background: var(--bg-card-secondary);
 	overflow: hidden;
 	box-shadow: var(--shadow-sm);
+}
+
+.stock-bulk-panel[hidden] {
+	display: none !important;
 }
 
 .stock-bulk-panel-pending {

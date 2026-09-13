@@ -318,7 +318,7 @@ public class StockService {
 	private List<String> camposFaltantesParaStock(StockComponente componente) {
 		List<String> campos = new ArrayList<>();
 		if (componente.getTipo() == TipoComponente.PENDIENTE) {
-			campos.add("Tipo real");
+			campos.add("Tipo de componente");
 		}
 		if (!tieneDescripcionReal(componente.getDescripcion())) {
 			campos.add("Descripcion real");
