@@ -88,29 +88,19 @@
 				</div>
 			</section>
 
-			<div class="workflow-banner" th:if="${pendientesCount > 0}">
-				<div class="workflow-banner-content">
-					<strong th:text="${pendientesCount} + ' componentes pendientes de completar.'">Componentes pendientes de completar.</strong>
-					<div class="workflow-next-actions" th:if="${puedeEditarStock}">
-						<button type="button" class="primary-action" onclick="switchTab('pendientes'); toggleFunctionPanel('stock-pending-bulk-form', true);">Completar seleccionados</button>
-						<button type="button" class="secondary-action" onclick="switchTab('pendientes')">Revisar tabla</button>
-					</div>
-				</div>
-			</div>
-
 			<!-- Pestañas de Navegación Limpia (Subnav Tabs) -->
 			<nav class="subnav-tabs" role="tablist" aria-label="Secciones de Stock">
 				<button type="button" id="tab-btn-pendientes" class="subnav-tab" th:if="${pendientesCount > 0}"
 						th:classappend="${pendientesCount > 0} ? ' is-active' : ''" role="tab"
 						th:attr="aria-selected=${pendientesCount > 0}" aria-controls="pane-pendientes" onclick="switchTab('pendientes')">
-					PEND Pendientes (<span th:text="${pendientesCount}">0</span>)
+					Pendientes (<span th:text="${pendientesCount}">0</span>)
 				</button>
 				<button type="button" id="tab-btn-disponibles" class="subnav-tab" th:classappend="${pendientesCount == 0} ? ' is-active' : ''"
 						role="tab" th:attr="aria-selected=${pendientesCount == 0}" aria-controls="pane-disponibles" onclick="switchTab('disponibles')">
-					STK Componentes (<span th:text="${totalStock}">0</span>)
+					Componentes (<span th:text="${totalStock}">0</span>)
 				</button>
 				<button type="button" id="tab-btn-nuevo" class="subnav-tab" th:if="${puedeEditarStock}" role="tab" aria-selected="false" aria-controls="pane-nuevo" onclick="switchTab('nuevo')">
-					NEW Ingresar pieza
+					Ingresar pieza
 				</button>
 			</nav>
 
@@ -273,7 +263,7 @@
 					</div>
 
 					<p class="empty-state" th:if="${#lists.isEmpty(componentesStock)}">
-						Todavía no hay componentes cargados en stock. Utiliza la pestaña <strong>"NEW Ingresar pieza"</strong> para dar de alta discos, memorias o periféricos.
+						Todavía no hay componentes cargados en stock. Utiliza la pestaña <strong>"Ingresar pieza"</strong> para dar de alta discos, memorias o periféricos.
 					</p>
 
 					<form id="stock-bulk-form" class="equipment-form stock-bulk-panel" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}"
