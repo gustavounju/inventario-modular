@@ -10,7 +10,7 @@
 	<aside class="app-sidebar" id="app-sidebar" aria-label="Menú lateral de navegación">
 		<!-- Cabecera Institucional del Sidebar -->
 		<div class="sidebar-brand">
-			<div class="sidebar-brand-icon" aria-hidden="true">⚖️</div>
+			<div class="sidebar-brand-icon" aria-hidden="true">PJ</div>
 			<div class="sidebar-brand-text">
 				<strong class="sidebar-brand-title">Poder Judicial</strong>
 				<span class="sidebar-brand-sub">Centro Judicial San Pedro</span>
@@ -20,13 +20,13 @@
 			<span>INVENTARIO MODULAR</span>
 		</div>
 
-		<!-- Navegación Categorizada por Áreas Operativas -->
+		<!-- Navegación categorizada: los codigos cortos sostienen la estetica tecnica del admin. -->
 		<nav class="sidebar-nav" role="navigation" aria-label="Secciones del sistema">
 			<!-- Sección 1: Principal -->
 			<div class="sidebar-section">
 				<span class="sidebar-section-title">Principal</span>
 				<a class="sidebar-link" th:classappend="${activeModule == 'panel'} ? ' is-active' : ''" th:href="@{/admin}">
-					<span class="sidebar-icon">🏠</span>
+					<span class="sidebar-icon">PG</span>
 					<span class="sidebar-text">Panel General</span>
 				</a>
 			</div>
@@ -35,16 +35,16 @@
 			<div class="sidebar-section">
 				<span class="sidebar-section-title">Hardware y Taller</span>
 				<a class="sidebar-link" th:if="${canViewEquipos != null ? canViewEquipos : true}" th:classappend="${activeModule == 'equipos'} ? ' is-active' : ''" th:href="@{/admin/equipos}">
-					<span class="sidebar-icon">🖥️</span>
+					<span class="sidebar-icon">EQ</span>
 					<span class="sidebar-text">Equipos</span>
 				</a>
 
 				<a class="sidebar-link" th:if="${canViewStock != null ? canViewStock : true}" th:classappend="${activeModule == 'stock'} ? ' is-active' : ''" th:href="@{/admin/stock}">
-					<span class="sidebar-icon">📦</span>
+					<span class="sidebar-icon">ST</span>
 					<span class="sidebar-text">Stock de Depósito</span>
 				</a>
 				<a class="sidebar-link" th:if="${canViewDashboardDiferencias != null ? canViewDashboardDiferencias : true}" th:classappend="${activeModule == 'diferencias'} ? ' is-active' : ''" th:href="@{/admin/dashboard-diferencias}">
-					<span class="sidebar-icon">⚠️</span>
+					<span class="sidebar-icon">DG</span>
 					<span class="sidebar-text">Diferencias (Gemelo)</span>
 				</a>
 			</div>
@@ -53,11 +53,11 @@
 			<div class="sidebar-section">
 				<span class="sidebar-section-title">Bienes y Sedes</span>
 				<a class="sidebar-link" th:if="${canViewUbicaciones != null ? canViewUbicaciones : true}" th:classappend="${activeModule == 'ubicaciones'} ? ' is-active' : ''" th:href="@{/admin/ubicaciones}">
-					<span class="sidebar-icon">🏢</span>
+					<span class="sidebar-icon">UB</span>
 					<span class="sidebar-text">Sedes y Ubicaciones</span>
 				</a>
 				<a class="sidebar-link" th:if="${canViewMuebles != null ? canViewMuebles : true}" th:classappend="${activeModule == 'muebles'} ? ' is-active' : ''" th:href="@{/admin/muebles}">
-					<span class="sidebar-icon">🪑</span>
+					<span class="sidebar-icon">MU</span>
 					<span class="sidebar-text">Muebles</span>
 				</a>
 			</div>
@@ -66,19 +66,19 @@
 			<div class="sidebar-section">
 				<span class="sidebar-section-title">Operaciones</span>
 				<a class="sidebar-link" th:if="${canViewActas != null ? canViewActas : true}" th:classappend="${activeModule == 'actas'} ? ' is-active' : ''" th:href="@{/admin/actas}">
-					<span class="sidebar-icon">📋</span>
+					<span class="sidebar-icon">AC</span>
 					<span class="sidebar-text">Actas y Movimientos</span>
 				</a>
 				<a class="sidebar-link" th:if="${canViewReportes != null ? canViewReportes : true}" th:classappend="${activeModule == 'reportes'} ? ' is-active' : ''" th:href="@{/admin/reportes}">
-					<span class="sidebar-icon">📊</span>
+					<span class="sidebar-icon">RP</span>
 					<span class="sidebar-text">Reportes</span>
 				</a>
 				<a class="sidebar-link" th:if="${canViewTareas != null ? canViewTareas : true}" th:classappend="${activeModule == 'tareas'} ? ' is-active' : ''" th:href="@{/admin/tareas}">
-					<span class="sidebar-icon">🔧</span>
+					<span class="sidebar-icon">TT</span>
 					<span class="sidebar-text">Tareas Técnicas</span>
 				</a>
 				<a class="sidebar-link" th:if="${canViewTareas != null ? canViewTareas : true}" th:classappend="${activeModule == 'tareas'} ? ' is-active' : ''" th:href="@{/admin/tareas/visor}">
-					<span class="sidebar-icon">▦</span>
+					<span class="sidebar-icon">VS</span>
 					<span class="sidebar-text">Visor de Tareas</span>
 				</a>
 			</div>
@@ -87,11 +87,11 @@
 			<div class="sidebar-section">
 				<span class="sidebar-section-title">Administración</span>
 				<a class="sidebar-link" th:if="${canViewAuditoria != null ? canViewAuditoria : true}" th:classappend="${activeModule == 'auditoria'} ? ' is-active' : ''" th:href="@{/admin/auditoria}">
-					<span class="sidebar-icon">🛡️</span>
+					<span class="sidebar-icon">AU</span>
 					<span class="sidebar-text">Auditoría Global</span>
 				</a>
 				<a class="sidebar-link" th:if="${canManageUsers != null ? canManageUsers : true}" th:classappend="${activeModule == 'usuarios'} ? ' is-active' : ''" th:href="@{/admin/usuarios}">
-					<span class="sidebar-icon">👥</span>
+					<span class="sidebar-icon">US</span>
 					<span class="sidebar-text">Usuarios y Permisos</span>
 				</a>
 			</div>
@@ -105,7 +105,7 @@
 			</div>
 			<form class="logout-form" th:action="@{/logout}" method="post">
 				<button type="submit" class="sidebar-logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
-					🚪 Salir
+					Salir
 				</button>
 			</form>
 		</div>
@@ -114,7 +114,7 @@
 	<!-- Fondo oscuro móvil para cerrar el sidebar al tocar afuera -->
 	<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
-	<!-- Script de aplicación inmediata de tema visual (Por defecto: Modo Oscuro "Eye-Care" relajante) -->
+	<!-- Script de aplicación inmediata de tema visual (por defecto: mesa tecnica oscura) -->
 	<script>
 		(function() {
 			try {
@@ -140,9 +140,9 @@
 		</div>
 
 		<div class="topbar-actions" style="display: flex; align-items: center; gap: 10px;">
-			<!-- Botón de Conmutación de Modo Visual (Oscuro / Claro) -->
+			<!-- Boton de conmutacion de modo visual (Oscuro / Claro) -->
 			<button type="button" class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar modo visual (Oscuro / Claro)" aria-label="Alternar modo visual">
-				<span id="theme-toggle-icon">🌙</span>
+				<span class="theme-toggle-icon" id="theme-toggle-icon">OSC</span>
 				<span class="theme-toggle-text" id="theme-toggle-label">Modo Oscuro</span>
 			</button>
 
@@ -197,10 +197,10 @@
 			var label = document.getElementById('theme-toggle-label');
 			if (icon && label) {
 				if (theme === 'light') {
-					icon.textContent = '☀️';
+					icon.textContent = 'CLR';
 					label.textContent = 'Modo Claro';
 				} else {
-					icon.textContent = '🌙';
+					icon.textContent = 'OSC';
 					label.textContent = 'Modo Oscuro';
 				}
 			}

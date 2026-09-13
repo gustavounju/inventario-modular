@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Inventario Modular - Institucional sobria</title>
+	<style>
+		:root {
+			color-scheme: light;
+			--paper: #f5f7f8;
+			--surface: #ffffff;
+			--surface-soft: #f9fbfb;
+			--ink: #17222b;
+			--ink-soft: #4f6171;
+			--muted: #7b8b98;
+			--line: #dbe4e8;
+			--line-strong: #c5d1d8;
+			--navy: #17395f;
+			--navy-2: #0f2b49;
+			--blue: #2b6f9f;
+			--green: #207a52;
+			--amber: #9b6a16;
+			--red: #a23d3d;
+			--shadow: 0 12px 32px rgba(23, 34, 43, 0.08);
+			font-family: Aptos, "Segoe UI", Tahoma, sans-serif;
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			margin: 0;
+			min-height: 100vh;
+			background:
+				linear-gradient(180deg, rgba(23, 57, 95, 0.05), transparent 260px),
+				var(--paper);
+			color: var(--ink);
+		}
+
+		button,
+		input,
+		select {
+			font: inherit;
+		}
+
+		.layout {
+			display: grid;
+			grid-template-columns: 276px minmax(0, 1fr);
+			min-height: 100vh;
+		}
+
+		.sidebar {
+			position: sticky;
+			top: 0;
+			height: 100vh;
+			display: flex;
+			flex-direction: column;
+			border-right: 1px solid var(--line);
+			background: var(--surface);
+			box-shadow: 8px 0 28px rgba(23, 34, 43, 0.05);
+		}
+
+		.brand {
+			display: grid;
+			grid-template-columns: 42px minmax(0, 1fr);
+			gap: 12px;
+			align-items: center;
+			padding: 22px 20px 18px;
+			border-bottom: 1px solid var(--line);
+		}
+
+		.brand-mark {
+			display: grid;
+			place-items: center;
+			width: 42px;
+			height: 42px;
+			border-radius: 8px;
+			background: var(--navy);
+			color: #ffffff;
+			font-size: 0.78rem;
+			font-weight: 900;
+			letter-spacing: 0.04em;
+		}
+
+		.brand strong,
+		.brand span {
+			display: block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.brand strong {
+			font-size: 0.98rem;
+		}
+
+		.brand span {
+			color: var(--muted);
+			font-size: 0.75rem;
+			margin-top: 2px;
+		}
+
+		.app-label {
+			margin: 14px 18px 8px;
+			padding: 8px 10px;
+			border: 1px solid #cfdce3;
+			border-radius: 8px;
+			background: #f7fafb;
+			color: var(--navy);
+			font-size: 0.69rem;
+			font-weight: 900;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.nav {
+			display: grid;
+			gap: 18px;
+			padding: 12px;
+			overflow-y: auto;
+		}
+
+		.nav-section {
+			display: grid;
+			gap: 4px;
+		}
+
+		.nav-title {
+			padding: 0 9px 5px;
+			color: var(--muted);
+			font-size: 0.66rem;
+			font-weight: 900;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.nav-item {
+			display: grid;
+			grid-template-columns: 32px minmax(0, 1fr) auto;
+			gap: 9px;
+			align-items: center;
+			min-height: 38px;
+			padding: 7px 9px;
+			border: 1px solid transparent;
+			border-radius: 8px;
+			color: var(--ink-soft);
+			text-decoration: none;
+			font-size: 0.86rem;
+			font-weight: 650;
+		}
+
+		.nav-item:hover,
+		.nav-item.active {
+			background: #edf4f8;
+			border-color: #d5e4ec;
+			color: var(--navy);
+		}
+
+		.nav-code {
+			display: grid;
+			place-items: center;
+			height: 24px;
+			border-radius: 6px;
+			background: #eef3f6;
+			color: var(--navy);
+			font-size: 0.64rem;
+			font-weight: 900;
+		}
+
+		.nav-item.active .nav-code {
+			background: var(--navy);
+			color: #ffffff;
+		}
+
+		.nav-count {
+			color: var(--muted);
+			font-size: 0.72rem;
+			font-weight: 800;
+		}
+
+		.sidebar-footer {
+			margin-top: auto;
+			padding: 16px 18px;
+			border-top: 1px solid var(--line);
+			background: #fbfcfd;
+		}
+
+		.operator {
+			display: flex;
+			justify-content: space-between;
+			gap: 12px;
+			align-items: center;
+			font-size: 0.8rem;
+		}
+
+		.operator strong,
+		.operator span {
+			display: block;
+		}
+
+		.operator span {
+			color: var(--muted);
+			margin-top: 2px;
+		}
+
+		.workspace {
+			min-width: 0;
+			padding: 24px 30px 36px;
+		}
+
+		.topbar {
+			display: flex;
+			justify-content: space-between;
+			gap: 18px;
+			align-items: flex-start;
+			padding-bottom: 18px;
+			border-bottom: 1px solid var(--line);
+		}
+
+		.eyebrow {
+			margin: 0 0 6px;
+			color: var(--blue);
+			font-size: 0.72rem;
+			font-weight: 900;
+			letter-spacing: 0.09em;
+			text-transform: uppercase;
+		}
+
+		h1,
+		h2,
+		h3,
+		p {
+			margin-top: 0;
+		}
+
+		h1 {
+			margin-bottom: 0;
+			font-size: clamp(1.7rem, 3vw, 2.35rem);
+			line-height: 1.08;
+			letter-spacing: 0;
+		}
+
+		.topbar-actions,
+		.actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			justify-content: flex-end;
+		}
+
+		.pill,
+		.tab-button,
+		.primary,
+		.secondary {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 34px;
+			border-radius: 8px;
+			border: 1px solid var(--line-strong);
+			padding: 7px 12px;
+			background: var(--surface);
+			color: var(--ink);
+			font-size: 0.78rem;
+			font-weight: 800;
+			text-decoration: none;
+			cursor: pointer;
+		}
+
+		.primary {
+			background: var(--navy);
+			border-color: var(--navy);
+			color: #ffffff;
+		}
+
+		.secondary:hover,
+		.tab-button:hover {
+			border-color: #adc5d3;
+			background: #f3f8fa;
+		}
+
+		.tabs {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin: 18px 0;
+		}
+
+		.tab-button.active {
+			background: #e8f2f7;
+			border-color: #b9d3e2;
+			color: var(--navy);
+		}
+
+		.screen {
+			display: none;
+			animation: show 180ms ease both;
+		}
+
+		.screen.active {
+			display: block;
+		}
+
+		@keyframes show {
+			from {
+				opacity: 0;
+				transform: translateY(4px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.grid {
+			display: grid;
+			gap: 14px;
+		}
+
+		.metrics {
+			grid-template-columns: repeat(4, minmax(145px, 1fr));
+		}
+
+		.card {
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: var(--surface);
+			box-shadow: var(--shadow);
+		}
+
+		.metric {
+			min-height: 92px;
+			padding: 15px 16px;
+			border-top: 4px solid var(--blue);
+		}
+
+		.metric.amber {
+			border-top-color: var(--amber);
+		}
+
+		.metric.green {
+			border-top-color: var(--green);
+		}
+
+		.metric.red {
+			border-top-color: var(--red);
+		}
+
+		.metric span {
+			display: block;
+			color: var(--muted);
+			font-size: 0.68rem;
+			font-weight: 900;
+			letter-spacing: 0.07em;
+			text-transform: uppercase;
+		}
+
+		.metric strong {
+			display: block;
+			margin-top: 8px;
+			font-size: 1.9rem;
+			line-height: 1;
+		}
+
+		.metric small {
+			display: block;
+			margin-top: 8px;
+			color: var(--muted);
+			font-weight: 700;
+		}
+
+		.two-col {
+			grid-template-columns: minmax(0, 1.18fr) minmax(310px, 0.82fr);
+			margin-top: 14px;
+		}
+
+		.panel-head {
+			display: flex;
+			justify-content: space-between;
+			gap: 12px;
+			align-items: center;
+			padding: 15px 16px;
+			border-bottom: 1px solid var(--line);
+			background: var(--surface-soft);
+		}
+
+		.panel-head h2 {
+			margin: 0;
+			font-size: 1rem;
+		}
+
+		.panel-body {
+			padding: 14px 16px 16px;
+		}
+
+		.filter-bar {
+			display: grid;
+			grid-template-columns: minmax(140px, 190px) minmax(140px, 190px) minmax(220px, 1fr) auto;
+			gap: 10px;
+			align-items: end;
+			margin-bottom: 13px;
+			padding: 12px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: #fbfcfd;
+		}
+
+		label {
+			display: grid;
+			gap: 5px;
+			color: var(--muted);
+			font-size: 0.68rem;
+			font-weight: 900;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+		}
+
+		input,
+		select {
+			width: 100%;
+			height: 36px;
+			border: 1px solid var(--line-strong);
+			border-radius: 7px;
+			background: #ffffff;
+			color: var(--ink);
+			padding: 7px 10px;
+			outline: none;
+		}
+
+		input:focus,
+		select:focus {
+			border-color: var(--blue);
+			box-shadow: 0 0 0 3px rgba(43, 111, 159, 0.14);
+		}
+
+		table {
+			width: 100%;
+			border-collapse: separate;
+			border-spacing: 0;
+			overflow: hidden;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+		}
+
+		th,
+		td {
+			padding: 11px 12px;
+			text-align: left;
+			vertical-align: middle;
+		}
+
+		th {
+			background: #eef3f6;
+			color: var(--ink-soft);
+			font-size: 0.66rem;
+			font-weight: 900;
+			letter-spacing: 0.07em;
+			text-transform: uppercase;
+		}
+
+		td {
+			border-top: 1px solid var(--line);
+			color: var(--ink);
+			font-size: 0.84rem;
+		}
+
+		tr:hover td {
+			background: #f8fbfc;
+		}
+
+		.tag {
+			display: inline-flex;
+			align-items: center;
+			min-height: 24px;
+			border-radius: 999px;
+			border: 1px solid #bdd4e1;
+			padding: 3px 8px;
+			background: #eef6fa;
+			color: var(--blue);
+			font-size: 0.7rem;
+			font-weight: 900;
+			white-space: nowrap;
+		}
+
+		.tag.warn {
+			border-color: #e5cf9d;
+			background: #fff8e8;
+			color: var(--amber);
+		}
+
+		.tag.ok {
+			border-color: #badbc9;
+			background: #edf8f1;
+			color: var(--green);
+		}
+
+		.queue {
+			display: grid;
+			gap: 9px;
+		}
+
+		.queue-item {
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr) auto;
+			gap: 10px;
+			align-items: center;
+			padding: 10px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: #fbfcfd;
+		}
+
+		.queue-code {
+			color: var(--navy);
+			font-size: 0.74rem;
+			font-weight: 950;
+		}
+
+		.queue-item strong {
+			display: block;
+			font-size: 0.86rem;
+			overflow-wrap: anywhere;
+		}
+
+		.queue-item span {
+			display: block;
+			margin-top: 3px;
+			color: var(--muted);
+			font-size: 0.75rem;
+		}
+
+		.login-stage {
+			display: grid;
+			grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+			gap: 18px;
+			align-items: stretch;
+			min-height: 530px;
+		}
+
+		.login-card {
+			padding: 28px;
+		}
+
+		.login-card h2 {
+			margin-bottom: 8px;
+			font-size: 1.62rem;
+		}
+
+		.login-card p {
+			color: var(--ink-soft);
+			line-height: 1.45;
+		}
+
+		.login-form {
+			display: grid;
+			gap: 14px;
+			margin-top: 24px;
+		}
+
+		.seal-panel {
+			padding: 24px;
+			background:
+				linear-gradient(135deg, rgba(23, 57, 95, 0.08), transparent 48%),
+				var(--surface);
+		}
+
+		.info-grid {
+			display: grid;
+			gap: 12px;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			margin-top: 18px;
+		}
+
+		.info-box {
+			min-height: 78px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			padding: 12px;
+			background: #fbfcfd;
+		}
+
+		.info-box span {
+			color: var(--muted);
+			font-size: 0.66rem;
+			font-weight: 900;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+		}
+
+		.info-box strong {
+			display: block;
+			margin-top: 8px;
+			font-size: 1.15rem;
+		}
+
+		.mobile-preview {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 250px;
+			gap: 16px;
+			align-items: start;
+		}
+
+		.phone {
+			justify-self: center;
+			width: 250px;
+			min-height: 510px;
+			border: 1px solid #c7d5dc;
+			border-radius: 28px;
+			background: #eef3f6;
+			padding: 16px;
+			box-shadow: var(--shadow);
+		}
+
+		.phone-screen {
+			min-height: 476px;
+			border-radius: 18px;
+			background: #ffffff;
+			padding: 16px;
+			overflow: hidden;
+		}
+
+		.mobile-task {
+			padding: 11px;
+			border: 1px solid var(--line);
+			border-radius: 8px;
+			background: #fbfcfd;
+			margin-top: 9px;
+		}
+
+		.mobile-task strong {
+			display: block;
+			font-size: 0.85rem;
+		}
+
+		.mobile-task span {
+			display: block;
+			color: var(--muted);
+			font-size: 0.72rem;
+			margin-top: 4px;
+		}
+
+		@media (max-width: 1100px) {
+			.layout {
+				grid-template-columns: 1fr;
+			}
+
+			.sidebar {
+				position: static;
+				height: auto;
+			}
+
+			.nav {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+
+			.two-col,
+			.login-stage,
+			.mobile-preview {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		@media (max-width: 760px) {
+			.workspace {
+				padding: 18px 14px 26px;
+			}
+
+			.topbar,
+			.panel-head {
+				align-items: stretch;
+				flex-direction: column;
+			}
+
+			.metrics,
+			.filter-bar,
+			.nav,
+			.info-grid {
+				grid-template-columns: 1fr;
+			}
+
+			table {
+				display: block;
+				overflow-x: auto;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="layout">
+		<aside class="sidebar">
+			<div class="brand">
+				<div class="brand-mark">PJ</div>
+				<div>
+					<strong>Poder Judicial</strong>
+					<span>Centro Judicial San Pedro</span>
+				</div>
+			</div>
+			<div class="app-label">Inventario Modular</div>
+			<nav class="nav" aria-label="Modulos">
+				<div class="nav-section">
+					<div class="nav-title">Principal</div>
+					<a class="nav-item active" href="#"><span class="nav-code">PG</span><span>Panel General</span><span class="nav-count">Inicio</span></a>
+				</div>
+				<div class="nav-section">
+					<div class="nav-title">Inventario</div>
+					<a class="nav-item" href="#"><span class="nav-code">EQ</span><span>Equipos</span><span class="nav-count">148</span></a>
+					<a class="nav-item" href="#"><span class="nav-code">ST</span><span>Stock de Deposito</span><span class="nav-count">42</span></a>
+					<a class="nav-item" href="#"><span class="nav-code">UB</span><span>Sedes y Ubicaciones</span><span class="nav-count">18</span></a>
+				</div>
+				<div class="nav-section">
+					<div class="nav-title">Gestion</div>
+					<a class="nav-item" href="#"><span class="nav-code">TT</span><span>Tareas Tecnicas</span><span class="nav-count">17</span></a>
+					<a class="nav-item" href="#"><span class="nav-code">AC</span><span>Actas y Movimientos</span><span class="nav-count">6</span></a>
+					<a class="nav-item" href="#"><span class="nav-code">RP</span><span>Reportes</span><span class="nav-count">PDF</span></a>
+				</div>
+				<div class="nav-section">
+					<div class="nav-title">Sistema</div>
+					<a class="nav-item" href="#"><span class="nav-code">AU</span><span>Auditoria Global</span><span class="nav-count">Log</span></a>
+					<a class="nav-item" href="#"><span class="nav-code">US</span><span>Usuarios y Permisos</span><span class="nav-count">12</span></a>
+				</div>
+			</nav>
+			<div class="sidebar-footer">
+				<div class="operator">
+					<div>
+						<strong>admin.local</strong>
+						<span>Modo local / MySQL</span>
+					</div>
+					<span class="tag ok">Activo</span>
+				</div>
+			</div>
+		</aside>
+
+		<main class="workspace">
+			<header class="topbar">
+				<div>
+					<p class="eyebrow">Administracion patrimonial</p>
+					<h1>Inventario Modular</h1>
+				</div>
+				<div class="topbar-actions">
+					<span class="pill">MySQL local</span>
+					<span class="pill">LAN interna</span>
+					<button class="secondary" type="button">Descargar APK</button>
+				</div>
+			</header>
+
+			<div class="tabs" role="tablist" aria-label="Pantallas de maqueta">
+				<button class="tab-button active" type="button" data-screen="panel">Panel diario</button>
+				<button class="tab-button" type="button" data-screen="stock">Stock y tareas</button>
+				<button class="tab-button" type="button" data-screen="login">Login</button>
+				<button class="tab-button" type="button" data-screen="movil">Vista movil</button>
+			</div>
+
+			<section class="screen active" id="panel">
+				<div class="grid metrics">
+					<div class="card metric"><span>Equipos registrados</span><strong>148</strong><small>4 actualizados hoy</small></div>
+					<div class="card metric amber"><span>Tareas pendientes</span><strong>17</strong><small>6 en taller</small></div>
+					<div class="card metric green"><span>Stock disponible</span><strong>42</strong><small>componentes utiles</small></div>
+					<div class="card metric red"><span>Diferencias abiertas</span><strong>9</strong><small>requieren control</small></div>
+				</div>
+
+				<div class="grid two-col">
+					<section class="card">
+						<div class="panel-head">
+							<h2>Listado de equipos</h2>
+							<button class="primary" type="button">Nuevo equipo</button>
+						</div>
+						<div class="panel-body">
+							<div class="filter-bar">
+								<label>Modulo
+									<select><option>Equipos</option><option>Stock</option><option>Tareas</option></select>
+								</label>
+								<label>Estado
+									<select><option>Todos</option><option>Activo</option><option>En revision</option></select>
+								</label>
+								<label>Buscar
+									<input value="san pedro cpu" aria-label="Buscar">
+								</label>
+								<button class="secondary" type="button">Filtrar</button>
+							</div>
+							<table>
+								<thead>
+									<tr><th>Codigo</th><th>Bien</th><th>Ubicacion</th><th>Estado</th><th>Ultima novedad</th></tr>
+								</thead>
+								<tbody>
+									<tr><td>EQ-0148</td><td>CPU Dell Optiplex</td><td>Mesa de Entradas</td><td><span class="tag warn">Revision</span></td><td>RAM reemplazada</td></tr>
+									<tr><td>EQ-0112</td><td>Notebook Lenovo</td><td>Secretaria</td><td><span class="tag ok">Activo</span></td><td>Inventario recibido</td></tr>
+									<tr><td>EQ-0097</td><td>Impresora HP</td><td>Juzgado Civil</td><td><span class="tag">Taller</span></td><td>Diagnostico abierto</td></tr>
+									<tr><td>EQ-0061</td><td>Monitor Samsung</td><td>Deposito</td><td><span class="tag warn">Diferencia</span></td><td>Ubicacion no coincide</td></tr>
+								</tbody>
+							</table>
+						</div>
+					</section>
+
+					<section class="card">
+						<div class="panel-head">
+							<h2>Trabajo pendiente</h2>
+							<span class="tag">17 abiertas</span>
+						</div>
+						<div class="panel-body queue">
+							<div class="queue-item"><span class="queue-code">TT-231</span><div><strong>Cambiar fuente ATX</strong><span>Equipo EQ-0148 / Mesa de Entradas</span></div><span class="tag warn">Alta</span></div>
+							<div class="queue-item"><span class="queue-code">TT-229</span><div><strong>Revisar disco SSD</strong><span>Notebook Lenovo / Secretaria</span></div><span class="tag">Media</span></div>
+							<div class="queue-item"><span class="queue-code">TT-226</span><div><strong>Actualizar inventario movil</strong><span>3 equipos LAN pendientes</span></div><span class="tag ok">Curso</span></div>
+							<div class="queue-item"><span class="queue-code">TT-224</span><div><strong>Validar diferencia de stock</strong><span>Memorias DDR4 en deposito</span></div><span class="tag warn">Control</span></div>
+						</div>
+					</section>
+				</div>
+			</section>
+
+			<section class="screen" id="stock">
+				<div class="grid two-col">
+					<section class="card">
+						<div class="panel-head">
+							<h2>Stock de componentes</h2>
+							<div class="actions">
+								<button class="secondary" type="button">Entrada</button>
+								<button class="primary" type="button">Asignar</button>
+							</div>
+						</div>
+						<div class="panel-body">
+							<table>
+								<thead><tr><th>Componente</th><th>Tipo</th><th>Disponible</th><th>Reservado</th><th>Estado</th></tr></thead>
+								<tbody>
+									<tr><td>SSD Kingston 480 GB</td><td>Disco</td><td>8</td><td>2</td><td><span class="tag ok">Suficiente</span></td></tr>
+									<tr><td>DDR4 8 GB</td><td>Memoria</td><td>3</td><td>4</td><td><span class="tag warn">Reponer</span></td></tr>
+									<tr><td>Fuente ATX 500 W</td><td>Energia</td><td>2</td><td>1</td><td><span class="tag">Taller</span></td></tr>
+									<tr><td>Cable HDMI</td><td>Video</td><td>14</td><td>0</td><td><span class="tag ok">Suficiente</span></td></tr>
+								</tbody>
+							</table>
+						</div>
+					</section>
+					<section class="card">
+						<div class="panel-head"><h2>Orden administrativa</h2><span class="tag warn">Pendiente</span></div>
+						<div class="panel-body queue">
+							<div class="queue-item"><span class="queue-code">01</span><div><strong>Reservar SSD</strong><span>TT-231 requiere reemplazo</span></div><span class="tag ok">8</span></div>
+							<div class="queue-item"><span class="queue-code">02</span><div><strong>Asignar DDR4</strong><span>Validar cantidad con deposito</span></div><span class="tag warn">3</span></div>
+							<div class="queue-item"><span class="queue-code">03</span><div><strong>Generar acta</strong><span>Movimiento interno a taller</span></div><span class="tag">AC</span></div>
+						</div>
+					</section>
+				</div>
+			</section>
+
+			<section class="screen" id="login">
+				<div class="login-stage">
+					<section class="card login-card">
+						<p class="eyebrow">Ingreso al sistema</p>
+						<h2>Inventario Modular</h2>
+						<p>Acceso local o de dominio para usuarios autorizados del Centro Judicial San Pedro.</p>
+						<form class="login-form">
+							<label>Usuario
+								<input value="admin.local">
+							</label>
+							<label>Clave
+								<input type="password" value="AdminLocal123">
+							</label>
+							<button class="primary" type="button">Ingresar</button>
+							<button class="secondary" type="button">Copiar comando de inventario</button>
+						</form>
+					</section>
+					<section class="card seal-panel">
+						<p class="eyebrow">Entorno operativo</p>
+						<h2>Control interno de bienes y tareas</h2>
+						<div class="info-grid">
+							<div class="info-box"><span>Base</span><strong>MySQL local</strong></div>
+							<div class="info-box"><span>Puerto</span><strong>8081</strong></div>
+							<div class="info-box"><span>Modo</span><strong>LOCAL</strong></div>
+							<div class="info-box"><span>Red</span><strong>LAN interna</strong></div>
+						</div>
+					</section>
+				</div>
+			</section>
+
+			<section class="screen" id="movil">
+				<div class="mobile-preview">
+					<section class="card">
+						<div class="panel-head">
+							<h2>Vista movil institucional</h2>
+							<span class="tag ok">LAN</span>
+						</div>
+						<div class="panel-body">
+							<p style="color: var(--ink-soft); line-height: 1.5;">La version movil conserva el tono institucional y prioriza acciones claras para tareas tecnicas: tomar, comentar, usar stock y cerrar.</p>
+							<div class="grid metrics" style="grid-template-columns: repeat(3, 1fr);">
+								<div class="card metric amber"><span>Asignadas</span><strong>6</strong><small>hoy</small></div>
+								<div class="card metric"><span>En curso</span><strong>3</strong><small>taller</small></div>
+								<div class="card metric green"><span>Cerradas</span><strong>11</strong><small>semana</small></div>
+							</div>
+						</div>
+					</section>
+					<aside class="phone" aria-label="Mockup movil">
+						<div class="phone-screen">
+							<p class="eyebrow">Tareas LAN</p>
+							<h3>Mi cola</h3>
+							<div class="mobile-task"><strong>TT-231 Fuente ATX</strong><span>EQ-0148 / Alta</span></div>
+							<div class="mobile-task"><strong>TT-229 Disco SSD</strong><span>Secretaria / Media</span></div>
+							<div class="mobile-task"><strong>TT-226 Inventario</strong><span>3 equipos por relevar</span></div>
+							<button class="primary" type="button" style="width: 100%; margin-top: 14px;">Tomar siguiente</button>
+						</div>
+					</aside>
+				</div>
+			</section>
+		</main>
+	</div>
+
+	<script>
+		const buttons = document.querySelectorAll(".tab-button");
+		const screens = document.querySelectorAll(".screen");
+
+		buttons.forEach((button) => {
+			button.addEventListener("click", () => {
+				buttons.forEach((item) => item.classList.remove("active"));
+				screens.forEach((screen) => screen.classList.remove("active"));
+				button.classList.add("active");
+				document.getElementById(button.dataset.screen).classList.add("active");
+			});
+		});
+	</script>
+</body>
+</html>

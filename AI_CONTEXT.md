@@ -66,6 +66,31 @@ cargado administrativamente debe poder compararse con lo detectado o instalado r
 - Build APK: Gradle Wrapper en `android/gradlew.bat`.
 - CI/CD: GitLab CI documentado en `docs/inventario-modular/ci-cd.md`.
 
+### Arquitectura visual vigente
+
+- El tema visual vigente del servidor web es **Mesa Tecnica Oscura**.
+- El objetivo es una interfaz tipo centro de control de taller/informatica: oscura, densa,
+  sobria y util para uso diario.
+- El archivo central de estilos es `src/main/resources/static/css/admin.css`.
+- La navegacion compartida vive en `src/main/resources/templates/admin/nav.html`.
+- La documentacion visual canonica esta en `docs/arquitectura_visual.md`.
+- El sidebar usa codigos cortos (`PG`, `EQ`, `ST`, `TT`, etc.) en lugar de emoji o iconos
+  decorativos para mantener una lectura tecnica y consistente.
+- Los colores base del tema oscuro son:
+  - fondo operativo `#050708`
+  - paneles `#0c1417`
+  - paneles secundarios `#081113`
+  - acento principal `#26d3c5`
+  - texto principal `#eef8f5`
+- Al tocar UI web, preservar:
+  - contraste alto sin volver a un tema claro corporativo;
+  - grillas y paneles compactos;
+  - foco visible en formularios y botones;
+  - tablas densas pero legibles;
+  - compatibilidad responsive con desktop y celular.
+- Antes de cambiar la identidad visual, revisar primero el mockup de referencia:
+  `output/mockups-diseno/mesa-tecnica-oscura.html`, si existe en el entorno local.
+
 ## 4. Directorios importantes
 
 | Ruta | Contenido |
@@ -345,6 +370,7 @@ y verificar fecha, host, rama y backup.
 | 2026-09 | Actualizacion administrativa en lote | Mismo remito/OC/proveedor para muchos componentes |
 | 2026-09 | Escaneo rapido con pendientes | Cargar 20 monitores o 60 cartuchos sin tipear datos repetidos |
 | 2026-09 | Autenticacion local de base activa en perfil local | La APK debe aceptar tecnicos locales como `usuario3` durante pruebas LAN |
+| 2026-09 | Mesa Tecnica Oscura como UI vigente | El servidor web debe sentirse como centro de control de taller/informatica |
 
 ## 12. Que no tocar sin cuidado
 
@@ -367,6 +393,10 @@ y verificar fecha, host, rama y backup.
 - No hacer refactors grandes mientras se esta corrigiendo una pantalla o flujo puntual.
 - No dejar pantallas con solapas redundantes: en Stock, la edicion debe estar por registro.
 - No cerrar cambios de UI sin revisar visualmente tabla, columna Tipo, mobile y desktop.
+- No volver a una UI clara tipo "Soft Corporate Light" sin pedido explicito; el tema vigente es
+  Mesa Tecnica Oscura.
+- No usar emoji como lenguaje principal de navegacion del admin; preferir codigos cortos o iconos
+  SVG consistentes.
 
 ## 13. Tests recomendados por area
 
@@ -419,5 +449,8 @@ Leer estos documentos segun la tarea:
 6. Hacer cambios pequenos y coherentes con el patron existente.
 7. Agregar o ajustar tests si el cambio toca reglas de negocio.
 8. Ejecutar tests enfocados.
-9. Si hay UI, verificar por navegador o HTTP al menos la ruta principal.
-10. Al finalizar, decir que archivos se tocaron, que se probo y que queda pendiente.
+9. Si hay UI, revisar `docs/arquitectura_visual.md` y mantener Mesa Tecnica Oscura salvo pedido
+   explicito de otra direccion.
+10. Si hay UI, verificar por navegador o HTTP al menos la ruta principal.
+11. Si se pide contexto de repo, usar Graphify primero cuando exista `graphify-out/graph.json`.
+12. Al finalizar, decir que archivos se tocaron, que se probo y que queda pendiente.

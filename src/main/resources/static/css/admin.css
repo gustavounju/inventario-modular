@@ -1,69 +1,67 @@
 /**
- * Arquitectura Visual: Modern Card-Based Admin Shell
- * Esquema de Color: Midnight Slate Eye-Care (Modo Oscuro Relajante que no daña la vista por defecto)
- * Soporte Dual: Conmutación accesible entre Modo Oscuro y Modo Claro
+ * Arquitectura Visual: Mesa Tecnica Oscura
+ * Esquema de Color: Centro de control para taller e informatica
+ * Soporte Dual: Conmutacion accesible entre modo oscuro operativo y modo claro
  */
 :root,
 :root[data-theme="dark"] {
 	color-scheme: dark;
-	font-family: Arial, Helvetica, sans-serif;
+	font-family: "Segoe UI", Aptos, Tahoma, sans-serif;
 
-	/* Paleta Modo Oscuro "Eye-Care" (Midnight Slate - Cuidado visual sin contrastes agresivos) */
-	--bg-canvas: #0b0f19;          /* Canvas principal profundo y descansado */
-	--bg-sidebar: #0e1626;         /* Barra lateral con sutil elevación */
-	--bg-card: #151f32;            /* Tarjetas de datos y módulos */
-	--bg-card-hover: #1c2a42;      /* Efecto hover suave en tarjetas */
-	--bg-card-secondary: #111a2c;  /* Fondo de elementos anidados */
-	--bg-input: #0b111c;           /* Fondo de campos de formulario */
+	--bg-canvas: #050708;
+	--bg-sidebar: #070d0f;
+	--bg-card: #0c1417;
+	--bg-card-hover: #122225;
+	--bg-card-secondary: #081113;
+	--bg-input: #061012;
 	
-	--border-color: #22314a;       /* Bordes principales nítidos pero no estridentes */
-	--border-subtle: #19263b;      /* Divisores internos suaves */
-	--border-input: #2a3d5c;       /* Bordes de inputs y selectores */
+	--border-color: #20393d;
+	--border-subtle: #15282c;
+	--border-input: #315a60;
 	
-	--text-primary: #f8fafc;       /* Texto principal blanco Slate */
-	--text-secondary: #94a3b8;     /* Texto secundario y etiquetas */
-	--text-muted: #64748b;         /* Texto atenuado y antetítulos */
-	--text-link: #60a5fa;          /* Enlaces y acentos celestes */
+	--text-primary: #eef8f5;
+	--text-secondary: #9ab2b0;
+	--text-muted: #607977;
+	--text-link: #26d3c5;
 	
-	--accent-primary: #2563eb;     /* Azul judicial */
-	--accent-hover: #1d4ed8;       /* Azul interactivo */
-	--accent-focus: rgba(59, 130, 246, 0.35); /* Anillo de foco */
+	--accent-primary: #26d3c5;
+	--accent-hover: #15a69b;
+	--accent-focus: rgba(38, 211, 197, 0.24);
 	
-	--badge-bg: #1e293b;
-	--badge-text: #94a3b8;
-	--badge-border: #334155;
+	--badge-bg: #102024;
+	--badge-text: #9ab2b0;
+	--badge-border: #27484e;
 	
-	--table-head-bg: #0f1827;      /* Encabezados de tabla */
-	--table-row-hover: #1b273d;    /* Fila de tabla al pasar cursor */
-	--table-border: #22314a;
+	--table-head-bg: #081113;
+	--table-row-hover: #122225;
+	--table-border: #1c3438;
 	
-	--shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
-	--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+	--shadow-card: 0 18px 44px rgba(0, 0, 0, 0.42);
+	--shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.24);
 }
 
 :root[data-theme="light"] {
 	color-scheme: light;
 	
-	/* Paleta Modo Claro Corporativo */
-	--bg-canvas: #f8fafc;
-	--bg-sidebar: #ffffff;
+	--bg-canvas: #f3f6f6;
+	--bg-sidebar: #fdfefe;
 	--bg-card: #ffffff;
-	--bg-card-hover: #f1f5f9;
-	--bg-card-secondary: #f8fafc;
-	--bg-input: #f8fafc;
+	--bg-card-hover: #eef5f5;
+	--bg-card-secondary: #f6f9f9;
+	--bg-input: #fbfdfd;
 	
-	--border-color: #e2e8f0;
-	--border-subtle: #f1f5f9;
-	--border-input: #cbd5e1;
+	--border-color: #d8e2e3;
+	--border-subtle: #e9f0f1;
+	--border-input: #b9cccf;
 	
-	--text-primary: #0f172a;
-	--text-secondary: #475569;
-	--text-muted: #64748b;
-	--text-link: #2563eb;
+	--text-primary: #172426;
+	--text-secondary: #4e6468;
+	--text-muted: #768b8f;
+	--text-link: #087b78;
 	
-	--accent-primary: #2563eb;
-	--accent-hover: #1d4ed8;
-	--accent-focus: rgba(59, 130, 246, 0.2);
+	--accent-primary: #087b78;
+	--accent-hover: #05615f;
+	--accent-focus: rgba(8, 123, 120, 0.18);
 	
 	--badge-bg: #f1f5f9;
 	--badge-text: #475569;
@@ -73,8 +71,8 @@
 	--table-row-hover: #f8fafc;
 	--table-border: #e2e8f0;
 	
-	--shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+	--shadow-card: 0 12px 34px rgba(23, 36, 38, 0.08);
+	--shadow-sm: 0 4px 14px rgba(23, 36, 38, 0.06);
 }
 
 * {
@@ -84,7 +82,12 @@
 body {
 	margin: 0;
 	min-height: 100vh;
-	background: var(--bg-canvas);
+	background:
+		linear-gradient(90deg, rgba(38, 211, 197, 0.035) 1px, transparent 1px),
+		linear-gradient(0deg, rgba(38, 211, 197, 0.028) 1px, transparent 1px),
+		linear-gradient(145deg, #050708 0%, #0b1114 56%, #06090a 100%),
+		var(--bg-canvas);
+	background-size: 28px 28px, 28px 28px, auto, auto;
 	color: var(--text-primary);
 	transition: background 0.2s ease, color 0.2s ease;
 }
@@ -132,8 +135,10 @@ body {
 .status-panel.login-panel {
 	width: min(100%, 460px);
 	border: 1px solid var(--border-color);
-	border-radius: 12px;
-	background: var(--bg-card);
+	border-radius: 10px;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 11%, transparent), transparent 48%),
+		var(--bg-card);
 	color: var(--text-primary);
 	padding: 36px;
 	box-shadow: var(--shadow-card);
@@ -341,10 +346,10 @@ body {
 }
 
 .primary-action {
-	background: #2563eb;
-	border: 1px solid #1d4ed8;
+	background: linear-gradient(180deg, #2de0d0, var(--accent-hover));
+	border: 1px solid var(--accent-hover);
 	border-radius: 8px;
-	color: #ffffff;
+	color: #031113;
 	cursor: pointer;
 	font: inherit;
 	font-size: 0.88rem;
@@ -356,14 +361,14 @@ body {
 	align-items: center;
 	justify-content: center;
 	gap: 6px;
-	box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+	box-shadow: 0 8px 18px color-mix(in srgb, var(--accent-primary) 28%, transparent);
 	transition: all 0.15s ease;
 }
 
 .primary-action:hover {
-	background: #1d4ed8;
-	border-color: #1e40af;
-	box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4);
+	background: linear-gradient(180deg, #51eadc, #17b5a8);
+	border-color: var(--accent-hover);
+	box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-primary) 34%, transparent);
 }
 
 .eyebrow {
@@ -768,7 +773,7 @@ h1 {
 }
 
 .login-intro {
-	color: #526475;
+	color: var(--text-secondary);
 	line-height: 1.45;
 	margin: 14px 0 0;
 }
@@ -785,18 +790,27 @@ h1 {
 }
 
 .login-form label span {
-	color: #415366;
+	color: var(--text-secondary);
 	font-size: 0.84rem;
 	font-weight: 700;
 }
 
 .login-form input {
-	border: 1px solid #c7d2dd;
-	border-radius: 6px;
-	color: #1d252d;
+	background: var(--bg-input);
+	border: 1px solid var(--border-input);
+	border-radius: 8px;
+	color: var(--text-primary);
 	font: inherit;
 	padding: 11px 12px;
 	width: 100%;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.login-form input:focus {
+	background: var(--bg-card);
+	border-color: var(--accent-primary);
+	box-shadow: 0 0 0 3px var(--accent-focus);
+	outline: none;
 }
 
 .equipment-form label {
@@ -856,7 +870,7 @@ h1 {
 	gap: 12px;
 	margin-top: 28px;
 	padding-top: 22px;
-	border-top: 1px solid #e6ebf0;
+	border-top: 1px solid var(--border-subtle);
 }
 
 .script-copy-panel h2 {
@@ -878,7 +892,7 @@ h1 {
 }
 
 .script-copy-status {
-	color: #5e7184;
+	color: var(--text-muted);
 	font-size: 0.82rem;
 	font-weight: 700;
 	margin: 0;
@@ -1210,7 +1224,7 @@ h1 {
 /* Tablas responsivas modernas tipo Dashboard SaaS */
 .responsive-table {
 	border: 1px solid var(--border-color);
-	border-radius: 10px;
+	border-radius: 8px;
 	overflow-x: auto;
 	background: var(--bg-card);
 	box-shadow: var(--shadow-sm);
@@ -1223,20 +1237,22 @@ table {
 
 th,
 td {
-	padding: 13px 16px;
+	padding: 11px 14px;
 	text-align: left;
 	vertical-align: middle;
 }
 
 thead th {
-	background: var(--table-head-bg);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 9%, transparent), transparent),
+		var(--table-head-bg);
 	border-top: 0;
 	border-bottom: 1px solid var(--table-border);
 	color: var(--text-secondary);
 	font-size: 0.72rem;
-	font-weight: 700;
+	font-weight: 800;
 	text-transform: uppercase;
-	letter-spacing: 0.05em;
+	letter-spacing: 0.04em;
 	white-space: nowrap;
 }
 
@@ -1253,6 +1269,10 @@ tbody tr {
 
 tbody tr:hover {
 	background: var(--table-row-hover);
+}
+
+tbody tr:focus-within {
+	background: color-mix(in srgb, var(--table-row-hover) 82%, var(--accent-primary));
 }
 
 .stock-type-chip {
@@ -2374,7 +2394,9 @@ dialog::backdrop {
 	left: 0;
 	bottom: 0;
 	width: 260px;
-	background: var(--bg-sidebar);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent 34%),
+		var(--bg-sidebar);
 	color: var(--text-secondary);
 	display: flex;
 	flex-direction: column;
@@ -2383,7 +2405,7 @@ dialog::backdrop {
 	scrollbar-width: thin;
 	scrollbar-color: var(--border-input) transparent;
 	border-right: 1px solid var(--border-color);
-	box-shadow: var(--shadow-sm);
+	box-shadow: 14px 0 36px rgba(0, 0, 0, 0.18);
 	transition: transform 0.25s ease, background 0.2s ease;
 }
 
@@ -2393,12 +2415,23 @@ dialog::backdrop {
 	align-items: center;
 	gap: 12px;
 	padding: 18px 18px 14px;
-	background: var(--bg-sidebar);
+	background: color-mix(in srgb, var(--bg-sidebar) 88%, var(--accent-primary));
 	border-bottom: 1px solid var(--border-color);
 }
 
 .sidebar-brand-icon {
-	font-size: 1.5rem;
+	align-items: center;
+	background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
+	border: 1px solid color-mix(in srgb, var(--accent-primary) 34%, var(--border-color));
+	border-radius: 8px;
+	color: var(--text-link);
+	display: inline-flex;
+	font-size: 0.72rem;
+	font-weight: 900;
+	height: 34px;
+	justify-content: center;
+	letter-spacing: 0.04em;
+	width: 34px;
 }
 
 .sidebar-brand-title {
@@ -2419,7 +2452,7 @@ dialog::backdrop {
 /* Distintivo de aplicación del sistema judicial */
 .sidebar-app-badge {
 	padding: 6px 18px;
-	background: rgba(37, 99, 235, 0.12);
+	background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
 	border-bottom: 1px solid var(--border-color);
 }
 
@@ -2427,7 +2460,7 @@ dialog::backdrop {
 	font-size: 0.68rem;
 	font-weight: 800;
 	letter-spacing: 0.8px;
-	color: #60a5fa;
+	color: var(--text-link);
 }
 
 /* Lista navegable categorizada por áreas operativas */
@@ -2460,36 +2493,52 @@ dialog::backdrop {
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 8px 12px;
-	border-radius: 6px;
+	padding: 9px 12px;
+	border: 1px solid transparent;
+	border-radius: 7px;
 	color: var(--text-secondary);
 	text-decoration: none;
 	font-size: 0.85rem;
-	font-weight: 500;
-	transition: background 0.15s ease, color 0.15s ease;
+	font-weight: 650;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 /* Efecto hover al pasar el cursor */
 .sidebar-link:hover {
 	background: var(--bg-card-hover);
+	border-color: var(--border-subtle);
 	color: var(--text-primary);
 }
 
 /* Estado activo del módulo en pantalla (selección visual clara) */
 .sidebar-link.is-active {
-	background: rgba(37, 99, 235, 0.18);
-	color: #60a5fa;
+	background: color-mix(in srgb, var(--accent-primary) 16%, transparent);
+	border-color: color-mix(in srgb, var(--accent-primary) 34%, var(--border-color));
+	color: var(--text-link);
 	font-weight: 700;
-	box-shadow: inset 3px 0 0 #3b82f6;
+	box-shadow: inset 3px 0 0 var(--accent-primary);
 }
 
 .sidebar-icon {
-	font-size: 0.98rem;
+	background: var(--bg-card-secondary);
+	border: 1px solid var(--border-subtle);
+	border-radius: 5px;
+	color: var(--text-muted);
+	font-size: 0.63rem;
+	font-weight: 900;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 20px;
+	height: 22px;
+	letter-spacing: 0.02em;
+	width: 28px;
 	flex-shrink: 0;
+}
+
+.sidebar-link.is-active .sidebar-icon {
+	background: color-mix(in srgb, var(--accent-primary) 20%, transparent);
+	border-color: color-mix(in srgb, var(--accent-primary) 42%, var(--border-color));
+	color: var(--text-link);
 }
 
 .sidebar-text {
@@ -3402,10 +3451,190 @@ button:disabled, .secondary-action:disabled, .primary-action:disabled { opacity:
 		white-space: nowrap;
 	}
 
-	.dashboard-access-strip .primary-action,
-	.dashboard-access-strip .secondary-action {
-		width: 100%;
+.dashboard-access-strip .primary-action,
+.dashboard-access-strip .secondary-action {
+	width: 100%;
 	}
+}
+
+/* ==========================================================================
+   Mesa Tecnica Oscura - capa global de consistencia visual
+   ========================================================================== */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+	outline: 3px solid var(--accent-focus);
+	outline-offset: 2px;
+}
+
+.panel-topbar,
+.task-viewer-hero {
+	background: linear-gradient(180deg, rgba(12, 20, 23, 0.72), rgba(8, 17, 19, 0));
+}
+
+.status-panel,
+.modules-section,
+.attributes-section,
+.runtime-grid div,
+.identity-grid,
+.attributes-table,
+.attribute-row,
+.script-copy-panel,
+.management-layout .status-panel,
+.summary-grid div,
+.module-card,
+.inline-edit-card,
+.workflow-banner,
+.search-form,
+.dashboard-filter-form,
+.task-board,
+.task-create-panel,
+.task-metric-card,
+.task-viewer-filter,
+.task-row-meta div,
+.task-comments,
+.dashboard-access-strip {
+	border-color: var(--border-color) !important;
+}
+
+.status-panel,
+.modules-section,
+.attributes-section,
+.module-card,
+.summary-grid div,
+.runtime-grid div,
+.inline-edit-card,
+.task-board,
+.task-create-panel,
+.task-metric-card,
+.task-viewer-filter {
+	background: linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 92%, var(--accent-primary)), var(--bg-card)) !important;
+}
+
+.attribute-name,
+.task-row-meta div,
+.task-comments,
+.workflow-step-card,
+.workflow-banner > div:last-child > div,
+.sidebar-user-footer {
+	background: var(--bg-card-secondary) !important;
+}
+
+.identity-grid dt,
+.runtime-grid dt,
+.attribute-name,
+.field-help,
+.credential-hint,
+.empty-state,
+.version,
+.script-copy-status,
+.current-user-note,
+.section-note,
+.task-row-meta dt {
+	color: var(--text-muted) !important;
+}
+
+.attribute-value,
+.runtime-grid dd,
+.identity-grid dd,
+.task-row-meta dd strong,
+.task-row-title h3 {
+	color: var(--text-primary) !important;
+}
+
+.script-copy-panel textarea,
+.login-form input,
+.user-form input[type="text"],
+.user-form input[type="password"],
+.user-form select,
+.equipment-form input,
+.equipment-form select,
+.equipment-form textarea,
+.search-form input,
+.search-form select,
+.dashboard-filter-form input,
+.dashboard-filter-form select,
+.task-viewer-filter input,
+.task-viewer-filter select,
+.task-inline-form input,
+.task-inline-form select {
+	background: var(--bg-input) !important;
+	border-color: var(--border-input) !important;
+	color: var(--text-primary) !important;
+}
+
+.script-copy-panel textarea::selection,
+input::selection,
+textarea::selection {
+	background: color-mix(in srgb, var(--accent-primary) 42%, transparent);
+	color: var(--text-primary);
+}
+
+.user-avatar {
+	background: linear-gradient(135deg, #0b272a, #123f43) !important;
+	border: 1px solid color-mix(in srgb, var(--accent-primary) 38%, var(--border-color));
+	color: var(--text-link) !important;
+}
+
+.user-badge,
+.count-badge,
+.permission-list span {
+	background: color-mix(in srgb, var(--accent-primary) 10%, transparent) !important;
+	border-color: color-mix(in srgb, var(--accent-primary) 28%, var(--border-color)) !important;
+	color: var(--text-link) !important;
+}
+
+.app-sidebar {
+	background:
+		linear-gradient(90deg, rgba(38, 211, 197, 0.045) 1px, transparent 1px),
+		linear-gradient(0deg, rgba(38, 211, 197, 0.03) 1px, transparent 1px),
+		var(--bg-sidebar);
+	background-size: 24px 24px, 24px 24px, auto;
+}
+
+.sidebar-brand,
+.sidebar-app-badge {
+	background: rgba(8, 17, 19, 0.92);
+}
+
+.sidebar-link:hover,
+.sidebar-link.is-active {
+	background: color-mix(in srgb, var(--accent-primary) 14%, #071012) !important;
+}
+
+.sidebar-icon,
+.theme-toggle-icon,
+.topbar-apk-icon,
+.apk-download-action span {
+	font-family: "Segoe UI", Aptos, Tahoma, sans-serif;
+	letter-spacing: 0.04em;
+}
+
+.theme-toggle-icon {
+	align-items: center;
+	background: var(--bg-card-secondary);
+	border: 1px solid var(--border-subtle);
+	border-radius: 5px;
+	color: var(--text-link);
+	display: inline-flex;
+	font-size: 0.66rem;
+	font-weight: 900;
+	height: 22px;
+	justify-content: center;
+	min-width: 28px;
+}
+
+.theme-toggle-btn:hover .theme-toggle-icon {
+	border-color: color-mix(in srgb, var(--accent-primary) 42%, var(--border-color));
+}
+
+.dashboard-access-strip {
+	background: color-mix(in srgb, var(--accent-primary) 10%, var(--bg-card)) !important;
+	border-left-color: var(--accent-primary) !important;
 }
 
 @media (max-width: 380px) {
