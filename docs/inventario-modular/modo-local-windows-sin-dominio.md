@@ -12,7 +12,7 @@ En el trabajo:
 
 ```text
 LDAP/Active Directory real -> usuario y clave de dominio
-MySQL remoto -> 10.15.0.62/inventario_modular
+MySQL remoto -> MYSQL_INTERNO_IP/inventario_modular
 ```
 
 En casa:
@@ -31,7 +31,7 @@ pantallas y API sin tocar MySQL, Active Directory ni produccion.
 El perfil `local` intenta primero la base modular remota del trabajo:
 
 ```properties
-inventario.datasource.primary.url=jdbc:mysql://10.15.0.62:3306/inventario_modular
+inventario.datasource.primary.url=jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 ```
 
 Si esa base no esta disponible desde la red actual, cambia automaticamente al fallback:
@@ -56,7 +56,7 @@ El perfil `local` trae estos valores para estudiar:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 Nombre visible: Administrador Local
 Fuero: Desarrollo local
 ```
@@ -81,7 +81,7 @@ $env:INVENTARIO_DB_PASSWORD = "Cambiar_Clave_Local_123!"
 $env:INVENTARIO_LDAP_ENABLED = "false"
 $env:INVENTARIO_LOCAL_AUTH_ENABLED = "true"
 $env:INVENTARIO_LOCAL_AUTH_USERNAME = "admin.local"
-$env:INVENTARIO_LOCAL_AUTH_PASSWORD = "AdminLocal123"
+$env:INVENTARIO_LOCAL_AUTH_PASSWORD = "CAMBIAR_CLAVE_LOCAL_SEGURA"
 $env:INVENTARIO_LOCAL_AUTH_DISPLAY_NAME = "Administrador Local"
 $env:INVENTARIO_LOCAL_AUTH_FUERO = "Desarrollo local"
 ```
@@ -124,7 +124,7 @@ Ingresar:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 La base local de este modo queda en:
@@ -168,7 +168,7 @@ usar exactamente:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 Tambien verificar que el servidor se haya iniciado con perfil `local` o `casa`, y no con
@@ -189,7 +189,7 @@ Ingresar:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 ## Como esta implementado
@@ -217,7 +217,7 @@ En el trabajo, la app debe iniciar con:
 
 ```bash
 INVENTARIO_LDAP_ENABLED="true"
-INVENTARIO_LDAP_URL="ldap://10.15.0.41:389"
+INVENTARIO_LDAP_URL="ldap://AD_INTERNO_IP:389"
 INVENTARIO_LDAP_DOMAIN="podjudsp.local"
 INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"
 ```
@@ -225,7 +225,7 @@ INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"
 Y la base debe apuntar a:
 
 ```bash
-INVENTARIO_DB_PRIMARY_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular"
+INVENTARIO_DB_PRIMARY_URL="jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular"
 ```
 
 En casa, si esos valores no responden, el sistema cae a MySQL local y la pantalla informa

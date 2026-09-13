@@ -4,10 +4,15 @@ import java.util.List;
 import java.util.Map;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.config.RuntimeModeService;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.GemeloDigitalService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService.UsuarioActual;
+import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
+import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponenteRepository;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,18 +43,30 @@ public class AdminController {
 	private final AuthorizationService authorizationService;
 	private final RuntimeModeService runtimeModeService;
 	private final ApkDistributionService apkDistributionService;
+	private final TareaTecnicaService tareaTecnicaService;
+	private final StockComponenteRepository stockComponenteRepository;
+	private final EquipoRepository equipoRepository;
+	private final GemeloDigitalService gemeloDigitalService;
 
 	public AdminController(
 			@Value("${spring.application.name}") String applicationName,
 			@Value("${inventario.version}") String version,
 			AuthorizationService authorizationService,
 			RuntimeModeService runtimeModeService,
-			ApkDistributionService apkDistributionService) {
+			ApkDistributionService apkDistributionService,
+			TareaTecnicaService tareaTecnicaService,
+			StockComponenteRepository stockComponenteRepository,
+			EquipoRepository equipoRepository,
+			GemeloDigitalService gemeloDigitalService) {
 		this.applicationName = applicationName;
 		this.version = version;
 		this.authorizationService = authorizationService;
 		this.runtimeModeService = runtimeModeService;
 		this.apkDistributionService = apkDistributionService;
+		this.tareaTecnicaService = tareaTecnicaService;
+		this.stockComponenteRepository = stockComponenteRepository;
+		this.equipoRepository = equipoRepository;
+		this.gemeloDigitalService = gemeloDigitalService;
 	}
 
 	@GetMapping("/")
@@ -95,7 +112,27 @@ public class AdminController {
 				authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR));
 		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));
 		model.addAttribute("runtimeMode", runtimeModeService.current());
+		model.addAttribute("decisionPanel", prepararPanelDecision(userDetails));
 		return "admin/index";
+	}
+
+	private DecisionPanel prepararPanelDecision(UserDetails userDetails) {
+		boolean puedeVerTareas = authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_VER);
+		boolean puedeVerStock = authorizationService.tienePermiso(userDetails, MODULO_STOCK, PERMISO_VER);
+		boolean puedeVerEquipos = authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER);
+		boolean puedeVerDiferencias = authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER);
+
+		TareaTecnicaService.ResumenTareas tareas = puedeVerTareas
+				? tareaTecnicaService.resumenDelDia()
+				: new TareaTecnicaService.ResumenTareas(0, 0, 0, 0, 0);
+		long stockPendiente = puedeVerStock ? stockComponenteRepository.countByActivoTrueAndDatosCompletosFalse() : 0;
+		long stockDisponible = puedeVerStock
+				? stockComponenteRepository.countByActivoTrueAndEstado(EstadoStockComponente.DISPONIBLE)
+				: 0;
+		long equipos = puedeVerEquipos ? equipoRepository.count() : 0;
+		long diferencias = puedeVerDiferencias ? gemeloDigitalService.dashboardDiferencias().conteo().pendientes() : 0;
+
+		return new DecisionPanel(tareas, stockPendiente, stockDisponible, equipos, diferencias);
 	}
 
 	private Map<String, List<String>> activeDirectoryAttributes(UserDetails userDetails) {
@@ -103,5 +140,13 @@ public class AdminController {
 			return activeDirectoryUser.getAttributes();
 		}
 		return Map.of();
+	}
+
+	public record DecisionPanel(
+			TareaTecnicaService.ResumenTareas tareas,
+			long stockPendiente,
+			long stockDisponible,
+			long equipos,
+			long diferencias) {
 	}
 }

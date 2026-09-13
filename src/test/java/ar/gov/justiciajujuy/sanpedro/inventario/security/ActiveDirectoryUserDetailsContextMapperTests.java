@@ -22,12 +22,12 @@ class ActiveDirectoryUserDetailsContextMapperTests {
 	void mapsDisplayNameAndFueroFromConfiguredActiveDirectoryAttributes() {
 		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
 		DirContextOperations context = mock(DirContextOperations.class);
-		when(context.getStringAttribute("displayName")).thenReturn("Gustavo Elias Murad");
+		when(context.getStringAttribute("displayName")).thenReturn("Usuario Tecnico");
 		when(context.getStringAttribute("department")).thenReturn("Penal");
 		BasicAttributes attributes = new BasicAttributes();
-		attributes.put(new BasicAttribute("displayName", "Gustavo Elias Murad"));
+		attributes.put(new BasicAttribute("displayName", "Usuario Tecnico"));
 		attributes.put(new BasicAttribute("department", "Penal"));
-		attributes.put(new BasicAttribute("mail", "gmurad@podjudsp.local"));
+		attributes.put(new BasicAttribute("mail", "usuario.tecnico@dominio.local"));
 		attributes.put(new BasicAttribute("pwdLastSet", "133000000000000000"));
 		when(context.getAttributes()).thenReturn(attributes);
 
@@ -36,16 +36,16 @@ class ActiveDirectoryUserDetailsContextMapperTests {
 
 		ActiveDirectoryUserDetails userDetails = (ActiveDirectoryUserDetails) mapper.mapUserFromContext(
 				context,
-				"gmurad",
+				"usuario.tecnico",
 				List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
-		assertThat(userDetails.getUsername()).isEqualTo("gmurad");
-		assertThat(userDetails.getDisplayName()).isEqualTo("Gustavo Elias Murad");
+		assertThat(userDetails.getUsername()).isEqualTo("usuario.tecnico");
+		assertThat(userDetails.getDisplayName()).isEqualTo("Usuario Tecnico");
 		assertThat(userDetails.getFuero()).isEqualTo("Penal");
 		assertThat(userDetails.getAttributes())
-			.containsEntry("displayName", List.of("Gustavo Elias Murad"))
+			.containsEntry("displayName", List.of("Usuario Tecnico"))
 			.containsEntry("department", List.of("Penal"))
-			.containsEntry("mail", List.of("gmurad@podjudsp.local"))
+			.containsEntry("mail", List.of("usuario.tecnico@dominio.local"))
 			.doesNotContainKey("pwdLastSet");
 	}
 
@@ -60,10 +60,10 @@ class ActiveDirectoryUserDetailsContextMapperTests {
 
 		ActiveDirectoryUserDetails userDetails = (ActiveDirectoryUserDetails) mapper.mapUserFromContext(
 				context,
-				"gmurad",
+				"usuario.tecnico",
 				List.of(new SimpleGrantedAuthority("ROLE_USER")));
 
-		assertThat(userDetails.getDisplayName()).isEqualTo("gmurad");
+		assertThat(userDetails.getDisplayName()).isEqualTo("usuario.tecnico");
 		assertThat(userDetails.getFuero()).isEqualTo("Sin fuero informado");
 	}
 
@@ -75,7 +75,7 @@ class ActiveDirectoryUserDetailsContextMapperTests {
 
 		assertThatExceptionOfType(UnsupportedOperationException.class)
 			.isThrownBy(() -> mapper.mapUserToContext(
-					User.withUsername("gmurad").password("unused").roles("USER").build(),
+					User.withUsername("usuario.tecnico").password("unused").roles("USER").build(),
 					new DirContextAdapter()))
 			.withMessage("Inventario Modular solo lee usuarios desde Active Directory.");
 	}

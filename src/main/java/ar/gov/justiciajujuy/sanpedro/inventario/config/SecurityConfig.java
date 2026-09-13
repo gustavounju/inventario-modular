@@ -2,6 +2,8 @@ package ar.gov.justiciajujuy.sanpedro.inventario.config;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetailsContextMapper;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LanOnlyAccessFilter;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginAttemptService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginRateLimitFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
@@ -37,14 +39,21 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(
 			HttpSecurity http,
 			NetworkAccessProperties networkAccessProperties,
-			ObjectProvider<AuthenticationProvider> authenticationProviders) throws Exception {
+			ObjectProvider<AuthenticationProvider> authenticationProviders,
+			LoginAttemptService loginAttemptService) throws Exception {
 		authenticationProviders.orderedStream().forEach(http::authenticationProvider);
 
 		http
 			.addFilterBefore(new LanOnlyAccessFilter(networkAccessProperties), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new TokenAuthenticationFilter(reportToken), UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(new LoginRateLimitFilter(loginAttemptService), UsernamePasswordAuthenticationFilter.class)
 			.csrf(csrf -> csrf
-				.ignoringRequestMatchers("/api/v1/equipos/inventario", "/submit_inventory")
+				.ignoringRequestMatchers("/api/v1/**", "/submit_inventory")
+			)
+			.headers(headers -> headers
+				.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+				.contentTypeOptions(contentType -> {})
+				.frameOptions(frame -> frame.sameOrigin())
 			)
 			.exceptionHandling(exceptions -> exceptions
 				.authenticationEntryPoint((request, response, authException) -> {
@@ -68,12 +77,16 @@ public class SecurityConfig {
 				.loginPage("/login")
 				.successHandler((request, response, authentication) -> {
 					// Destinos internos cerrados: el parametro del formulario nunca se usa como URL arbitraria.
+					loginAttemptService.loginSucceeded(request.getParameter("username"), request.getRemoteAddr());
 					String destino = "movil".equals(request.getParameter("destino")) ? "/movil/tareas" : "/admin";
 					new org.springframework.security.web.savedrequest.HttpSessionRequestCache().removeRequest(request, response);
 					response.sendRedirect(request.getContextPath() + destino);
 				})
-				.failureHandler((request, response, exception) -> response.sendRedirect(request.getContextPath()
-						+ ("movil".equals(request.getParameter("destino")) ? "/movil/login?error" : "/login?error")))
+				.failureHandler((request, response, exception) -> {
+					loginAttemptService.loginFailed(request.getParameter("username"), request.getRemoteAddr());
+					response.sendRedirect(request.getContextPath()
+							+ ("movil".equals(request.getParameter("destino")) ? "/movil/login?error" : "/login?error"));
+				})
 				.permitAll()
 			)
 			.logout(logout -> logout

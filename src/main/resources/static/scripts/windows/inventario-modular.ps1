@@ -31,7 +31,7 @@ function Test-HasText {
     return ([string]$Value).Trim().Length -gt 0
 }
 
-# Normalizar URL del servidor si el usuario paso solo la raiz o IP (ej: http://10.15.2.251:8081)
+# Normalizar URL del servidor si el usuario paso solo la raiz o IP (ej: http://APP_INTERNA_IP:8081)
 if (Test-HasText $ServerUrl) {
     $ServerUrl = $ServerUrl.Trim().TrimEnd('/')
     if (-not $ServerUrl.EndsWith("/api/v1/equipos/inventario", [System.StringComparison]::OrdinalIgnoreCase)) {

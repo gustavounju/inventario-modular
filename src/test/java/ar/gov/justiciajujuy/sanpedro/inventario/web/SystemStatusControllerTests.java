@@ -75,21 +75,21 @@ class SystemStatusControllerTests {
 	@Test
 	void rendersAuthenticatedAdminEntryPointWithActiveDirectoryIdentity() throws Exception {
 		ActiveDirectoryUserDetails adUser = new ActiveDirectoryUserDetails(
-				"gmurad",
+				"usuario.tecnico",
 				"",
 				List.of(new SimpleGrantedAuthority("ROLE_USER")),
-				"Gustavo Elias Murad",
+				"Usuario Tecnico",
 				"Informatica",
 				java.util.Map.of(
-						"displayName", List.of("Gustavo Elias Murad"),
+						"displayName", List.of("Usuario Tecnico"),
 						"department", List.of("Informatica"),
-						"mail", List.of("gmurad@podjudsp.local")));
+						"mail", List.of("usuario.tecnico@dominio.local")));
 
 		mockMvc.perform(get("/admin").with(user(adUser)))
 			.andExpect(status().isOk())
 			.andExpect(view().name("admin/index"))
-			.andExpect(content().string(org.hamcrest.Matchers.containsString("Gustavo Elias Murad")))
-			.andExpect(content().string(org.hamcrest.Matchers.containsString("gmurad")))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("Usuario Tecnico")))
+			.andExpect(content().string(org.hamcrest.Matchers.containsString("usuario.tecnico")))
 			.andExpect(content().string(org.hamcrest.Matchers.containsString("Informatica")))
 			.andExpect(content().string(org.hamcrest.Matchers.containsString("Salir")));
 	}

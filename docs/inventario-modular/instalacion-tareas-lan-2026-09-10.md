@@ -34,7 +34,7 @@ Datos historicos del repositorio, a confirmar presencialmente:
 - ExecStart historico: Java sobre `target/inventario-modular-0.0.1-SNAPSHOT.jar`.
 - Usuario/grupo historicos: administrador. Comprobar, no asumir.
 - Perfil `local`: MySQL y AD configurable. Perfil `casa`: H2 solo para desarrollo.
-- MySQL esperado: `10.15.0.62:3306/inventario_modular`.
+- MySQL esperado: `MYSQL_INTERNO_IP:3306/inventario_modular`.
 - Puerto interno: 8081. Nombre/IP del servidor de aplicacion: confirmar en el trabajo.
 
 ```bash
@@ -128,7 +128,7 @@ El comando pide la clave, no la coloca en historial. Sustituir USUARIO_BACKUP po
 cuenta acordada. La redireccion se ejecuta como root y crea el archivo restringido.
 
 ```bash
-sudo bash -c 'umask 077; mysqldump -h 10.15.0.62 -u USUARIO_BACKUP -p \
+sudo bash -c 'umask 077; mysqldump -h MYSQL_INTERNO_IP -u USUARIO_BACKUP -p \
   --single-transaction --routines --triggers --events \
   inventario_modular > "$1/base-anterior.sql"' bash "$BACKUP"
 sudo test -s "$BACKUP/base-anterior.sql"
@@ -153,7 +153,7 @@ INVENTARIO_LAN_ONLY=true
 INVENTARIO_LOCAL_AUTH_ENABLED=false
 INVENTARIO_LOCAL_DB_AUTH_ENABLED=true
 INVENTARIO_LDAP_ENABLED=true
-INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://10.15.0.62:3306/inventario_modular
+INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 INVENTARIO_DB_PRIMARY_USER=inventario_modular_app
 ```
 

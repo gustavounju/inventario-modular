@@ -12,7 +12,7 @@ existentes.
 
 Dato importante de infraestructura: la base MySQL del trabajo no esta en el mismo servidor
 Ubuntu donde va a correr la aplicacion. La base esta en el servidor separado
-`10.15.0.62`.
+`MYSQL_INTERNO_IP`.
 Por eso, en el servidor Ubuntu de la app no se debe asumir `localhost` para MySQL.
 
 ## Reglas de seguridad
@@ -47,8 +47,8 @@ Secuencia completa esperada para manana:
 4. Clonar desde GitLab la rama `primeros-pasos`.
 5. Verificar o instalar Java 21.
 6. Compilar con Maven Wrapper.
-7. Confirmar conectividad desde el servidor Ubuntu de la app hacia MySQL en `10.15.0.62`.
-8. Crear una base MySQL nueva llamada `inventario_modular` en `10.15.0.62`, si el DBA/admin lo autoriza.
+7. Confirmar conectividad desde el servidor Ubuntu de la app hacia MySQL en `MYSQL_INTERNO_IP`.
+8. Crear una base MySQL nueva llamada `inventario_modular` en `MYSQL_INTERNO_IP`, si el DBA/admin lo autoriza.
 9. Crear un usuario MySQL propio para la aplicacion, autorizado desde el servidor Ubuntu de la app.
 10. Configurar variables locales sin commitear secretos.
 11. Probar el `.jar` solo como laboratorio.
@@ -64,7 +64,7 @@ Acciones ya verificadas el 2026-08-28:
 - Se creo una copia local en Windows en:
 
 ```text
-C:\Users\gmurad\Documents\ChatGPT\inventario-modular
+C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular
 ```
 
 - La copia local quedo en rama `primeros-pasos`.
@@ -118,7 +118,7 @@ Si el usuario no tiene permisos para `sudo`, pedir a un administrador que ejecut
 pasos que crean carpetas en `/opt` o instalan paquetes.
 
 La creacion de base/usuario MySQL probablemente no se hace en este Ubuntu, sino en el
-servidor de base `10.15.0.62` o por el DBA/admin responsable de ese servidor.
+servidor de base `MYSQL_INTERNO_IP` o por el DBA/admin responsable de ese servidor.
 
 ## Paso 1.1: Confirmar que no se esta tocando el sistema viejo
 
@@ -327,41 +327,41 @@ Importante:
 
 - No usar `inventario_prod`.
 - No modificar tablas del inventario actual.
-- No correr migraciones contra `10.15.0.62` sin autorizacion.
-- No asumir que MySQL esta en `localhost`; para el trabajo la base esta en `10.15.0.62`.
+- No correr migraciones contra `MYSQL_INTERNO_IP` sin autorizacion.
+- No asumir que MySQL esta en `localhost`; para el trabajo la base esta en `MYSQL_INTERNO_IP`.
 
-### Paso 6.0: Confirmar conectividad hacia `10.15.0.62`
+### Paso 6.0: Confirmar conectividad hacia `MYSQL_INTERNO_IP`
 
 Desde el servidor Ubuntu de la aplicacion:
 
 ```bash
-ping -c 4 10.15.0.62
+ping -c 4 MYSQL_INTERNO_IP
 ```
 
 Luego probar el puerto MySQL:
 
 ```bash
-nc -vz 10.15.0.62 3306
+nc -vz MYSQL_INTERNO_IP 3306
 ```
 
 Si `nc` no esta instalado, usar esta prueba alternativa:
 
 ```bash
-timeout 5 bash -c '</dev/tcp/10.15.0.62/3306' && echo "MySQL alcanzable" || echo "No conecta"
+timeout 5 bash -c '</dev/tcp/MYSQL_INTERNO_IP/3306' && echo "MySQL alcanzable" || echo "No conecta"
 ```
 
 Si no conecta, no seguir con la prueba de la app. Hay que confirmar con el administrador:
 
-- Confirmacion de que `10.15.0.62` es la IP correcta del servidor MySQL.
+- Confirmacion de que `MYSQL_INTERNO_IP` es la IP correcta del servidor MySQL.
 - Puerto MySQL, normalmente `3306`.
-- Firewall entre el servidor Ubuntu de la app y `10.15.0.62`.
+- Firewall entre el servidor Ubuntu de la app y `MYSQL_INTERNO_IP`.
 - Usuario MySQL permitido desde la IP del servidor Ubuntu de la app.
 
 ### Paso 6.1: Crear la base en el servidor correcto
 
-La base se crea en `10.15.0.62`, no necesariamente desde el Ubuntu de la aplicacion.
+La base se crea en `MYSQL_INTERNO_IP`, no necesariamente desde el Ubuntu de la aplicacion.
 
-Si se esta conectado directamente al servidor de base `10.15.0.62` por consola autorizada:
+Si se esta conectado directamente al servidor de base `MYSQL_INTERNO_IP` por consola autorizada:
 
 ```bash
 sudo mysql
@@ -370,7 +370,7 @@ sudo mysql
 Si el administrador autoriza conectarse remotamente desde el servidor Ubuntu de la app:
 
 ```bash
-mysql -h 10.15.0.62 -u root -p
+mysql -h MYSQL_INTERNO_IP -u root -p
 ```
 
 Si el DBA/admin entrega otro usuario administrador, reemplazar `root` por ese usuario.
@@ -463,7 +463,7 @@ La configuracion real debe quedar fuera de git.
 Variables esperadas:
 
 ```bash
-export INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular"
+export INVENTARIO_DB_URL="jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular"
 export INVENTARIO_DB_USER="inventario_modular_app"
 export INVENTARIO_DB_PASSWORD="CAMBIAR_EN_EL_SERVIDOR"
 export INVENTARIO_LDAP_URL="ldap://SERVIDOR_AD:389"
@@ -496,14 +496,14 @@ java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
 ```
 
 Si la app intenta conectar a MySQL y faltan variables, puede fallar. Eso es esperable hasta
-crear la base en `10.15.0.62`, autorizar el usuario y configurar credenciales locales.
+crear la base en `MYSQL_INTERNO_IP`, autorizar el usuario y configurar credenciales locales.
 
 No crear servicio systemd todavia. No tocar nginx todavia.
 
 Si se ejecuta con variables en la misma linea:
 
 ```bash
-INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_URL="jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular" \
 INVENTARIO_DB_USER="inventario_modular_app" \
 INVENTARIO_DB_PASSWORD="CAMBIAR_EN_EL_SERVIDOR" \
 java -jar target/inventario-modular-0.0.1-SNAPSHOT.jar
@@ -563,7 +563,7 @@ Se considera exitoso si:
 - Java 21 queda disponible en Ubuntu.
 - `sh ./mvnw --batch-mode test` termina con `BUILD SUCCESS`.
 - `sh ./mvnw --batch-mode -DskipTests package` genera el `.jar`.
-- El servidor Ubuntu alcanza `10.15.0.62:3306`, o queda registrado que falta habilitar red/firewall.
+- El servidor Ubuntu alcanza `MYSQL_INTERNO_IP:3306`, o queda registrado que falta habilitar red/firewall.
 - Se puede ver el pipeline en GitLab.
 - No se toca el inventario actual ni la base `inventario_prod`.
 
@@ -703,7 +703,7 @@ bf98ff9 (HEAD -> primeros-pasos, origin/primeros-pasos, origin/HEAD, github/prim
 
 Nota de identidad Git:
 
-- Git aviso que uso automaticamente `Gustavo Murad <gmurad@podjudsp.local>` como autor
+- Git aviso que uso automaticamente `Usuario Tecnico <usuario.tecnico@dominio.local>` como autor
   del commit.
 - No bloquea el trabajo, pero si se quiere otra identidad en futuros commits conviene
   configurar `user.name` y `user.email` antes de seguir documentando o implementando.
@@ -722,13 +722,13 @@ documentacion. Hubo una confusion inicial al intentar ejecutar un comando de Win
 dentro de PuTTY:
 
 ```bash
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 ```
 
 Resultado en Ubuntu:
 
 ```text
--bash: cd: C:\Users\gmurad\Documents\ChatGPT\inventario-modular: No such file or directory
+-bash: cd: C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular: No such file or directory
 ```
 
 Aprendizaje registrado:
@@ -738,13 +738,13 @@ Aprendizaje registrado:
 - Los commits y pushes de la copia local deben hacerse desde PowerShell en:
 
 ```text
-C:\Users\gmurad\Documents\ChatGPT\inventario-modular
+C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular
 ```
 
 Comandos de verificacion ejecutados en PowerShell:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git status --short --branch
 git diff --stat
 git diff --check
@@ -783,13 +783,13 @@ Commit generado:
 Git volvio a avisar que uso automaticamente la identidad:
 
 ```text
-Gustavo Murad <gmurad@podjudsp.local>
+Usuario Tecnico <usuario.tecnico@dominio.local>
 ```
 
 Esto no bloqueo el commit. Queda como mejora futura configurar explicitamente:
 
 ```powershell
-git config --global user.name "Gustavo Murad"
+git config --global user.name "Usuario Tecnico"
 git config --global user.email "CORREO_A_DEFINIR"
 ```
 
@@ -983,29 +983,29 @@ Resultado:
 mysql  Ver 8.0.46-0ubuntu0.24.04.3 for Linux on x86_64 ((Ubuntu))
 ```
 
-Se intento conectar al servidor MySQL remoto `10.15.0.62` usando `root` desde el servidor
-de aplicacion `10.15.2.251`:
+Se intento conectar al servidor MySQL remoto `MYSQL_INTERNO_IP` usando `root` desde el servidor
+de aplicacion `APP_INTERNA_IP`:
 
 ```bash
-mysql -h 10.15.0.62 -u root -p
+mysql -h MYSQL_INTERNO_IP -u root -p
 ```
 
 Resultado:
 
 ```text
-ERROR 1045 (28000): Access denied for user 'root'@'10.15.2.251' (using password: YES)
+ERROR 1045 (28000): Access denied for user 'root'@'APP_INTERNA_IP' (using password: YES)
 ```
 
 Interpretacion:
 
 - El servidor MySQL responde por red.
-- El usuario `root` no esta autorizado para entrar remotamente desde `10.15.2.251`.
+- El usuario `root` no esta autorizado para entrar remotamente desde `APP_INTERNA_IP`.
 - Este bloqueo es correcto desde seguridad; no seguir intentando con `root` remoto.
 
 Luego se informo acceso por navegador a phpMyAdmin:
 
 ```text
-http://10.15.0.62/phpmyadmin/db_structure.php?server=1&db=inventario_modular
+http://MYSQL_INTERNO_IP/phpmyadmin/db_structure.php?server=1&db=inventario_modular
 ```
 
 Conclusion:
@@ -1014,7 +1014,7 @@ Conclusion:
 - La creacion/verificacion del usuario de aplicacion debe hacerse desde phpMyAdmin o desde
   una consola autorizada del servidor MySQL.
 - La aplicacion Java debe usar un usuario propio, por ejemplo
-  `inventario_modular_app` autorizado desde `10.15.2.251`.
+  `inventario_modular_app` autorizado desde `APP_INTERNA_IP`.
 - No registrar contrasenas reales en Git, documentacion, chat ni capturas.
 
 ### 2026-08-28 - Usuario MySQL de aplicacion y error 1045
@@ -1022,7 +1022,7 @@ Conclusion:
 Desde phpMyAdmin se creo o verifico el usuario:
 
 ```text
-'inventario_modular_app'@'10.15.2.251'
+'inventario_modular_app'@'APP_INTERNA_IP'
 ```
 
 Tambien se asignaron permisos sobre la base nueva:
@@ -1040,19 +1040,19 @@ SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
 Luego se probo desde el servidor Ubuntu de la aplicacion:
 
 ```bash
-mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+mysql -h MYSQL_INTERNO_IP -u inventario_modular_app -p inventario_modular
 ```
 
 Resultado:
 
 ```text
-ERROR 1045 (28000): Access denied for user 'inventario_modular_app'@'10.15.2.251' (using password: YES)
+ERROR 1045 (28000): Access denied for user 'inventario_modular_app'@'APP_INTERNA_IP' (using password: YES)
 ```
 
 Interpretacion:
 
 - La red hacia MySQL funciona.
-- MySQL identifica correctamente al cliente como `10.15.2.251`.
+- MySQL identifica correctamente al cliente como `APP_INTERNA_IP`.
 - El usuario/host existe o fue referenciado correctamente, pero la clave no coincide, el
   usuario fue creado con otra clave, o `CREATE USER IF NOT EXISTS` no actualizo la clave de
   un usuario que ya existia.
@@ -1060,18 +1060,18 @@ Interpretacion:
 Accion recomendada en phpMyAdmin, sin registrar la clave real:
 
 ```sql
-ALTER USER 'inventario_modular_app'@'10.15.2.251'
+ALTER USER 'inventario_modular_app'@'APP_INTERNA_IP'
   IDENTIFIED BY 'NUEVA_CLAVE_REAL_SOLO_EN_PHPMYADMIN';
 
 FLUSH PRIVILEGES;
 
-SHOW GRANTS FOR 'inventario_modular_app'@'10.15.2.251';
+SHOW GRANTS FOR 'inventario_modular_app'@'APP_INTERNA_IP';
 ```
 
 Despues volver a probar desde PuTTY:
 
 ```bash
-mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+mysql -h MYSQL_INTERNO_IP -u inventario_modular_app -p inventario_modular
 ```
 
 Nota de seguridad:
@@ -1086,24 +1086,24 @@ Nota de seguridad:
 Desde phpMyAdmin se ejecuto correctamente:
 
 ```sql
-ALTER USER 'inventario_modular_app'@'10.15.2.251'
+ALTER USER 'inventario_modular_app'@'APP_INTERNA_IP'
   IDENTIFIED BY 'NUEVA_CLAVE_REAL_SOLO_EN_PHPMYADMIN';
 
 FLUSH PRIVILEGES;
 
-SHOW GRANTS FOR 'inventario_modular_app'@'10.15.2.251';
+SHOW GRANTS FOR 'inventario_modular_app'@'APP_INTERNA_IP';
 ```
 
 Resultado:
 
 - phpMyAdmin informo que las consultas se ejecutaron con exito.
-- `SHOW GRANTS` mostro permisos para `inventario_modular_app` desde `10.15.2.251`.
+- `SHOW GRANTS` mostro permisos para `inventario_modular_app` desde `APP_INTERNA_IP`.
 - La clave real no se registra en este documento.
 
 Siguiente verificacion desde PuTTY:
 
 ```bash
-mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+mysql -h MYSQL_INTERNO_IP -u inventario_modular_app -p inventario_modular
 ```
 
 Si conecta, ejecutar:
@@ -1120,7 +1120,7 @@ Desde PuTTY, en el servidor de aplicacion `serverinventario`, se probo la conexi
 base nueva:
 
 ```bash
-mysql -h 10.15.0.62 -u inventario_modular_app -p inventario_modular
+mysql -h MYSQL_INTERNO_IP -u inventario_modular_app -p inventario_modular
 ```
 
 Resultado:
@@ -1147,9 +1147,9 @@ SHOW TABLES = Empty set
 
 Interpretacion:
 
-- El servidor Ubuntu de la aplicacion `10.15.2.251` puede conectarse al MySQL
-  `10.15.0.62`.
-- El usuario `inventario_modular_app` funciona desde `10.15.2.251`.
+- El servidor Ubuntu de la aplicacion `APP_INTERNA_IP` puede conectarse al MySQL
+  `MYSQL_INTERNO_IP`.
+- El usuario `inventario_modular_app` funciona desde `APP_INTERNA_IP`.
 - La base `inventario_modular` esta creada.
 - La base esta vacia, lo cual es esperable antes de crear migraciones Flyway.
 - No se uso ni se modifico `inventario_prod`.
@@ -1209,8 +1209,8 @@ probar la pagina inicial del nuevo sistema.
 
 Estado confirmado:
 
-- El servidor Ubuntu de aplicacion es `10.15.2.251`.
-- El servidor MySQL es `10.15.0.62`.
+- El servidor Ubuntu de aplicacion es `APP_INTERNA_IP`.
+- El servidor MySQL es `MYSQL_INTERNO_IP`.
 - La base nueva es `inventario_modular`.
 - El usuario de aplicacion es `inventario_modular_app`.
 - La conexion desde Ubuntu hacia MySQL ya fue verificada.
@@ -1227,8 +1227,8 @@ Pagina inicial disponible en la primera base funcional:
 Para laboratorio, la app Java debe correr en HTTP interno y puerto separado:
 
 ```text
-http://10.15.2.251:8081/admin
-http://10.15.2.251:8081/api/v1/sistema/estado
+http://APP_INTERNA_IP:8081/admin
+http://APP_INTERNA_IP:8081/api/v1/sistema/estado
 ```
 
 Recordatorio importante:
@@ -1241,7 +1241,7 @@ Recordatorio importante:
 Comando de arranque manual previsto, sin registrar la clave real:
 
 ```bash
-INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_URL="jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular" \
 INVENTARIO_DB_USER="inventario_modular_app" \
 INVENTARIO_DB_PASSWORD="CLAVE_REAL_SOLO_EN_SERVIDOR" \
 INVENTARIO_SERVER_PORT="8081" \
@@ -1396,7 +1396,7 @@ src/test/resources/application-test.properties
 Validacion local en Windows:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot'
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
 .\mvnw.cmd --batch-mode test
@@ -1436,7 +1436,7 @@ Explicacion de los comandos:
 Variables necesarias para una prueba manual con MySQL remoto y AD activo:
 
 ```bash
-INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_URL="jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular" \
 INVENTARIO_DB_USER="inventario_modular_app" \
 INVENTARIO_DB_PASSWORD="CLAVE_REAL_SOLO_EN_SERVIDOR" \
 INVENTARIO_LDAP_ENABLED="true" \
@@ -1483,7 +1483,7 @@ Cambios:
 Validacion local:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 $env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot'
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
 .\mvnw.cmd --batch-mode test
@@ -1528,12 +1528,12 @@ grep -E '^(AD_SYNC_PASSWORD)=' .env 2>/dev/null | sed 's/=.*/=******** OCULTA **
 Resultado util:
 
 ```text
-AD_SERVER=10.15.0.41
+AD_SERVER=AD_INTERNO_IP
 AD_DOMAIN=podjudsp.local
 AD_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 AD_USE_SSL=false
 AD_CONNECT_TIMEOUT=5
-AD_SUPERUSERS=gmurad
+AD_SUPERUSERS=usuario.tecnico
 ```
 
 Nota: en el `.env` viejo aparecian algunas variables AD repetidas. Para esta documentacion
@@ -1543,7 +1543,7 @@ Equivalencia para Inventario Modular:
 
 ```bash
 INVENTARIO_LDAP_ENABLED="true"
-INVENTARIO_LDAP_URL="ldap://10.15.0.41:389"
+INVENTARIO_LDAP_URL="ldap://AD_INTERNO_IP:389"
 INVENTARIO_LDAP_DOMAIN="podjudsp.local"
 INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName"
@@ -1553,7 +1553,7 @@ INVENTARIO_LDAP_FUERO_ATTRIBUTE="department"
 Tambien se diagnostico por que no cargaba:
 
 ```text
-http://10.15.2.251:8081/
+http://APP_INTERNA_IP:8081/
 ```
 
 El navegador mostro `ERR_CONNECTION_REFUSED`. Se verifico:
@@ -1577,11 +1577,11 @@ primero hay que ejecutar manualmente:
 ```bash
 cd /opt/inventario-modular
 
-INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_URL="jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular" \
 INVENTARIO_DB_USER="inventario_modular_app" \
 INVENTARIO_DB_PASSWORD="CLAVE_REAL_MYSQL" \
 INVENTARIO_LDAP_ENABLED="true" \
-INVENTARIO_LDAP_URL="ldap://10.15.0.41:389" \
+INVENTARIO_LDAP_URL="ldap://AD_INTERNO_IP:389" \
 INVENTARIO_LDAP_DOMAIN="podjudsp.local" \
 INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local" \
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName" \
@@ -1632,11 +1632,11 @@ Archivo de entorno creado fuera de git:
 Variables reales configuradas sin documentar la clave:
 
 ```text
-INVENTARIO_DB_URL=jdbc:mysql://10.15.0.62:3306/inventario_modular
+INVENTARIO_DB_URL=jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 INVENTARIO_DB_USER=inventario_modular_app
 INVENTARIO_DB_PASSWORD=******** OCULTA ********
 INVENTARIO_LDAP_ENABLED=true
-INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_URL=ldap://AD_INTERNO_IP:389
 INVENTARIO_LDAP_DOMAIN=podjudsp.local
 INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE=displayName
@@ -1689,7 +1689,7 @@ sudo systemctl start inventario-modular.service
 Primer problema encontrado:
 
 ```text
-Access denied for user 'inventario_modular_app'@'10.15.2.251' (using password: NO)
+Access denied for user 'inventario_modular_app'@'APP_INTERNA_IP' (using password: NO)
 ```
 
 Diagnostico:
@@ -1731,7 +1731,7 @@ sudo journalctl -u inventario-modular.service -n 120 --no-pager
 URL de laboratorio:
 
 ```text
-http://10.15.2.251:8081/
+http://APP_INTERNA_IP:8081/
 ```
 
 ### 2026-08-28 - Proximo paso despues del primer arranque

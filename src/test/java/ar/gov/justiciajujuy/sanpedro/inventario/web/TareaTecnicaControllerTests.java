@@ -48,7 +48,7 @@ class TareaTecnicaControllerTests {
 				  "solicitanteNombre": "Mesa de Entrada",
 				  "solicitanteFuero": "Mesa de ayuda",
 				  "prioridad": "ALTA",
-				  "responsable": "gmurad"
+				  "responsable": "usuario.tecnico"
 				}
 				""";
 		String cierre = """
@@ -112,7 +112,7 @@ class TareaTecnicaControllerTests {
 				  "solicitanteNombre": "Mesa de Entrada",
 				  "solicitanteFuero": "Mesa de ayuda",
 				  "prioridad": "ALTA",
-				  "responsable": "gmurad"
+				  "responsable": "usuario.tecnico"
 				}
 				""";
 
@@ -132,7 +132,7 @@ class TareaTecnicaControllerTests {
 			.andExpect(jsonPath("$.titulo").value("Revisar equipo y perifericos"))
 			.andExpect(jsonPath("$.descripcion").value("Se agrega control de teclado y monitor."))
 			.andExpect(jsonPath("$.prioridad").value("ALTA"))
-			.andExpect(jsonPath("$.responsable").value("gmurad"))
+			.andExpect(jsonPath("$.responsable").value("usuario.tecnico"))
 			.andExpect(jsonPath("$.equipoNombre").value("PC-GENERICA"));
 	}
 

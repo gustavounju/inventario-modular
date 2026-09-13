@@ -8,6 +8,10 @@ public interface StockComponenteRepository extends JpaRepository<StockComponente
 
 	List<StockComponente> findByActivoTrueOrderByTipoAscDescripcionAsc();
 
+	long countByActivoTrueAndDatosCompletosFalse();
+
+	long countByActivoTrueAndEstado(EstadoStockComponente estado);
+
 	/** Busca piezas activas en stock que coincidan con un número de serie específico. */
 	List<StockComponente> findBySerialAndActivoTrue(String serial);
 }

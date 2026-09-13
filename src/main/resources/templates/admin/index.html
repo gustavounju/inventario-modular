@@ -31,112 +31,113 @@
 				</a>
 			</section>
 
-			<!-- 🧭 LA BRÚJULA DEL OPERADOR: Recorrido Natural de los Circuitos Judiciales e Informáticos -->
-			<!-- 🧭 LA BRÚJULA DEL OPERADOR: Recorrido Natural de los Circuitos Judiciales e Informáticos -->
-			<section class="workflow-banner">
-				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-					<div style="display: flex; align-items: center; gap: 12px;">
-						<span style="font-size: 1.8rem;">🧭</span>
-						<div>
-							<strong style="font-size: 1.15rem; display: block;">Brújula Operativa: Circuitos Naturales del Sistema</strong>
-							<span style="font-size: 0.88rem;">Guía rápida para saber a qué módulo acudir según la tarea que necesitas realizar:</span>
-						</div>
+			<section class="decision-board" aria-labelledby="decision-title">
+				<div class="decision-hero">
+					<div>
+						<p class="eyebrow">Panel de decisiones</p>
+						<h2 id="decision-title">Prioridad operativa de hoy</h2>
+						<p>Vista corta para decidir por dónde empezar: tareas abiertas, stock utilizable, piezas incompletas y diferencias del gemelo digital.</p>
 					</div>
-					<span class="authorization-badge is-authorized">FLUJOS INTEGRADOS</span>
-				</div>
-
-				<!-- Las 3 Rutas Naturales -->
-				<div class="workflow-steps-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-					<!-- Ruta 1: Informática y Gemelo Digital -->
-					<div class="workflow-step-card" style="display: flex; flex-direction: column; justify-content: space-between; border-left: 4px solid #2563eb;">
-						<div>
-							<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-								<span style="font-size: 1.2rem;">💻</span>
-								<strong style="color: #60a5fa; font-size: 0.98rem;">1. Circuito Técnico de Equipos</strong>
-							</div>
-							<p style="margin: 0 0 12px;">
-								Detección de PCs vía script PowerShell, fijación de línea base oficial (Gemelo Digital), armado de piezas en taller y control de diferencias.
-							</p>
-							<div style="background: rgba(37, 99, 235, 0.12); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 6px; padding: 10px; font-size: 0.8rem; color: #93c5fd; margin-bottom: 12px;">
-								<strong>Recorrido:</strong> Script PS ➔ Equipos ➔ Ficha/Taller ➔ Stock ➔ Diferencias
-							</div>
-						</div>
-						<div style="display: flex; gap: 6px; flex-wrap: wrap;" th:if="${canViewEquipos != null ? canViewEquipos : true}">
-					<a class="primary-action" th:href="@{/admin/equipos}" style="font-size: 0.8rem; padding: 5px 10px;">🖥️ Equipos</a>
-					<a class="secondary-action" th:if="${canViewDashboardDiferencias != null ? canViewDashboardDiferencias : true}" th:href="@{/admin/dashboard-diferencias}" style="font-size: 0.8rem; padding: 5px 9px;">📊 Diferencias</a>
-					<button class="primary-action" onclick="abrirModalTaller()" style="font-size: 0.8rem; padding: 5px 10px; background: #fb923c; border-color: #f97316;">🛠️ Armar PC en Taller</button>
-				</div>
-			</div>
-
-			<!-- Modal Armar PC en Taller desde Dashboard -->
-		<dialog id="modal-taller-dashboard" class="modal-dialog">
-			<form th:action="@{/admin/equipos/taller}" method="post" class="modal-content">
-				<h3 style="margin-top:0;">🛠️ Armar PC en Taller</h3>
-				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un equipo fantasma para pre-ensamblar componentes en el taller. Luego lo fusionás con la PC real cuando esta reporte por red.</p>
-				<label style="display:block; margin-bottom: 1rem;">
-					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre Provisorio</span>
-					<input type="text" id="nombre-taller-dashboard" name="nombre" required placeholder="Ej: TALLER-PC01" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
-				</label>
-				<div style="display: flex; gap: 8px; justify-content: flex-end;">
-					<button type="button" class="secondary-action" onclick="document.getElementById('modal-taller-dashboard').close()">Cancelar</button>
-					<button type="submit" class="primary-action" style="background: #fb923c; border-color: #f97316;">Crear Equipo Taller</button>
-				</div>
-			</form>
-		</dialog>
-		<script>
-			function abrirModalTaller() {
-				var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-				var sufijo = '';
-				for (var i = 0; i < 4; i++) sufijo += chars.charAt(Math.floor(Math.random() * chars.length));
-				document.getElementById('nombre-taller-dashboard').value = 'TALLER-' + sufijo;
-				document.getElementById('modal-taller-dashboard').showModal();
-			}
-		</script>
-
-					<!-- Ruta 2: Patrimonio, Mobiliario y Actas -->
-					<div class="workflow-step-card" style="display: flex; flex-direction: column; justify-content: space-between; border-left: 4px solid #16a34a;">
-						<div>
-							<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-								<span style="font-size: 1.2rem;">🏛️</span>
-								<strong style="color: #4ade80; font-size: 0.98rem;">2. Circuito Patrimonial y Legal</strong>
-							</div>
-							<p style="margin: 0 0 12px;">
-								Inventario de bienes con chapa patrimonial PJ, mobiliario de juzgados, asignación formal a custodios y emisión de Actas en PDF listas para firmar.
-							</p>
-							<div style="background: rgba(22, 163, 74, 0.12); border: 1px solid rgba(22, 163, 74, 0.25); border-radius: 6px; padding: 10px; font-size: 0.8rem; color: #86efac; margin-bottom: 12px;">
-								<strong>Recorrido:</strong> Alta Bien PJ ➔ Asignar Funcionario ➔ Ubicación ➔ Acta PDF
-							</div>
-						</div>
-						<div style="display: flex; gap: 6px; flex-wrap: wrap;">
-
-							<a class="secondary-action" th:if="${canViewActas != null ? canViewActas : true}" th:href="@{/admin/actas}" style="font-size: 0.8rem; padding: 5px 9px;">📋 Actas PDF</a>
-							<a class="secondary-action" th:if="${canViewMuebles != null ? canViewMuebles : true}" th:href="@{/admin/muebles}" style="font-size: 0.8rem; padding: 5px 9px;">🪑 Muebles</a>
-						</div>
-					</div>
-
-					<!-- Ruta 3: Soporte, Depósito y Auditoría -->
-					<div class="workflow-step-card" style="display: flex; flex-direction: column; justify-content: space-between; border-left: 4px solid #ea580c;">
-						<div>
-							<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-								<span style="font-size: 1.2rem;">📦</span>
-								<strong style="color: #fb923c; font-size: 0.98rem;">3. Depósito, Tareas y Control</strong>
-							</div>
-							<p style="margin: 0 0 12px;">
-								Recepción de repuestos en depósito (memorias, discos), apertura y cierre de tareas técnicas, sedes judiciales y exportaciones de reportes ejecutivos.
-							</p>
-							<div style="background: rgba(234, 88, 12, 0.12); border: 1px solid rgba(234, 88, 12, 0.25); border-radius: 6px; padding: 10px; font-size: 0.8rem; color: #fdba74; margin-bottom: 12px;">
-								<strong>Recorrido:</strong> Depósito Stock ➔ Tareas ➔ Ubicaciones ➔ Reportes
-							</div>
-						</div>
-						<div style="display: flex; gap: 6px; flex-wrap: wrap;">
-							<a class="primary-action" th:if="${canViewStock != null ? canViewStock : true}" th:href="@{/admin/stock}" style="font-size: 0.8rem; padding: 5px 10px; background: #ea580c;">📦 Stock</a>
-							<a class="primary-action" th:if="${canViewTareas != null ? canViewTareas : true}" th:href="@{/admin/tareas/visor}" style="font-size: 0.8rem; padding: 5px 10px;">Visor de tareas</a>
-							<a class="secondary-action" th:if="${canViewTareas != null ? canViewTareas : true}" th:href="@{/admin/tareas}" style="font-size: 0.8rem; padding: 5px 9px;">🔧 Tareas</a>
-							<a class="secondary-action" th:if="${canViewUbicaciones != null ? canViewUbicaciones : true}" th:href="@{/admin/ubicaciones}" style="font-size: 0.8rem; padding: 5px 9px;">🏢 Sedes</a>
-							<a class="secondary-action" th:if="${canViewAuditoria != null ? canViewAuditoria : true}" th:href="@{/admin/auditoria}" style="font-size: 0.8rem; padding: 5px 9px;">🛡️ Auditoría</a>
-						</div>
+					<div class="decision-mode-card">
+						<span>Modo activo</span>
+						<strong th:text="${runtimeMode.modoTrabajo()}">LOCAL</strong>
+						<small th:text="${'Perfil ' + runtimeMode.perfil()}">Perfil local</small>
 					</div>
 				</div>
+
+				<div class="decision-metrics">
+					<a class="decision-metric is-warning" th:if="${canViewTareas != null ? canViewTareas : true}" th:href="@{/admin/tareas/visor}">
+						<span>Cola pendiente</span>
+						<strong th:text="${decisionPanel.tareas().pendientes()}">0</strong>
+						<small th:text="${decisionPanel.tareas().enProceso()} + ' en proceso'">0 en proceso</small>
+					</a>
+					<a class="decision-metric is-info" th:if="${canViewStock != null ? canViewStock : true}" th:href="@{/admin/stock}">
+						<span>Stock disponible</span>
+						<strong th:text="${decisionPanel.stockDisponible()}">0</strong>
+						<small th:text="${decisionPanel.stockPendiente()} + ' piezas incompletas'">0 piezas incompletas</small>
+					</a>
+					<a class="decision-metric is-danger" th:if="${canViewDashboardDiferencias != null ? canViewDashboardDiferencias : true}" th:href="@{/admin/dashboard-diferencias}">
+						<span>Diferencias abiertas</span>
+						<strong th:text="${decisionPanel.diferencias()}">0</strong>
+						<small>Faltan, sobran o requieren revisión</small>
+					</a>
+					<a class="decision-metric is-stable" th:if="${canViewEquipos != null ? canViewEquipos : true}" th:href="@{/admin/equipos}">
+						<span>Equipos registrados</span>
+						<strong th:text="${decisionPanel.equipos()}">0</strong>
+						<small>Inventario informático activo</small>
+					</a>
+				</div>
+
+				<div class="decision-layout">
+					<section class="decision-panel">
+						<div class="section-header">
+							<div>
+								<h2>Atajos críticos</h2>
+								<p class="section-note">Acciones frecuentes para administrar el día sin recorrer menús.</p>
+							</div>
+						</div>
+						<div class="decision-actions">
+							<a class="primary-action" th:if="${canViewTareas != null ? canViewTareas : true}" th:href="@{/admin/tareas/visor}">Abrir cola técnica</a>
+							<a class="secondary-action" th:if="${canViewStock != null ? canViewStock : true}" th:href="@{/admin/stock}">Completar stock</a>
+							<a class="secondary-action" th:if="${canViewDashboardDiferencias != null ? canViewDashboardDiferencias : true}" th:href="@{/admin/dashboard-diferencias}">Revisar diferencias</a>
+							<button type="button" class="secondary-action" th:if="${canViewEquipos != null ? canViewEquipos : true}" onclick="abrirModalTaller()">Armar PC en taller</button>
+							<a class="secondary-action" th:if="${canViewReportes != null ? canViewReportes : true}" th:href="@{/admin/reportes}">Reportes</a>
+							<a class="secondary-action" th:if="${canViewAuditoria != null ? canViewAuditoria : true}" th:href="@{/admin/auditoria}">Auditoría</a>
+						</div>
+					</section>
+
+					<section class="decision-panel">
+						<div class="section-header">
+							<div>
+								<h2>Señales de control</h2>
+								<p class="section-note">Datos mínimos para saber si conviene operar, corregir o auditar.</p>
+							</div>
+						</div>
+						<dl class="decision-signal-list">
+							<div>
+								<dt>Tareas creadas hoy</dt>
+								<dd th:text="${decisionPanel.tareas().creadasHoy()}">0</dd>
+							</div>
+							<div>
+								<dt>Tareas cerradas hoy</dt>
+								<dd th:text="${decisionPanel.tareas().realizadasHoy()}">0</dd>
+							</div>
+							<div>
+								<dt>APK técnico</dt>
+								<dd th:text="${apkDisponible ? 'Disponible' : 'Sin publicar'}">Disponible</dd>
+							</div>
+							<div>
+								<dt>Versión</dt>
+								<dd th:text="${version}">0.0.1-SNAPSHOT</dd>
+							</div>
+						</dl>
+					</section>
+				</div>
+			</section>
+
+			<dialog id="modal-taller-dashboard" class="modal-dialog">
+				<form th:action="@{/admin/equipos/taller}" method="post" class="modal-content">
+					<h3 style="margin-top:0;">Armar PC en taller</h3>
+					<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un equipo provisorio para preparar componentes. Luego se fusiona con la PC real cuando reporte por red.</p>
+					<label style="display:block; margin-bottom: 1rem;">
+						<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre provisorio</span>
+						<input type="text" id="nombre-taller-dashboard" name="nombre" required placeholder="Ej: TALLER-PC01" style="width:100%; padding: 8px; border: 1px solid var(--border-input); border-radius: 4px; background: var(--bg-input); color: var(--text-primary);">
+					</label>
+					<div style="display: flex; gap: 8px; justify-content: flex-end;">
+						<button type="button" class="secondary-action" onclick="document.getElementById('modal-taller-dashboard').close()">Cancelar</button>
+						<button type="submit" class="primary-action">Crear equipo taller</button>
+					</div>
+				</form>
+			</dialog>
+			<script>
+				function abrirModalTaller() {
+					var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+					var sufijo = '';
+					for (var i = 0; i < 4; i++) sufijo += chars.charAt(Math.floor(Math.random() * chars.length));
+					document.getElementById('nombre-taller-dashboard').value = 'TALLER-' + sufijo;
+					document.getElementById('modal-taller-dashboard').showModal();
+				}
+			</script>
 			</section>
 
 			<p class="version">Versión <span th:text="${version}">0.0.1-SNAPSHOT</span></p>

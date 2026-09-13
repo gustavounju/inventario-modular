@@ -156,16 +156,16 @@ En Windows se verifico que MySQL local escucha en:
 ```
 
 Eso corresponde solo al entorno de casa/desarrollo. En el trabajo, la base MySQL esta en
-otro servidor con IP `10.15.0.62`, por lo que el servidor Ubuntu de la aplicacion debe usar:
+otro servidor con IP `MYSQL_INTERNO_IP`, por lo que el servidor Ubuntu de la aplicacion debe usar:
 
 ```text
-jdbc:mysql://10.15.0.62:3306/inventario_modular
+jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 ```
 
 Pendiente:
 
 - Crear la base local si todavia no existe.
-- Crear la base en `10.15.0.62` solo si el DBA/admin lo autoriza.
+- Crear la base en `MYSQL_INTERNO_IP` solo si el DBA/admin lo autoriza.
 - Definir usuario MySQL para la app, autorizado desde la IP/host del servidor Ubuntu.
 - Crear migraciones Flyway iniciales.
 

@@ -17,7 +17,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - Backend Java con Spring Boot.
 - Base de datos MySQL nueva para desarrollo/laboratorio: `inventario_modular`.
 - En Windows puede usarse MySQL local; en el trabajo la base esta en el servidor separado
-  `10.15.0.62`.
+  `MYSQL_INTERNO_IP`.
 - Autenticacion contra Active Directory.
 - Autorizacion propia en MySQL mediante usuarios, roles, permisos y modulos.
 - Cliente web administrativo solo cuando sea necesario.
@@ -134,11 +134,11 @@ produccion en el trabajo, el servidor Ubuntu de la aplicacion y el servidor MySQ
 distintos:
 
 ```text
-Servidor Ubuntu de aplicacion -> 10.15.0.62:3306 -> inventario_modular
+Servidor Ubuntu de aplicacion -> MYSQL_INTERNO_IP:3306 -> inventario_modular
 ```
 
 Por eso el runbook de Ubuntu configura `INVENTARIO_DB_URL` o `INVENTARIO_DB_PRIMARY_URL`
-apuntando a `10.15.0.62`, no a `127.0.0.1`.
+apuntando a `MYSQL_INTERNO_IP`, no a `127.0.0.1`.
 
 ## Modo local Windows
 

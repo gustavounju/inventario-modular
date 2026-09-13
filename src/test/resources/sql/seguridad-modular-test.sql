@@ -338,10 +338,10 @@ INSERT INTO equipos (
   ram_detalles, ram_seriales, discos_modelos, discos_seriales, motherboard_modelo,
   motherboard_serial, monitores, teclado, mouse, impresora, monitoreo, activo)
 VALUES
-  (1, 'PC-INF-001', 'gmurad', 'Informatica', 'Oficina Informatica', '10.15.2.10', 'Windows 11 Pro', 'Intel Core i5', 16384,
+  (1, 'PC-INF-001', 'usuario.tecnico', 'Informatica', 'Oficina Informatica', '192.0.2.10', 'Windows 11 Pro', 'Intel Core i5', 16384,
    '2x8GB DDR4', 'RAMSN-001 | RAMSN-002', 'KINGSTON SA400', 'DISK-001', 'Dell 0ABC',
    'MB-001', 'Dell 22 SN MON-001', 'Logitech Keyboard', 'Logitech Mouse', 'HP LaserJet', 'REPORTADO', TRUE),
-  (2, 'PC-MESA-002', 'mesa.entrada', 'Mesa de ayuda', NULL, '10.15.2.11', 'Windows 10 Pro', 'Intel Core i3', 8192,
+  (2, 'PC-MESA-002', 'mesa.entrada', 'Mesa de ayuda', NULL, '192.0.2.11', 'Windows 10 Pro', 'Intel Core i3', 8192,
    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'REPORTADO', TRUE);
 
 INSERT INTO componentes (

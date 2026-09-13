@@ -18,7 +18,7 @@ sin mostrar claves.
 Datos confirmados desde el servidor viejo:
 
 ```text
-AD_SERVER=10.15.0.41
+AD_SERVER=AD_INTERNO_IP
 AD_DOMAIN=podjudsp.local
 AD_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 AD_USE_SSL=false
@@ -46,7 +46,7 @@ Variables equivalentes para el nuevo sistema:
 
 ```text
 INVENTARIO_LDAP_ENABLED=true
-INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_URL=ldap://AD_INTERNO_IP:389
 INVENTARIO_LDAP_DOMAIN=podjudsp.local
 INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE=displayName

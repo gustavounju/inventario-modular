@@ -8,7 +8,7 @@ en espanol latino, facil de seguir, que explique que se decidio, que se implemen
 valido y que quedo pendiente.
 
 Nota sobre credenciales: esta bitacora muestra las credenciales de laboratorio que ya
-estan documentadas en el proyecto, por ejemplo `admin.local` / `AdminLocal123`. Las claves
+estan documentadas en el proyecto, por ejemplo `admin.local` / `CAMBIAR_CLAVE_LOCAL_SEGURA`. Las claves
 reales de MySQL, LDAP o tokens productivos no estaban escritas en la documentacion fuente;
 por eso se dejan como valores a completar en el servidor, sin inventarlas.
 
@@ -188,7 +188,7 @@ Credencial local de laboratorio:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 ## 2026-08-28 - Instalacion Ubuntu y base MySQL remota
@@ -209,7 +209,7 @@ La base de datos de trabajo no vive en el mismo servidor Ubuntu de la aplicacion
 debe conectarse al servidor MySQL separado:
 
 ```text
-10.15.0.62:3306/inventario_modular
+MYSQL_INTERNO_IP:3306/inventario_modular
 ```
 
 Esta decision evita confundir el laboratorio nuevo con el inventario viejo y obliga a
@@ -244,14 +244,14 @@ Variables guia para el servidor, con secretos reales a completar solamente en
 ```env
 SPRING_PROFILES_ACTIVE=local
 INVENTARIO_SERVER_PORT=8081
-INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://10.15.0.62:3306/inventario_modular
+INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 INVENTARIO_DB_PRIMARY_USER=inventario_modular_app
 INVENTARIO_DB_PRIMARY_PASSWORD=CAMBIAR_EN_SERVIDOR
 INVENTARIO_REPORT_TOKEN=CAMBIAR_TOKEN_LARGO_ALEATORIO
 INVENTARIO_LOCAL_AUTH_ENABLED=true
 INVENTARIO_LOCAL_DB_AUTH_ENABLED=true
 INVENTARIO_LDAP_ENABLED=true
-INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_URL=ldap://AD_INTERNO_IP:389
 INVENTARIO_LDAP_DOMAIN=podjudsp.local
 INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 INVENTARIO_LDAP_READ_ONLY_USER_DN=CN=lector-inventario,OU=Servicios,DC=podjudsp,DC=local
@@ -271,7 +271,7 @@ Se implemento la primera integracion con Active Directory.
 
 Datos funcionales tomados del sistema viejo:
 
-- Servidor AD: `10.15.0.41`.
+- Servidor AD: `AD_INTERNO_IP`.
 - Dominio: `podjudsp.local`.
 - Base DN: `OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local`.
 - Atributos utiles: usuario, nombre visible, fuero, telefono y correo.
@@ -291,7 +291,7 @@ Variables LDAP documentadas para activar login AD:
 
 ```env
 INVENTARIO_LDAP_ENABLED=true
-INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_URL=ldap://AD_INTERNO_IP:389
 INVENTARIO_LDAP_DOMAIN=podjudsp.local
 INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE=displayName
@@ -380,7 +380,7 @@ Credencial local:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 ## 2026-08-28 - Autorizacion modular inicial
@@ -439,7 +439,7 @@ Solucion:
 - Conservar la clave codificada internamente.
 - Devolver una instancia nueva de usuario en cada busqueda.
 - Agregar prueba de regresion para dos logins seguidos.
-- Simplificar la clave local a `AdminLocal123`.
+- Simplificar la clave local a `CAMBIAR_CLAVE_LOCAL_SEGURA`.
 
 Resultado:
 
@@ -458,7 +458,7 @@ URLs y resultado esperado:
 
 ```text
 GET http://192.168.1.8:8081/login -> 200
-POST /login admin.local/AdminLocal123 -> 302 /admin
+POST /login admin.local/CAMBIAR_CLAVE_LOCAL_SEGURA -> 302 /admin
 GET /admin -> 200
 ```
 
@@ -492,7 +492,7 @@ Credencial local de administracion inicial:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 ## 2026-08-29 - Usuarios locales y usuarios AD
@@ -522,14 +522,14 @@ Propiedades/variables relacionadas con usuarios locales:
 inventario.local-db-auth.enabled=true
 inventario.local-auth.enabled=true
 inventario.local-auth.username=admin.local
-inventario.local-auth.password=AdminLocal123
+inventario.local-auth.password=CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 Variables para busqueda LDAP de usuarios de dominio:
 
 ```env
 INVENTARIO_LDAP_ENABLED=true
-INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_URL=ldap://AD_INTERNO_IP:389
 INVENTARIO_LDAP_DOMAIN=podjudsp.local
 INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 INVENTARIO_LDAP_READ_ONLY_USER_DN=CN=lector-inventario,OU=Servicios,DC=podjudsp,DC=local
@@ -612,7 +612,7 @@ Comandos y verificaciones usadas:
 
 ```text
 GET /login -> 200
-POST /login admin.local/AdminLocal123 -> 302 /admin
+POST /login admin.local/CAMBIAR_CLAVE_LOCAL_SEGURA -> 302 /admin
 GET /admin -> 200
 GET /admin/usuarios -> 200
 GET /admin/equipos -> 200
@@ -745,7 +745,7 @@ http://IP_DEL_SERVIDOR:8081/admin/usuarios
 Comando HTTP de diagnostico desde Ubuntu:
 
 ```bash
-curl -s 'http://127.0.0.1:8081/api/v1/usuarios/dominio?q=gmurad'
+curl -s 'http://127.0.0.1:8081/api/v1/usuarios/dominio?q=usuario.tecnico'
 ```
 
 Nota: este endpoint exige sesion autenticada con permiso de administrar usuarios, por eso
@@ -1096,7 +1096,7 @@ Verificacion autenticada de pantallas:
 $s = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $login = Invoke-WebRequest -Uri http://localhost:8081/login -WebSession $s -UseBasicParsing
 $csrf = [regex]::Match($login.Content, 'name="_csrf" value="([^"]+)"').Groups[1].Value
-Invoke-WebRequest -Uri http://localhost:8081/login -Method Post -WebSession $s -Body @{username='admin.local';password='AdminLocal123';_csrf=$csrf} -MaximumRedirection 0 -UseBasicParsing
+Invoke-WebRequest -Uri http://localhost:8081/login -Method Post -WebSession $s -Body @{username='admin.local';password='CAMBIAR_CLAVE_LOCAL_SEGURA';_csrf=$csrf} -MaximumRedirection 0 -UseBasicParsing
 $stock = Invoke-WebRequest -Uri http://localhost:8081/admin/stock -WebSession $s -UseBasicParsing
 $ordenes = Invoke-WebRequest -Uri http://localhost:8081/admin/ordenes-armado -WebSession $s -UseBasicParsing
 ```
@@ -1239,7 +1239,7 @@ Entrar al panel local:
 ```text
 URL: http://localhost:8081/login
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 Actualizar en Ubuntu:
@@ -1524,7 +1524,7 @@ PATCH /api/v1/tareas-tecnicas/{id}/estado
 Verificacion local:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd --batch-mode "-Dtest=TareaTecnicaControllerTests,TareaTecnicaPageControllerTests" test
 .\mvnw.cmd --batch-mode test
 .\mvnw.cmd --batch-mode -DskipTests package
@@ -1559,7 +1559,7 @@ Resultado observado:
 Ejecutar despues de revisar el diff y confirmar que la rama esta lista:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git status --short --branch
 git add README.md docs/inventario-modular/README.md docs/inventario-modular/proximo-paso-funcional.md docs/inventario-modular/bitacora-del-proyecto.md docs/inventario-modular/modulo-tareas-tecnicas.md src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/tareas src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaPageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/AdminController.java src/main/resources/db/migration/V8__tareas_tecnicas.sql src/main/resources/db/casa/data-h2.sql src/main/resources/db/casa/schema-h2.sql src/main/resources/static/css/admin.css src/main/resources/templates/admin/index.html src/main/resources/templates/admin/tareas.html src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/CurrentUserControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/TareaTecnicaPageControllerTests.java src/test/resources/sql/limpiar-seguridad-modular-test.sql src/test/resources/sql/seguridad-modular-test.sql
 git diff --staged --check
@@ -1571,7 +1571,7 @@ git push -u github codex/modulo-tareas-tecnicas
 Despues de mergear a `primeros-pasos` en GitLab, sincronizar tambien GitHub:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git switch primeros-pasos
 git pull --ff-only origin primeros-pasos
 git push github primeros-pasos
@@ -1580,7 +1580,7 @@ git push github primeros-pasos
 ### Comandos para actualizar Ubuntu por PuTTY
 
 Inventario Modular en produccion usa `/opt/inventario-modular`, el servicio
-`inventario-modular.service`, puerto `8081`, y MySQL remoto `10.15.0.62`. No usar
+`inventario-modular.service`, puerto `8081`, y MySQL remoto `MYSQL_INTERNO_IP`. No usar
 `/opt/inventario`, `deploy_ubuntu.sh` ni `inventario.service`, porque pertenecen al Flask
 legado.
 
@@ -1728,7 +1728,7 @@ Acciones realizadas:
 Comando de prueba enfocado:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd --batch-mode "-Dtest=MuebleControllerTests,MueblePageControllerTests,PatrimonioControllerTests,PatrimonioPageControllerTests,ReporteControllerTests,ReportePageControllerTests,CurrentUserControllerTests" test
 ```
 
@@ -1744,7 +1744,7 @@ BUILD SUCCESS
 Ejecutar despues de revisar el diff y confirmar que la rama esta lista:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git status --short --branch
 git add README.md docs/inventario-modular/README.md docs/inventario-modular/proximo-paso-funcional.md docs/inventario-modular/bitacora-del-proyecto.md docs/inventario-modular/modulo-muebles.md docs/inventario-modular/modulo-patrimonio.md docs/inventario-modular/modulo-reportes.md src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/muebles src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/patrimonio src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/reportes src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MuebleController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MueblePageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioPageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReporteController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReportePageController.java src/main/java/ar/gov/justiciajujuy/sanpedro/inventario/web/AdminController.java src/main/resources/db/migration/V9__muebles_patrimonio_reportes.sql src/main/resources/db/casa/data-h2.sql src/main/resources/db/casa/schema-h2.sql src/main/resources/templates/admin/index.html src/main/resources/templates/admin/muebles.html src/main/resources/templates/admin/patrimonio.html src/main/resources/templates/admin/reportes.html src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MuebleControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/MueblePageControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/PatrimonioPageControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReporteControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/ReportePageControllerTests.java src/test/java/ar/gov/justiciajujuy/sanpedro/inventario/web/CurrentUserControllerTests.java src/test/resources/sql/limpiar-seguridad-modular-test.sql src/test/resources/sql/seguridad-modular-test.sql
 git diff --staged --check
@@ -1756,7 +1756,7 @@ git push -u github codex/modulo-tareas-tecnicas
 Despues de mergear a `primeros-pasos` en GitLab, sincronizar tambien GitHub:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git switch primeros-pasos
 git pull --ff-only origin primeros-pasos
 git push github primeros-pasos
@@ -1765,7 +1765,7 @@ git push github primeros-pasos
 ### Comandos para actualizar Ubuntu por PuTTY
 
 Inventario Modular en produccion usa `/opt/inventario-modular`, el servicio
-`inventario-modular.service`, puerto `8081`, y MySQL remoto `10.15.0.62`. No usar
+`inventario-modular.service`, puerto `8081`, y MySQL remoto `MYSQL_INTERNO_IP`. No usar
 `/opt/inventario`, `deploy_ubuntu.sh` ni `inventario.service`, porque pertenecen al Flask
 legado.
 
@@ -1883,7 +1883,7 @@ GitHub: https://github.com/gustavounju/inventario-modular
 Comandos ejecutados:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git commit -m "feat: agregar tareas muebles patrimonio y reportes"
 git push -u origin codex/modulo-tareas-tecnicas
 git push -u github codex/modulo-tareas-tecnicas
@@ -1911,7 +1911,7 @@ modulos `TAREAS`, `MUEBLES`, `PATRIMONIO` y `REPORTES`.
 Verificar en Windows:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git branch --show-current
 git log -3 --oneline --decorate
 ```
@@ -1922,7 +1922,7 @@ El codigo con los modulos nuevos debe estar en `2f2cdda` o posterior. Si se esta
 Para probar localmente sin esperar el merge:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git switch codex/modulo-tareas-tecnicas
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=casa"
 ```
@@ -1948,7 +1948,7 @@ src/main/resources/static/css/admin.css
 Comandos de validacion local:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd --batch-mode "-Dtest=AdminControllerTests" test
 .\mvnw.cmd --batch-mode -DskipTests package
 ```
@@ -1990,15 +1990,15 @@ output/pdf/manual-usuario-inventario-modular.pdf
 Comando para regenerarlo desde Windows:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
-C:\Users\gmurad\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe docs\inventario-modular\generar_manual_usuario.py
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
+C:\Users\usuario.tecnico\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe docs\inventario-modular\generar_manual_usuario.py
 ```
 
 Comando usado para renderizar y revisar visualmente el PDF:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
-C:\Users\gmurad\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\poppler\Library\bin\pdftoppm.exe -png -r 130 output\pdf\manual-usuario-inventario-modular.pdf tmp\pdfs\manual_usuario_page
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
+C:\Users\usuario.tecnico\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\poppler\Library\bin\pdftoppm.exe -png -r 130 output\pdf\manual-usuario-inventario-modular.pdf tmp\pdfs\manual_usuario_page
 ```
 
 ### Modulos Actas y Ubicaciones
@@ -2051,7 +2051,7 @@ GET /api/v1/reportes/ubicaciones.csv
 Comando de pruebas focalizadas ejecutado:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd --batch-mode "-Dtest=ActaControllerTests,UbicacionControllerTests,AdminControllerTests,ReporteControllerTests" test
 ```
 
@@ -2066,7 +2066,7 @@ Comando de suite completa ejecutado despues de ajustar la expectativa de modulos
 `CurrentUserControllerTests`:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd --batch-mode test
 ```
 
@@ -2080,7 +2080,7 @@ BUILD SUCCESS
 Comando de empaquetado ejecutado:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd --batch-mode -DskipTests package
 ```
 
@@ -2093,7 +2093,7 @@ BUILD SUCCESS
 Smoke local con perfil `casa`:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=casa"
 ```
 
@@ -2128,7 +2128,7 @@ Al cierre de esta bitacora, Inventario Modular cuenta con:
 - Configuracion local Windows.
 - Guia de instalacion Ubuntu por PuTTY.
 - Servicio systemd documentado.
-- MySQL remoto de trabajo en `10.15.0.62`.
+- MySQL remoto de trabajo en `MYSQL_INTERNO_IP`.
 - Login Active Directory solo lectura.
 - Modo local/casa sin dominio.
 - Autorizacion modular inicial en MySQL.
@@ -2649,7 +2649,7 @@ Cambios realizados:
 - Se agrego `/api/v1/movil/usuarios-dominio?q=...`, protegido por sesion y permiso
   `TAREAS/VER`, con `Cache-Control: no-store`.
 - El perfil `local` ahora apunta por defecto a MySQL local `127.0.0.1`, dejando la base
-  productiva `10.15.0.62` solo para entornos que la declaren explicitamente por variables.
+  productiva `MYSQL_INTERNO_IP` solo para entornos que la declaren explicitamente por variables.
 - Se agrego `scripts/setup-local-mysql.ps1` para crear/reparar la base y usuario local
   usando `root` de MySQL local sin guardar claves en el repo.
 - Se agrego `scripts/start-local-ad.ps1` para arrancar Spring Boot con MySQL local, login

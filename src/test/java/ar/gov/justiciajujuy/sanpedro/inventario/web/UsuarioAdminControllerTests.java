@@ -56,12 +56,12 @@ class UsuarioAdminControllerTests {
 	@Test
 	void listaUsuariosDominioComoNoDisponibleSiLdapEstaDesactivado() throws Exception {
 		mockMvc.perform(get("/api/v1/usuarios/dominio")
-				.param("q", "gmurad")
+				.param("q", "usuario.tecnico")
 				.with(user(adminLocal())))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.disponible").value(false))
 			.andExpect(jsonPath("$.consultaRealizada").value(true))
-			.andExpect(jsonPath("$.query").value("gmurad"))
+			.andExpect(jsonPath("$.query").value("usuario.tecnico"))
 			.andExpect(jsonPath("$.mensaje").value("LDAP esta desactivado en este entorno."))
 			.andExpect(jsonPath("$.usuarios").isEmpty());
 	}
@@ -84,8 +84,8 @@ class UsuarioAdminControllerTests {
 	void creaUsuarioLocalDesdeEndpointDeAlta() throws Exception {
 		String body = """
 				{
-				  "username": "gmurad.local",
-				  "nombreVisible": "Gustavo Elias Murad Local",
+				  "username": "usuario.tecnico.local",
+				  "nombreVisible": "Usuario Tecnico Local",
 				  "fuero": "Informatica",
 				  "password": "UsuarioLocal123",
 				  "activo": true,
@@ -99,8 +99,8 @@ class UsuarioAdminControllerTests {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(body))
 			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.username").value("gmurad.local"))
-			.andExpect(jsonPath("$.nombreVisible").value("Gustavo Elias Murad Local"))
+			.andExpect(jsonPath("$.username").value("usuario.tecnico.local"))
+			.andExpect(jsonPath("$.nombreVisible").value("Usuario Tecnico Local"))
 			.andExpect(jsonPath("$.origen").value("LOCAL"))
 			.andExpect(jsonPath("$.tieneCredencialLocal").value(true))
 			.andExpect(jsonPath("$.roles", hasItem("ADMINISTRADOR")));
@@ -110,8 +110,8 @@ class UsuarioAdminControllerTests {
 	void noCreaUsuariosDeDominioDesdeEndpointDeAltaLocal() throws Exception {
 		String body = """
 				{
-				  "username": "gmurad",
-				  "nombreVisible": "Gustavo Elias Murad",
+				  "username": "usuario.tecnico",
+				  "nombreVisible": "Usuario Tecnico",
 				  "fuero": "Informatica",
 				  "origen": "AD",
 				  "activo": true,
@@ -131,8 +131,8 @@ class UsuarioAdminControllerTests {
 	void autorizaUsuarioDominioDesdeEndpointSeparadoSinGuardarClave() throws Exception {
 		String body = """
 				{
-				  "username": "gmurad",
-				  "nombreVisible": "Gustavo Elias Murad",
+				  "username": "usuario.tecnico",
+				  "nombreVisible": "Usuario Tecnico",
 				  "fuero": "Informatica",
 				  "activo": true,
 				  "roles": ["ADMINISTRADOR"]
@@ -145,8 +145,8 @@ class UsuarioAdminControllerTests {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(body))
 			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.username").value("gmurad"))
-			.andExpect(jsonPath("$.nombreVisible").value("Gustavo Elias Murad"))
+			.andExpect(jsonPath("$.username").value("usuario.tecnico"))
+			.andExpect(jsonPath("$.nombreVisible").value("Usuario Tecnico"))
 			.andExpect(jsonPath("$.origen").value("AD"))
 			.andExpect(jsonPath("$.tieneCredencialLocal").value(false))
 			.andExpect(jsonPath("$.roles", hasItem("ADMINISTRADOR")));

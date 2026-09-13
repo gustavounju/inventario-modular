@@ -199,7 +199,7 @@
 												th:text="${tarea.estado}">PENDIENTE</span>
 									</td>
 									<td data-label="Responsable">
-										<span th:text="${tarea.responsable ?: 'Sin tomar'}">gmurad</span>
+										<span th:text="${tarea.responsable ?: 'Sin tomar'}">usuario.tecnico</span>
 										<form th:if="${puedeEditarTareas and tarea.responsable == null}" th:action="@{/admin/tareas/{id}/tomar(id=${tarea.id})}" method="post" style="margin-top: 6px;">
 											<button class="secondary-action" type="submit" style="font-size: 0.78rem; padding: 4px 8px;">Tomar</button>
 										</form>
@@ -305,7 +305,7 @@
 								<span>Técnico responsable</span>
 								<select th:if="${puedeAsignarResponsable}" th:field="*{responsable}">
 									<option value="">Sin tomar / disponible para técnicos</option>
-									<option th:each="tecnico : ${tecnicosAsignables}" th:value="${tecnico.username}" th:text="${tecnico.username + ' - ' + tecnico.nombreVisible}">gmurad</option>
+									<option th:each="tecnico : ${tecnicosAsignables}" th:value="${tecnico.username}" th:text="${tecnico.username + ' - ' + tecnico.nombreVisible}">usuario.tecnico</option>
 								</select>
 								<input th:unless="${puedeAsignarResponsable}" th:field="*{responsable}" th:value="${usuarioActual}" maxlength="120" readonly>
 							</label>

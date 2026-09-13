@@ -82,11 +82,11 @@
 									<span class="table-subtext" th:text="${equipo.ubicacion ?: 'Sin ubicación asignada'}">Oficina</span>
 								</td>
 								<td data-label="Usuario Actual">
-									<strong th:if="${equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" th:text="${equipo.ultimoUsuario}">gmurad</strong>
+									<strong th:if="${equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" th:text="${equipo.ultimoUsuario}">usuario.tecnico</strong>
 									<span th:if="${equipo.ultimoUsuario == null or #strings.isEmpty(equipo.ultimoUsuario)}" style="color: #facc15; font-size: 0.82rem; font-weight: 600;">⚠️ Sin asignar</span>
 								</td>
 								<td data-label="Fuero / Ubicación" th:text="${equipo.fuero}">Informática</td>
-								<td data-label="IP" th:text="${equipo.ip ?: 'Sin dato'}">10.15.2.20</td>
+								<td data-label="IP" th:text="${equipo.ip ?: 'Sin dato'}">192.0.2.20</td>
 								<td data-label="Sistema Operativo" th:text="${equipo.sistemaOperativo ?: 'Sin dato'}">Windows 11</td>
 								<td data-label="Gemelo / Estado">
 									<div style="display: flex; flex-direction: column; gap: 3px;">

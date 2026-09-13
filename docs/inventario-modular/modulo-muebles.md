@@ -32,7 +32,7 @@ Primera version implementada:
 ## Verificacion local
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 .\mvnw.cmd --batch-mode "-Dtest=MuebleControllerTests,MueblePageControllerTests" test
 ```
 

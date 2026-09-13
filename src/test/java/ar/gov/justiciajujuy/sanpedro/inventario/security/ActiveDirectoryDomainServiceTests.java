@@ -61,7 +61,7 @@ class ActiveDirectoryDomainServiceTests {
 		LdapOperations ldapOperations = mock(LdapOperations.class);
 		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
 
-		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("gmurad");
+		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("usuario.tecnico");
 
 		assertThat(resultado.disponible()).isFalse();
 		assertThat(resultado.consultaRealizada()).isTrue();
@@ -79,8 +79,8 @@ class ActiveDirectoryDomainServiceTests {
 		properties.setUserSearchFilter("(objectClass=user)");
 		LdapOperations ldapOperations = mock(LdapOperations.class);
 		BasicAttributes attributes = new BasicAttributes();
-		attributes.put(new BasicAttribute("sAMAccountName", "gmurad"));
-		attributes.put(new BasicAttribute("displayName", "Gustavo Elias Murad"));
+		attributes.put(new BasicAttribute("sAMAccountName", "usuario.tecnico"));
+		attributes.put(new BasicAttribute("displayName", "Usuario Tecnico"));
 		attributes.put(new BasicAttribute("department", "Informatica"));
 
 		when(ldapOperations.search(
@@ -94,12 +94,12 @@ class ActiveDirectoryDomainServiceTests {
 
 		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
 
-		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("gmurad");
+		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("usuario.tecnico");
 
 		assertThat(resultado.disponible()).isTrue();
-		assertThat(resultado.query()).isEqualTo("gmurad");
+		assertThat(resultado.query()).isEqualTo("usuario.tecnico");
 		assertThat(resultado.usuarios()).containsExactly(
-				new ActiveDirectoryDomainService.UsuarioDominio("gmurad", "Gustavo Elias Murad", "Informatica"));
+				new ActiveDirectoryDomainService.UsuarioDominio("usuario.tecnico", "Usuario Tecnico", "Informatica"));
 	}
 
 	@Test

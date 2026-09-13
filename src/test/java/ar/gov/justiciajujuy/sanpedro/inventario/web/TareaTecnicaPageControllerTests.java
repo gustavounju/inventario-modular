@@ -59,7 +59,7 @@ class TareaTecnicaPageControllerTests {
 				.param("solicitanteNombre", "Mesa de Entrada")
 				.param("solicitanteFuero", "Mesa de ayuda")
 				.param("prioridad", "MEDIA")
-				.param("responsable", "gmurad"))
+				.param("responsable", "usuario.tecnico"))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(redirectedUrlPattern("/admin/tareas?creado=*"));
 
@@ -111,7 +111,7 @@ class TareaTecnicaPageControllerTests {
 				.param("solicitanteNombre", "Mesa de Entrada")
 				.param("solicitanteFuero", "Mesa de ayuda")
 				.param("prioridad", "ALTA")
-				.param("responsable", "gmurad"))
+				.param("responsable", "usuario.tecnico"))
 			.andExpect(status().is3xxRedirection());
 
 		mockMvc.perform(post("/admin/tareas/1/estado")
@@ -152,7 +152,7 @@ class TareaTecnicaPageControllerTests {
 				.param("solicitanteNombre", "Mesa de Entrada")
 				.param("solicitanteFuero", "Mesa de ayuda")
 				.param("prioridad", "ALTA")
-				.param("responsable", "gmurad"))
+				.param("responsable", "usuario.tecnico"))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(redirectedUrlPattern("/admin/tareas?creado=*"));
 
@@ -160,7 +160,7 @@ class TareaTecnicaPageControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(content().string(containsString("Revisar cableado de red")))
 			.andExpect(content().string(containsString("Se agenda visita tecnica")))
-			.andExpect(content().string(containsString("gmurad")));
+			.andExpect(content().string(containsString("usuario.tecnico")));
 	}
 
 	@Test

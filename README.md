@@ -30,7 +30,7 @@ inventario_modular
 ```
 
 En el entorno del trabajo, la base MySQL no esta en el mismo servidor Ubuntu de la
-aplicacion. Debe apuntar al servidor separado `10.15.0.62`, con permisos otorgados al
+aplicacion. Debe apuntar al servidor separado `MYSQL_INTERNO_IP`, con permisos otorgados al
 host/IP del servidor de aplicacion.
 
 ## Enfoque
@@ -128,7 +128,7 @@ El perfil `local` intenta primero la base MySQL del trabajo y, si no hay conexio
 la base MySQL local de Windows:
 
 ```text
-Trabajo: jdbc:mysql://10.15.0.62:3306/inventario_modular
+Trabajo: jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 Casa:    jdbc:mysql://127.0.0.1:3306/inventario_modular
 ```
 
@@ -136,7 +136,7 @@ Casa:    jdbc:mysql://127.0.0.1:3306/inventario_modular
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 Al ingresar, el panel `/admin` muestra el modo activo para orientacion operativa:
@@ -162,7 +162,7 @@ inventario_modular
 ```
 
 En Windows puede correr contra MySQL local para estudiar y probar. En el trabajo, la app
-Ubuntu debe conectarse a MySQL en `10.15.0.62`, no a `localhost`. Produccion queda fuera
+Ubuntu debe conectarse a MySQL en `MYSQL_INTERNO_IP`, no a `localhost`. Produccion queda fuera
 de esta primera etapa.
 
 La guia paso a paso para crear la base local, usuario local y verificar Flyway esta en:
@@ -378,6 +378,6 @@ La rama inicial `primeros-pasos` ya fue subida a ambos remotos.
 Para subir a GitHub los commits que el asistente ya subio a GitLab:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 git push github primeros-pasos
 ```

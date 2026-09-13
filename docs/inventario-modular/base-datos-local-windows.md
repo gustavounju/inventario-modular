@@ -7,7 +7,7 @@ principal.
 ## Alcance
 
 Estos pasos usan solo `127.0.0.1:3306`. No se conectan al servidor MySQL de produccion
-`10.15.0.62` y no modifican datos reales.
+`MYSQL_INTERNO_IP` y no modifican datos reales.
 
 Produccion sigue usando MySQL remoto mediante variables del servicio Ubuntu. Local sigue
 usando MySQL local por defecto.
@@ -115,7 +115,7 @@ Para produccion, la unidad systemd o el archivo de entorno del servidor debe def
 
 ```text
 SPRING_PROFILES_ACTIVE=local
-INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://10.15.0.62:3306/inventario_modular
+INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 INVENTARIO_DB_PRIMARY_USER=inventario_modular_app
 INVENTARIO_DB_PRIMARY_PASSWORD=...
 ```

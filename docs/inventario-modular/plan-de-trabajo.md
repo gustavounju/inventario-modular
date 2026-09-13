@@ -13,7 +13,7 @@ Tareas:
 - Verificar Java y Maven en PATH. Completado en la sesion actual.
 - Verificar MySQL local en Windows. Completado.
 - Crear base local MySQL `inventario_modular` para desarrollo.
-- Preparar base `inventario_modular` en el servidor MySQL separado `10.15.0.62` para
+- Preparar base `inventario_modular` en el servidor MySQL separado `MYSQL_INTERNO_IP` para
   laboratorio/trabajo, solo con autorizacion del DBA/admin.
 - Crear repositorio GitLab. Completado.
 - Crear repositorio GitHub. Completado por Gustavo.
@@ -38,7 +38,7 @@ Tareas:
 - Configurar puerto local `8081` mediante `INVENTARIO_SERVER_PORT`, para evitar choque
   con el inventario viejo.
 - Configurar conexion MySQL local para Windows.
-- Configurar conexion MySQL remota para Ubuntu usando `10.15.0.62`.
+- Configurar conexion MySQL remota para Ubuntu usando `MYSQL_INTERNO_IP`.
 - Configurar Flyway.
 - Configurar pipeline CI en GitLab para tests y artefacto `.jar`.
 - Crear endpoint publico inicial `GET /api/v1/sistema/estado`.
@@ -180,7 +180,7 @@ Resultado esperado:
 
 - Configuracion real de Active Directory incompleta o cambiante.
 - Diferencias entre red de casa y red del trabajo.
-- Base MySQL del trabajo ubicada en otro servidor (`10.15.0.62`), no en el Ubuntu de la app.
+- Base MySQL del trabajo ubicada en otro servidor (`MYSQL_INTERNO_IP`), no en el Ubuntu de la app.
 - Permisos institucionales para consultar AD.
 - Instaladores bloqueados por politicas del trabajo.
 - Intentar migrar demasiados modulos antes de cerrar seguridad.

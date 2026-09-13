@@ -123,7 +123,7 @@ Buscar usuario del dominio por usuario, nombre o apellido
 La pantalla `/admin/usuarios` no carga todo el dominio al abrir. Primero muestra un
 buscador. Solo cuando se envia una busqueda de al menos 2 caracteres consulta LDAP. Esto
 evita respuestas enormes del dominio y permite autorizar puntualmente usuarios como
-`gmurad`.
+`usuario.tecnico`.
 
 En produccion, el 31 de agosto de 2026 se confirmo el flujo completo: con `admin.local`
 se busco un usuario de dominio, Active Directory devolvio resultados y la pantalla mostro
@@ -181,7 +181,7 @@ La lectura de usuarios de dominio se controla con:
 
 ```bash
 INVENTARIO_LDAP_ENABLED=true
-INVENTARIO_LDAP_URL=ldap://10.15.0.41:389
+INVENTARIO_LDAP_URL=ldap://AD_INTERNO_IP:389
 INVENTARIO_LDAP_DOMAIN=podjudsp.local
 INVENTARIO_LDAP_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 INVENTARIO_LDAP_READ_ONLY_USER_DN=CN=lector-inventario,OU=Servicios,DC=podjudsp,DC=local

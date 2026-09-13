@@ -12,6 +12,7 @@
         <h1>Tareas</h1>
         <p class="muted">Inventario Modular</p>
         <p class="message error" th:if="${param.error != null}" role="alert">Usuario o clave incorrectos.</p>
+        <p class="message error" th:if="${param.bloqueado != null}" role="alert">Demasiados intentos fallidos. Espere unos minutos antes de volver a ingresar.</p>
         <form th:action="@{/login}" method="post">
             <input type="hidden" name="destino" value="movil">
             <label>Usuario local o de dominio<input name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></label>

@@ -49,20 +49,7 @@
 				</a>
 			</div>
 
-			<!-- Sección 3: Bienes y Espacios -->
-			<div class="sidebar-section">
-				<span class="sidebar-section-title">Bienes y Sedes</span>
-				<a class="sidebar-link" th:if="${canViewUbicaciones != null ? canViewUbicaciones : true}" th:classappend="${activeModule == 'ubicaciones'} ? ' is-active' : ''" th:href="@{/admin/ubicaciones}">
-					<span class="sidebar-icon">UB</span>
-					<span class="sidebar-text">Sedes y Ubicaciones</span>
-				</a>
-				<a class="sidebar-link" th:if="${canViewMuebles != null ? canViewMuebles : true}" th:classappend="${activeModule == 'muebles'} ? ' is-active' : ''" th:href="@{/admin/muebles}">
-					<span class="sidebar-icon">MU</span>
-					<span class="sidebar-text">Muebles</span>
-				</a>
-			</div>
-
-			<!-- Sección 4: Gestión Operativa -->
+			<!-- Sección 3: Gestión Operativa -->
 			<div class="sidebar-section">
 				<span class="sidebar-section-title">Operaciones</span>
 				<a class="sidebar-link" th:if="${canViewActas != null ? canViewActas : true}" th:classappend="${activeModule == 'actas'} ? ' is-active' : ''" th:href="@{/admin/actas}">
@@ -83,7 +70,7 @@
 				</a>
 			</div>
 
-			<!-- Sección 5: Sistema y Auditoría -->
+			<!-- Sección 4: Sistema y Auditoría -->
 			<div class="sidebar-section">
 				<span class="sidebar-section-title">Administración</span>
 				<a class="sidebar-link" th:if="${canViewAuditoria != null ? canViewAuditoria : true}" th:classappend="${activeModule == 'auditoria'} ? ' is-active' : ''" th:href="@{/admin/auditoria}">

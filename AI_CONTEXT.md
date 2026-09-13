@@ -397,6 +397,20 @@ y verificar fecha, host, rama y backup.
   Mesa Tecnica Oscura.
 - No usar emoji como lenguaje principal de navegacion del admin; preferir codigos cortos o iconos
   SVG consistentes.
+- El panel general `/admin` ya no usa la "Brujula Operativa"; es un panel de decisiones con
+  cola tecnica, stock disponible, stock incompleto, diferencias del gemelo, equipos, modo activo,
+  APK y atajos criticos.
+- La navegacion principal ya no muestra el bloque "Bienes y Sedes"; no reintroducirlo sin pedido
+  explicito del usuario.
+- No documentar IPs internas, usuarios reales ni claves literales. Usar placeholders como
+  `MYSQL_INTERNO_IP`, `AD_INTERNO_IP`, `APP_INTERNA_IP`, `usuario.tecnico` y
+  `CAMBIAR_CLAVE_LOCAL_SEGURA`.
+- El login web y movil tiene bloqueo temporal por intentos fallidos mediante
+  `LoginAttemptService`; ajustar `INVENTARIO_LOGIN_MAX_FAILURES` e
+  `INVENTARIO_LOGIN_BLOCK_SECONDS` si cambia la politica.
+- En configuracion base/productiva, Hibernate debe validar esquema (`ddl-auto=validate`) y Flyway
+  debe estar habilitado. El perfil `local` puede conservar `ddl-auto=update` para desarrollo con
+  MySQL local.
 
 ## 13. Tests recomendados por area
 

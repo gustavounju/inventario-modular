@@ -38,7 +38,7 @@ Motivo:
 - Produccion queda fuera durante el inicio.
 - Cualquier despliegue real debe ser controlado y reversible.
 - Primero necesitamos seguridad, base local y pruebas confiables.
-- La base MySQL del trabajo esta en `10.15.0.62`, separada del servidor de aplicacion, y
+- La base MySQL del trabajo esta en `MYSQL_INTERNO_IP`, separada del servidor de aplicacion, y
   no debe ser tocada por CI sin una politica formal de despliegue.
 
 ## Pipeline inicial en GitLab
@@ -107,21 +107,21 @@ Gustavo o el asistente hacen cambios
 Antes de subir cambios, se puede validar localmente:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 mvn test
 mvn -DskipTests package
 ```
 
 El CI hace lo mismo, pero en un entorno limpio de GitLab.
 
-El CI inicial no se conecta a MySQL real ni a `10.15.0.62`. Su trabajo es demostrar que el
+El CI inicial no se conecta a MySQL real ni a `MYSQL_INTERNO_IP`. Su trabajo es demostrar que el
 codigo compila, que los tests pasan y que se genera un `.jar`. La conexion a base real
 queda para pruebas controladas en el servidor Ubuntu o en un ambiente staging autorizado.
 
 Si `mvn` no aparece en PowerShell, usar Maven por ruta completa:
 
 ```powershell
-cd "C:\Users\gmurad\Documents\ChatGPT\inventario-modular"
+cd "C:\Users\usuario.tecnico\Documents\ChatGPT\inventario-modular"
 & "$env:USERPROFILE\tools\apache-maven-3.9.16\bin\mvn.cmd" test
 ```
 
@@ -146,7 +146,7 @@ Cuando llegue el momento, se debera definir:
 - Ruta de instalacion.
 - Variables de entorno.
 - Conexion segura a MySQL.
-- Host real de base de datos: `10.15.0.62`.
+- Host real de base de datos: `MYSQL_INTERNO_IP`.
 - Configuracion LDAP/Active Directory.
 - Estrategia de rollback.
 - Logs y monitoreo.

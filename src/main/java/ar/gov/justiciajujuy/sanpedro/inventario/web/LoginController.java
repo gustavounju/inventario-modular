@@ -19,10 +19,12 @@ public class LoginController {
 	public String login(
 			@RequestParam(value = "error", required = false) String error,
 			@RequestParam(value = "logout", required = false) String logout,
+			@RequestParam(value = "bloqueado", required = false) String bloqueado,
 			Model model) {
 		model.addAttribute("applicationName", applicationName);
 		model.addAttribute("hasError", error != null);
 		model.addAttribute("loggedOut", logout != null);
+		model.addAttribute("blocked", bloqueado != null);
 		return "login";
 	}
 }

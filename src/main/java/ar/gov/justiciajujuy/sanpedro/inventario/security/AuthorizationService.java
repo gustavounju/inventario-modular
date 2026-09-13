@@ -8,9 +8,14 @@ import java.util.Map;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @Service
 public class AuthorizationService {
+
+	private static final String USUARIO_ACTUAL_REQUEST_ATTRIBUTE =
+			AuthorizationService.class.getName() + ".usuarioActual";
 
 	private final UsuarioSistemaRepository usuarioSistemaRepository;
 	private final ModuloRepository moduloRepository;
@@ -22,17 +27,23 @@ public class AuthorizationService {
 
 	@Transactional(readOnly = true)
 	public UsuarioActual obtenerUsuarioActual(UserDetails userDetails) {
+		UsuarioActual cacheado = usuarioActualCacheado(userDetails);
+		if (cacheado != null) {
+			return cacheado;
+		}
 		String username = userDetails != null ? userDetails.getUsername() : "";
 		UsuarioSistema usuarioSistema = usuarioSistemaRepository.findByUsernameIgnoreCase(username).orElse(null);
 		boolean autorizado = usuarioSistema != null && usuarioSistema.isActivo();
 		List<ModuloAutorizado> modulos = autorizado ? obtenerModulos(username) : List.of();
 
-		return new UsuarioActual(
+		UsuarioActual usuarioActual = new UsuarioActual(
 				username,
 				nombreVisible(userDetails, usuarioSistema),
 				fuero(userDetails, usuarioSistema),
 				autorizado,
 				modulos);
+		guardarUsuarioActualEnRequest(usuarioActual);
+		return usuarioActual;
 	}
 
 	@Transactional(readOnly = true)
@@ -71,6 +82,24 @@ public class AuthorizationService {
 		return modulos.values().stream()
 				.map(ModuloAutorizadoBuilder::build)
 				.toList();
+	}
+
+	private UsuarioActual usuarioActualCacheado(UserDetails userDetails) {
+		if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) {
+			return null;
+		}
+		Object valor = attributes.getRequest().getAttribute(USUARIO_ACTUAL_REQUEST_ATTRIBUTE);
+		if (!(valor instanceof UsuarioActual usuarioActual)) {
+			return null;
+		}
+		String username = userDetails != null ? userDetails.getUsername() : "";
+		return usuarioActual.username().equalsIgnoreCase(username) ? usuarioActual : null;
+	}
+
+	private void guardarUsuarioActualEnRequest(UsuarioActual usuarioActual) {
+		if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+			attributes.getRequest().setAttribute(USUARIO_ACTUAL_REQUEST_ATTRIBUTE, usuarioActual);
+		}
 	}
 
 	private String nombreVisible(UserDetails userDetails, UsuarioSistema usuarioSistema) {

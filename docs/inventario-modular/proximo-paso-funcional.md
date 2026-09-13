@@ -8,8 +8,8 @@ Inventario Modular ya tiene una primera base real en el servidor Ubuntu:
 - Servicio `inventario-modular.service` creado en `systemd`.
 - Arranque automatico habilitado con `systemctl enable`.
 - Configuracion real fuera de git en `/etc/inventario-modular/inventario-modular.env`.
-- Conexion a MySQL remoto `10.15.0.62`.
-- Login contra Active Directory `10.15.0.41`.
+- Conexion a MySQL remoto `MYSQL_INTERNO_IP`.
+- Login contra Active Directory `AD_INTERNO_IP`.
 - Pantalla `/admin` protegida por login.
 - Nombre, usuario, fuero y atributos AD visibles en modo solo lectura.
 

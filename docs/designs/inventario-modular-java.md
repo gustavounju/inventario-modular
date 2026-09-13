@@ -34,7 +34,7 @@ Conservar la logica que funciona. Rehacer la implementacion en Java.
 - Nombre de producto: Inventario Modular
 - Carpeta sugerida: `inventario-modular`
 - Base de datos local de desarrollo: `inventario_modular`
-- Servidor MySQL del trabajo: `10.15.0.62`
+- Servidor MySQL del trabajo: `MYSQL_INTERNO_IP`
 
 ## Decision de stack
 
@@ -110,7 +110,7 @@ Usuario ingresa usuario/clave
 2. Produccion queda totalmente fuera durante esta primera etapa.
 3. Se crea una base local nueva llamada `inventario_modular` para desarrollo.
 4. En el trabajo, la aplicacion Java correra en un servidor Ubuntu separado y se conectara
-   a MySQL en `10.15.0.62`.
+   a MySQL en `MYSQL_INTERNO_IP`.
 5. El primer nucleo a construir es usuarios, roles, permisos, modulos y login con Active
    Directory.
 6. La base vieja se conserva como referencia y futura fuente de migracion, no como modelo
@@ -146,7 +146,7 @@ Fuera de alcance inicial:
 - Rol modificado mientras el usuario tiene sesion abierta.
 - Intento de acceder por URL directa a un modulo oculto.
 - Error de conexion a MySQL local.
-- Error de red/firewall hacia MySQL remoto `10.15.0.62`.
+- Error de red/firewall hacia MySQL remoto `MYSQL_INTERNO_IP`.
 
 ## Plan de tests pendiente
 
@@ -165,7 +165,7 @@ en PATH. Se instalo JDK 21 con `winget install EclipseAdoptium.Temurin.21.JDK`.
 El paquete `Apache.Maven` no existe en el catalogo local de winget, por lo que Maven debe
 instalarse con `choco install maven -y` o manualmente desde Apache Maven. MySQL local
 responde en `127.0.0.1:3306` para desarrollo en Windows. En el trabajo, MySQL esta en
-otro servidor: `10.15.0.62`.
+otro servidor: `MYSQL_INTERNO_IP`.
 
 Ver tambien:
 

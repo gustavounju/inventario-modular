@@ -67,7 +67,7 @@ public class UsuarioManagementService {
 	@Transactional
 	public UsuarioResumen crearUsuario(CrearUsuarioCommand command) {
 		/*
-		 * El username se guarda normalizado para que `GMURAD`, `gmurad` y `Gmurad`
+		 * El username se guarda normalizado para que `usuario.tecnico`, `usuario.tecnico` y `usuario.tecnico`
 		 * representen a la misma cuenta de dominio dentro del inventario.
 		 */
 		String usernameNormalizado = normalizar(command.username());

@@ -19,7 +19,7 @@ class LanOnlyAccessFilterTests {
 		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login");
 		MockHttpServletResponse response = new MockHttpServletResponse();
 		MockFilterChain chain = new MockFilterChain();
-		request.setRemoteAddr("10.15.2.10");
+		request.setRemoteAddr("192.168.100.10");
 
 		filter.doFilter(request, response, chain);
 
@@ -41,7 +41,7 @@ class LanOnlyAccessFilterTests {
 	@Test
 	void honorsConfiguredAllowedCidrsForPrivateAddresses() throws ServletException, IOException {
 		NetworkAccessProperties properties = new NetworkAccessProperties();
-		properties.setAllowedCidrs(java.util.List.of("10.15.0.0/16"));
+		properties.setAllowedCidrs(java.util.List.of("192.168.100.0/24"));
 		LanOnlyAccessFilter filter = new LanOnlyAccessFilter(properties);
 		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login");
 		MockHttpServletResponse response = new MockHttpServletResponse();

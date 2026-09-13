@@ -22,7 +22,7 @@ cambia claves.
 Desde el servidor viejo se confirmo:
 
 ```text
-AD_SERVER=10.15.0.41
+AD_SERVER=AD_INTERNO_IP
 AD_DOMAIN=podjudsp.local
 AD_BASE_DN=OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local
 AD_USE_SSL=false
@@ -33,7 +33,7 @@ Para Spring Boot se traducen asi:
 
 ```bash
 INVENTARIO_LDAP_ENABLED="true"
-INVENTARIO_LDAP_URL="ldap://10.15.0.41:389"
+INVENTARIO_LDAP_URL="ldap://AD_INTERNO_IP:389"
 INVENTARIO_LDAP_DOMAIN="podjudsp.local"
 INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName"
@@ -145,7 +145,7 @@ desde AD como si fuera codigo.
 
 Estilos simples para que la pantalla sea legible en escritorio y celular.
 
-## Por que no levanto `http://10.15.2.251:8081/`
+## Por que no levanto `http://APP_INTERNA_IP:8081/`
 
 El navegador mostro:
 
@@ -179,11 +179,11 @@ Desde PuTTY:
 ```bash
 cd /opt/inventario-modular
 
-INVENTARIO_DB_URL="jdbc:mysql://10.15.0.62:3306/inventario_modular" \
+INVENTARIO_DB_URL="jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular" \
 INVENTARIO_DB_USER="inventario_modular_app" \
 INVENTARIO_DB_PASSWORD="CLAVE_REAL_MYSQL" \
 INVENTARIO_LDAP_ENABLED="true" \
-INVENTARIO_LDAP_URL="ldap://10.15.0.41:389" \
+INVENTARIO_LDAP_URL="ldap://AD_INTERNO_IP:389" \
 INVENTARIO_LDAP_DOMAIN="podjudsp.local" \
 INVENTARIO_LDAP_BASE_DN="OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local" \
 INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE="displayName" \
@@ -204,7 +204,7 @@ Started InventarioModularApplication
 Despues abrir:
 
 ```text
-http://10.15.2.251:8081/
+http://APP_INTERNA_IP:8081/
 ```
 
 ## Comandos de diagnostico

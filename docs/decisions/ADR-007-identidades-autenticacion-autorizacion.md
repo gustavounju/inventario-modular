@@ -21,7 +21,7 @@ usuario desde el panel no hay campo para cargar password.
 Esa duda muestra que hay que separar tres conceptos:
 
 ```text
-Identidad       -> quien es la persona o cuenta: gmurad, admin.local, tecnico.local.
+Identidad       -> quien es la persona o cuenta: usuario.tecnico, admin.local, tecnico.local.
 Autenticacion   -> quien valida la clave: Active Directory o proveedor local.
 Autorizacion    -> que puede ver/hacer en Inventario Modular: roles, permisos, modulos.
 ```

@@ -72,7 +72,7 @@ class EquipoControllerTests {
 				  "nombre": "pc-nueva-003",
 				  "ultimoUsuario": "jlopez",
 				  "fuero": "Informatica",
-				  "ip": "10.15.2.12",
+				  "ip": "192.0.2.12",
 				  "sistemaOperativo": "Windows 11 Pro",
 				  "procesador": "AMD Ryzen 5",
 				  "ramMb": 16384,
@@ -170,7 +170,7 @@ class EquipoControllerTests {
 				  "nombre": "pc-inf-001-renombrada",
 				  "ultimoUsuario": "soporte",
 				  "fuero": "Informatica",
-				  "ip": "10.15.2.99",
+				  "ip": "192.0.2.99",
 				  "sistemaOperativo": "Windows 11 Enterprise",
 				  "procesador": "Intel Core i7",
 				  "ramMb": 32768,
@@ -297,7 +297,7 @@ class EquipoControllerTests {
 	void importaInventarioViejoDesdeCsv() throws Exception {
 		String csv = """
 				PC_Nombre;Usuario_Actual;fuero;ubicacion;IPAddress;OsName;Procesador;RAM (GB);RAM_Detalles;RAM_Serials;Disk_Models;Disk_Serials
-				pc-vieja-010;mrojas;Informatica;Oficina Informatica;10.15.2.40;Windows 7 Pro;Intel Core i3;4;4GB DDR3;RAM-OLD-010;WD HDD;DISK-OLD-010
+				pc-vieja-010;usuario.auxiliar;Informatica;Oficina Informatica;192.0.2.40;Windows 7 Pro;Intel Core i3;4;4GB DDR3;RAM-OLD-010;WD HDD;DISK-OLD-010
 				""";
 
 		mockMvc.perform(post("/api/v1/equipos/importar-viejo")
@@ -393,7 +393,7 @@ class EquipoControllerTests {
 				    "Office": "Microsoft Office 2019"
 				  },
 				  "Red": [
-				    { "IPAddress": "10.15.2.14", "MACAddress": "00:11:22:33:44:55" }
+				    { "IPAddress": "192.0.2.14", "MACAddress": "00:11:22:33:44:55" }
 				  ],
 				  "Printer_Model": "HP LaserJet Legacy",
 				  "Printer_Port": "USB001 (Local)",

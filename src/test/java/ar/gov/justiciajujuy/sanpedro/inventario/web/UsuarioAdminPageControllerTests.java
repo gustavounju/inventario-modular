@@ -51,7 +51,7 @@ class UsuarioAdminPageControllerTests {
 	@Test
 	void muestraEstadoLdapAlBuscarUsuariosDeDominio() throws Exception {
 		mockMvc.perform(get("/admin/usuarios")
-				.param("q", "gmurad")
+				.param("q", "usuario.tecnico")
 				.with(user(adminLocal())))
 			.andExpect(status().isOk())
 			.andExpect(content().string(containsString("No disponible")))
@@ -89,18 +89,18 @@ class UsuarioAdminPageControllerTests {
 		mockMvc.perform(post("/admin/usuarios/dominio")
 				.with(user(adminLocal()))
 				.with(csrf())
-				.param("username", "gmurad")
-				.param("nombreVisible", "Gustavo Elias Murad")
+				.param("username", "usuario.tecnico")
+				.param("nombreVisible", "Usuario Tecnico")
 				.param("fuero", "Informatica")
 				.param("activo", "true")
 				.param("roles", "ADMINISTRADOR"))
 			.andExpect(status().is3xxRedirection())
-			.andExpect(redirectedUrl("/admin/usuarios?q=gmurad&autorizado=gmurad"));
+			.andExpect(redirectedUrl("/admin/usuarios?q=usuario.tecnico&autorizado=usuario.tecnico"));
 
 		mockMvc.perform(get("/admin/usuarios").with(user(adminLocal())))
 			.andExpect(status().isOk())
-			.andExpect(content().string(containsString("gmurad")))
-			.andExpect(content().string(containsString("Gustavo Elias Murad")))
+			.andExpect(content().string(containsString("usuario.tecnico")))
+			.andExpect(content().string(containsString("Usuario Tecnico")))
 			.andExpect(content().string(containsString("AD")));
 	}
 

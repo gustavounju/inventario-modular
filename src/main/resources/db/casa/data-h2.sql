@@ -29,7 +29,7 @@ MERGE INTO roles (id, codigo, nombre, descripcion, activo) KEY(codigo) VALUES
 
 MERGE INTO usuarios (id, username, nombre_visible, fuero, origen, activo) KEY(username) VALUES
   (1, 'admin.local', 'Administrador Local', 'Desarrollo local', 'LOCAL', TRUE),
-  (2, 'gmurad', 'Gustavo Murad', 'Informatica', 'AD', TRUE),
+  (2, 'usuario.tecnico', 'Usuario Tecnico', 'Informatica', 'AD', TRUE),
   (3, 'mesa.entrada', 'Mesa de Entrada', 'Mesa de ayuda', 'AD', TRUE);
 
 MERGE INTO usuario_roles (usuario_id, rol_id) KEY(usuario_id, rol_id)
@@ -58,10 +58,10 @@ MERGE INTO equipos (
   id, nombre, ultimo_usuario, fuero, ip, sistema_operativo, procesador, ram_mb,
   ram_detalles, ram_seriales, discos_modelos, discos_seriales, motherboard_modelo,
   motherboard_serial, monitores, teclado, mouse, impresora, monitoreo, activo) KEY(nombre) VALUES
-  (1, 'PC-INF-001', 'gmurad', 'Informatica', '10.15.2.10', 'Windows 11 Pro', 'Intel Core i5', 16384,
+  (1, 'PC-INF-001', 'usuario.tecnico', 'Informatica', 'PC_INTERNA_IP_1', 'Windows 11 Pro', 'Intel Core i5', 16384,
    '2x8GB DDR4', 'RAMSN-001 | RAMSN-002', 'KINGSTON SA400', 'DISK-001', 'Dell 0ABC',
    'MB-001', 'Dell 22 SN MON-001', 'Logitech Keyboard', 'Logitech Mouse', 'HP LaserJet', 'REPORTADO', TRUE),
-  (2, 'PC-MESA-002', 'mesa.entrada', 'Mesa de ayuda', '10.15.2.11', 'Windows 10 Pro', 'Intel Core i3', 8192,
+  (2, 'PC-MESA-002', 'mesa.entrada', 'Mesa de ayuda', 'PC_INTERNA_IP_2', 'Windows 10 Pro', 'Intel Core i3', 8192,
    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'REPORTADO', TRUE),
   (3, 'PC-GENERICA', 'Sin asignar', 'Sin fuero informado', NULL, 'No aplica', NULL, NULL,
    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'AUXILIAR_TAREAS', TRUE);

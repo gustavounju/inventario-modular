@@ -65,7 +65,7 @@
 				<label class="task-viewer-query">
 					<span>Buscar tarea, usuario o comentario</span>
 					<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120"
-						   placeholder="Ej: Fredes, gmurad, impresora, PC-INF-001">
+						   placeholder="Ej: Fredes, usuario.tecnico, impresora, PC-INF-001">
 				</label>
 				<div class="form-actions">
 					<button class="primary-action" type="submit">Buscar</button>
@@ -218,7 +218,7 @@
 							<span>Responsable</span>
 							<select th:if="${puedeAsignarResponsable}" th:field="*{responsable}">
 								<option value="">Sin tomar</option>
-								<option th:each="tecnico : ${tecnicosAsignables}" th:value="${tecnico.username}" th:text="${tecnico.username + ' - ' + tecnico.nombreVisible}">gmurad</option>
+								<option th:each="tecnico : ${tecnicosAsignables}" th:value="${tecnico.username}" th:text="${tecnico.username + ' - ' + tecnico.nombreVisible}">usuario.tecnico</option>
 							</select>
 							<input th:unless="${puedeAsignarResponsable}" th:field="*{responsable}" th:value="${usuarioActual}" maxlength="120" readonly>
 						</label>

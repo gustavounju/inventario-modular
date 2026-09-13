@@ -10,9 +10,9 @@ pero no comparte codigo ni despliegue.
 
 ## Topologia
 
-- Produccion modular: aplicacion en Ubuntu `10.15.2.251`, servicio
+- Produccion modular: aplicacion en Ubuntu `APP_INTERNA_IP`, servicio
   `inventario-modular.service`, puerto `8081`.
-- Base de produccion modular: MySQL `10.15.0.62`, base `inventario_modular`, usuario de
+- Base de produccion modular: MySQL `MYSQL_INTERNO_IP`, base `inventario_modular`, usuario de
   aplicacion `inventario_modular_app`.
 - Desarrollo Windows: MySQL local `127.0.0.1:3306`, base `inventario_modular`, usuario
   `inventario_local`.
@@ -53,7 +53,7 @@ El script pide credenciales en consola. No escribir claves en commits, documento
 ## Seguridad
 
 - No versionar secretos reales.
-- No ejecutar comandos contra MySQL `10.15.0.62` ni deploys de produccion sin autorizacion
+- No ejecutar comandos contra MySQL `MYSQL_INTERNO_IP` ni deploys de produccion sin autorizacion
   explicita.
 - Active Directory autentica identidad; Inventario Modular decide autorizacion y roles.
 - Las cuentas locales de emergencia/desarrollo se controlan con `inventario.local-auth.*`

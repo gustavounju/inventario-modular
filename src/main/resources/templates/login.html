@@ -16,6 +16,7 @@
 
 			<p class="success-message" th:if="${loggedOut}">Sesion cerrada correctamente.</p>
 			<p class="error-message" th:if="${hasError}">Usuario o clave incorrectos.</p>
+			<p class="error-message" th:if="${blocked}">Demasiados intentos fallidos. Espere unos minutos antes de volver a ingresar.</p>
 
 			<form class="login-form" th:action="@{/login}" method="post">
 				<label>

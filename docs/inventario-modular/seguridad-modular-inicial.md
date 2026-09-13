@@ -147,8 +147,8 @@ recibir ni guardar clave de dominio:
 
 ```json
 {
-  "username": "gmurad",
-  "nombreVisible": "Gustavo Elias Murad",
+  "username": "usuario.tecnico",
+  "nombreVisible": "Usuario Tecnico",
   "fuero": "Informatica",
   "activo": true,
   "roles": ["ADMINISTRADOR"]

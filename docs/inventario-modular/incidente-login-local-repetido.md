@@ -19,7 +19,7 @@ causa estaba en como se construia el usuario local en memoria para Spring Securi
 - Perfil: `local` o `casa`.
 - Dominio: apagado con `inventario.ldap.enabled=false`.
 - Usuario local: `admin.local`.
-- Clave local actual: `AdminLocal123`.
+- Clave local actual: `CAMBIAR_CLAVE_LOCAL_SEGURA`.
 
 Produccion/trabajo con Active Directory real no se modifico por este arreglo.
 
@@ -35,7 +35,7 @@ con:
 
 ```text
 Usuario: admin.local
-Clave: AdminLocal123
+Clave: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 y la pantalla respondia:
@@ -79,8 +79,8 @@ Tambien se simplifico la clave local por defecto para evitar problemas de copiad
 PowerShell:
 
 ```text
-Antes: AdminLocal123!
-Ahora: AdminLocal123
+Antes: CAMBIAR_CLAVE_LOCAL_SEGURA!
+Ahora: CAMBIAR_CLAVE_LOCAL_SEGURA
 ```
 
 Archivos de configuracion afectados:
@@ -205,7 +205,7 @@ Verificacion local realizada:
 
 ```text
 GET http://192.168.1.8:8081/login -> 200
-POST /login admin.local/AdminLocal123 -> 302 /admin
+POST /login admin.local/CAMBIAR_CLAVE_LOCAL_SEGURA -> 302 /admin
 GET /admin -> 200
 GET /admin/usuarios -> 200
 GET /admin/equipos -> 200

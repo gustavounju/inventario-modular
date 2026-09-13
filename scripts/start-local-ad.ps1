@@ -4,10 +4,10 @@ param(
     [string]$MysqlPort = "3306",
     [string]$MysqlDatabase = "inventario_modular",
     [string]$MysqlDefaultUser = "inventario_local",
-    [string]$LdapUrl = "ldap://10.15.0.41:389",
+    [string]$LdapUrl = "ldap://192.0.2.41:389",
     [string]$LdapDomain = "podjudsp.local",
     [string]$LdapBaseDn = "OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local",
-    [string]$LocalAdminPassword = "AdminLocal123"
+    [string]$LocalAdminPassword = "ClaveLocalSegura123!"
 )
 
 $ErrorActionPreference = "Stop"

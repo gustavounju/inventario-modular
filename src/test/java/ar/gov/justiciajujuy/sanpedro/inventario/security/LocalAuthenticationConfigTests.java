@@ -22,7 +22,9 @@ import org.springframework.test.web.servlet.MvcResult;
 		"inventario.local-auth.password=ClaveLocal123!",
 		"inventario.local-auth.display-name=Administrador Local de Prueba",
 		"inventario.local-auth.fuero=Desarrollo local",
-		"inventario.ldap.enabled=false"
+		"inventario.ldap.enabled=false",
+		"inventario.security.login.max-failures=2",
+		"inventario.security.login.block-seconds=300"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -60,6 +62,23 @@ class LocalAuthenticationConfigTests {
 				.password("clave-equivocada"))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(redirectedUrl("/login?error"));
+	}
+
+	@Test
+	void blocksTemporarilyAfterRepeatedLoginFailures() throws Exception {
+		for (int i = 0; i < 2; i++) {
+			mockMvc.perform(formLogin()
+					.user("blocked.local")
+					.password("clave-equivocada"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login?error"));
+		}
+
+		mockMvc.perform(formLogin()
+				.user("blocked.local")
+				.password("otra-clave"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrl("/login?bloqueado"));
 	}
 
 	@Test

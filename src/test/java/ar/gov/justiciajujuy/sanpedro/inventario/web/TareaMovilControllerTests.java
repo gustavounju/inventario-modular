@@ -104,7 +104,7 @@ class TareaMovilControllerTests {
         mvc.perform(get("/api/v1/tareas-tecnicas/1/comentarios").with(user("admin.local"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].comentario").value("Comentario inicial de seguimiento."));
         mvc.perform(post("/api/v1/tareas-tecnicas").with(user("admin.local")).contentType(MediaType.APPLICATION_JSON).content(NUEVA))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isCreated());
     }
 
     @Test void creacionDesdeApiGeneraAvisoRecuperableSinDuplicar() throws Exception {

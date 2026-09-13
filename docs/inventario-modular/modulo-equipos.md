@@ -84,9 +84,9 @@ Payload:
 ```json
 {
   "nombre": "PC-INF-001",
-  "ultimoUsuario": "gmurad",
+  "ultimoUsuario": "usuario.tecnico",
   "fuero": "Dpto. Informatica San Pedro",
-  "ip": "10.15.2.10",
+  "ip": "PC_INTERNA_IP_1",
   "sistemaOperativo": "Windows 11 Pro",
   "procesador": "Intel Core i5",
   "ramMb": 16384,
@@ -124,7 +124,7 @@ Payload:
   "ultimoUsuario": "jlopez",
   "fuero": "Informatica",
   "ubicacion": "Oficina Informatica",
-  "ip": "10.15.2.12",
+  "ip": "PC_INTERNA_IP_3",
   "sistemaOperativo": "Windows 11 Pro",
   "procesador": "AMD Ryzen 5",
   "ramMb": 16384,
@@ -187,7 +187,7 @@ Ejemplo:
 
 ```csv
 PC_Nombre;Usuario_Actual;fuero;ubicacion;IPAddress;OsName;Procesador;RAM (GB)
-pc-vieja-010;mrojas;Informatica;Oficina Informatica;10.15.2.40;Windows 7 Pro;Intel Core i3;4
+pc-vieja-010;usuario.auxiliar;Informatica;Oficina Informatica;PC_INTERNA_IP_5;Windows 7 Pro;Intel Core i3;4
 ```
 
 ## Pantalla

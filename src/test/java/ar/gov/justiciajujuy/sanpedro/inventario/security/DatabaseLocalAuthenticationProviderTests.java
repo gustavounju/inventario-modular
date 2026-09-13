@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(properties = {
 		"inventario.local-auth.enabled=true",
 		"inventario.local-auth.username=admin.local",
-		"inventario.local-auth.password=AdminLocal123",
+		"inventario.local-auth.password=ClaveLocalSegura123!",
 		"inventario.local-db-auth.enabled=true"
 })
 @AutoConfigureMockMvc
@@ -79,7 +79,7 @@ class DatabaseLocalAuthenticationProviderTests {
 
 		mockMvc.perform(formLogin()
 				.user("admin.local")
-				.password("AdminLocal123"))
+				.password("ClaveLocalSegura123!"))
 			.andExpect(status().is3xxRedirection())
 			.andExpect(redirectedUrl("/admin"));
 
@@ -96,7 +96,7 @@ class DatabaseLocalAuthenticationProviderTests {
 
 		CredencialLocal credencial = credencialLocalRepository.findActivaByUsername("admin.local").orElseThrow();
 
-		assertThat(credencial.getPasswordHash()).isNotEqualTo("AdminLocal123");
-		assertThat(passwordEncoder.matches("AdminLocal123", credencial.getPasswordHash())).isTrue();
+		assertThat(credencial.getPasswordHash()).isNotEqualTo("ClaveLocalSegura123!");
+		assertThat(passwordEncoder.matches("ClaveLocalSegura123!", credencial.getPasswordHash())).isTrue();
 	}
 }

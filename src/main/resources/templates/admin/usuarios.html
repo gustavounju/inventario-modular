@@ -66,8 +66,8 @@
 						</thead>
 						<tbody>
 							<tr th:each="usuarioDominio : ${usuariosDominio.usuarios}">
-								<td data-label="Usuario AD" th:text="${usuarioDominio.username}">gmurad</td>
-								<td data-label="Nombre" th:text="${usuarioDominio.nombreVisible}">Gustavo Elias Murad</td>
+								<td data-label="Usuario AD" th:text="${usuarioDominio.username}">usuario.tecnico</td>
+								<td data-label="Nombre" th:text="${usuarioDominio.nombreVisible}">Usuario Tecnico</td>
 								<td data-label="Fuero" th:text="${usuarioDominio.fuero}">Informatica</td>
 								<td data-label="Accion">
 									<form class="inline-action-form" th:action="@{/admin/usuarios/dominio}" method="post">
@@ -107,7 +107,7 @@
 					<label>
 						<span>Nombre visible</span>
 						<input name="nombreVisible" type="text" maxlength="180"
-								placeholder="Gustavo Elias Murad" required>
+								placeholder="Usuario Tecnico" required>
 					</label>
 
 					<label>

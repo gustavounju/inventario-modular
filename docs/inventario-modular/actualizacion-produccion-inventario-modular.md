@@ -58,7 +58,7 @@ Contenido guia, sin copiar claves reales al repositorio:
 ```env
 SPRING_PROFILES_ACTIVE=local
 INVENTARIO_SERVER_PORT=8081
-INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://10.15.0.62:3306/inventario_modular
+INVENTARIO_DB_PRIMARY_URL=jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
 INVENTARIO_DB_PRIMARY_USER=inventario_modular_app
 INVENTARIO_DB_PRIMARY_PASSWORD=CAMBIAR_EN_SERVIDOR
 INVENTARIO_REPORT_TOKEN=CAMBIAR_TOKEN_LARGO_ALEATORIO
@@ -160,7 +160,7 @@ Desde el servidor Ubuntu:
 
 ```bash
 curl -s http://127.0.0.1:8081/api/v1/sistema/estado
-curl -s 'http://127.0.0.1:8081/api/v1/usuarios/dominio?q=gmurad'
+curl -s 'http://127.0.0.1:8081/api/v1/usuarios/dominio?q=usuario.tecnico'
 curl -s http://127.0.0.1:8081/scripts/windows/inventario-modular.ps1.sha256
 curl -I http://127.0.0.1:8081/scripts/windows/inventario-modular.ps1
 ```
