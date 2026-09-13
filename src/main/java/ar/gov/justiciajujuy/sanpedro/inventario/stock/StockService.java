@@ -2,6 +2,7 @@ package ar.gov.justiciajujuy.sanpedro.inventario.stock;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -233,6 +234,7 @@ public class StockService {
 				componente.getProveedor(),
 				componente.getIngresadoPor(),
 				componente.isDatosCompletos(),
+				camposFaltantesParaStock(componente),
 				componente.getUbicacion(),
 				componente.getObservaciones(),
 				vinculo == null ? null : vinculo.getEquipo().getId(),
@@ -313,6 +315,22 @@ public class StockService {
 		return StringUtils.hasText(observaciones) ? observaciones.trim() + " " + nota : nota;
 	}
 
+	private List<String> camposFaltantesParaStock(StockComponente componente) {
+		List<String> campos = new ArrayList<>();
+		if (componente.getTipo() == TipoComponente.PENDIENTE) {
+			campos.add("Tipo real");
+		}
+		if (!tieneDescripcionReal(componente.getDescripcion())) {
+			campos.add("Descripcion real");
+		}
+		return List.copyOf(campos);
+	}
+
+	private boolean tieneDescripcionReal(String descripcion) {
+		return StringUtils.hasText(descripcion)
+				&& !descripcion.toLowerCase(Locale.ROOT).contains("pendiente");
+	}
+
 	private String textoOpcional(String valor) {
 		return StringUtils.hasText(valor) ? valor.trim() : null;
 	}
@@ -380,6 +398,7 @@ public class StockService {
 			String proveedor,
 			String ingresadoPor,
 			boolean datosCompletos,
+			List<String> camposFaltantes,
 			String ubicacion,
 			String observaciones,
 			Long equipoId,

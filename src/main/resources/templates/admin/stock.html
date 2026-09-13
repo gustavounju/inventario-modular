@@ -47,7 +47,7 @@
 			</div>
 			<div class="message error" th:if="${errorLote != null}" style="margin-bottom: 16px;">
 				<span th:if="${errorLote == 'seleccion'}">Seleccione al menos un componente.</span>
-				<span th:if="${errorLote == 'datos'}">Ingrese remito, orden de compra o proveedor antes de aplicar.</span>
+				<span th:if="${errorLote == 'datos'}">Ingrese al menos un dato tecnico o administrativo antes de aplicar.</span>
 				<span th:if="${errorLote == 'componentes'}">La selección contiene componentes inexistentes.</span>
 			</div>
 
@@ -197,6 +197,7 @@
 									<th scope="col">Código escaneado</th>
 									<th scope="col">Tipo</th>
 									<th scope="col">Descripción Técnica</th>
+									<th scope="col">Falta para Stock</th>
 									<th scope="col">Ingresado por</th>
 									<th scope="col">Remito / O. Compra</th>
 									<th scope="col">Estado</th>
@@ -218,6 +219,12 @@
 									<td data-label="Descripción">
 										<strong th:text="${componente.descripcion}">Pendiente de completar</strong>
 										<span class="table-subtext" th:if="${componente.observaciones}" th:text="${componente.observaciones}">Observaciones</span>
+									</td>
+									<td data-label="Falta para Stock">
+										<div class="missing-fields-stack" th:if="${!#lists.isEmpty(componente.camposFaltantes)}">
+											<span class="missing-field-chip" th:each="campo : ${componente.camposFaltantes}" th:text="${campo}">Tipo real</span>
+										</div>
+										<span class="authorization-badge is-authorized" th:if="${#lists.isEmpty(componente.camposFaltantes)}">Listo al guardar</span>
 									</td>
 									<td data-label="Ingresado por" th:text="${componente.ingresadoPor ?: '-'}">usuario3</td>
 									<td data-label="Remito / O. Compra">

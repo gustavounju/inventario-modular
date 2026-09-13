@@ -91,12 +91,28 @@ class StockPageControllerTests {
 				.andExpect(content().string(containsString("componentes pendientes de completar")))
 				.andExpect(content().string(containsString("tab-btn-pendientes")))
 				.andExpect(content().string(containsString("pane-pendientes")))
-				.andExpect(content().string(containsString("Completar seleccionados")));
+				.andExpect(content().string(containsString("Completar seleccionados")))
+				.andExpect(content().string(containsString("Falta para Stock")))
+				.andExpect(content().string(containsString("Tipo real")))
+				.andExpect(content().string(containsString("Descripcion real")));
 
 		Long tintaUnoId = jdbcTemplate.queryForObject(
 				"SELECT id FROM stock_componentes WHERE serial = 'TINTA-001'", Long.class);
 		Long tintaDosId = jdbcTemplate.queryForObject(
 				"SELECT id FROM stock_componentes WHERE serial = 'TINTA-002'", Long.class);
+
+		mockMvc.perform(post("/admin/stock/componentes/lote")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("componentesIds", String.valueOf(tintaUnoId))
+				.param("tipo", "CARTUCHO"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/admin/stock?loteActualizado=1#tab-disponibles"));
+
+		mockMvc.perform(get("/admin/stock").with(user(adminLocal())))
+				.andExpect(status().isOk())
+				.andExpect(content().string(containsString("CARTUCHO")))
+				.andExpect(content().string(containsString("Descripcion real")));
 
 		mockMvc.perform(post("/admin/stock/componentes/lote")
 				.with(user(adminLocal()))

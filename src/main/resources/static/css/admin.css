@@ -1302,6 +1302,27 @@ tbody tr:focus-within {
 	color: #eab308;
 }
 
+.missing-fields-stack {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+	max-width: 220px;
+}
+
+.missing-field-chip {
+	background: rgba(250, 204, 21, 0.12);
+	border: 1px solid rgba(250, 204, 21, 0.34);
+	border-radius: 6px;
+	color: #facc15;
+	display: inline-flex;
+	font-size: 0.70rem;
+	font-weight: 800;
+	letter-spacing: 0.03em;
+	line-height: 1.2;
+	padding: 4px 7px;
+	text-transform: uppercase;
+}
+
 .stock-edit-row {
 	background: color-mix(in srgb, var(--table-row-hover) 74%, transparent);
 }
