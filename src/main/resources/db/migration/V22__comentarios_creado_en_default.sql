@@ -1,0 +1,2 @@
+ALTER TABLE tareas_tecnicas_comentarios
+  MODIFY creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;

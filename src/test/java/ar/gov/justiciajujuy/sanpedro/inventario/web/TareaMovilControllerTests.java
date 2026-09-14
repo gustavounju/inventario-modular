@@ -125,7 +125,7 @@ class TareaMovilControllerTests {
                         .with(user("tecnico.apk"))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(tarea))
+                .content(tarea))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.solicitanteUsername").value("dperez"))
                 .andExpect(jsonPath("$.solicitanteNombre").value("Doctora Perez"))
@@ -141,7 +141,8 @@ class TareaMovilControllerTests {
                         .content("""
                                 {"comentario":"Comentario cargado desde APK movil."}
                                 """))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.creadoEn").isNotEmpty());
 
         mvc.perform(get("/admin/tareas/visor"))
                 .andExpect(status().isOk())
@@ -169,7 +170,8 @@ class TareaMovilControllerTests {
                         .content("""
                                 {"comentario":"Comentario permitido para el tecnico creador."}
                                 """))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.creadoEn").isNotEmpty());
 
         mvc.perform(get("/admin/tareas/visor"))
                 .andExpect(status().isOk())

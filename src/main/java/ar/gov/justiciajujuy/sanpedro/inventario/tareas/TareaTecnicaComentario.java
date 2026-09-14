@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "tareas_tecnicas_comentarios")
@@ -30,7 +31,8 @@ public class TareaTecnicaComentario {
 	@Column(nullable = false, length = 1000)
 	private String comentario;
 
-	@Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
+	@CreationTimestamp
+	@Column(name = "creado_en", nullable = false, updatable = false)
 	private LocalDateTime creadoEn;
 
 	protected TareaTecnicaComentario() {
