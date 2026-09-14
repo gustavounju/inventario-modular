@@ -4,7 +4,7 @@ param(
     [string]$MysqlPort = "3306",
     [string]$MysqlDatabase = "inventario_modular",
     [string]$MysqlDefaultUser = "inventario_local",
-    [string]$LdapUrl = "ldap://192.0.2.41:389",
+    [string]$LdapUrl = "ldap://10.15.0.41:389",
     [string]$LdapDomain = "podjudsp.local",
     [string]$LdapBaseDn = "OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local",
     [string]$LocalAdminPassword = "ClaveLocalSegura123!"
@@ -33,6 +33,13 @@ Write-Host "Inventario Modular local + Active Directory" -ForegroundColor Cyan
 Write-Host "Base de datos: MySQL local (${MysqlHost}:$MysqlPort/$MysqlDatabase), sin tocar MySQL de produccion."
 Write-Host "LDAP: $LdapUrl / $LdapDomain"
 Write-Host ""
+
+$ldapUri = [Uri]$LdapUrl
+$ldapPort = if ($ldapUri.Port -gt 0) { $ldapUri.Port } else { 389 }
+$ldapReachable = Test-NetConnection -ComputerName $ldapUri.Host -Port $ldapPort -InformationLevel Quiet
+if (-not $ldapReachable) {
+    throw "No se puede conectar a Active Directory en $($ldapUri.Host):$ldapPort. Revise red, VPN, DNS o firewall."
+}
 
 $mysqlUser = Read-Host -Prompt "Usuario MySQL LOCAL [$MysqlDefaultUser]"
 if ([string]::IsNullOrWhiteSpace($mysqlUser)) {
