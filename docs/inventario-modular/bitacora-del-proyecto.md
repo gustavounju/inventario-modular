@@ -2774,3 +2774,22 @@ Verificacion:
 ```
 
 Resultado: 27 pruebas, 0 fallos, 0 errores.
+
+## 2026-09-14 - Diagnostico de login AD local en PC del trabajo
+
+Se confirmo desde PowerShell que la PC local alcanza el controlador de dominio
+`10.15.0.41:389` y que AD acepta el usuario `gmurad` con tres formatos:
+
+- `gmurad@podjudsp.local`
+- `PODJUDSP\gmurad` usando Negotiate
+- `PODJUDSP\gmurad` con simple bind
+
+El fallo restante no estaba en red ni credenciales, sino en la configuracion local de la
+app. Se corrigio `scripts/start-local-ad.ps1` para separar:
+
+- `INVENTARIO_LDAP_BASE_DN=DC=podjudsp,DC=local` para login/autenticacion AD.
+- `INVENTARIO_LDAP_USER_SEARCH_BASE=OU=USUARIOS,OU=PODJUDSP` para busqueda de usuarios.
+
+Tambien se agrego `scripts/test-ad-login.ps1` como diagnostico local sin arrancar Spring
+Boot. El script prueba conectividad LDAP y bind con los formatos habituales sin imprimir
+la clave.

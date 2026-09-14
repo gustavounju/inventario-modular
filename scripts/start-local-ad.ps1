@@ -6,7 +6,8 @@ param(
     [string]$MysqlDefaultUser = "inventario_local",
     [string]$LdapUrl = "ldap://10.15.0.41:389",
     [string]$LdapDomain = "podjudsp.local",
-    [string]$LdapBaseDn = "OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local",
+    [string]$LdapBaseDn = "DC=podjudsp,DC=local",
+    [string]$LdapUserSearchBase = "OU=USUARIOS,OU=PODJUDSP",
     [string]$LocalAdminPassword = "ClaveLocalSegura123!"
 )
 
@@ -32,6 +33,8 @@ function Read-SecretPlain {
 Write-Host "Inventario Modular local + Active Directory" -ForegroundColor Cyan
 Write-Host "Base de datos: MySQL local (${MysqlHost}:$MysqlPort/$MysqlDatabase), sin tocar MySQL de produccion."
 Write-Host "LDAP: $LdapUrl / $LdapDomain"
+Write-Host "LDAP base login: $LdapBaseDn"
+Write-Host "LDAP base busqueda usuarios: $LdapUserSearchBase"
 Write-Host ""
 
 $ldapUri = [Uri]$LdapUrl
@@ -84,7 +87,7 @@ $env:INVENTARIO_LDAP_DISPLAY_NAME_ATTRIBUTE = "displayName"
 $env:INVENTARIO_LDAP_FUERO_ATTRIBUTE = "department"
 $env:INVENTARIO_LDAP_READ_ONLY_USER_DN = $ldapUser
 $env:INVENTARIO_LDAP_READ_ONLY_PASSWORD = $ldapPassword
-$env:INVENTARIO_LDAP_USER_SEARCH_BASE = ""
+$env:INVENTARIO_LDAP_USER_SEARCH_BASE = $LdapUserSearchBase
 $env:INVENTARIO_LDAP_USER_SEARCH_FILTER = "(&(objectClass=user)(!(objectClass=computer)))"
 $env:INVENTARIO_LDAP_USER_SEARCH_LIMIT = "50"
 

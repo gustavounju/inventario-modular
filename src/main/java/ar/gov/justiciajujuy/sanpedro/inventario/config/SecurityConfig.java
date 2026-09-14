@@ -13,6 +13,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.ldap.core.LdapOperations;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,6 +29,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 public class SecurityConfig {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfig.class);
 
 	@Value("${inventario.security.report-token:}")
 	private String reportToken;
@@ -86,6 +90,10 @@ public class SecurityConfig {
 				})
 				.failureHandler((request, response, exception) -> {
 					loginAttemptService.loginFailed(request.getParameter("username"), request.getRemoteAddr());
+					LOGGER.warn("Login fallido para usuario {} desde {}: {}",
+							request.getParameter("username"),
+							request.getRemoteAddr(),
+							exception.getMessage());
 					response.sendRedirect(request.getContextPath()
 							+ ("movil".equals(request.getParameter("destino")) ? "/movil/login?error" : "/login?error"));
 				})

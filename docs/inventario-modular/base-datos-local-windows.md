@@ -86,6 +86,19 @@ Usuario lector AD
 Clave AD
 ```
 
+Para AD local en el trabajo usa:
+
+```text
+LDAP URL: ldap://10.15.0.41:389
+Base de login: DC=podjudsp,DC=local
+Base de busqueda de usuarios: OU=USUARIOS,OU=PODJUDSP
+Dominio: podjudsp.local
+```
+
+La base de login es la raiz del dominio para que Spring Security pueda encontrar el
+usuario autenticado. La busqueda/autocompletado de solicitantes queda limitada a la OU
+de usuarios.
+
 Formatos aceptados para AD:
 
 ```text
