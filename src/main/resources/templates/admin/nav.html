@@ -3,22 +3,27 @@
 <body>
 
 <header th:fragment="topbar(eyebrow, title, activeModule)" class="panel-header">
+	<div class="judicial-global-header">
+		<div class="judicial-brand">
+			<h1>Poder Judicial de la Provincia de Jujuy</h1>
+		</div>
+		<nav class="judicial-main-nav" aria-label="Navegación principal">
+			<a th:href="@{/admin}" th:classappend="${activeModule == 'panel'} ? ' is-active' : ''">Inventario</a>
+			<a th:if="${canViewStock != null ? canViewStock : true}" th:href="@{/admin/stock}" th:classappend="${activeModule == 'stock'} ? ' is-active' : ''">Stock</a>
+			<a th:if="${canViewTareas != null ? canViewTareas : true}" th:href="@{/admin/tareas/visor}" th:classappend="${activeModule == 'tareas'} ? ' is-active' : ''">Tareas</a>
+			<a th:if="${canViewReportes != null ? canViewReportes : true}" th:href="@{/admin/reportes}" th:classappend="${activeModule == 'reportes'} ? ' is-active' : ''">Reportes</a>
+			<form class="judicial-logout-form" th:action="@{/logout}" method="post">
+				<button type="submit">Cerrar sesion</button>
+			</form>
+		</nav>
+	</div>
+
 	<!-- =========================================================================
 	     ALTERNATIVA 1: BARRA LATERAL (SIDEBAR) VERTICAL Y CATEGORIZADA
 	     Resuelve el desborde horizontal organizando los 13 módulos por áreas operativas.
 	     ========================================================================= -->
 	<aside class="app-sidebar" id="app-sidebar" aria-label="Menú lateral de navegación">
-		<!-- Cabecera Institucional del Sidebar -->
-		<div class="sidebar-brand">
-			<div class="sidebar-brand-icon" aria-hidden="true">PJ</div>
-			<div class="sidebar-brand-text">
-				<strong class="sidebar-brand-title">Centro Judicial San Pedro</strong>
-				<span class="sidebar-brand-sub">Taller Informatica</span>
-			</div>
-		</div>
-		<div class="sidebar-app-badge">
-			<span>INVENTARIO MODULAR · TALLER INFORMATICA</span>
-		</div>
+		<p class="side-title">Sistema de inventario</p>
 
 		<!-- Navegación categorizada: los codigos cortos sostienen la estetica tecnica del admin. -->
 		<nav class="sidebar-nav" role="navigation" aria-label="Secciones del sistema">
@@ -33,7 +38,7 @@
 
 			<!-- Sección 2: Informática y Taller -->
 			<div class="sidebar-section">
-				<span class="sidebar-section-title">Taller Informatica</span>
+				<span class="sidebar-section-title">Inventario</span>
 				<a class="sidebar-link" th:if="${canViewEquipos != null ? canViewEquipos : true}" th:classappend="${activeModule == 'equipos'} ? ' is-active' : ''" th:href="@{/admin/equipos}">
 					<span class="sidebar-icon">EQ</span>
 					<span class="sidebar-text">Equipos</span>

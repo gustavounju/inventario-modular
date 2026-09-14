@@ -86,12 +86,15 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
 
 - El tema visual vigente del servidor web y la APK es **Institucional Justicia Jujuy**.
 - El objetivo es una interfaz sobria, clara y administrativa para el **Centro Judicial San Pedro**
-  y el **Taller Informatica**, inspirada en los colores del sistema judicial provincial.
+  y el **Taller Informatica**, aplicada de forma fiel al mockup aprobado
+  `output/mockups-diseno/justicia-jujuy-inventario.html`.
 - El archivo central de estilos es `src/main/resources/static/css/admin.css`.
 - La navegacion compartida vive en `src/main/resources/templates/admin/nav.html`.
 - La documentacion visual canonica esta en `docs/arquitectura_visual.md`.
-- El sidebar usa codigos cortos (`PG`, `EQ`, `ST`, `TT`, etc.) en lugar de emoji o iconos
-  decorativos para mantener una lectura tecnica y consistente.
+- La cabecera superior usa azul `#006f99` y el texto serif italico
+  `Poder Judicial de la Provincia de Jujuy`, como en el mockup.
+- El sidebar no debe repetir `Centro Judicial San Pedro` ni `Taller Informatica`; empieza con
+  `Sistema de inventario` y solo contiene navegacion operativa.
 - Los colores base del tema institucional son:
   - azul institucional `#006f99`
   - azul profundo `#005777` / `#014760`
@@ -99,9 +102,11 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
   - paneles `#f8fcfe`
   - bordes `#b8cdd7`
 - Al tocar UI web o movil, preservar:
-  - identidad visible de `Centro Judicial San Pedro`;
-  - subtitulo/area `Taller Informatica`;
-  - paneles compactos y claros;
+  - identidad judicial superior como en el mockup;
+  - `Centro Judicial San Pedro` y `Taller Informatica` donde aporten contexto, sin duplicarlos
+    en el panel lateral;
+  - paneles compactos, claros y de esquinas cuadradas;
+  - evitar sombras/fondos decorativos detras de textos sueltos;
   - foco visible en formularios y botones;
   - tablas densas pero legibles;
   - compatibilidad responsive con desktop y celular.
@@ -413,7 +418,7 @@ y verificar fecha, host, rama y backup.
 | 2026-09 | Actualizacion administrativa en lote | Mismo remito/OC/proveedor para muchos componentes |
 | 2026-09 | Escaneo rapido con pendientes | Cargar 20 monitores o 60 cartuchos sin tipear datos repetidos |
 | 2026-09 | Autenticacion local de base activa en perfil local | La APK debe aceptar tecnicos locales como `usuario3` durante pruebas LAN |
-| 2026-09 | Institucional Justicia Jujuy como UI vigente | Centro Judicial San Pedro / Taller Informatica con colores judiciales |
+| 2026-09 | Institucional Justicia Jujuy como UI vigente | Mockup aprobado como referencia literal: cabecera judicial azul, sidebar operativo sin marca duplicada, recuadros cuadrados |
 | 2026-09 | Metodologia ITAM/CMDB de taller | Ordenar activos, configuracion, gemelos, stock, tareas y evidencia |
 
 ## 12. Que no tocar sin cuidado
@@ -442,8 +447,8 @@ y verificar fecha, host, rama y backup.
 - No hacer refactors grandes mientras se esta corrigiendo una pantalla o flujo puntual.
 - No dejar pantallas con solapas redundantes: en Stock, la edicion debe estar por registro.
 - No cerrar cambios de UI sin revisar visualmente tabla, columna Tipo, mobile y desktop.
-- No volver a una UI generica o ajena a los colores judiciales sin pedido explicito; el tema
-  vigente es Institucional Justicia Jujuy.
+- No volver a una UI generica o ajena al mockup `justicia-jujuy-inventario.html` sin pedido
+  explicito; el tema vigente es Institucional Justicia Jujuy.
 - No usar emoji como lenguaje principal de navegacion del admin; preferir codigos cortos o iconos
   SVG consistentes.
 - El panel general `/admin` ya no usa la "Brujula Operativa"; es un panel de decisiones con

@@ -8,6 +8,16 @@
 	<script defer th:src="@{/js/visor-live.js}"></script>
 </head>
 <body>
+	<header class="judicial-global-header">
+		<div class="judicial-brand">
+			<h1>Poder Judicial de la Provincia de Jujuy</h1>
+		</div>
+		<nav class="judicial-main-nav" aria-label="Navegación principal">
+			<a th:href="@{/admin/tareas/visor}" class="is-active">Tareas</a>
+			<a th:href="@{/admin}">Panel general</a>
+			<a th:href="@{/movil/tareas}">Vista movil</a>
+		</nav>
+	</header>
 	<main class="task-viewer-shell">
 		<section class="task-viewer" aria-labelledby="tareas-visor-title">
 			<p class="success-message" th:if="${creado}">La tarea fue actualizada correctamente.</p>

@@ -3009,7 +3009,7 @@ button:disabled, .secondary-action:disabled, .primary-action:disabled { opacity:
 	width: 100%;
 	min-height: 100vh;
 	margin: 0;
-	padding: 22px 28px 36px;
+	padding: 141px 28px 36px;
 	background: var(--bg-canvas);
 }
 
@@ -3878,5 +3878,465 @@ textarea::selection {
 	.topbar-apk-link {
 		width: 46px;
 		padding: 0;
+	}
+}
+
+/* ==========================================================================
+   Mockup Justicia Jujuy aplicado al sistema real
+   Replica la composicion aprobada: cabecera azul, lateral celeste plano,
+   paneles cuadrados y lectura institucional sin efectos tecnicos.
+   ========================================================================== */
+:root,
+:root[data-theme="light"] {
+	--bg-canvas: #dceef7;
+	--bg-sidebar: #d4e8f1;
+	--bg-card: #f8fcfe;
+	--bg-card-hover: #eaf5fa;
+	--bg-card-secondary: #edf7fb;
+	--bg-input: #ffffff;
+	--border-color: #b8cdd7;
+	--border-subtle: #d4e3e9;
+	--border-input: #7f969f;
+	--text-primary: #102b3a;
+	--text-secondary: #365666;
+	--text-muted: #526a78;
+	--text-link: #006f99;
+	--accent-primary: #006f99;
+	--accent-hover: #005777;
+	--accent-focus: rgba(0, 111, 153, 0.22);
+	--accent-danger: #c5142d;
+	--shadow-card: 0 14px 30px rgba(0, 71, 96, 0.12);
+	--shadow-sm: 0 4px 10px rgba(0, 71, 96, 0.08);
+}
+
+body {
+	background: var(--bg-canvas) !important;
+	font-family: "Segoe UI", Tahoma, sans-serif;
+	font-size: 14px;
+}
+
+.judicial-global-header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 1200;
+	background: var(--accent-primary);
+	color: #ffffff;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.judicial-brand {
+	min-height: 82px;
+	display: flex;
+	align-items: center;
+	padding: 10px 28px 8px;
+}
+
+.judicial-brand h1 {
+	margin: 0;
+	font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+	font-style: italic;
+	font-weight: 400;
+	font-size: clamp(29px, 5vw, 54px);
+	line-height: 0.95;
+	letter-spacing: 0.01em;
+	color: #ffffff;
+	text-shadow: 0 2px 0 rgba(0,0,0,0.28), 0 4px 8px rgba(0,0,0,0.28);
+}
+
+.judicial-main-nav {
+	display: flex;
+	align-items: center;
+	gap: 0;
+	min-height: 35px;
+	padding: 0 0 0 8px;
+	background: var(--accent-primary);
+	overflow-x: auto;
+}
+
+.judicial-main-nav a,
+.judicial-main-nav button {
+	display: inline-flex;
+	align-items: center;
+	min-height: 35px;
+	border: 0;
+	border-right: 1px solid rgba(255,255,255,0.08);
+	background: transparent;
+	color: #ffffff;
+	cursor: pointer;
+	font: inherit;
+	font-size: 13px;
+	padding: 10px 14px 11px;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.judicial-main-nav a:hover,
+.judicial-main-nav a.is-active,
+.judicial-main-nav button:hover {
+	background: var(--accent-hover);
+}
+
+.judicial-logout-form {
+	margin: 0;
+}
+
+.shell-wide {
+	background: var(--bg-canvas) !important;
+	padding-top: 141px !important;
+	padding-left: 22px !important;
+	padding-right: 22px !important;
+}
+
+.app-sidebar {
+	top: 117px !important;
+	width: 250px !important;
+	background: var(--bg-sidebar) !important;
+	background-image: none !important;
+	border-right: 1px solid var(--border-color) !important;
+	box-shadow: none !important;
+	color: var(--text-primary);
+	padding: 16px 12px !important;
+}
+
+@media (min-width: 992px) {
+	.shell-wide {
+		margin-left: 250px !important;
+		width: calc(100% - 250px) !important;
+		max-width: calc(100% - 250px) !important;
+	}
+}
+
+.sidebar-brand,
+.sidebar-app-badge {
+	display: none !important;
+}
+
+.side-title,
+.sidebar-section-title {
+	margin: 0 0 8px !important;
+	padding: 0 !important;
+	color: var(--badge-text) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	letter-spacing: 0 !important;
+	text-transform: uppercase;
+}
+
+.sidebar-nav {
+	padding: 0 !important;
+	gap: 18px !important;
+}
+
+.sidebar-section {
+	gap: 6px !important;
+	margin: 0 !important;
+}
+
+.sidebar-link,
+.sidebar-logout-btn,
+.theme-toggle-btn,
+.topbar-apk-link,
+.logout-pill-btn,
+.primary-action,
+.secondary-action,
+.danger-action,
+button,
+input,
+select,
+textarea,
+.status,
+.count-badge,
+.user-badge,
+.permission-list span {
+	border-radius: 0 !important;
+}
+
+.sidebar-link {
+	min-height: 36px;
+	border: 1px solid var(--border-color) !important;
+	background: var(--bg-card) !important;
+	color: var(--text-primary) !important;
+	padding: 9px 10px !important;
+	font-size: 14px !important;
+	font-weight: 400 !important;
+}
+
+.sidebar-link:hover,
+.sidebar-link.is-active {
+	background: var(--accent-hover) !important;
+	border-color: var(--accent-hover) !important;
+	color: #ffffff !important;
+	box-shadow: none !important;
+	font-weight: 700 !important;
+}
+
+.sidebar-icon {
+	display: none !important;
+}
+
+.sidebar-user-footer {
+	background: transparent !important;
+	border-top: 1px solid var(--border-color) !important;
+	padding: 12px 0 0 !important;
+}
+
+.panel-header {
+	margin-bottom: 14px !important;
+}
+
+.panel-topbar,
+.task-viewer-hero {
+	background: transparent !important;
+	background-image: none !important;
+	border-bottom: 0 !important;
+	padding: 0 0 14px !important;
+	box-shadow: none !important;
+}
+
+.panel-branding .eyebrow {
+	color: var(--text-muted) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	text-transform: none !important;
+}
+
+.panel-branding h1,
+#panel-title,
+.task-viewer-hero h2,
+.decision-hero h2 {
+	color: #0b2634 !important;
+	font-size: 22px !important;
+	font-weight: 500 !important;
+	line-height: 1.2 !important;
+	text-shadow: none !important;
+}
+
+.topbar-actions {
+	gap: 8px !important;
+}
+
+.theme-toggle-btn,
+.topbar-apk-link,
+.user-session-pill {
+	background: #eef7fb !important;
+	border: 1px solid var(--border-color) !important;
+	box-shadow: none !important;
+	color: #10303e !important;
+}
+
+.user-avatar {
+	display: none !important;
+}
+
+.user-meta,
+.user-name,
+.user-subtext,
+.user-account {
+	background: transparent !important;
+	color: var(--text-primary) !important;
+	text-shadow: none !important;
+}
+
+.dashboard-access-strip,
+.required-band,
+.workflow-banner {
+	background: #cbdde5 !important;
+	border: 1px solid var(--border-color) !important;
+	border-left: 0 !important;
+	box-shadow: none !important;
+	color: var(--text-primary) !important;
+}
+
+.status-panel,
+.modules-section,
+.attributes-section,
+.module-card,
+.summary-grid div,
+.runtime-grid div,
+.identity-grid,
+.inline-edit-card,
+.search-form,
+.dashboard-filter-form,
+.task-board,
+.task-create-panel,
+.task-metric-card,
+.task-viewer-filter,
+.task-comments,
+.decision-hero,
+.decision-panel,
+.decision-metric,
+.decision-mode-card,
+.stock-bulk-panel,
+.script-copy-panel,
+.management-layout .status-panel {
+	border: 1px solid var(--border-color) !important;
+	border-radius: 0 !important;
+	background: var(--bg-card) !important;
+	background-image: none !important;
+	box-shadow: var(--shadow-card) !important;
+}
+
+.shell-wide .status-panel,
+.shell-wide .admin-users-panel {
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.section-header,
+.panel-header,
+.panel-topbar,
+.task-viewer-hero,
+.decision-hero,
+.decision-panel .section-header,
+.panel .panel-header {
+	border-radius: 0 !important;
+}
+
+.section-header {
+	background: #eaf5fa !important;
+	border-bottom: 1px solid var(--border-color) !important;
+	padding: 10px 12px !important;
+}
+
+.section-header h2,
+.section-header h3,
+.panel-header h3 {
+	color: var(--badge-text) !important;
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	text-shadow: none !important;
+}
+
+.attribute-name,
+.task-row-meta div,
+.workflow-step-card,
+.workflow-banner > div:last-child > div,
+.decision-signal-list div,
+.form-preview,
+.stock-bulk-panel-pending {
+	background: #f8fcfe !important;
+	background-image: none !important;
+	box-shadow: none !important;
+}
+
+table {
+	background: #ffffff !important;
+	border-collapse: collapse !important;
+}
+
+th {
+	background: #f2f9fc !important;
+	color: #183d4c !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+}
+
+td {
+	color: #163341 !important;
+}
+
+th,
+td {
+	border-bottom: 1px solid #d4e3e9 !important;
+}
+
+input,
+select,
+textarea {
+	background: #ffffff !important;
+	border: 1px solid var(--border-input) !important;
+	color: var(--text-primary) !important;
+	box-shadow: none !important;
+	min-height: 30px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 3px solid var(--accent-focus) !important;
+	box-shadow: none !important;
+}
+
+.primary-action,
+.primary,
+button[type="submit"].primary-action {
+	background: var(--accent-primary) !important;
+	border: 1px solid var(--accent-hover) !important;
+	color: #ffffff !important;
+	box-shadow: none !important;
+}
+
+.secondary-action,
+.secondary,
+.theme-toggle-btn,
+.topbar-apk-link {
+	background: #eef7fb !important;
+	border: 1px solid #536a74 !important;
+	color: #10303e !important;
+	box-shadow: none !important;
+}
+
+.danger-action,
+.danger {
+	background: #fff6f7 !important;
+	border: 1px solid #c79aa2 !important;
+	color: #8e1124 !important;
+	box-shadow: none !important;
+}
+
+.status.ok,
+.status-badge.ok,
+.metric-done {
+	color: #20734f !important;
+	border-color: #8cbda7 !important;
+	background: #effaf5 !important;
+}
+
+.status.warn,
+.status-badge.warn,
+.metric-pending {
+	color: #9b5d00 !important;
+	border-color: #d6b67d !important;
+	background: #fff8eb !important;
+}
+
+.status.alert,
+.status-badge.alert,
+.metric-created {
+	color: var(--accent-danger) !important;
+	border-color: #d6a0a8 !important;
+	background: #fff5f6 !important;
+}
+
+@media (max-width: 991px) {
+	.shell-wide {
+		margin-left: 0 !important;
+		width: 100% !important;
+		max-width: 100% !important;
+		padding-top: 127px !important;
+	}
+
+	.app-sidebar {
+		top: 117px !important;
+		box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18) !important;
+	}
+}
+
+@media (max-width: 620px) {
+	.judicial-brand {
+		min-height: 72px;
+		padding: 12px;
+	}
+
+	.judicial-main-nav {
+		padding-left: 0;
+	}
+
+	.shell-wide {
+		padding-left: 12px !important;
+		padding-right: 12px !important;
 	}
 }
