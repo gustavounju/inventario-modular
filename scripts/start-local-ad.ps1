@@ -30,6 +30,44 @@ function Read-SecretPlain {
     }
 }
 
+function Find-MysqlExe {
+    $mysqlExe = Get-Command mysql.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Source
+    if ($mysqlExe) {
+        return $mysqlExe
+    }
+    $candidates = @(
+        "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Workbench 8.0 CE\mysql.exe"
+    )
+    return $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+}
+
+function Test-MysqlLogin {
+    param(
+        [string]$MysqlExe,
+        [string]$HostName,
+        [string]$Port,
+        [string]$Database,
+        [string]$UserName,
+        [string]$Password
+    )
+
+    $oldMysqlPwd = $env:MYSQL_PWD
+    $env:MYSQL_PWD = $Password
+    try {
+        $output = & $MysqlExe --host=$HostName --port=$Port --protocol=tcp --user=$UserName `
+            --database=$Database --batch --skip-column-names --execute="SELECT 1;" 2>&1
+        return $LASTEXITCODE -eq 0 -and (($output -join "`n") -match "1")
+    } finally {
+        if ($null -eq $oldMysqlPwd) {
+            Remove-Item Env:\MYSQL_PWD -ErrorAction SilentlyContinue
+        } else {
+            $env:MYSQL_PWD = $oldMysqlPwd
+        }
+    }
+}
+
 Write-Host "Inventario Modular local + Active Directory" -ForegroundColor Cyan
 Write-Host "Base de datos: MySQL local (${MysqlHost}:$MysqlPort/$MysqlDatabase), sin tocar MySQL de produccion."
 Write-Host "LDAP: $LdapUrl / $LdapDomain"
@@ -44,11 +82,27 @@ if (-not $ldapReachable) {
     throw "No se puede conectar a Active Directory en $($ldapUri.Host):$ldapPort. Revise red, VPN, DNS o firewall."
 }
 
-$mysqlUser = Read-Host -Prompt "Usuario MySQL LOCAL [$MysqlDefaultUser]"
-if ([string]::IsNullOrWhiteSpace($mysqlUser)) {
-    $mysqlUser = $MysqlDefaultUser
+$mysqlExe = Find-MysqlExe
+if (-not $mysqlExe) {
+    throw "No encontre mysql.exe para validar credenciales MySQL. Ejecute primero .\scripts\setup-local-mysql.ps1."
 }
-$mysqlPassword = Read-SecretPlain -Prompt "Clave MySQL LOCAL para $mysqlUser"
+
+$mysqlOk = $false
+for ($attempt = 1; $attempt -le 3 -and -not $mysqlOk; $attempt++) {
+    $mysqlUser = Read-Host -Prompt "Usuario MySQL LOCAL [$MysqlDefaultUser]"
+    if ([string]::IsNullOrWhiteSpace($mysqlUser)) {
+        $mysqlUser = $MysqlDefaultUser
+    }
+    $mysqlPassword = Read-SecretPlain -Prompt "Clave MySQL LOCAL para $mysqlUser"
+    $mysqlOk = Test-MysqlLogin $mysqlExe $MysqlHost $MysqlPort $MysqlDatabase $mysqlUser $mysqlPassword
+    if (-not $mysqlOk) {
+        Write-Host "MySQL rechazo ese usuario o clave para $MysqlDatabase. Reintente o ejecute .\scripts\setup-local-mysql.ps1." -ForegroundColor Yellow
+    }
+}
+if (-not $mysqlOk) {
+    throw "No se pudo validar MySQL local. No se arranca la app hasta corregir usuario/clave/base."
+}
+Write-Host "OK   MySQL local valido para $mysqlUser" -ForegroundColor Green
 
 $ldapUser = Read-Host -Prompt "Usuario lector AD (usuario@podjudsp.local o PODJUDSP\usuario)"
 if ($ldapUser -notmatch "[@\\]") {
