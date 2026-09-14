@@ -51,6 +51,11 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
 - En `/movil/tareas`, al crear una tarea, el solicitante no debe forzarse al usuario logueado:
   el tecnico puede buscar predictivamente usuarios de AD o escribir manualmente quien pidio
   ayuda. El responsable si puede seguir siendo el tecnico logueado cuando no es administrador.
+- `solicitanteUsername` es el usuario AD del solicitante solo cuando se eligio desde AD. Si la
+  carga fue manual puede coincidir con el nombre visible y no debe mostrarse como "usuario
+  logueado".
+- `responsable` es el tecnico del taller que opera la tarea. El fuero/oficina pertenece al
+  solicitante, no al responsable.
 - El scanner de la APK debe abrir en vertical.
 - El tecnico puede escanear codigo de barra o serie desde el celular para sumar stock.
 - Al cargar stock desde el celular, se debe guardar que usuario lo ingreso.
@@ -259,6 +264,8 @@ Decision de UI vigente:
 4. Si AD no responde o no hay coincidencia, el campo acepta carga manual para no frenar el trabajo.
 5. Los comentarios agregados desde la APK deben aparecer en el visor publico
    `/admin/tareas/visor`.
+6. El tecnico puede comentar tareas donde es responsable o que fueron creadas por el desde la APK,
+   cubriendo tareas historicas que pudieron quedar sin responsable.
 
 ## 7. Base de datos
 

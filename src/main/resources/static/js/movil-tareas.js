@@ -45,7 +45,15 @@
             const errors = { 403: 'No tiene permiso para esta operacion o la sesion cambio. Vuelva a ingresar.',
                 404: 'La tarea ya no existe.', 409: 'La tarea ya fue tomada o esta finalizada. Actualice la lista.',
                 400: 'Revise los campos obligatorios y su longitud.' };
-            throw new Error(errors[response.status] || 'No se pudo guardar. Intente nuevamente.');
+            let detail = '';
+            try {
+                const body = await response.json();
+                detail = body.detail || body.message || body.error || '';
+            } catch {
+                try { detail = await response.text(); } catch { detail = ''; }
+            }
+            const suffix = detail ? ' ' + detail : '';
+            throw new Error((errors[response.status] || ('No se pudo guardar. Codigo ' + response.status + '.')) + suffix);
         }
         return response.status === 204 ? null : response.json();
     }
@@ -200,6 +208,9 @@
             preview.append(element('span', c.autor + ': ' + c.comentario));
         }
     }
+    function sameText(a, b) {
+        return (a || '').trim().toLocaleLowerCase() === (b || '').trim().toLocaleLowerCase();
+    }
     async function loadCommentPreview(id, token) {
         if (commentPreviewCache.has(id)) {
             renderCommentPreview(id, commentPreviewCache.get(id));
@@ -220,8 +231,18 @@
         $('detail-status').textContent = status(task) + ' | Prioridad ' + task.prioridad;
         $('detail-description').textContent = task.descripcion || 'Sin descripcion.';
         $('detail-meta').replaceChildren();
-        for (const [key, value] of Object.entries({ Solicitante: task.solicitanteNombre, Usuario: task.solicitanteUsername, Oficina: task.solicitanteFuero,
-            Responsable: task.responsable || 'Sin tomar', Equipo: task.equipoNombre, Creada: date(task.creadoEn), Finalizada: date(task.cerradoEn) })) {
+        const detailMeta = [
+            ['Solicitante', task.solicitanteNombre || task.solicitanteUsername],
+            ['Fuero solicitante', task.solicitanteFuero],
+            ['Responsable', task.responsable || 'Sin tomar'],
+            ['Equipo', task.equipoNombre],
+            ['Creada', date(task.creadoEn)],
+            ['Finalizada', date(task.cerradoEn)]
+        ];
+        if (task.solicitanteUsername && !sameText(task.solicitanteUsername, task.solicitanteNombre)) {
+            detailMeta.splice(1, 0, ['Usuario AD solicitante', task.solicitanteUsername]);
+        }
+        for (const [key, value] of detailMeta) {
             $('detail-meta').append(element('dt', key), element('dd', value || '-'));
         }
         $('take-task').hidden = !session.puedeEditar || !!task.responsable || !isOpen(task);

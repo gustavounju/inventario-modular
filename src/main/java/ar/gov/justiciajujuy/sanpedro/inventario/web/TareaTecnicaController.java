@@ -168,8 +168,11 @@ public class TareaTecnicaController {
 			return;
 		}
 		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
-		if (tarea.responsable() == null || !tarea.responsable().equalsIgnoreCase(userDetails.getUsername())) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La tarea debe estar tomada por el tecnico en sesion.");
+		boolean esResponsable = tarea.responsable() != null && tarea.responsable().equalsIgnoreCase(userDetails.getUsername());
+		boolean esCreador = tarea.creadoPor() != null && tarea.creadoPor().equalsIgnoreCase(userDetails.getUsername());
+		if (!esResponsable && !esCreador) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+					"La tarea debe estar tomada por el tecnico en sesion o haber sido creada por el.");
 		}
 	}
 

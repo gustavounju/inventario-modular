@@ -146,7 +146,37 @@ class TareaMovilControllerTests {
         mvc.perform(get("/admin/tareas/visor"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Doctora Perez")))
+                .andExpect(content().string(containsString("Usuario AD: dperez")))
+                .andExpect(content().string(containsString("Fuero solicitante: Oficina de Gestion Judicial")))
+                .andExpect(content().string(containsString("Tecnico del taller")))
                 .andExpect(content().string(containsString("Comentario cargado desde APK movil.")));
+    }
+
+    @Test void tecnicoCreadorPuedeComentarAunqueLaTareaNoEsteTomada() throws Exception {
+        jdbc.update("INSERT INTO roles (id, codigo, nombre, descripcion, activo) VALUES (21, 'TECNICO_CREADOR_TEST', 'Tecnico creador test', 'Opera tareas desde la APK.', TRUE)");
+        jdbc.update("INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (121, 'tecnico.creador', 'Tecnico Creador', 'Informatica', 'AD', TRUE)");
+        jdbc.update("INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (121, 21)");
+        jdbc.update("INSERT INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) VALUES (21, 9, 1), (21, 9, 3)");
+        var tarea = tareas.crear(new TareaTecnicaService.GuardarTareaTecnicaCommand(
+                1L, "Creada sin responsable", "Caso historico cargado desde APK",
+                "Perez Yolando", "Perez Yolando", "Oficina de Gestion Judicial",
+                null, null, "tecnico.creador"));
+
+        mvc.perform(post("/api/v1/tareas-tecnicas/{id}/comentarios", tarea.id())
+                        .with(user("tecnico.creador"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"comentario":"Comentario permitido para el tecnico creador."}
+                                """))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get("/admin/tareas/visor"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Perez Yolando")))
+                .andExpect(content().string(containsString("Fuero solicitante: Oficina de Gestion Judicial")))
+                .andExpect(content().string(containsString("Pendiente de tomar")))
+                .andExpect(content().string(containsString("Comentario permitido para el tecnico creador.")));
     }
 
     @Test void creacionDesdeApiGeneraAvisoRecuperableSinDuplicar() throws Exception {

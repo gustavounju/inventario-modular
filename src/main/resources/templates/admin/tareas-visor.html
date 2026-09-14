@@ -103,14 +103,16 @@
 								<dt>Solicitante</dt>
 								<dd>
 									<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Mesa de Entrada</strong>
-									<span th:text="${tarea.solicitanteUsername ?: ''}">mesa.entrada</span>
+									<span th:if="${tarea.solicitanteUsername != null and tarea.solicitanteNombre != null and not #strings.equalsIgnoreCase(tarea.solicitanteUsername, tarea.solicitanteNombre)}"
+										  th:text="'Usuario AD: ' + ${tarea.solicitanteUsername}">Usuario AD: mesa.entrada</span>
+									<span th:text="'Fuero solicitante: ' + ${tarea.solicitanteFuero ?: 'Sin fuero informado'}">Fuero solicitante: Mesa de ayuda</span>
 								</dd>
 							</div>
 							<div>
 								<dt>Responsable</dt>
 								<dd>
 									<strong th:text="${tarea.responsable ?: 'Sin tomar'}">admin.local</strong>
-									<span th:text="${tarea.solicitanteFuero ?: 'Sin fuero'}">Mesa de ayuda</span>
+									<span th:text="${tarea.responsable != null ? 'Tecnico del taller' : 'Pendiente de tomar'}">Tecnico del taller</span>
 								</dd>
 							</div>
 							<div>
