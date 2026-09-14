@@ -64,6 +64,9 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
 - Los codigos ingresados por escaneo rapido quedan como `TipoComponente.PENDIENTE` y con
   `datos_completos = false` hasta que un administrador complete el lote desde la web.
 - Si un componente esta `DISPONIBLE` en Stock, se asume que esta fisicamente en el taller.
+- Si un componente se toma desde una tarea tecnica, debe pasar de `DISPONIBLE` a `RESERVADO`.
+  `ASIGNADO` queda reservado para salida real instalada/vinculada a un equipo, porque el
+  sincronizador de stock huerfano libera piezas `ASIGNADO` sin componente activo asociado.
 - En Stock no usar "deposito", "deposito taller" ni "ubicacion fisica" para piezas disponibles.
 - Los campos obligatorios al ingresar stock desde celular son: codigo/serie, tipo de componente,
   modelo y capacidad cuando corresponda al caso operativo. El resto puede quedar para que el

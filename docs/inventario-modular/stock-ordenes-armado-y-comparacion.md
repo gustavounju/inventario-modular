@@ -104,8 +104,8 @@ Estados iniciales de stock:
 
 ```text
 DISPONIBLE -> puede reservarse para una orden.
-RESERVADO  -> fue tomado por una orden de armado.
-ASIGNADO   -> tuvo salida real confirmada desde una orden de armado.
+RESERVADO  -> fue tomado por una orden de armado o una tarea tecnica.
+ASIGNADO   -> tuvo salida real confirmada hacia un equipo.
 BAJA       -> no debe usarse.
 ```
 

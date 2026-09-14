@@ -110,8 +110,8 @@
 	<script>
 		(function() {
 			try {
-				var savedTheme = localStorage.getItem('modular-app-theme') || 'light';
-				document.documentElement.setAttribute('data-theme', savedTheme);
+				localStorage.setItem('modular-app-theme', 'light');
+				document.documentElement.setAttribute('data-theme', 'light');
 			} catch (e) {
 				document.documentElement.setAttribute('data-theme', 'light');
 			}
@@ -181,6 +181,7 @@
 		}
 
 		function applyTheme(theme) {
+			theme = 'light';
 			document.documentElement.setAttribute('data-theme', theme);
 			try {
 				localStorage.setItem('modular-app-theme', theme);
@@ -199,16 +200,13 @@
 		}
 
 		function toggleTheme() {
-			var current = document.documentElement.getAttribute('data-theme') || 'dark';
-			var next = current === 'dark' ? 'light' : 'dark';
-			applyTheme(next);
+			applyTheme('light');
 		}
 
 		document.addEventListener('DOMContentLoaded', function() {
 			document.body.classList.add('has-sidebar');
 			try {
-				var savedTheme = localStorage.getItem('modular-app-theme') || 'light';
-				applyTheme(savedTheme);
+				applyTheme('light');
 			} catch (e) {
 				applyTheme('light');
 			}

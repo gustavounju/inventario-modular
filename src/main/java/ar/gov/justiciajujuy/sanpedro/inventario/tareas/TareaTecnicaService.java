@@ -85,8 +85,7 @@ public class TareaTecnicaService {
 	@Transactional(readOnly = true)
 	public List<StockDisponibleDetalle> stockDisponibleParaTareas() {
 		return stockComponenteRepository.findByActivoTrueOrderByTipoAscDescripcionAsc().stream()
-				.filter(componente -> componente.getEstado() == EstadoStockComponente.DISPONIBLE
-						|| componente.getEstado() == EstadoStockComponente.RESERVADO)
+				.filter(componente -> componente.getEstado() == EstadoStockComponente.DISPONIBLE)
 				.map(this::toStockDisponibleDetalle)
 				.toList();
 	}
@@ -207,18 +206,17 @@ public class TareaTecnicaService {
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
 		StockComponente componente = stockComponenteRepository.findById(command.stockComponenteId())
 				.orElseThrow(() -> new StockComponenteNoEncontradoException(command.stockComponenteId()));
-		if (!componente.isActivo() || componente.getEstado() == EstadoStockComponente.ASIGNADO
-				|| componente.getEstado() == EstadoStockComponente.BAJA) {
+		if (!componente.isActivo() || componente.getEstado() != EstadoStockComponente.DISPONIBLE) {
 			throw new StockComponenteNoDisponibleParaTareaException(command.stockComponenteId());
 		}
-		componente.asignar();
+		componente.reservar();
 		TareaStockUso uso = stockUsoRepository.save(new TareaStockUso(
 				tarea,
 				componente,
 				textoRequerido(command.registradoPor(), "registradoPor"),
 				textoOpcional(command.observacion())));
 		auditoriaService.registrar("TAREAS", "USAR_STOCK", "TareaTecnica", tarea.getId(),
-				"Tarea tecnica " + tarea.getId() + " uso stock #" + componente.getId() + " (" + componente.getDescripcion() + ").");
+				"Tarea tecnica " + tarea.getId() + " reservo stock #" + componente.getId() + " (" + componente.getDescripcion() + ").");
 		avisoService.registrarStockUsado(tarea, command.registradoPor());
 		return toStockUsoDetalle(uso);
 	}

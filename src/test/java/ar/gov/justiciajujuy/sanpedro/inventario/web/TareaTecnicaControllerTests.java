@@ -1,6 +1,7 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
@@ -36,6 +38,9 @@ class TareaTecnicaControllerTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Test
 	void creaListaYCierraTareaTecnica() throws Exception {
@@ -267,6 +272,9 @@ class TareaTecnicaControllerTests {
 		mockMvc.perform(get("/api/v1/tareas-tecnicas/1/stock").with(user(adminLocal())))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$[?(@.stockComponenteId == 1)]", hasSize(1)));
+
+		assertEquals("RESERVADO", jdbcTemplate.queryForObject(
+				"SELECT estado FROM stock_componentes WHERE id = 1", String.class));
 
 		mockMvc.perform(get("/api/v1/tareas-tecnicas/stock-disponible").with(user(adminLocal())))
 			.andExpect(status().isOk())
