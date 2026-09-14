@@ -7,6 +7,16 @@
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
 <body>
+	<header class="judicial-global-header">
+		<div class="judicial-brand">
+			<h1>Poder Judicial de la Provincia de Jujuy</h1>
+		</div>
+		<nav class="judicial-main-nav" aria-label="Navegación principal">
+			<a th:href="@{/login}" class="is-active">Iniciar sesión</a>
+			<a th:href="@{/admin/tareas/visor}">Tareas</a>
+			<a th:href="@{/movil/login}">APK</a>
+		</nav>
+	</header>
 	<main class="shell">
 		<section class="status-panel login-panel" aria-labelledby="login-title">
 			<p class="eyebrow">Centro Judicial San Pedro</p>

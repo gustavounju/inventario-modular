@@ -3887,7 +3887,8 @@ textarea::selection {
    paneles cuadrados y lectura institucional sin efectos tecnicos.
    ========================================================================== */
 :root,
-:root[data-theme="light"] {
+:root[data-theme="light"],
+:root[data-theme="dark"] {
 	--bg-canvas: #dceef7;
 	--bg-sidebar: #d4e8f1;
 	--bg-card: #f8fcfe;
@@ -3987,6 +3988,16 @@ body {
 	padding-top: 141px !important;
 	padding-left: 22px !important;
 	padding-right: 22px !important;
+}
+
+.shell {
+	background: var(--bg-canvas) !important;
+	place-items: start center !important;
+	padding: 141px 20px 32px !important;
+}
+
+.login-panel {
+	margin-top: 18px;
 }
 
 .app-sidebar {
@@ -4339,4 +4350,150 @@ button[type="submit"].primary-action {
 		padding-left: 12px !important;
 		padding-right: 12px !important;
 	}
+}
+
+/* Capa de alcance amplio para modulos heredados: evita que cards antiguas
+   conserven gradientes, radios grandes o colores ajenos al mockup. */
+.responsive-table,
+.metric-card,
+.attribute-card,
+.timeline-card,
+.collapsible-card,
+.user-list-section,
+.domain-user-section,
+.management-layout,
+.equipment-form,
+.user-form,
+.component-form,
+.task-row-card,
+.task-row-actions,
+.task-inline-form,
+.workflow-step-card,
+.permission-card,
+.runtime-card,
+.identity-card,
+.module-card,
+.attribute-row {
+	border: 1px solid var(--border-color) !important;
+	border-radius: 0 !important;
+	background: var(--bg-card) !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: var(--text-primary) !important;
+}
+
+.responsive-table,
+.modules-section,
+.attributes-section,
+.user-list-section,
+.domain-user-section,
+.management-layout,
+.task-board,
+.task-create-panel,
+.inline-edit-card,
+.collapsible-card,
+.attribute-card,
+.metric-card,
+.workflow-step-card,
+.timeline-card {
+	box-shadow: var(--shadow-card) !important;
+}
+
+.metric-card,
+.task-metric-card,
+.decision-metric {
+	min-height: 82px !important;
+	border-left: 1px solid var(--border-color) !important;
+}
+
+.metric-card-title,
+.metric-card-action,
+.metric-card-value,
+.table-subtext,
+.section-note,
+.field-help,
+.current-user-note,
+.empty-state,
+.version {
+	color: var(--text-muted) !important;
+	text-shadow: none !important;
+	background: transparent !important;
+}
+
+.metric-card-value,
+.metric-card strong,
+.task-metric-card strong,
+.decision-metric strong {
+	color: var(--badge-text) !important;
+	font-weight: 600 !important;
+}
+
+.authorization-badge,
+.count-badge,
+.step-badge,
+.status-badge,
+.badge,
+.stock-bulk-chip,
+.quick-code-pill {
+	border: 1px solid var(--border-color) !important;
+	border-radius: 0 !important;
+	background: #eef7fb !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: var(--badge-text) !important;
+	text-shadow: none !important;
+}
+
+.authorization-badge.is-authorized,
+.status-badge.is-authorized,
+.badge.done {
+	border-color: #8cbda7 !important;
+	background: #effaf5 !important;
+	color: #20734f !important;
+}
+
+.authorization-badge.is-pending,
+.status-badge.is-pending,
+.badge.pending {
+	border-color: #d6b67d !important;
+	background: #fff8eb !important;
+	color: #9b5d00 !important;
+}
+
+.authorization-badge.is-rejected,
+.status-badge.is-rejected,
+.badge.cancelled {
+	border-color: #d6a0a8 !important;
+	background: #fff5f6 !important;
+	color: var(--accent-danger) !important;
+}
+
+.workflow-banner-icon,
+.timeline-point,
+.user-avatar,
+.step-badge {
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+.summary-grid,
+.runtime-grid,
+.identity-grid,
+.workflow-steps-grid,
+.form-grid,
+.decision-metrics,
+.task-metric-grid {
+	gap: 10px !important;
+}
+
+.status-row {
+	border: 1px solid var(--border-color) !important;
+	background: #eef7fb !important;
+	padding: 8px 10px !important;
+	color: var(--text-primary) !important;
+}
+
+.status-dot {
+	background: #20734f !important;
+	box-shadow: none !important;
 }

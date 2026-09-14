@@ -14,6 +14,8 @@ La experiencia prioriza claridad diaria, lectura rapida, formularios previsibles
 - **Superficies**: `#f8fcfe`, `#eaf5fa` y `#edf7fb`, para paneles, filtros y cabeceras de seccion.
 - **Bordes**: `#b8cdd7`, con inputs en `#7f969f` para conservar forma de formulario institucional.
 - **Alertas**: rojo `#c5142d` solo para errores, campos criticos o acciones destructivas.
+- **Modo visual**: el mockup aprobado es claro; si el navegador conserva `data-theme="dark"`,
+  las variables deben seguir resolviendo a la misma paleta institucional clara.
 
 ### 2. Disposicion Visual
 
@@ -22,6 +24,8 @@ La experiencia prioriza claridad diaria, lectura rapida, formularios previsibles
 - **Sidebar Operativo**: `.app-sidebar` no repite `Centro Judicial San Pedro` ni `Taller Informatica`; empieza con `Sistema de inventario` y solo lista modulos/acciones.
 - **Topbar de Trabajo**: `.panel-topbar` concentra titulo de modulo, sesion activa, APK y selector de modo sin fondos pesados ni sombras decorativas.
 - **Paneles de Trabajo**: `.status-panel`, `.modules-section`, `.task-board` y `.task-create-panel` usan fondos claros, bordes finos, esquinas cuadradas y sombras contenidas solo en contenedores grandes.
+- **Modulos heredados**: tarjetas, badges, tablas, formularios y banners de pantallas anteriores
+  deben normalizarse a fondo claro, borde fino y esquina cuadrada para no mezclar estilos.
 - **Tablas y Filtros**: deben ser densos pero legibles, con encabezados celestes y foco visible.
 - **APK/WebView**: `/movil/tareas`, `/movil/stock` y `/movil/login` comparten azul institucional, marca `Centro Judicial San Pedro` y subtitulo `Taller Informatica`.
 

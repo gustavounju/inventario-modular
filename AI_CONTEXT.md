@@ -93,6 +93,8 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
 - La documentacion visual canonica esta en `docs/arquitectura_visual.md`.
 - La cabecera superior usa azul `#006f99` y el texto serif italico
   `Poder Judicial de la Provincia de Jujuy`, como en el mockup.
+- La paleta vigente es siempre clara; aunque exista `data-theme="dark"` por configuracion
+  previa del navegador, debe resolver a los mismos colores del mockup.
 - El sidebar no debe repetir `Centro Judicial San Pedro` ni `Taller Informatica`; empieza con
   `Sistema de inventario` y solo contiene navegacion operativa.
 - Los colores base del tema institucional son:
@@ -107,6 +109,8 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
     en el panel lateral;
   - paneles compactos, claros y de esquinas cuadradas;
   - evitar sombras/fondos decorativos detras de textos sueltos;
+  - normalizar cards, badges, banners, tablas y formularios heredados para que no conserven
+    gradientes, radios grandes ni colores de temas anteriores;
   - foco visible en formularios y botones;
   - tablas densas pero legibles;
   - compatibilidad responsive con desktop y celular.
