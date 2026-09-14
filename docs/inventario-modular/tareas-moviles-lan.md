@@ -39,6 +39,11 @@ problema y prioridad. El usuario logueado queda como solicitante/dueno operativo
 cliente genera un titulo interno corto desde el problema para mantener el contrato de
 `/api/v1/tareas-tecnicas`.
 
+Cuando LDAP esta habilitado, el backend valida que el `solicitanteUsername` exista en
+Active Directory antes de crear o editar una tarea. Se aceptan formatos `usuario`,
+`DOMINIO\usuario` y `usuario@dominio`. Si el usuario no existe, la API responde 422 y
+no guarda la tarea. Con LDAP deshabilitado se permite carga manual para laboratorio.
+
 ## Servidor Linux
 
 Se utiliza el mismo proceso Spring Boot y la misma base MySQL. No se necesita otro
@@ -84,6 +89,7 @@ y servidor; el aislamiento entre clientes del punto de acceso puede impedirlo.
 `GET /api/v1/movil/usuarios-dominio?q=texto` devuelve candidatos de Active Directory
 para autocompletar solicitantes. Requiere sesion autenticada y permiso `TAREAS/VER`;
 la respuesta marca `disponible=false` si LDAP esta deshabilitado o no se pudo consultar.
+La validacion final igualmente ocurre al guardar la tarea, no solo en el autocompletado.
 
 `GET /api/v1/movil/avisos` inicia el seguimiento en el ultimo cursor, sin historial.
 
@@ -147,3 +153,11 @@ Prueba puntual posterior:
 ```
 
 Resultado del 10 de septiembre de 2026: 7 pruebas, 0 fallos, 0 errores.
+
+Prueba posterior de validacion AD de solicitantes:
+
+```powershell
+.\mvnw.cmd "-Dtest=ActiveDirectoryDomainServiceTests,TareaTecnicaControllerTests,TareaMovilControllerTests" test
+```
+
+Resultado del 14 de septiembre de 2026: 27 pruebas, 0 fallos, 0 errores.

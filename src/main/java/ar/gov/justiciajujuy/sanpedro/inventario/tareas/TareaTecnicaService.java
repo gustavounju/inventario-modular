@@ -11,6 +11,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.componentes.EstadoComparacion;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponenteRepository;
@@ -31,6 +32,7 @@ public class TareaTecnicaService {
 	private final ComponenteRepository componenteRepository;
 	private final AuditoriaService auditoriaService;
 	private final TareaAvisoService avisoService;
+	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 
 	public TareaTecnicaService(
 			TareaTecnicaRepository tareaTecnicaRepository,
@@ -40,7 +42,8 @@ public class TareaTecnicaService {
 			StockComponenteRepository stockComponenteRepository,
 			ComponenteRepository componenteRepository,
 			AuditoriaService auditoriaService,
-			TareaAvisoService avisoService) {
+			TareaAvisoService avisoService,
+			ActiveDirectoryDomainService activeDirectoryDomainService) {
 		this.tareaTecnicaRepository = tareaTecnicaRepository;
 		this.comentarioRepository = comentarioRepository;
 		this.stockUsoRepository = stockUsoRepository;
@@ -49,6 +52,7 @@ public class TareaTecnicaService {
 		this.componenteRepository = componenteRepository;
 		this.auditoriaService = auditoriaService;
 		this.avisoService = avisoService;
+		this.activeDirectoryDomainService = activeDirectoryDomainService;
 	}
 
 	@Transactional(readOnly = true)
@@ -107,12 +111,14 @@ public class TareaTecnicaService {
 
 	@Transactional
 	public TareaTecnicaDetalle crear(GuardarTareaTecnicaCommand command) {
+		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
+		validarSolicitanteEnAd(solicitanteUsername);
 		TareaTecnica tarea = new TareaTecnica(textoRequerido(command.titulo(), "titulo"));
 		tarea.actualizarDatos(
 				buscarEquipoParaTarea(command.equipoId()),
 				textoRequerido(command.titulo(), "titulo"),
 				textoOpcional(command.descripcion()),
-				textoRequerido(command.solicitanteUsername(), "solicitante"),
+				solicitanteUsername,
 				textoRequerido(command.solicitanteNombre(), "solicitanteNombre"),
 				textoRequerido(command.solicitanteFuero(), "solicitanteFuero"),
 				command.prioridad() == null ? PrioridadTareaTecnica.MEDIA : command.prioridad(),
@@ -127,13 +133,15 @@ public class TareaTecnicaService {
 
 	@Transactional
 	public TareaTecnicaDetalle actualizar(Long id, GuardarTareaTecnicaCommand command) {
+		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
+		validarSolicitanteEnAd(solicitanteUsername);
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
 		tarea.actualizarDatos(
 				buscarEquipoParaTarea(command.equipoId()),
 				textoRequerido(command.titulo(), "titulo"),
 				textoOpcional(command.descripcion()),
-				textoRequerido(command.solicitanteUsername(), "solicitante"),
+				solicitanteUsername,
 				textoRequerido(command.solicitanteNombre(), "solicitanteNombre"),
 				textoRequerido(command.solicitanteFuero(), "solicitanteFuero"),
 				command.prioridad() == null ? PrioridadTareaTecnica.MEDIA : command.prioridad(),
@@ -312,6 +320,15 @@ public class TareaTecnicaService {
 	private void validarExistencia(Long tareaId) {
 		if (!tareaTecnicaRepository.existsById(tareaId)) {
 			throw new TareaTecnicaNoEncontradaException(tareaId);
+		}
+	}
+
+	private void validarSolicitanteEnAd(String solicitanteUsername) {
+		if (!activeDirectoryDomainService.ldapHabilitado()) {
+			return;
+		}
+		if (!activeDirectoryDomainService.existeUsuario(solicitanteUsername)) {
+			throw new SolicitanteDominioNoEncontradoException(solicitanteUsername);
 		}
 	}
 
@@ -533,6 +550,13 @@ public class TareaTecnicaService {
 	public static class TareaEquipoGenericoException extends RuntimeException {
 		public TareaEquipoGenericoException(Long tareaId) {
 			super("La tarea " + tareaId + " está asociada a la PC genérica. Reasignela a un equipo real antes de instalar.");
+		}
+	}
+
+	@org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY)
+	public static class SolicitanteDominioNoEncontradoException extends RuntimeException {
+		public SolicitanteDominioNoEncontradoException(String username) {
+			super("El usuario solicitante no existe en Active Directory: " + username);
 		}
 	}
 }

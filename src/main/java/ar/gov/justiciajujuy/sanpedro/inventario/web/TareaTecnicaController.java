@@ -12,6 +12,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.Equip
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.GuardarTareaTecnicaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.InstalarEnEquipoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.RegistrarUsoStockCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.SolicitanteDominioNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoDisponibleParaTareaException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoReservadoException;
@@ -206,6 +207,11 @@ public class TareaTecnicaController {
 	@ExceptionHandler(TareaEquipoGenericoException.class)
 	@ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
 	void equipoGenerico() {
+	}
+
+	@ExceptionHandler(SolicitanteDominioNoEncontradoException.class)
+	@ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+	void solicitanteNoExisteEnAd() {
 	}
 
 	public record GuardarTareaTecnicaRequest(

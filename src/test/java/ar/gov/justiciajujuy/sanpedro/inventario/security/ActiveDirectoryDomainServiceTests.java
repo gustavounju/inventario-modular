@@ -104,6 +104,43 @@ class ActiveDirectoryDomainServiceTests {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	void validaExistenciaExactaDeUsuarioAceptandoDominioWindows() throws Exception {
+		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
+		properties.setEnabled(true);
+		properties.setDomain("podjudsp.local");
+		properties.setUserSearchBase("OU=Usuarios");
+		properties.setUserSearchFilter("(objectClass=user)");
+		LdapOperations ldapOperations = mock(LdapOperations.class);
+		BasicAttributes attributes = new BasicAttributes();
+		attributes.put(new BasicAttribute("sAMAccountName", "gmurad"));
+
+		when(ldapOperations.search(
+				eq("OU=Usuarios"),
+				any(String.class),
+				any(SearchControls.class),
+				any(AttributesMapper.class)))
+			.thenAnswer(invocation -> List.of(
+					((AttributesMapper<String>) invocation.getArgument(3)).mapFromAttributes(attributes)));
+
+		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
+
+		assertThat(service.existeUsuario("PODJUDSP\\gmurad")).isTrue();
+		ArgumentCaptor<String> filterCaptor = ArgumentCaptor.forClass(String.class);
+		verify(ldapOperations).search(any(String.class), filterCaptor.capture(), any(SearchControls.class),
+				any(AttributesMapper.class));
+		assertThat(filterCaptor.getValue()).contains("(sAMAccountName=gmurad)");
+	}
+
+	@Test
+	void validaExistenciaExactaRetornaFalseSiLdapEstaDesactivado() {
+		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(
+				new ActiveDirectoryProperties(), (LdapOperations) null);
+
+		assertThat(service.existeUsuario("gmurad")).isFalse();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
 	void listaSolicitantesDeTareasExcluyendoCuentasAdm() throws Exception {
 		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
 		properties.setEnabled(true);

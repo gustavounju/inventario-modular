@@ -1,6 +1,8 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.security;
 
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -135,6 +137,41 @@ public class ActiveDirectoryDomainService {
 		}
 	}
 
+	public boolean ldapHabilitado() {
+		return properties.isEnabled();
+	}
+
+	public boolean existeUsuario(String username) {
+		if (!StringUtils.hasText(username)) {
+			return false;
+		}
+		if (!properties.isEnabled()) {
+			return false;
+		}
+		if (ldapOperations == null) {
+			throw new IllegalStateException("No hay cliente LDAP de lectura configurado.");
+		}
+		if (StringUtils.hasText(properties.getReadOnlyUserDn())
+				&& !StringUtils.hasText(properties.getReadOnlyPassword())) {
+			throw new IllegalStateException("La cuenta LDAP lectora no tiene clave configurada.");
+		}
+
+		try {
+			SearchControls controls = new SearchControls();
+			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+			controls.setCountLimit(1);
+			controls.setReturningAttributes(new String[] { "sAMAccountName" });
+			return !ldapOperations.search(
+					properties.getUserSearchBase(),
+					buildExactUserFilter(username),
+					controls,
+					(AttributesMapper<String>) attrs -> firstText(attrs, "sAMAccountName", "")).isEmpty();
+		} catch (RuntimeException exception) {
+			LOGGER.warn("No se pudo validar el usuario {} contra Active Directory: {}", username, exception.getMessage());
+			throw new IllegalStateException("No se pudo validar el usuario contra Active Directory.", exception);
+		}
+	}
+
 	private static final java.util.Set<String> OUS_IGNORADAS = java.util.Set.of(
 			"EQUIPOS", "USUARIOS", "PODJUDSP", "COMPUTERS", "DOMAIN CONTROLLERS", "SYSTEM", "BUILTIN"
 	);
@@ -236,6 +273,36 @@ public class ActiveDirectoryDomainService {
 				+ "(userPrincipalName=*" + encodedQuery + "*)"
 				+ "(" + displayNameAttribute + "=*" + encodedQuery + "*)"
 				+ "))";
+	}
+
+	private String buildExactUserFilter(String username) {
+		Set<String> candidates = normalizedUserCandidates(username);
+		StringBuilder filter = new StringBuilder("(&")
+				.append(properties.getUserSearchFilter())
+				.append("(|");
+		for (String candidate : candidates) {
+			String encoded = encodeLdapFilterValue(candidate);
+			filter.append("(sAMAccountName=").append(encoded).append(")")
+					.append("(userPrincipalName=").append(encoded).append(")");
+		}
+		return filter.append("))").toString();
+	}
+
+	private Set<String> normalizedUserCandidates(String username) {
+		String clean = username.trim();
+		Set<String> candidates = new LinkedHashSet<>();
+		candidates.add(clean);
+		int slash = clean.indexOf('\\');
+		if (slash >= 0 && slash + 1 < clean.length()) {
+			candidates.add(clean.substring(slash + 1));
+		}
+		int at = clean.indexOf('@');
+		if (at > 0) {
+			candidates.add(clean.substring(0, at));
+		} else if (StringUtils.hasText(properties.getDomain()) && !clean.contains("\\")) {
+			candidates.add(clean + "@" + properties.getDomain());
+		}
+		return candidates;
 	}
 
 	private String encodeLdapFilterValue(String value) {

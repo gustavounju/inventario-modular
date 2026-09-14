@@ -2750,3 +2750,27 @@ Verificacion local realizada antes de documentar:
 
 Resultado: pruebas especificas de tareas y movil en verde. Luego se genero documentacion
 y PDF para que el procedimiento quede disponible en GitLab.
+
+## 2026-09-14 - Validacion AD del usuario solicitante en tareas
+
+Se reviso el circuito de Active Directory y se ajusto el backend para que el usuario
+solicitante de una tarea no dependa solo del autocompletado visual.
+
+Cambios:
+
+- El login ya contaba con `ActiveDirectoryLdapAuthenticationProvider` cuando
+  `inventario.ldap.enabled=true`; eso valida usuario y clave contra AD.
+- Se agrego validacion exacta de usuario solicitante en `ActiveDirectoryDomainService`.
+  Acepta `usuario`, `DOMINIO\usuario` y `usuario@dominio`, consultando `sAMAccountName`
+  y `userPrincipalName`.
+- `TareaTecnicaService` valida el solicitante contra AD al crear o editar tareas si LDAP
+  esta habilitado. Si el usuario no existe, la tarea no se guarda y la API responde 422.
+- Si LDAP esta deshabilitado, se mantiene la carga manual para laboratorio/local.
+
+Verificacion:
+
+```powershell
+.\mvnw.cmd "-Dtest=ActiveDirectoryDomainServiceTests,TareaTecnicaControllerTests,TareaMovilControllerTests" test
+```
+
+Resultado: 27 pruebas, 0 fallos, 0 errores.

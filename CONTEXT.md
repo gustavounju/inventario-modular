@@ -1,6 +1,6 @@
 # Contexto Vivo - ServidorInventario
 
-Ultima actualizacion: 2026-09-10.
+Ultima actualizacion: 2026-09-14.
 
 ## Proyecto
 
@@ -32,7 +32,8 @@ pero no comparte codigo ni despliegue.
   - API movil protegida para sesion, avisos, APK y busqueda de usuarios AD.
   - APK Android piloto servida desde `INVENTARIO_MOVIL_APK_PATH`.
   - Comentarios visibles en el listado movil mediante preview asincronico.
-  - Campo `Usuario solicitante` con autocompletado desde AD y fallback manual.
+  - Los solicitantes de tareas se validan contra AD cuando LDAP esta habilitado.
+    Si LDAP esta deshabilitado, se permite carga manual solo para laboratorio/local.
 
 ## Arranque Local Windows En El Trabajo
 
@@ -56,6 +57,8 @@ El script pide credenciales en consola. No escribir claves en commits, documento
 - No ejecutar comandos contra MySQL `MYSQL_INTERNO_IP` ni deploys de produccion sin autorizacion
   explicita.
 - Active Directory autentica identidad; Inventario Modular decide autorizacion y roles.
+- Cuando LDAP esta activo, Inventario Modular tambien valida que el usuario solicitante
+  exista en AD antes de crear o editar una tarea.
 - Las cuentas locales de emergencia/desarrollo se controlan con `inventario.local-auth.*`
   e `inventario.local-db-auth.*`.
 
