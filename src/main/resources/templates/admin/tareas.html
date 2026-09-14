@@ -173,11 +173,25 @@
 													th:text="${comentario.autor + ': ' + comentario.comentario}" style="display: block; margin-bottom: 2px;">admin.local: Se revisó cableado</span>
 										</div>
 										<div class="comment-thread" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
-											 style="margin-top: 8px; border-left: 2px solid #16a34a; padding-left: 8px;">
-											<span class="table-subtext" th:each="uso : ${stockPorTarea[tarea.id]}"
-													th:text="'Stock usado: #' + ${uso.stockComponenteId} + ' ' + ${uso.tipo} + ' - ' + ${uso.descripcion}"
-													style="display: block; margin-bottom: 2px; color: #4ade80; font-weight: 600;">Stock usado</span>
-										</div>
+								     style="margin-top: 8px; border-left: 2px solid #16a34a; padding-left: 8px;">
+									<div th:each="uso : ${stockPorTarea[tarea.id]}" style="margin-bottom: 6px;">
+										<span class="table-subtext"
+												th:text="'🔩 #' + ${uso.stockComponenteId} + ' ' + ${uso.tipo} + ' — ' + ${uso.descripcion} + (${uso.serial} != null ? ' (S/N: ' + ${uso.serial} + ')' : '')"
+												style="display: block; color: #4ade80; font-weight: 600;">Stock usado</span>
+										<!-- Botón instalar: solo si hay equipo real (no PC genérica) y el stock está RESERVADO -->
+										<form th:if="${puedeEditarTareas and tarea.equipoId != null and equipoGenericoId != tarea.equipoId}"
+											  th:action="@{/admin/tareas/{id}/stock/{usoId}/instalar(id=${tarea.id},usoId=${uso.id})}"
+											  method="post" style="display:inline; margin-top:3px;"
+											  onsubmit="return confirm('¿Instalar esta pieza en el equipo ' + this.dataset.equipo + '? El stock pasará a ASIGNADO y se creará un componente oficial en el equipo.');"
+											  th:attr="data-equipo=${tarea.equipoNombre}">
+											<button type="submit" class="secondary-action"
+													style="font-size:0.75rem; padding:3px 8px; background:#0c4a6e; color:#7dd3fc; border:1px solid #0369a1;"
+													title="Instalar esta pieza en el equipo de la tarea">
+												📦 Instalar en equipo
+											</button>
+										</form>
+									</div>
+								</div>
 									</td>
 									<td data-label="Solicitante">
 										<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Juan Pérez</strong>

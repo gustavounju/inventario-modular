@@ -206,6 +206,20 @@ public class TareaTecnicaPageController {
 		return redireccionTareas(origen);
 	}
 
+	@PostMapping("/admin/tareas/{id}/stock/{usoId}/instalar")
+	public String instalarEnEquipo(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@PathVariable Long usoId,
+			@RequestParam(required = false) String origen,
+			RedirectAttributes redirectAttributes) {
+		exigirAdministradorTareas(userDetails);
+		exigirTareaPropiaOAdministrador(userDetails, id);
+		tareaTecnicaService.instalarEnEquipo(id, usoId, userDetails.getUsername());
+		redirectAttributes.addAttribute("creado", "1");
+		return redireccionTareas(origen);
+	}
+
 	private void prepararModelo(Model model, UserDetails userDetails, TareaForm tareaForm,
 			EstadoTareaTecnica estado, Long equipoId, String responsable) {
 		List<TareaTecnicaDetalle> tareas = tareaTecnicaService.buscar(estado, equipoId, responsable);

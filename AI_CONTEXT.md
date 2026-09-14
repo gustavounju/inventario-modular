@@ -252,12 +252,28 @@ Decision de UI vigente:
 6. Solo se actualizan los campos informados; los campos vacios no pisan datos existentes.
 7. Si el lote deja de estar `PENDIENTE` y tiene descripcion real, `datos_completos` pasa a `true`.
 
-### Uso de stock en tareas
+### Uso de stock en tareas e instalacion en equipo
 
-1. Una tarea tecnica puede registrar piezas usadas.
-2. La relacion queda en entidades/repositorios de tareas y stock.
-3. El stock usado debe quedar trazable y no confundirse con stock disponible.
-4. Los avisos moviles deben dirigirse correctamente cuando una tarea tiene responsable.
+Flujo completo de una pieza de taller:
+
+1. Una tarea tecnica puede registrar piezas usadas desde stock DISPONIBLE.
+2. Al registrar el uso desde la tarea, el stock pasa de DISPONIBLE a RESERVADO (`reservar()`).
+3. El tecnico puede luego ejecutar la accion "Instalar en equipo" sobre cada pieza RESERVADA.
+4. Al instalar:
+   - El `StockComponente` pasa de RESERVADO a ASIGNADO (`asignar()`).
+   - Se crea un `Componente` en la tabla `componentes` con `origen = STOCK` y
+     `estadoComparacion = ESPERADO`, vinculado al equipo de la tarea.
+   - Se registra en auditoria de TAREAS y COMPONENTES.
+5. La instalacion requiere que la tarea tenga un equipo real (no PC-GENERICA) asociado.
+   Si la tarea esta en PC-GENERICA, reasignarla primero con la accion de reasignacion de equipo.
+6. El sincronizador de stock huerfano respeta el estado ASIGNADO mientras el Componente este activo.
+
+Estados de stock posibles:
+- DISPONIBLE: pieza en el taller, lista para usar.
+- RESERVADO: apartada por una tarea, no disponible para otras tareas.
+- ASIGNADO: instalada fisicamente en un equipo real y registrada como Componente.
+
+El stock disponible para tareas no muestra piezas RESERVADAS ni ASIGNADAS.
 
 ### APK LAN y actualizacion
 
@@ -313,6 +329,8 @@ Migraciones recientes relevantes:
 | `V19__permisos_tecnico_stock_movil.sql` | Permisos de Stock para tecnico movil |
 | `V20__stock_ingresado_por.sql` | Columna `ingresado_por` en `stock_componentes` |
 | `V21__stock_datos_completos.sql` | Columna `datos_completos` para separar pendientes |
+| `V22__comentarios_creado_en_default.sql` | Default de `creado_en` en comentarios |
+| `V23__instalar_stock_en_equipo.sql` | Indice de apoyo para instalacion de stock en equipo (flujo RESERVADO → ASIGNADO + Componente) |
 
 En `local`, Hibernate usa `spring.jpa.hibernate.ddl-auto=update`. Eso puede agregar columnas
 durante desarrollo, pero las migraciones SQL siguen siendo la referencia para produccion.

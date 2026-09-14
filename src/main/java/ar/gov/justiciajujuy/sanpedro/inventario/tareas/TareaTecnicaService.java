@@ -5,6 +5,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.Componente;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteRepository;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.EstadoComparacion;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
@@ -24,6 +28,7 @@ public class TareaTecnicaService {
 	private final TareaStockUsoRepository stockUsoRepository;
 	private final EquipoRepository equipoRepository;
 	private final StockComponenteRepository stockComponenteRepository;
+	private final ComponenteRepository componenteRepository;
 	private final AuditoriaService auditoriaService;
 	private final TareaAvisoService avisoService;
 
@@ -33,6 +38,7 @@ public class TareaTecnicaService {
 			TareaStockUsoRepository stockUsoRepository,
 			EquipoRepository equipoRepository,
 			StockComponenteRepository stockComponenteRepository,
+			ComponenteRepository componenteRepository,
 			AuditoriaService auditoriaService,
 			TareaAvisoService avisoService) {
 		this.tareaTecnicaRepository = tareaTecnicaRepository;
@@ -40,6 +46,7 @@ public class TareaTecnicaService {
 		this.stockUsoRepository = stockUsoRepository;
 		this.equipoRepository = equipoRepository;
 		this.stockComponenteRepository = stockComponenteRepository;
+		this.componenteRepository = componenteRepository;
 		this.auditoriaService = auditoriaService;
 		this.avisoService = avisoService;
 	}
@@ -222,6 +229,60 @@ public class TareaTecnicaService {
 	}
 
 	@Transactional
+	public InstalarEnEquipoDetalle instalarEnEquipo(Long tareaId, Long usoId, String instaladoPor) {
+		TareaStockUso uso = stockUsoRepository.findById(usoId)
+				.orElseThrow(() -> new StockUsoNoEncontradoException(usoId));
+		if (!uso.getTarea().getId().equals(tareaId)) {
+			throw new StockUsoNoEncontradoException(usoId);
+		}
+		StockComponente componente = uso.getStockComponente();
+		if (componente.getEstado() != EstadoStockComponente.RESERVADO) {
+			throw new StockComponenteNoReservadoException(componente.getId());
+		}
+		Equipo equipo = uso.getTarea().getEquipo();
+		if (equipo == null || EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(equipo.getNombre())) {
+			throw new TareaEquipoGenericoException(tareaId);
+		}
+		// Marcar stock como ASIGNADO (instalado en equipo real)
+		componente.asignar();
+		// Crear el componente oficial en el equipo
+		Componente compInstalado = new Componente(
+				equipo,
+				componente.getTipo(),
+				OrigenComponente.STOCK,
+				EstadoComparacion.ESPERADO,
+				componente.getDescripcion());
+		compInstalado.actualizar(
+				componente.getTipo(),
+				OrigenComponente.STOCK,
+				EstadoComparacion.ESPERADO,
+				componente.getDescripcion(),
+				componente.getMarca(),
+				componente.getModelo(),
+				componente.getSerial(),
+				componente.getCapacidad(),
+				componente.getRemito(),
+				componente.getOrdenCompra(),
+				componente.getProveedor(),
+				null,
+				"Instalado desde tarea #" + tareaId + (StringUtils.hasText(uso.getObservacion()) ? " - " + uso.getObservacion() : ""),
+				true);
+		Componente guardado = componenteRepository.save(compInstalado);
+		auditoriaService.registrar("TAREAS", "INSTALAR_EN_EQUIPO", "TareaTecnica", tareaId,
+				"Stock #" + componente.getId() + " (" + componente.getDescripcion() + ") instalado en equipo '"
+						+ equipo.getNombre() + "' por " + textoOpcional(instaladoPor) + ". Componente #" + guardado.getId() + " creado.");
+		auditoriaService.registrar("COMPONENTES", "CREAR", "Componente", guardado.getId(),
+				"Componente " + guardado.getTipo() + " creado para equipo " + equipo.getNombre()
+						+ " desde tarea #" + tareaId + " (origen STOCK).");
+		return new InstalarEnEquipoDetalle(
+				guardado.getId(),
+				equipo.getId(),
+				equipo.getNombre(),
+				componente.getId(),
+				componente.getDescripcion());
+	}
+
+	@Transactional
 	public void eliminar(Long id) {
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
@@ -351,6 +412,14 @@ public class TareaTecnicaService {
 			String observacion) {
 	}
 
+	public record InstalarEnEquipoDetalle(
+			Long componenteId,
+			Long equipoId,
+			String equipoNombre,
+			Long stockComponenteId,
+			String descripcion) {
+	}
+
 	public record TareaTecnicaDetalle(
 			Long id,
 			Long equipoId,
@@ -445,6 +514,25 @@ public class TareaTecnicaService {
 	public static class StockComponenteNoDisponibleParaTareaException extends RuntimeException {
 		public StockComponenteNoDisponibleParaTareaException(Long id) {
 			super("Componente de stock no disponible para tarea: " + id);
+		}
+	}
+
+	public static class StockComponenteNoReservadoException extends RuntimeException {
+		public StockComponenteNoReservadoException(Long id) {
+			super("El componente de stock " + id + " no está en estado RESERVADO y no puede instalarse.");
+		}
+	}
+
+	public static class StockUsoNoEncontradoException extends RuntimeException {
+		public StockUsoNoEncontradoException(Long id) {
+			super("Uso de stock no encontrado: " + id);
+		}
+	}
+
+	@org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY)
+	public static class TareaEquipoGenericoException extends RuntimeException {
+		public TareaEquipoGenericoException(Long tareaId) {
+			super("La tarea " + tareaId + " está asociada a la PC genérica. Reasignela a un equipo real antes de instalar.");
 		}
 	}
 }

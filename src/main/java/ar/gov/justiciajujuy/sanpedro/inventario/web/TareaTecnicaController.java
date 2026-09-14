@@ -10,11 +10,15 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.Agreg
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.CambiarEstadoTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.EquipoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.GuardarTareaTecnicaCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.InstalarEnEquipoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.RegistrarUsoStockCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoDisponibleParaTareaException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoEncontradoException;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoReservadoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockDisponibleDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockUsoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaComentarioDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaEquipoGenericoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaStockUsoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaNoEncontradaException;
@@ -157,6 +161,17 @@ public class TareaTecnicaController {
 		return tareaTecnicaService.registrarUsoStock(id, request.toCommand(userDetails.getUsername()));
 	}
 
+	@PostMapping("/{id}/stock/{usoId}/instalar")
+	@ResponseStatus(HttpStatus.CREATED)
+	public InstalarEnEquipoDetalle instalarEnEquipo(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@PathVariable Long usoId) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirTareaPropiaOAdministrador(userDetails, id);
+		return tareaTecnicaService.instalarEnEquipo(id, usoId, userDetails.getUsername());
+	}
+
 	private void exigirPermiso(UserDetails userDetails, String permiso) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_TAREAS, permiso)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para operar tareas tecnicas.");
@@ -177,14 +192,20 @@ public class TareaTecnicaController {
 	}
 
 	@ExceptionHandler({TareaTecnicaNoEncontradaException.class, EquipoNoEncontradoException.class,
-			StockComponenteNoEncontradoException.class})
+			StockComponenteNoEncontradoException.class, StockUsoNoEncontradoException.class})
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	void noEncontrado() {
 	}
 
-	@ExceptionHandler({TareaTecnicaYaAsignadaException.class, StockComponenteNoDisponibleParaTareaException.class})
+	@ExceptionHandler({TareaTecnicaYaAsignadaException.class, StockComponenteNoDisponibleParaTareaException.class,
+			StockComponenteNoReservadoException.class})
 	@ResponseStatus(HttpStatus.CONFLICT)
 	void yaAsignada() {
+	}
+
+	@ExceptionHandler(TareaEquipoGenericoException.class)
+	@ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+	void equipoGenerico() {
 	}
 
 	public record GuardarTareaTecnicaRequest(
