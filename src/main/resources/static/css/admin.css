@@ -1,78 +1,81 @@
 /**
- * Arquitectura Visual: Mesa Tecnica Oscura
- * Esquema de Color: Centro de control para taller e informatica
- * Soporte Dual: Conmutacion accesible entre modo oscuro operativo y modo claro
+ * Arquitectura Visual: Institucional Justicia Jujuy
+ * Esquema de Color: Centro Judicial San Pedro / Taller Informatica
+ * Soporte Dual: modo institucional claro por defecto y modo azul profundo opcional
  */
 :root,
-:root[data-theme="dark"] {
-	color-scheme: dark;
-	font-family: "Segoe UI", Aptos, Tahoma, sans-serif;
-
-	--bg-canvas: #050708;
-	--bg-sidebar: #070d0f;
-	--bg-card: #0c1417;
-	--bg-card-hover: #122225;
-	--bg-card-secondary: #081113;
-	--bg-input: #061012;
-	
-	--border-color: #20393d;
-	--border-subtle: #15282c;
-	--border-input: #315a60;
-	
-	--text-primary: #eef8f5;
-	--text-secondary: #9ab2b0;
-	--text-muted: #607977;
-	--text-link: #26d3c5;
-	
-	--accent-primary: #26d3c5;
-	--accent-hover: #15a69b;
-	--accent-focus: rgba(38, 211, 197, 0.24);
-	
-	--badge-bg: #102024;
-	--badge-text: #9ab2b0;
-	--badge-border: #27484e;
-	
-	--table-head-bg: #081113;
-	--table-row-hover: #122225;
-	--table-border: #1c3438;
-	
-	--shadow-card: 0 18px 44px rgba(0, 0, 0, 0.42);
-	--shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.24);
-}
-
 :root[data-theme="light"] {
 	color-scheme: light;
-	
-	--bg-canvas: #f3f6f6;
-	--bg-sidebar: #fdfefe;
-	--bg-card: #ffffff;
-	--bg-card-hover: #eef5f5;
-	--bg-card-secondary: #f6f9f9;
-	--bg-input: #fbfdfd;
-	
-	--border-color: #d8e2e3;
-	--border-subtle: #e9f0f1;
-	--border-input: #b9cccf;
-	
-	--text-primary: #172426;
-	--text-secondary: #4e6468;
-	--text-muted: #768b8f;
-	--text-link: #087b78;
-	
-	--accent-primary: #087b78;
-	--accent-hover: #05615f;
-	--accent-focus: rgba(8, 123, 120, 0.18);
-	
-	--badge-bg: #f1f5f9;
-	--badge-text: #475569;
-	--badge-border: #cbd5e1;
-	
-	--table-head-bg: #f8fafc;
-	--table-row-hover: #f8fafc;
-	--table-border: #e2e8f0;
-	
-	--shadow-card: 0 12px 34px rgba(23, 36, 38, 0.08);
-	--shadow-sm: 0 4px 14px rgba(23, 36, 38, 0.06);
+	font-family: "Segoe UI", Tahoma, sans-serif;
+
+	--bg-canvas: #dceef7;
+	--bg-sidebar: #d4e8f1;
+	--bg-card: #f8fcfe;
+	--bg-card-hover: #eaf5fa;
+	--bg-card-secondary: #edf7fb;
+	--bg-input: #ffffff;
+
+	--border-color: #b8cdd7;
+	--border-subtle: #d4e3e9;
+	--border-input: #7f969f;
+
+	--text-primary: #102b3a;
+	--text-secondary: #365666;
+	--text-muted: #526a78;
+	--text-link: #006f99;
+
+	--accent-primary: #006f99;
+	--accent-hover: #005777;
+	--accent-focus: rgba(0, 111, 153, 0.22);
+	--accent-danger: #c5142d;
+
+	--badge-bg: #eef7fb;
+	--badge-text: #014760;
+	--badge-border: #b8cdd7;
+
+	--table-head-bg: #eaf5fa;
+	--table-row-hover: #f2f9fc;
+	--table-border: #d4e3e9;
+
+	--shadow-card: 0 14px 30px rgba(0, 71, 96, 0.12);
+	--shadow-sm: 0 6px 16px rgba(0, 71, 96, 0.09);
+}
+
+:root[data-theme="dark"] {
+	color-scheme: dark;
+	font-family: "Segoe UI", Tahoma, sans-serif;
+
+	--bg-canvas: #092f40;
+	--bg-sidebar: #063247;
+	--bg-card: #0b4258;
+	--bg-card-hover: #105371;
+	--bg-card-secondary: #07364a;
+	--bg-input: #052b3c;
+
+	--border-color: #2c6a82;
+	--border-subtle: #1f5269;
+	--border-input: #6fa2b6;
+
+	--text-primary: #f4fbfe;
+	--text-secondary: #c5dce6;
+	--text-muted: #9cb8c5;
+	--text-link: #9ee7ff;
+
+	--accent-primary: #49b9df;
+	--accent-hover: #7ed5ef;
+	--accent-focus: rgba(73, 185, 223, 0.28);
+	--accent-danger: #ff6b7b;
+
+	--badge-bg: #0d3d53;
+	--badge-text: #c5eefc;
+	--badge-border: #2c6a82;
+
+	--table-head-bg: #07364a;
+	--table-row-hover: #104e68;
+	--table-border: #2c6a82;
+
+	--shadow-card: 0 18px 44px rgba(0, 32, 45, 0.34);
+	--shadow-sm: 0 8px 22px rgba(0, 32, 45, 0.24);
 }
 
 * {
@@ -83,11 +86,8 @@ body {
 	margin: 0;
 	min-height: 100vh;
 	background:
-		linear-gradient(90deg, rgba(38, 211, 197, 0.035) 1px, transparent 1px),
-		linear-gradient(0deg, rgba(38, 211, 197, 0.028) 1px, transparent 1px),
-		linear-gradient(145deg, #050708 0%, #0b1114 56%, #06090a 100%),
+		linear-gradient(180deg, rgba(255,255,255,0.56), rgba(255,255,255,0)),
 		var(--bg-canvas);
-	background-size: 28px 28px, 28px 28px, auto, auto;
 	color: var(--text-primary);
 	transition: background 0.2s ease, color 0.2s ease;
 }
@@ -135,9 +135,9 @@ body {
 .status-panel.login-panel {
 	width: min(100%, 460px);
 	border: 1px solid var(--border-color);
-	border-radius: 10px;
+	border-radius: 0;
 	background:
-		linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 11%, transparent), transparent 48%),
+		linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 8%, transparent), transparent 48%),
 		var(--bg-card);
 	color: var(--text-primary);
 	padding: 36px;
@@ -184,20 +184,20 @@ body {
 
 .panel-branding .eyebrow {
 	margin: 0 0 3px;
-	color: var(--text-muted);
+	color: var(--text-link);
 	font-size: 0.75rem;
 	font-weight: 700;
 	text-transform: uppercase;
-	letter-spacing: 0.06em;
+	letter-spacing: 0;
 }
 
 .panel-branding h1,
 #panel-title {
 	margin: 0;
 	font-size: 1.65rem;
-	font-weight: 800;
+	font-weight: 600;
 	color: var(--text-primary);
-	letter-spacing: -0.02em;
+	letter-spacing: 0;
 	line-height: 1.2;
 }
 
@@ -2436,7 +2436,7 @@ dialog::backdrop {
 
 /* ==========================================================================
    BARRA LATERAL DE NAVEGACIÓN (SIDEBAR)
-   Soporte dinámico para Modo Oscuro Relajante y Modo Claro
+   Identidad institucional del Centro Judicial San Pedro
    ========================================================================== */
 
 /* Contenedor fijo de la barra lateral izquierda */
@@ -2447,7 +2447,7 @@ dialog::backdrop {
 	bottom: 0;
 	width: 260px;
 	background:
-		linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent 34%),
+		linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 12%, transparent), transparent 34%),
 		var(--bg-sidebar);
 	color: var(--text-secondary);
 	display: flex;
@@ -2457,7 +2457,7 @@ dialog::backdrop {
 	scrollbar-width: thin;
 	scrollbar-color: var(--border-input) transparent;
 	border-right: 1px solid var(--border-color);
-	box-shadow: 14px 0 36px rgba(0, 0, 0, 0.18);
+	box-shadow: 10px 0 28px rgba(0, 71, 96, 0.13);
 	transition: transform 0.25s ease, background 0.2s ease;
 }
 
@@ -2467,38 +2467,43 @@ dialog::backdrop {
 	align-items: center;
 	gap: 12px;
 	padding: 18px 18px 14px;
-	background: color-mix(in srgb, var(--bg-sidebar) 88%, var(--accent-primary));
+	background: var(--accent-primary);
 	border-bottom: 1px solid var(--border-color);
 }
 
 .sidebar-brand-icon {
 	align-items: center;
-	background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
-	border: 1px solid color-mix(in srgb, var(--accent-primary) 34%, var(--border-color));
-	border-radius: 8px;
-	color: var(--text-link);
+	background: rgba(255,255,255,0.12);
+	border: 1px solid rgba(255,255,255,0.38);
+	border-radius: 0;
+	color: #ffffff;
 	display: inline-flex;
 	font-size: 0.72rem;
 	font-weight: 900;
 	height: 34px;
 	justify-content: center;
-	letter-spacing: 0.04em;
+	letter-spacing: 0;
 	width: 34px;
 }
 
 .sidebar-brand-title {
 	display: block;
-	font-size: 0.95rem;
-	font-weight: 800;
-	color: var(--text-primary);
-	letter-spacing: -0.2px;
+	font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+	font-style: italic;
+	font-size: 1.28rem;
+	font-weight: 400;
+	color: #ffffff;
+	line-height: 1.05;
+	text-shadow: 0 2px 0 rgba(0,0,0,0.28), 0 4px 8px rgba(0,0,0,0.22);
+	letter-spacing: 0;
 }
 
 .sidebar-brand-sub {
 	display: block;
 	font-size: 0.74rem;
-	color: var(--text-muted);
-	margin-top: 1px;
+	color: rgba(255,255,255,0.92);
+	margin-top: 4px;
+	font-weight: 700;
 }
 
 /* Distintivo de aplicación del sistema judicial */
@@ -2511,7 +2516,7 @@ dialog::backdrop {
 .sidebar-app-badge span {
 	font-size: 0.68rem;
 	font-weight: 800;
-	letter-spacing: 0.8px;
+	letter-spacing: 0;
 	color: var(--text-link);
 }
 
@@ -2535,7 +2540,7 @@ dialog::backdrop {
 	font-size: 0.67rem;
 	font-weight: 700;
 	text-transform: uppercase;
-	letter-spacing: 0.8px;
+	letter-spacing: 0;
 	color: var(--text-muted);
 	padding: 4px 12px 4px;
 }
@@ -2547,7 +2552,7 @@ dialog::backdrop {
 	gap: 10px;
 	padding: 9px 12px;
 	border: 1px solid transparent;
-	border-radius: 7px;
+	border-radius: 0;
 	color: var(--text-secondary);
 	text-decoration: none;
 	font-size: 0.85rem;
@@ -2574,7 +2579,7 @@ dialog::backdrop {
 .sidebar-icon {
 	background: var(--bg-card-secondary);
 	border: 1px solid var(--border-subtle);
-	border-radius: 5px;
+	border-radius: 0;
 	color: var(--text-muted);
 	font-size: 0.63rem;
 	font-weight: 900;
@@ -3510,7 +3515,7 @@ button:disabled, .secondary-action:disabled, .primary-action:disabled { opacity:
 }
 
 /* ==========================================================================
-   Mesa Tecnica Oscura - capa global de consistencia visual
+   Institucional Justicia Jujuy - capa global de consistencia visual
    ========================================================================== */
 
 a:focus-visible,
@@ -3525,7 +3530,7 @@ textarea:focus-visible,
 
 .panel-topbar,
 .task-viewer-hero {
-	background: linear-gradient(180deg, rgba(12, 20, 23, 0.72), rgba(8, 17, 19, 0));
+	background: linear-gradient(180deg, color-mix(in srgb, var(--accent-primary) 7%, transparent), rgba(255,255,255,0));
 }
 
 .status-panel,
@@ -3564,7 +3569,7 @@ textarea:focus-visible,
 .task-create-panel,
 .task-metric-card,
 .task-viewer-filter {
-	background: linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 92%, var(--accent-primary)), var(--bg-card)) !important;
+	background: linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 96%, var(--accent-primary)), var(--bg-card)) !important;
 }
 
 .attribute-name,
@@ -3627,9 +3632,9 @@ textarea::selection {
 }
 
 .user-avatar {
-	background: linear-gradient(135deg, #0b272a, #123f43) !important;
+	background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover)) !important;
 	border: 1px solid color-mix(in srgb, var(--accent-primary) 38%, var(--border-color));
-	color: var(--text-link) !important;
+	color: #ffffff !important;
 }
 
 .user-badge,
@@ -3642,20 +3647,20 @@ textarea::selection {
 
 .app-sidebar {
 	background:
-		linear-gradient(90deg, rgba(38, 211, 197, 0.045) 1px, transparent 1px),
-		linear-gradient(0deg, rgba(38, 211, 197, 0.03) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(0, 111, 153, 0.035) 1px, transparent 1px),
+		linear-gradient(0deg, rgba(0, 111, 153, 0.028) 1px, transparent 1px),
 		var(--bg-sidebar);
 	background-size: 24px 24px, 24px 24px, auto;
 }
 
 .sidebar-brand,
 .sidebar-app-badge {
-	background: rgba(8, 17, 19, 0.92);
+	background-color: var(--accent-primary);
 }
 
 .sidebar-link:hover,
 .sidebar-link.is-active {
-	background: color-mix(in srgb, var(--accent-primary) 14%, #071012) !important;
+	background: color-mix(in srgb, var(--accent-primary) 14%, var(--bg-card)) !important;
 }
 
 .sidebar-icon,
@@ -3663,7 +3668,7 @@ textarea::selection {
 .topbar-apk-icon,
 .apk-download-action span {
 	font-family: "Segoe UI", Aptos, Tahoma, sans-serif;
-	letter-spacing: 0.04em;
+	letter-spacing: 0;
 }
 
 .theme-toggle-icon {

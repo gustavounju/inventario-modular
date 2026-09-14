@@ -3,14 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ingresar a tareas | Inventario Modular</title>
+    <title>Ingresar a tareas | Centro Judicial San Pedro</title>
     <link rel="stylesheet" th:href="@{/css/movil.css}">
 </head>
 <body class="login-page">
     <main class="mobile-login">
-        <p class="brand">CENTRO JUDICIAL SAN PEDRO</p>
+        <p class="brand">Centro Judicial San Pedro</p>
         <h1>Tareas</h1>
-        <p class="muted">Inventario Modular</p>
+        <p class="muted">Taller Informatica · Inventario Modular</p>
         <p class="message error" th:if="${param.error != null}" role="alert">Usuario o clave incorrectos.</p>
         <p class="message error" th:if="${param.bloqueado != null}" role="alert">Demasiados intentos fallidos. Espere unos minutos antes de volver a ingresar.</p>
         <form th:action="@{/login}" method="post">

@@ -12,12 +12,12 @@
 		<div class="sidebar-brand">
 			<div class="sidebar-brand-icon" aria-hidden="true">PJ</div>
 			<div class="sidebar-brand-text">
-				<strong class="sidebar-brand-title">Poder Judicial</strong>
-				<span class="sidebar-brand-sub">Centro Judicial San Pedro</span>
+				<strong class="sidebar-brand-title">Centro Judicial San Pedro</strong>
+				<span class="sidebar-brand-sub">Taller Informatica</span>
 			</div>
 		</div>
 		<div class="sidebar-app-badge">
-			<span>INVENTARIO MODULAR</span>
+			<span>INVENTARIO MODULAR · TALLER INFORMATICA</span>
 		</div>
 
 		<!-- Navegación categorizada: los codigos cortos sostienen la estetica tecnica del admin. -->
@@ -33,7 +33,7 @@
 
 			<!-- Sección 2: Informática y Taller -->
 			<div class="sidebar-section">
-				<span class="sidebar-section-title">Hardware y Taller</span>
+				<span class="sidebar-section-title">Taller Informatica</span>
 				<a class="sidebar-link" th:if="${canViewEquipos != null ? canViewEquipos : true}" th:classappend="${activeModule == 'equipos'} ? ' is-active' : ''" th:href="@{/admin/equipos}">
 					<span class="sidebar-icon">EQ</span>
 					<span class="sidebar-text">Equipos</span>
@@ -41,7 +41,7 @@
 
 				<a class="sidebar-link" th:if="${canViewStock != null ? canViewStock : true}" th:classappend="${activeModule == 'stock'} ? ' is-active' : ''" th:href="@{/admin/stock}">
 					<span class="sidebar-icon">ST</span>
-					<span class="sidebar-text">Stock de Depósito</span>
+					<span class="sidebar-text">Stock del Taller</span>
 				</a>
 				<a class="sidebar-link" th:if="${canViewDashboardDiferencias != null ? canViewDashboardDiferencias : true}" th:classappend="${activeModule == 'diferencias'} ? ' is-active' : ''" th:href="@{/admin/dashboard-diferencias}">
 					<span class="sidebar-icon">DG</span>
@@ -101,14 +101,14 @@
 	<!-- Fondo oscuro móvil para cerrar el sidebar al tocar afuera -->
 	<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
-	<!-- Script de aplicación inmediata de tema visual (por defecto: mesa tecnica oscura) -->
+	<!-- Script de aplicación inmediata de tema visual institucional -->
 	<script>
 		(function() {
 			try {
-				var savedTheme = localStorage.getItem('modular-app-theme') || 'dark';
+				var savedTheme = localStorage.getItem('modular-app-theme') || 'light';
 				document.documentElement.setAttribute('data-theme', savedTheme);
 			} catch (e) {
-				document.documentElement.setAttribute('data-theme', 'dark');
+				document.documentElement.setAttribute('data-theme', 'light');
 			}
 		})();
 	</script>
@@ -127,10 +127,10 @@
 		</div>
 
 		<div class="topbar-actions" style="display: flex; align-items: center; gap: 10px;">
-			<!-- Boton de conmutacion de modo visual (Oscuro / Claro) -->
-			<button type="button" class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar modo visual (Oscuro / Claro)" aria-label="Alternar modo visual">
-				<span class="theme-toggle-icon" id="theme-toggle-icon">OSC</span>
-				<span class="theme-toggle-text" id="theme-toggle-label">Modo Oscuro</span>
+			<!-- Boton de conmutacion de modo visual institucional -->
+			<button type="button" class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar modo visual institucional" aria-label="Alternar modo visual">
+				<span class="theme-toggle-icon" id="theme-toggle-icon">INS</span>
+				<span class="theme-toggle-text" id="theme-toggle-label">Modo Institucional</span>
 			</button>
 
 			<a class="topbar-apk-link" th:if="${apkDisponible != null and apkDisponible}" th:href="@{/api/v1/movil/apk}" title="Descargar APK" aria-label="Descargar APK">
@@ -184,11 +184,11 @@
 			var label = document.getElementById('theme-toggle-label');
 			if (icon && label) {
 				if (theme === 'light') {
-					icon.textContent = 'CLR';
-					label.textContent = 'Modo Claro';
+					icon.textContent = 'INS';
+					label.textContent = 'Modo Institucional';
 				} else {
-					icon.textContent = 'OSC';
-					label.textContent = 'Modo Oscuro';
+					icon.textContent = 'AZL';
+					label.textContent = 'Modo Azul';
 				}
 			}
 		}
@@ -202,10 +202,10 @@
 		document.addEventListener('DOMContentLoaded', function() {
 			document.body.classList.add('has-sidebar');
 			try {
-				var savedTheme = localStorage.getItem('modular-app-theme') || 'dark';
+				var savedTheme = localStorage.getItem('modular-app-theme') || 'light';
 				applyTheme(savedTheme);
 			} catch (e) {
-				applyTheme('dark');
+				applyTheme('light');
 			}
 		});
 	</script>

@@ -3,17 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#13745c">
+    <meta name="theme-color" content="#006f99">
     <meta name="csrf-token" th:content="${_csrf.token}">
     <meta name="csrf-header" th:content="${_csrf.headerName}">
-    <title>Tareas | Inventario Modular</title>
+    <title>Tareas | Centro Judicial San Pedro</title>
     <link rel="stylesheet" th:href="@{/css/movil.css}">
     <script defer th:src="@{/js/lucide.min.js}"></script>
     <script defer th:src="@{/js/movil-tareas.js}"></script>
 </head>
 <body th:attr="data-base=@{/}">
     <header class="mobile-header">
-        <div><span class="brand">INVENTARIO MODULAR</span><h1>Tareas</h1></div>
+        <div><span class="brand">Centro Judicial San Pedro</span><span class="mobile-kicker">Taller Informatica · Inventario Modular</span><h1>Tareas</h1></div>
         <div class="header-actions">
             <a id="download-apk" th:if="${apkDisponible}" class="icon-button" th:href="@{/api/v1/movil/apk}" aria-label="Descargar APK" title="Descargar APK"><i data-lucide="smartphone"></i></a>
             <a th:if="${puedeVerStock}" class="icon-button" th:href="@{/movil/stock}" aria-label="Stock" title="Stock"><i data-lucide="scan-barcode"></i></a>

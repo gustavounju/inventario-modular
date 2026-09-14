@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mockup Inventario - Justicia Jujuy</title>
+  <style>
+    :root {
+      --judicial-blue: #006f99;
+      --judicial-blue-dark: #005777;
+      --judicial-blue-deep: #014760;
+      --page-blue: #dceef7;
+      --band-blue: #cbdde5;
+      --line: #b8cdd7;
+      --ink: #102b3a;
+      --muted: #526a78;
+      --paper: #f8fcfe;
+      --field: #ffffff;
+      --accent: #c5142d;
+      --ok: #20734f;
+      --warn: #9b5d00;
+      --shadow: 0 14px 30px rgba(0, 71, 96, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--page-blue);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      font-size: 14px;
+    }
+
+    .topbar {
+      background: var(--judicial-blue);
+      color: white;
+      border-bottom: 1px solid rgba(0, 0, 0, .18);
+    }
+
+    .brand {
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      padding: 10px 28px 8px;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(29px, 5vw, 54px);
+      line-height: .95;
+      letter-spacing: .01em;
+      color: #fff;
+      text-shadow: 0 2px 0 rgba(0,0,0,.28), 0 4px 8px rgba(0,0,0,.28);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 0 0 8px;
+      min-height: 35px;
+      background: var(--judicial-blue);
+    }
+
+    .nav a {
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 14px 11px;
+      border-right: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+    }
+
+    .nav a[aria-current="page"],
+    .nav a:hover {
+      background: var(--judicial-blue-dark);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: calc(100vh - 117px);
+    }
+
+    aside {
+      background: #d4e8f1;
+      border-right: 1px solid var(--line);
+      padding: 16px 12px;
+    }
+
+    .side-title {
+      margin: 0 0 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--judicial-blue-deep);
+    }
+
+    .side-menu {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .side-menu button,
+    .side-action {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+      padding: 9px 10px;
+      min-height: 36px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .side-menu button.active {
+      background: var(--judicial-blue-dark);
+      color: #fff;
+      border-color: var(--judicial-blue-dark);
+      font-weight: 700;
+    }
+
+    main {
+      min-width: 0;
+      padding: 18px 22px 28px;
+    }
+
+    .page-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .page-heading h2 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 500;
+      color: #0b2634;
+    }
+
+    .page-heading p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+    }
+
+    .required-band {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--band-blue);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 8px 10px;
+      margin: 0 -22px 16px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .help-dot {
+      display: inline-grid;
+      place-items: center;
+      width: 17px;
+      height: 17px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      color: var(--accent);
+      font-weight: 800;
+      line-height: 1;
+      background: #eef7fb;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 170px 170px auto;
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      font-size: 12px;
+      color: #123443;
+    }
+
+    input,
+    select {
+      height: 30px;
+      border: 1px solid #7f969f;
+      background: var(--field);
+      padding: 4px 8px;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .primary,
+    .secondary,
+    .danger {
+      border: 1px solid #536a74;
+      min-height: 31px;
+      padding: 5px 10px;
+      font: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .primary {
+      background: var(--judicial-blue);
+      color: #fff;
+      border-color: var(--judicial-blue-dark);
+    }
+
+    .secondary {
+      background: #eef7fb;
+      color: #10303e;
+    }
+
+    .danger {
+      background: #fff6f7;
+      color: #8e1124;
+      border-color: #c79aa2;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .kpi {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      min-height: 82px;
+    }
+
+    .kpi span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .kpi strong {
+      display: block;
+      font-size: 27px;
+      line-height: 1;
+      font-weight: 600;
+      color: var(--judicial-blue-deep);
+    }
+
+    .kpi small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+    }
+
+    .work-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(310px, .75fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(248, 252, 254, .92);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #eaf5fa;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--judicial-blue-deep);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #d4e3e9;
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f2f9fc;
+      color: #183d4c;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    td {
+      color: #163341;
+    }
+
+    .asset {
+      display: grid;
+      gap: 2px;
+    }
+
+    .asset strong {
+      font-size: 13px;
+    }
+
+    .asset span,
+    .muted {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status {
+      display: inline-block;
+      min-width: 92px;
+      text-align: center;
+      border: 1px solid;
+      padding: 3px 7px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #fff;
+    }
+
+    .status.ok { color: var(--ok); border-color: #8cbda7; background: #effaf5; }
+    .status.warn { color: var(--warn); border-color: #d6b67d; background: #fff8eb; }
+    .status.alert { color: var(--accent); border-color: #d6a0a8; background: #fff5f6; }
+
+    .task-list {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .task {
+      border: 1px solid #c9dce4;
+      background: #fff;
+      padding: 10px;
+    }
+
+    .task h4 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      color: #123443;
+    }
+
+    .task p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .task-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .form-preview {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: #f8fcfe;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 128px 1fr;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #d8e7ed;
+      padding-bottom: 8px;
+    }
+
+    .field-row label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-start;
+      padding-top: 4px;
+    }
+
+    @media (max-width: 940px) {
+      .layout,
+      .work-grid {
+        grid-template-columns: 1fr;
+      }
+      aside {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .toolbar,
+      .kpis {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .brand { padding: 12px; min-height: 72px; }
+      .nav { overflow-x: auto; padding-left: 0; }
+      main { padding: 14px 12px 24px; }
+      .required-band { margin-left: -12px; margin-right: -12px; }
+      .toolbar,
+      .kpis,
+      .field-row {
+        grid-template-columns: 1fr;
+      }
+      th:nth-child(3),
+      td:nth-child(3) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1 class="brand-title">Poder Judicial de la Provincia de Jujuy</h1>
+    </div>
+    <nav class="nav" aria-label="Navegacion principal">
+      <a href="#" aria-current="page">Inventario</a>
+      <a href="#">Stock</a>
+      <a href="#">Tareas</a>
+      <a href="#">Reportes</a>
+      <a href="#">Cerrar sesion</a>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <p class="side-title">Sistema de inventario</p>
+      <div class="side-menu">
+        <button class="active" type="button">Panel general</button>
+        <button type="button">Equipos inventariados</button>
+        <button type="button">Gemelos digitales</button>
+        <button type="button">Componentes en stock</button>
+        <button type="button">Tareas del taller</button>
+      </div>
+      <p class="side-title">Acciones frecuentes</p>
+      <button class="side-action" type="button">Registrar equipo</button>
+      <button class="side-action" type="button">Comparar gemelo</button>
+      <button class="side-action" type="button">Ingresar pieza</button>
+    </aside>
+
+    <main>
+      <section class="page-heading" aria-labelledby="title">
+        <div>
+          <h2 id="title">Inventario Modular</h2>
+          <p>Vista institucional para administracion diaria del parque informatico, stock de taller y tareas tecnicas.</p>
+        </div>
+        <button class="primary" type="button">Nueva carga</button>
+      </section>
+
+      <div class="required-band">
+        <span>Campos obligatorios y alertas operativas</span>
+        <span class="help-dot">?</span>
+      </div>
+
+      <section class="toolbar" aria-label="Filtros">
+        <label>Buscar por equipo, usuario, serie o fuero
+          <input type="search" value="Oficina de Gestion Judicial">
+        </label>
+        <label>Estado
+          <select>
+            <option>Todos</option>
+            <option>Con diferencias</option>
+            <option>En stock</option>
+          </select>
+        </label>
+        <label>Modulo
+          <select>
+            <option>Inventario</option>
+            <option>Stock</option>
+            <option>Tareas</option>
+          </select>
+        </label>
+        <button class="secondary" type="button">Aplicar filtro</button>
+      </section>
+
+      <section class="kpis" aria-label="Resumen">
+        <article class="kpi">
+          <span>Equipos activos</span>
+          <strong>128</strong>
+          <small>116 con gemelo vigente</small>
+        </article>
+        <article class="kpi">
+          <span>Diferencias abiertas</span>
+          <strong>14</strong>
+          <small>Requieren revision tecnica</small>
+        </article>
+        <article class="kpi">
+          <span>Piezas disponibles</span>
+          <strong>37</strong>
+          <small>Stock fisico del taller</small>
+        </article>
+        <article class="kpi">
+          <span>Tareas pendientes</span>
+          <strong>9</strong>
+          <small>3 con prioridad alta</small>
+        </article>
+      </section>
+
+      <div class="work-grid">
+        <section class="panel" aria-labelledby="assets-title">
+          <div class="panel-header">
+            <h3 id="assets-title">Equipos y componentes observados</h3>
+            <button class="secondary" type="button">Exportar CSV</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th>Usuario / Fuero</th>
+                <th>Ultimo inventario</th>
+                <th>Estado</th>
+                <th>Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="asset"><strong>PC-OGJ-014</strong><span>i5 / 16 GB / SSD 480</span></span></td>
+                <td><span class="asset"><strong>Perez Yolando</strong><span>Oficina de Gestion Judicial</span></span></td>
+                <td>13/09/2026 19:34</td>
+                <td><span class="status warn">Diferencia</span></td>
+                <td><button class="secondary" type="button">Comparar</button></td>
+              </tr>
+              <tr>
+                <td><span class="asset"><strong>PC-MESA-021</strong><span>Ryzen 5 / 8 GB / HDD 1 TB</span></span></td>
+                <td><span class="asset"><strong>Mesa de entrada</strong><span>Juzgado Civil</span></span></td>
+                <td>12/09/2026 11:02</td>
+                <td><span class="status ok">Completo</span></td>
+                <td><button class="secondary" type="button">Ficha</button></td>
+              </tr>
+              <tr>
+                <td><span class="asset"><strong>MON-STK-088</strong><span>Monitor 22 pulgadas</span></span></td>
+                <td><span class="asset"><strong>Taller</strong><span>Stock disponible</span></span></td>
+                <td>13/09/2026 09:18</td>
+                <td><span class="status alert">Pendiente</span></td>
+                <td><button class="danger" type="button">Completar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel" aria-labelledby="tasks-title">
+          <div class="panel-header">
+            <h3 id="tasks-title">Tareas tecnicas</h3>
+            <button class="primary" type="button">Crear tarea</button>
+          </div>
+          <div class="task-list">
+            <article class="task">
+              <h4>Impresora sin imprimir</h4>
+              <p>Solicitante: Perez Yolando · Fuero solicitante: Oficina de Gestion Judicial</p>
+              <div class="task-footer"><span>Responsable: usuario3</span><span class="status warn">Pendiente</span></div>
+            </article>
+            <article class="task">
+              <h4>Revisar memoria RAM</h4>
+              <p>Equipo PC-OGJ-014 con diferencia entre inventario y gemelo digital.</p>
+              <div class="task-footer"><span>Responsable: taller</span><span class="status ok">En proceso</span></div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel" style="margin-top:12px" aria-labelledby="form-title">
+        <div class="panel-header">
+          <h3 id="form-title">Carga rapida de componente</h3>
+          <span class="muted">Diseño compacto inspirado en formularios institucionales</span>
+        </div>
+        <div class="form-preview">
+          <div class="field-row">
+            <label for="serial">Serie / codigo</label>
+            <input id="serial" value="SN-7751-ABC">
+          </div>
+          <div class="field-row">
+            <label for="tipo">Tipo de componente</label>
+            <select id="tipo"><option>Memoria RAM</option><option>Disco SSD</option><option>Monitor</option></select>
+          </div>
+          <div class="field-row">
+            <label for="modelo">Modelo</label>
+            <input id="modelo" value="DDR4 8GB 2666 MHz">
+          </div>
+          <div class="form-actions">
+            <button class="primary" type="button">Guardar en stock</button>
+            <button class="secondary" type="button">Aplicar a seleccionados</button>
+            <button class="danger" type="button">Marcar pendiente</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

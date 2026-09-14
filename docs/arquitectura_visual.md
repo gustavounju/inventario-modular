@@ -1,40 +1,44 @@
-# Arquitectura Visual: Mesa Tecnica Oscura
+# Arquitectura Visual: Institucional Justicia Jujuy
 
-La arquitectura visual activa en `inventario-modular` se denomina **Mesa Tecnica Oscura**: una interfaz de administracion tipo centro de control para taller e informatica, pensada para uso repetido, lectura rapida y trabajo diario con muchos datos.
+La arquitectura visual activa en `inventario-modular` se denomina **Institucional Justicia Jujuy**. El sistema debe reconocerse como una herramienta interna del **Centro Judicial San Pedro** para el **Taller Informatica**, con una estetica sobria, clara y administrativa inspirada en los sistemas judiciales provinciales.
 
 ## Principios de Diseno
 
-La experiencia prioriza densidad operativa, contraste controlado y jerarquia clara. El sistema debe sentirse como una mesa de diagnostico: oscuro, preciso, sobrio y util.
+La experiencia prioriza claridad diaria, lectura rapida, formularios previsibles y una identidad institucional visible. Debe sentirse como un sistema serio de trabajo, no como una landing page ni como una interfaz decorativa.
 
 ### 1. Colores y Esquema
 
-- **Fondo General**: `#050708` con grilla tecnica sutil para reforzar el contexto de control operativo.
-- **Paneles y Superficies**: `#0c1417`, `#081113` y `#122225` para separar modulos sin llenar la pantalla de tarjetas pesadas.
-- **Texto Principal**: `#eef8f5`; secundarios en `#9ab2b0` y metadatos en `#607977`.
-- **Acento Primario**: `#26d3c5`, usado para acciones, enlaces, foco visible y estados activos.
-- **Estados**: verde para disponibilidad, amarillo para pendientes o faltantes, rojo para errores y acciones destructivas.
+- **Azul institucional**: `#006f99`, usado en cabeceras, sidebar, acciones principales y estado activo.
+- **Azul profundo**: `#005777` y `#014760`, usados para contraste, hover y texto destacado.
+- **Fondo general**: `#dceef7`, celeste claro de sistema administrativo.
+- **Superficies**: `#f8fcfe`, `#eaf5fa` y `#edf7fb`, para paneles, filtros y cabeceras de seccion.
+- **Bordes**: `#b8cdd7`, con inputs en `#7f969f` para conservar forma de formulario institucional.
+- **Alertas**: rojo `#c5142d` solo para errores, campos criticos o acciones destructivas.
 
 ### 2. Disposicion Visual
 
-- **Shell Administrativo**: `.shell-wide` organiza la app como panel de trabajo con sidebar fijo, topbar compacta y area de contenido amplia.
-- **Sidebar Operativo**: `.app-sidebar` agrupa los modulos por areas funcionales con codigos cortos (`EQ`, `ST`, `TT`, etc.) para lectura rapida.
-- **Paneles de Trabajo**: `.status-panel`, `.modules-section`, `.task-board` y `.task-create-panel` usan fondos oscuros, bordes finos y sombras contenidas.
-- **Datos Densos**: `.summary-grid`, `.runtime-grid`, `.identity-grid` y tablas responsivas favorecen comparacion rapida sin perder legibilidad.
-- **Controles Repetibles**: formularios, filtros y acciones mantienen alturas compactas, foco accesible y contraste estable.
+- **Shell Administrativo**: `.shell-wide` mantiene sidebar fijo, topbar compacta y area de contenido amplia.
+- **Sidebar Institucional**: `.app-sidebar` identifica el sistema como `Centro Judicial San Pedro` y `Taller Informatica`.
+- **Topbar de Trabajo**: `admin/nav` concentra titulo de modulo, sesion activa, APK y selector de modo.
+- **Paneles de Trabajo**: `.status-panel`, `.modules-section`, `.task-board` y `.task-create-panel` usan fondos claros, bordes finos y sombras contenidas.
+- **Tablas y Filtros**: deben ser densos pero legibles, con encabezados celestes y foco visible.
+- **APK/WebView**: `/movil/tareas`, `/movil/stock` y `/movil/login` comparten azul institucional, marca `Centro Judicial San Pedro` y subtitulo `Taller Informatica`.
 
 ### 3. Reusabilidad y Estandarizacion
 
 Para nuevos modulos, reutilizar estas piezas:
 
 - `.shell` y `.shell-wide`: contenedores base.
-- `.panel-topbar` y fragmento `admin/nav`: navegacion y sesion comun.
+- `.panel-topbar` y fragmento `admin/nav`: navegacion, identidad y sesion comun.
 - `.status-panel`, `.modules-section`, `.inline-edit-card`: areas principales de trabajo.
 - `.primary-action`, `.secondary-action`, `.button-danger-subtle`: acciones del sistema.
 - `.responsive-table`, `.summary-grid`, `.workflow-banner`: listados, metricas y guias de flujo.
 
-## Recomendacion de Nuevos Modulos
+## Reglas de Evolucion
 
-1. **Modulo de Redes**: switches, routers, IPs, VLANs y puertos.
-2. **Modulo de Software y Licencias**: sistemas operativos, software instalado y vencimientos.
-3. **Modulo de Mantenimiento y Tickets**: incidentes, mantenimientos preventivos y correctivos.
-4. **Modulo de Reportes y Auditoria**: trazabilidad de cambios y exportacion PDF/Excel.
+1. Mantener visible el nombre **Centro Judicial San Pedro**.
+2. Usar **Taller Informatica** para identificar el area tecnica.
+3. No volver a "Stock de Deposito" para piezas disponibles: usar Stock del Taller.
+4. No introducir paletas dominantes ajenas al azul institucional sin pedido explicito.
+5. Antes de aplicar cambios grandes, generar mockup en `output/mockups-diseno/`.
+6. Verificar visualmente web y APK/WebView despues de cambios de tema.
