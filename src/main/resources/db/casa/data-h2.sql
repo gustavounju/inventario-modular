@@ -25,7 +25,8 @@ MERGE INTO roles (id, codigo, nombre, descripcion, activo) KEY(codigo) VALUES
   (2, 'TECNICO', 'Tecnico', 'Acceso operativo a modulos tecnicos.', TRUE),
   (3, 'PATRIMONIO', 'Patrimonio', 'Acceso a gestion patrimonial, muebles y reportes.', TRUE),
   (4, 'LECTOR', 'Lector', 'Acceso de solo consulta.', TRUE),
-  (5, 'PERSONALIZADO', 'Personalizado', 'Rol para combinaciones manuales de permisos.', TRUE);
+  (5, 'PERSONALIZADO', 'Personalizado', 'Rol para combinaciones manuales de permisos.', TRUE),
+  (6, 'TELEFONISTA', 'Telefonista', 'Operador de Mesa de Ayuda: recibe llamados y publica tareas para tecnicos.', TRUE);
 
 MERGE INTO usuarios (id, username, nombre_visible, fuero, origen, activo) KEY(username) VALUES
   (1, 'admin.local', 'Administrador Local', 'Desarrollo local', 'LOCAL', TRUE),
@@ -37,6 +38,18 @@ SELECT u.id, r.id
 FROM usuarios u
 JOIN roles r ON r.codigo = 'ADMINISTRADOR'
 WHERE u.username = 'admin.local';
+
+MERGE INTO usuario_roles (usuario_id, rol_id) KEY(usuario_id, rol_id)
+SELECT u.id, r.id
+FROM usuarios u
+JOIN roles r ON r.codigo = 'TECNICO'
+WHERE u.username = 'usuario.tecnico';
+
+MERGE INTO usuario_roles (usuario_id, rol_id) KEY(usuario_id, rol_id)
+SELECT u.id, r.id
+FROM usuarios u
+JOIN roles r ON r.codigo = 'TELEFONISTA'
+WHERE u.username = 'mesa.entrada';
 
 MERGE INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) KEY(rol_id, modulo_id, permiso_id)
 SELECT r.id, m.id, p.id
@@ -53,6 +66,15 @@ CROSS JOIN permisos p
 WHERE r.codigo = 'TECNICO'
   AND m.codigo = 'TAREAS'
   AND p.codigo IN ('VER', 'EDITAR');
+
+MERGE INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) KEY(rol_id, modulo_id, permiso_id)
+SELECT r.id, m.id, p.id
+FROM roles r
+CROSS JOIN modulos m
+CROSS JOIN permisos p
+WHERE r.codigo = 'TELEFONISTA'
+  AND m.codigo = 'TAREAS'
+  AND p.codigo IN ('VER', 'CREAR');
 
 MERGE INTO equipos (
   id, nombre, ultimo_usuario, fuero, ip, sistema_operativo, procesador, ram_mb,

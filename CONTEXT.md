@@ -15,9 +15,10 @@ pero no comparte codigo ni despliegue.
 - Base de produccion modular: MySQL `MYSQL_INTERNO_IP`, base `inventario_modular`, usuario de
   aplicacion `inventario_modular_app`.
 - Desarrollo Windows: MySQL local `127.0.0.1:3306`, base `inventario_modular`, usuario
-  `inventario_local`.
-- Perfil `local`: MySQL local por defecto. En produccion se sobreescribe con variables de
-  entorno del servidor.
+  `inventario_local`, solo como fallback.
+- Perfil `local`: siempre prueba MySQL remoto primero. Si el remoto no responde o no autentica,
+  recien cae a MySQL local. En servidores, las variables de entorno deben apuntar el primario
+  remoto real.
 - Perfil `casa`: H2 solo para laboratorio aislado; no usar para validar celulares, AD ni
   flujo operativo real.
 
@@ -29,21 +30,25 @@ pero no comparte codigo ni despliegue.
 - Modulo Tareas LAN:
   - Visor independiente `/admin/tareas/visor`.
   - Web movil `/movil/login` y `/movil/tareas`.
-  - API movil protegida para sesion, avisos, APK y busqueda de usuarios AD.
+  - API movil protegida para sesion, avisos, APK, usuarios AD y tecnicos asignables.
   - APK Android piloto servida desde `INVENTARIO_MOVIL_APK_PATH`.
   - Comentarios visibles en el listado movil mediante preview asincronico.
   - Los solicitantes de tareas se validan contra AD cuando LDAP esta habilitado.
     Si LDAP esta deshabilitado, se permite carga manual solo para laboratorio/local.
+  - Rol `TELEFONISTA`: crea tareas, comenta siempre sus tareas y solo edita/borra antes de
+    que un tecnico las tome.
+  - Al crear tareas, el responsable tecnico es opcional: sin responsable suena en todos los
+    celulares de tecnicos/administradores; con responsable suena solo al tecnico elegido.
 
 ## Arranque Local Windows En El Trabajo
 
-Preparar MySQL local:
+Preparar MySQL local de contingencia:
 
 ```powershell
 .\scripts\setup-local-mysql.ps1
 ```
 
-Arrancar Spring Boot con MySQL local y AD:
+Arrancar Spring Boot con MySQL remoto primero, fallback local y AD:
 
 ```powershell
 .\scripts\start-local-ad.ps1

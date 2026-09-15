@@ -25,8 +25,8 @@
         <div class="session-line"><span id="username">Cargando usuario...</span><span class="apk-version" th:text="'APK ' + ${apkInfo.version}">APK</span><span id="connection" role="status">Conectando...</span></div>
         <section class="metrics" aria-label="Resumen de tareas">
             <div><strong id="pending-count">0</strong><span>Pendientes</span></div>
-            <div><strong id="mine-count">0</strong><span>A mi cargo</span></div>
-            <div><strong id="done-count">0</strong><span>Realizadas hoy</span></div>
+            <div id="mine-metric"><strong id="mine-count">0</strong><span>A mi cargo</span></div>
+            <div id="done-metric"><strong id="done-count">0</strong><span>Realizadas hoy</span></div>
         </section>
         <section class="apk-install-panel" th:if="${apkDisponible}" aria-label="Instalacion de la app">
             <div>
@@ -43,8 +43,8 @@
         </div>
         <nav class="filters" aria-label="Filtrar tareas">
             <button data-filter="pending" aria-pressed="true">Pendientes</button>
-            <button data-filter="mine" aria-pressed="false">Mis tareas</button>
-            <button data-filter="done" aria-pressed="false">Finalizadas</button>
+            <button id="filter-mine" data-filter="mine" aria-pressed="false">Mis tareas</button>
+            <button id="filter-done" data-filter="done" aria-pressed="false">Finalizadas</button>
             <button data-filter="all" aria-pressed="false">Todas</button>
         </nav>
         <p id="message" class="message" role="status" hidden></p>
@@ -97,6 +97,7 @@
             <input name="solicitanteUsername" type="hidden">
             <input name="solicitanteNombre" type="hidden">
             <input name="solicitanteFuero" type="hidden">
+            <input name="responsable" type="hidden">
             <label>Solicitante
                 <input id="solicitante-search" type="search" list="solicitante-options" maxlength="180"
                        autocomplete="off" autocapitalize="words"
@@ -107,7 +108,13 @@
             <label>Problema a solucionar<textarea name="descripcion" maxlength="1000" rows="4" required></textarea></label>
             <button id="voice-problem" class="secondary" type="button" hidden><i data-lucide="mic"></i><span>Dictar problema</span></button>
             <label>Prioridad<select name="prioridad"><option value="BAJA">Baja</option><option value="MEDIA" selected>Media</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select></label>
-            <label id="responsable-field">Responsable<input name="responsable" maxlength="120" placeholder="Sin tomar" autocapitalize="none"></label>
+            <label id="responsable-field">Técnico asignado
+                <input id="responsable-search" type="search" list="responsable-options" maxlength="180"
+                       autocomplete="off" autocapitalize="words"
+                       placeholder="Opcional: escribir técnico local o usuario AD">
+                <datalist id="responsable-options"></datalist>
+                <span id="responsable-help" class="field-help">Si lo deja vacío, sonará en todos los celulares de técnicos y administradores.</span>
+            </label>
             <p id="form-message" class="message error" role="alert" hidden></p>
             <button class="primary" type="submit">Guardar tarea</button>
         </form>

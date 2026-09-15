@@ -2,13 +2,11 @@ package ar.gov.justiciajujuy.sanpedro.inventario.tareas;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
-import ar.gov.justiciajujuy.sanpedro.inventario.componentes.Componente;
-import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteRepository;
-import ar.gov.justiciajujuy.sanpedro.inventario.componentes.EstadoComparacion;
-import ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
@@ -29,7 +27,7 @@ public class TareaTecnicaService {
 	private final TareaStockUsoRepository stockUsoRepository;
 	private final EquipoRepository equipoRepository;
 	private final StockComponenteRepository stockComponenteRepository;
-	private final ComponenteRepository componenteRepository;
+	private final ComponenteService componenteService;
 	private final AuditoriaService auditoriaService;
 	private final TareaAvisoService avisoService;
 	private final ActiveDirectoryDomainService activeDirectoryDomainService;
@@ -40,7 +38,7 @@ public class TareaTecnicaService {
 			TareaStockUsoRepository stockUsoRepository,
 			EquipoRepository equipoRepository,
 			StockComponenteRepository stockComponenteRepository,
-			ComponenteRepository componenteRepository,
+			ComponenteService componenteService,
 			AuditoriaService auditoriaService,
 			TareaAvisoService avisoService,
 			ActiveDirectoryDomainService activeDirectoryDomainService) {
@@ -49,7 +47,7 @@ public class TareaTecnicaService {
 		this.stockUsoRepository = stockUsoRepository;
 		this.equipoRepository = equipoRepository;
 		this.stockComponenteRepository = stockComponenteRepository;
-		this.componenteRepository = componenteRepository;
+		this.componenteService = componenteService;
 		this.auditoriaService = auditoriaService;
 		this.avisoService = avisoService;
 		this.activeDirectoryDomainService = activeDirectoryDomainService;
@@ -106,6 +104,8 @@ public class TareaTecnicaService {
 		validarExistencia(tareaId);
 		return stockUsoRepository.findByTareaIdOrderByCreadoEnDescIdDesc(tareaId).stream()
 				.map(this::toStockUsoDetalle)
+				.sorted(Comparator.comparingInt(TareaStockUsoDetalle::ordenVisual)
+						.thenComparing(TareaStockUsoDetalle::creadoEn, Comparator.nullsLast(Comparator.reverseOrder())))
 				.toList();
 	}
 
@@ -137,6 +137,7 @@ public class TareaTecnicaService {
 		validarSolicitanteEnAd(solicitanteUsername);
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
+		String responsableAnterior = textoOpcional(tarea.getResponsable());
 		tarea.actualizarDatos(
 				buscarEquipoParaTarea(command.equipoId()),
 				textoRequerido(command.titulo(), "titulo"),
@@ -148,6 +149,12 @@ public class TareaTecnicaService {
 				textoOpcional(command.responsable()));
 		auditoriaService.registrar("TAREAS", "ACTUALIZAR", "TareaTecnica", tarea.getId(),
 				"Tarea tecnica " + tarea.getId() + " actualizada.");
+		String responsableNuevo = textoOpcional(tarea.getResponsable());
+		if (responsableNuevo != null
+				&& (responsableAnterior == null || !responsableAnterior.equalsIgnoreCase(responsableNuevo))) {
+			// Una tarea libre puede nacer desde mesa telefonica y asignarse despues: avisamos solo al tecnico elegido.
+			avisoService.registrarAsignacion(tarea, textoOpcional(command.creadoPor()));
+		}
 		return toDetalle(tarea);
 	}
 
@@ -237,57 +244,27 @@ public class TareaTecnicaService {
 	}
 
 	@Transactional
-	public InstalarEnEquipoDetalle instalarEnEquipo(Long tareaId, Long usoId, String instaladoPor) {
-		TareaStockUso uso = stockUsoRepository.findById(usoId)
-				.orElseThrow(() -> new StockUsoNoEncontradoException(usoId));
-		if (!uso.getTarea().getId().equals(tareaId)) {
-			throw new StockUsoNoEncontradoException(usoId);
-		}
+	public TareaTecnicaDetalle instalarStockReservadoEnEquipo(Long tareaId, Long usoStockId,
+			InstalarStockReservadoCommand command) {
+		TareaTecnica tarea = tareaTecnicaRepository.findById(tareaId)
+				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(tareaId));
+		TareaStockUso uso = stockUsoRepository.findByIdAndTareaId(usoStockId, tareaId)
+				.orElseThrow(() -> new TareaStockUsoNoEncontradoException(usoStockId));
 		StockComponente componente = uso.getStockComponente();
-		if (componente.getEstado() != EstadoStockComponente.RESERVADO) {
-			throw new StockComponenteNoReservadoException(componente.getId());
+		if (!componente.isActivo() || componente.getEstado() != EstadoStockComponente.RESERVADO) {
+			throw new StockComponenteNoDisponibleParaTareaException(componente.getId());
 		}
-		Equipo equipo = uso.getTarea().getEquipo();
-		if (equipo == null || EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(equipo.getNombre())) {
+		Equipo equipoDestino = buscarEquipoOpcional(command.equipoId());
+		if (EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(equipoDestino.getNombre())) {
 			throw new TareaEquipoGenericoException(tareaId);
 		}
-		// Marcar stock como ASIGNADO (instalado en equipo real)
-		componente.asignar();
-		// Crear el componente oficial en el equipo
-		Componente compInstalado = new Componente(
-				equipo,
-				componente.getTipo(),
-				OrigenComponente.STOCK,
-				EstadoComparacion.ESPERADO,
-				componente.getDescripcion());
-		compInstalado.actualizar(
-				componente.getTipo(),
-				OrigenComponente.STOCK,
-				EstadoComparacion.ESPERADO,
-				componente.getDescripcion(),
-				componente.getMarca(),
-				componente.getModelo(),
-				componente.getSerial(),
-				componente.getCapacidad(),
-				componente.getRemito(),
-				componente.getOrdenCompra(),
-				componente.getProveedor(),
-				null,
-				"Instalado desde tarea #" + tareaId + (StringUtils.hasText(uso.getObservacion()) ? " - " + uso.getObservacion() : ""),
-				true);
-		Componente guardado = componenteRepository.save(compInstalado);
-		auditoriaService.registrar("TAREAS", "INSTALAR_EN_EQUIPO", "TareaTecnica", tareaId,
-				"Stock #" + componente.getId() + " (" + componente.getDescripcion() + ") instalado en equipo '"
-						+ equipo.getNombre() + "' por " + textoOpcional(instaladoPor) + ". Componente #" + guardado.getId() + " creado.");
-		auditoriaService.registrar("COMPONENTES", "CREAR", "Componente", guardado.getId(),
-				"Componente " + guardado.getTipo() + " creado para equipo " + equipo.getNombre()
-						+ " desde tarea #" + tareaId + " (origen STOCK).");
-		return new InstalarEnEquipoDetalle(
-				guardado.getId(),
-				equipo.getId(),
-				equipo.getNombre(),
-				componente.getId(),
-				componente.getDescripcion());
+		componenteService.instalarReservadoDesdeTarea(equipoDestino.getId(), componente.getId(),
+				command.ubicacion(), tareaId);
+		tarea.reasignarEquipo(equipoDestino);
+		auditoriaService.registrar("TAREAS", "INSTALAR_STOCK_EN_EQUIPO", "TareaTecnica", tarea.getId(),
+				"Tarea tecnica " + tarea.getId() + " instalo stock #" + componente.getId()
+						+ " en equipo " + equipoDestino.getNombre() + " por " + textoOpcional(command.registradoPor()) + ".");
+		return toDetalle(tarea);
 	}
 
 	@Transactional
@@ -385,8 +362,13 @@ public class TareaTecnicaService {
 				componente.getModelo(),
 				componente.getSerial(),
 				componente.getCapacidad(),
+				componente.getEstado().name(),
 				uso.getRegistradoPor(),
 				uso.getObservacion(),
+				uso.getDesvinculadoEn(),
+				uso.getDesvinculadoPor(),
+				uso.getDesvinculacionMotivo(),
+				uso.getDesvinculadoEquipoNombre(),
 				uso.getCreadoEn());
 	}
 
@@ -429,12 +411,10 @@ public class TareaTecnicaService {
 			String observacion) {
 	}
 
-	public record InstalarEnEquipoDetalle(
-			Long componenteId,
+	public record InstalarStockReservadoCommand(
 			Long equipoId,
-			String equipoNombre,
-			Long stockComponenteId,
-			String descripcion) {
+			String ubicacion,
+			String registradoPor) {
 	}
 
 	public record TareaTecnicaDetalle(
@@ -484,9 +464,77 @@ public class TareaTecnicaService {
 			String modelo,
 			String serial,
 			String capacidad,
+			String estadoStock,
 			String registradoPor,
 			String observacion,
+			LocalDateTime desvinculadoEn,
+			String desvinculadoPor,
+			String desvinculacionMotivo,
+			String desvinculadoEquipoNombre,
 			LocalDateTime creadoEn) {
+
+		public boolean devueltoAStock() {
+			return "DISPONIBLE".equals(estadoStock);
+		}
+
+		public boolean instaladoVigente() {
+			return "ASIGNADO".equals(estadoStock);
+		}
+
+		public boolean mostrarAvisoDesvinculacion() {
+			return desvinculadoEn != null || devueltoAStock();
+		}
+
+		public String etiquetaEstadoTarea() {
+			if (devueltoAStock()) {
+				return "Devuelto a stock";
+			}
+			if (instaladoVigente()) {
+				return "Instalado/asignado vigente";
+			}
+			if ("RESERVADO".equals(estadoStock)) {
+				return "Reservado para tarea";
+			}
+			return "Stock usado";
+		}
+
+		public String estadoCssClass() {
+			if (devueltoAStock()) {
+				return "is-returned";
+			}
+			if (instaladoVigente()) {
+				return "is-active";
+			}
+			if ("RESERVADO".equals(estadoStock)) {
+				return "is-reserved";
+			}
+			return "is-neutral";
+		}
+
+		public int ordenVisual() {
+			if (instaladoVigente()) {
+				return 0;
+			}
+			if ("RESERVADO".equals(estadoStock)) {
+				return 1;
+			}
+			if (devueltoAStock()) {
+				return 2;
+			}
+			return 3;
+		}
+
+		public String equipoDesvinculadoTexto() {
+			return StringUtils.hasText(desvinculadoEquipoNombre) ? desvinculadoEquipoNombre : "un equipo";
+		}
+
+		public String usuarioDesvinculadoTexto() {
+			return StringUtils.hasText(desvinculadoPor) ? desvinculadoPor : "usuario no informado";
+		}
+
+		public String motivoDesvinculacionTexto() {
+			return StringUtils.hasText(desvinculacionMotivo) ? desvinculacionMotivo : "sin motivo informado";
+		}
 	}
 
 	public record ResumenTareas(
@@ -525,6 +573,12 @@ public class TareaTecnicaService {
 	public static class StockComponenteNoEncontradoException extends RuntimeException {
 		public StockComponenteNoEncontradoException(Long id) {
 			super("Componente de stock no encontrado: " + id);
+		}
+	}
+
+	public static class TareaStockUsoNoEncontradoException extends RuntimeException {
+		public TareaStockUsoNoEncontradoException(Long id) {
+			super("Uso de stock en tarea no encontrado: " + id);
 		}
 	}
 

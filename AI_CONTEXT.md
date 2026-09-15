@@ -50,7 +50,10 @@ Ver `docs/inventario-modular/metodologia-itam-cmdb-taller.md` y
 - La app movil consume las pantallas `/movil/tareas` y `/movil/stock`.
 - En `/movil/tareas`, al crear una tarea, el solicitante no debe forzarse al usuario logueado:
   el tecnico puede buscar predictivamente usuarios de AD o escribir manualmente quien pidio
-  ayuda. El responsable si puede seguir siendo el tecnico logueado cuando no es administrador.
+  ayuda. El responsable tecnico es opcional y puede elegirse por autocompletado de tecnicos
+  locales o usuarios de AD; si queda vacio, la tarea se publica para que un tecnico la tome.
+- `TELEFONISTA` es mesa de ayuda telefonica: crea tareas, comenta siempre sus tareas y solo
+  edita/borra una tarea propia mientras sigue abierta y sin responsable.
 - `solicitanteUsername` es el usuario AD del solicitante solo cuando se eligio desde AD. Si la
   carga fue manual puede coincidir con el nombre visible y no debe mostrarse como "usuario
   logueado".
@@ -291,9 +294,11 @@ El stock disponible para tareas no muestra piezas RESERVADAS ni ASIGNADAS.
 3. La busqueda predictiva usa `/api/v1/movil/usuarios-dominio?q=...` y consulta AD cuando esta
    disponible.
 4. Si AD no responde o no hay coincidencia, el campo acepta carga manual para no frenar el trabajo.
-5. Los comentarios agregados desde la APK deben aparecer en el visor publico
+5. Puede asignarse responsable con `/api/v1/movil/tecnicos-asignables?q=...`; sin responsable
+   el aviso es general, con responsable el aviso va dirigido solo a ese tecnico.
+6. Los comentarios agregados desde la APK deben aparecer en el visor publico
    `/admin/tareas/visor`.
-6. El tecnico puede comentar tareas donde es responsable o que fueron creadas por el desde la APK,
+7. El tecnico puede comentar tareas donde es responsable o que fueron creadas por el desde la APK,
    cubriendo tareas historicas que pudieron quedar sin responsable.
 
 ## 7. Base de datos
@@ -331,6 +336,8 @@ Migraciones recientes relevantes:
 | `V21__stock_datos_completos.sql` | Columna `datos_completos` para separar pendientes |
 | `V22__comentarios_creado_en_default.sql` | Default de `creado_en` en comentarios |
 | `V23__instalar_stock_en_equipo.sql` | Indice de apoyo para instalacion de stock en equipo (flujo RESERVADO → ASIGNADO + Componente) |
+| `V24__trazabilidad_desvinculacion_stock_tarea.sql` | Trazabilidad de desvinculacion de stock usado en tareas |
+| `V25__rol_telefonista_tareas_movil.sql` | Rol `TELEFONISTA` para mesa telefonica y tareas moviles |
 
 En `local`, Hibernate usa `spring.jpa.hibernate.ddl-auto=update`. Eso puede agregar columnas
 durante desarrollo, pero las migraciones SQL siguen siendo la referencia para produccion.
@@ -344,13 +351,13 @@ Comandos frecuentes desde la raiz del proyecto:
 .\mvnw.cmd --batch-mode "-Dtest=StockPageControllerTests,TareaMovilControllerTests" test
 ```
 
-Servidor local con MySQL:
+Servidor local con MySQL remoto primero y fallback local:
 
 ```powershell
 $env:SPRING_PROFILES_ACTIVE='local'
-$env:INVENTARIO_DB_PRIMARY_URL='jdbc:mysql://127.0.0.1:3306/inventario_modular'
-$env:INVENTARIO_DB_PRIMARY_USER='inventario_local'
-$env:INVENTARIO_DB_PRIMARY_PASSWORD='<clave-mysql-local>'
+$env:INVENTARIO_DB_PRIMARY_URL='jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular'
+$env:INVENTARIO_DB_PRIMARY_USER='inventario_modular_app'
+$env:INVENTARIO_DB_PRIMARY_PASSWORD='<clave-mysql-remoto>'
 $env:INVENTARIO_DB_FALLBACK_URL='jdbc:mysql://127.0.0.1:3306/inventario_modular'
 $env:INVENTARIO_DB_FALLBACK_USER='inventario_local'
 $env:INVENTARIO_DB_FALLBACK_PASSWORD='<clave-mysql-local>'
@@ -445,6 +452,7 @@ y verificar fecha, host, rama y backup.
 | 2026-09 | Autenticacion local de base activa en perfil local | La APK debe aceptar tecnicos locales como `usuario3` durante pruebas LAN |
 | 2026-09 | Institucional Justicia Jujuy como UI vigente | Mockup aprobado como referencia literal: cabecera judicial azul, sidebar operativo sin marca duplicada, recuadros cuadrados |
 | 2026-09 | Metodologia ITAM/CMDB de taller | Ordenar activos, configuracion, gemelos, stock, tareas y evidencia |
+| 2026-09 | Rol `TELEFONISTA` y responsable opcional | Mesa telefonica publica tareas; tecnicos/administradores reciben aviso general o dirigido |
 
 ## 12. Que no tocar sin cuidado
 

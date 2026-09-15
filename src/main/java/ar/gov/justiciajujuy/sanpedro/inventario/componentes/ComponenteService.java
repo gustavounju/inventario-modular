@@ -1,6 +1,9 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.componentes;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.TipoMovimiento;
@@ -11,6 +14,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.ReporteInv
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponenteRepository;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaStockUsoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -18,17 +22,22 @@ import org.springframework.util.StringUtils;
 @Service
 public class ComponenteService {
 
+	private static final Pattern STOCK_ID_OBSERVACION = Pattern.compile("Stock \\(ID #(\\d+)\\)");
+
 	private final ComponenteRepository componenteRepository;
 	private final EquipoRepository equipoRepository;
 	private final AuditoriaService auditoriaService;
 	private final StockComponenteRepository stockComponenteRepository;
+	private final TareaStockUsoRepository tareaStockUsoRepository;
 
 	public ComponenteService(ComponenteRepository componenteRepository, EquipoRepository equipoRepository,
-			AuditoriaService auditoriaService, StockComponenteRepository stockComponenteRepository) {
+			AuditoriaService auditoriaService, StockComponenteRepository stockComponenteRepository,
+			TareaStockUsoRepository tareaStockUsoRepository) {
 		this.componenteRepository = componenteRepository;
 		this.equipoRepository = equipoRepository;
 		this.auditoriaService = auditoriaService;
 		this.stockComponenteRepository = stockComponenteRepository;
+		this.tareaStockUsoRepository = tareaStockUsoRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -115,6 +124,11 @@ public class ComponenteService {
 	 */
 	@Transactional
 	public void retirar(Long componenteId, String destino, String motivo) {
+		retirar(componenteId, destino, motivo, null);
+	}
+
+	@Transactional
+	public void retirar(Long componenteId, String destino, String motivo, String usuario) {
 		Componente componente = componenteRepository.findById(componenteId)
 				.orElseThrow(() -> new ComponenteNoEncontradoException(componenteId));
 		Long equipoId = componente.getEquipo().getId();
@@ -123,7 +137,7 @@ public class ComponenteService {
 		String serial = componente.getSerial();
 
 		if ("STOCK".equalsIgnoreCase(destino)) {
-			StockComponente stockItem = null;
+			StockComponente stockItem = buscarStockOriginal(componente).orElse(null);
 			if (org.springframework.util.StringUtils.hasText(serial)) {
 				java.util.List<StockComponente> existentes = stockComponenteRepository.findBySerialAndActivoTrue(serial);
 				if (!existentes.isEmpty()) {
@@ -158,6 +172,7 @@ public class ComponenteService {
 			auditoriaService.registrar("EQUIPOS", "RETIRAR_A_STOCK", "Equipo", equipoId,
 					"Intervención de taller: Se retiró " + tipoDesc + (serial != null ? " (S/N: " + serial + ")" : "") + " y volvió al Stock como DISPONIBLE."
 					+ (StringUtils.hasText(motivo) ? " Motivo: " + motivo.trim() : ""));
+			registrarDesvinculacionEnTarea(stockItem, usuario, motivo, equipoNombre);
 		} else if ("BAJA".equalsIgnoreCase(destino)) {
 			auditoriaService.registrar("EQUIPOS", "BAJA_COMPONENTE", "Equipo", equipoId,
 					"Intervención de taller: Se retiró y dio de baja por rotura/desperfecto: " + tipoDesc + (serial != null ? " (S/N: " + serial + ")" : "") + "."
@@ -179,6 +194,33 @@ public class ComponenteService {
 				detalleMov);
 
 		componenteRepository.delete(componente);
+	}
+
+	private Optional<StockComponente> buscarStockOriginal(Componente componente) {
+		Long stockId = extraerStockId(componente.getObservaciones());
+		if (stockId == null) {
+			return Optional.empty();
+		}
+		return stockComponenteRepository.findById(stockId);
+	}
+
+	private Long extraerStockId(String observaciones) {
+		if (!StringUtils.hasText(observaciones)) {
+			return null;
+		}
+		Matcher matcher = STOCK_ID_OBSERVACION.matcher(observaciones);
+		return matcher.find() ? Long.valueOf(matcher.group(1)) : null;
+	}
+
+	private void registrarDesvinculacionEnTarea(StockComponente stockItem, String usuario, String motivo, String equipoNombre) {
+		if (stockItem == null || stockItem.getId() == null) {
+			return;
+		}
+		tareaStockUsoRepository.findByStockComponenteIdOrderByCreadoEnDescIdDesc(stockItem.getId())
+				.forEach(uso -> uso.registrarDesvinculacion(
+						textoOpcional(usuario),
+						StringUtils.hasText(motivo) ? motivo.trim() : "Desvinculado del equipo",
+						equipoNombre));
 	}
 
 	private void liberarStockAsignadoPorSerial(Componente componente) {
@@ -222,13 +264,27 @@ public class ComponenteService {
 	 */
 	@Transactional
 	public ComponenteDetalle instalarDesdeStock(Long equipoId, Long stockComponenteId, String ubicacion) {
+		return instalarDesdeStock(equipoId, stockComponenteId, ubicacion, false, null);
+	}
+
+	@Transactional
+	public ComponenteDetalle instalarReservadoDesdeTarea(Long equipoId, Long stockComponenteId, String ubicacion, Long tareaId) {
+		return instalarDesdeStock(equipoId, stockComponenteId, ubicacion, true,
+				" reservado por tarea tecnica #" + tareaId);
+	}
+
+	private ComponenteDetalle instalarDesdeStock(Long equipoId, Long stockComponenteId, String ubicacion,
+			boolean permitirReservado, String origenReserva) {
 		Equipo equipo = equipoRepository.findById(equipoId)
 				.orElseThrow(() -> new EquipoNoEncontradoException(equipoId));
 		StockComponente stock = stockComponenteRepository.findById(stockComponenteId)
 				.orElseThrow(() -> new IllegalArgumentException("Componente de stock no encontrado: " + stockComponenteId));
 
-		if (stock.getEstado() != EstadoStockComponente.DISPONIBLE) {
-			throw new IllegalStateException("El componente de stock #" + stockComponenteId + " no está en estado DISPONIBLE.");
+		boolean estadoInstalable = stock.getEstado() == EstadoStockComponente.DISPONIBLE
+				|| (permitirReservado && stock.getEstado() == EstadoStockComponente.RESERVADO);
+		if (!estadoInstalable) {
+			String esperado = permitirReservado ? "DISPONIBLE o RESERVADO por tarea" : "DISPONIBLE";
+			throw new IllegalStateException("El componente de stock #" + stockComponenteId + " no esta en estado " + esperado + ".");
 		}
 
 		stock.asignar();
@@ -253,7 +309,8 @@ public class ComponenteService {
 				stock.getOrdenCompra(),
 				stock.getProveedor(),
 				StringUtils.hasText(ubicacion) ? ubicacion.trim() : stock.getUbicacion(),
-				"Instalado desde Stock (ID #" + stock.getId() + ")",
+				"Instalado desde Stock (ID #" + stock.getId() + ")"
+						+ (StringUtils.hasText(origenReserva) ? origenReserva : ""),
 				true);
 
 		Componente guardado = componenteRepository.save(componente);
@@ -261,7 +318,9 @@ public class ComponenteService {
 		auditoriaService.registrar("EQUIPOS", "INSTALAR_DESDE_STOCK", "Equipo", equipoId,
 				"Intervención de taller: Se instaló " + stock.getTipo() + " - " + stock.getDescripcion()
 				+ (stock.getSerial() != null ? " (S/N: " + stock.getSerial() + ")" : "")
-				+ " desde Stock (#" + stock.getId() + ") asignado a " + equipo.getNombre() + ".");
+				+ " desde Stock (#" + stock.getId() + ")"
+				+ (StringUtils.hasText(origenReserva) ? origenReserva : "")
+				+ " asignado a " + equipo.getNombre() + ".");
 
 		auditoriaService.registrarMovimientoAutomatico(
 				equipoId,

@@ -308,7 +308,7 @@ public class EquipoPageController {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para eliminar componentes.");
 		}
-		componenteService.eliminar(componenteId);
+		componenteService.retirar(componenteId, "STOCK", "Desvinculado desde ficha de equipo", userDetails.getUsername());
 		redirectAttributes.addAttribute("actualizado", "1");
 		return "redirect:/admin/equipos/" + equipoId;
 	}
@@ -328,7 +328,7 @@ public class EquipoPageController {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para editar componentes.");
 		}
-		componenteService.retirar(componenteId, destino, motivo);
+		componenteService.retirar(componenteId, destino, motivo, userDetails.getUsername());
 		redirectAttributes.addAttribute("actualizado", "1");
 		return "redirect:/admin/equipos/" + equipoId;
 	}
@@ -395,6 +395,15 @@ public class EquipoPageController {
 				.count();
 
 		BrujulaEquipo brujula = calcularBrujula(equipo, listaComponentes, tieneRelevamientoInicial, diferenciasCount);
+		var tareasEquipo = tareaTecnicaService.buscar(null, equipo.id(), null);
+		Map<Long, List<TareaTecnicaService.TareaComentarioDetalle>> comentariosPorTarea = tareasEquipo.stream()
+				.collect(Collectors.toMap(
+						TareaTecnicaService.TareaTecnicaDetalle::id,
+						tarea -> tareaTecnicaService.comentarios(tarea.id())));
+		Map<Long, List<TareaTecnicaService.TareaStockUsoDetalle>> stockPorTarea = tareasEquipo.stream()
+				.collect(Collectors.toMap(
+						TareaTecnicaService.TareaTecnicaDetalle::id,
+						tarea -> tareaTecnicaService.stockUsado(tarea.id())));
 
 		// =========================================================================================
 		// GESTIÓN DE HARDWARE: DISTINCIÓN ENTRE ACCIONES RÁPIDAS DE TALLER Y ÓRDENES DE ARMADO
@@ -463,6 +472,9 @@ public class EquipoPageController {
 		model.addAttribute("tieneRelevamientoInicial", tieneRelevamientoInicial);
 		model.addAttribute("diferenciasCount", diferenciasCount);
 		model.addAttribute("brujula", brujula);
+		model.addAttribute("tareasEquipo", tareasEquipo);
+		model.addAttribute("comentariosPorTarea", comentariosPorTarea);
+		model.addAttribute("stockPorTarea", stockPorTarea);
 		model.addAttribute("componenteForm", new ComponenteForm());
 		model.addAttribute("tiposComponente", TipoComponente.values());
 		model.addAttribute("origenesComponente", OrigenComponente.values());

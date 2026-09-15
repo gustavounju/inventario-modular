@@ -86,20 +86,28 @@ public class TareaAvisoService {
 
     @Transactional(readOnly = true)
     public LoteAvisos consultar(Long despuesDe, String username) {
+        return consultar(despuesDe, username, true);
+    }
+
+    @Transactional(readOnly = true)
+    public LoteAvisos consultar(Long despuesDe, String username, boolean incluirAvisosGenerales) {
         long actual = jdbc.queryForObject("SELECT ultimo_id FROM tareas_aviso_secuencia WHERE id = 1", Long.class);
         // Primer ingreso o base restaurada: establecer referencia, sin hacer sonar todo el historial.
         if (despuesDe == null || despuesDe > actual) {
             return new LoteAvisos(actual, List.of());
         }
+        String condicionDestinatario = incluirAvisosGenerales
+                ? "(destinatario_username IS NULL OR LOWER(destinatario_username) = LOWER(?))"
+                : "LOWER(destinatario_username) = LOWER(?)";
         List<Aviso> avisos = jdbc.query(
-                """
+                ("""
                 SELECT id, tarea_id, titulo, autor, tipo, destinatario_username, creado_en
                 FROM tareas_avisos
                 WHERE id > ?
-                  AND (destinatario_username IS NULL OR LOWER(destinatario_username) = LOWER(?))
+                  AND %s
                 ORDER BY id
                 LIMIT 100
-                """,
+                """).formatted(condicionDestinatario),
                 (rs, row) -> new Aviso(rs.getLong("id"), rs.getLong("tarea_id"), rs.getString("titulo"),
                         rs.getString("autor"), rs.getString("tipo"), rs.getString("destinatario_username"),
                         rs.getTimestamp("creado_en").toLocalDateTime()), despuesDe, username);

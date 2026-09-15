@@ -207,6 +207,7 @@ public class EquipoService {
 				command.activo(),
 				LocalDateTime.now(clock));
 		Equipo guardado = equipoRepository.save(equipo);
+		vincularTareasAbiertasDelUsuarioReportado(guardado);
 		if (auditoriaService != null && equipoExistente == null) {
 			auditoriaService.registrarMovimiento(
 					guardado.getId(),
@@ -218,6 +219,28 @@ public class EquipoService {
 					"Alta automática de equipo por script de relevamiento de telemetría.");
 		}
 		return toDetalle(guardado);
+	}
+
+	private void vincularTareasAbiertasDelUsuarioReportado(Equipo equipo) {
+		if (tareaTecnicaRepository == null || !StringUtils.hasText(equipo.getUltimoUsuario())
+				|| "Sin asignar".equalsIgnoreCase(equipo.getUltimoUsuario())
+				|| "PC-GENERICA".equalsIgnoreCase(equipo.getNombre())) {
+			return;
+		}
+		List<ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnica> tareas =
+				tareaTecnicaRepository.buscarAbiertasSinEquipoRealPorSolicitante(
+						equipo.getUltimoUsuario().trim(),
+						List.of(
+								ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.PENDIENTE,
+								ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.EN_PROCESO));
+		for (ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnica tarea : tareas) {
+			tarea.reasignarEquipo(equipo);
+		}
+		if (auditoriaService != null && !tareas.isEmpty()) {
+			auditoriaService.registrar("TAREAS", "VINCULAR_POR_SCRIPT", "Equipo", equipo.getId(),
+					"Script vinculo " + tareas.size() + " tarea(s) abierta(s) del solicitante "
+							+ equipo.getUltimoUsuario() + " al equipo " + equipo.getNombre() + ".");
+		}
 	}
 
 	@Transactional

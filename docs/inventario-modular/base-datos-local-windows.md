@@ -1,16 +1,16 @@
 # Base De Datos Local Windows
 
-Guia para preparar Inventario Modular en una PC Windows usando MySQL local.
-Este flujo aplica para trabajo local en el edificio y evita usar H2 como base de prueba
-principal.
+Guia para preparar Inventario Modular en una PC Windows con MySQL local como fallback.
+El contrato operativo actual es probar siempre MySQL remoto primero y usar MySQL local
+solo si el remoto no responde o no autentica.
 
 ## Alcance
 
-Estos pasos usan solo `127.0.0.1:3306`. No se conectan al servidor MySQL de produccion
-`MYSQL_INTERNO_IP` y no modifican datos reales.
+Estos pasos preparan `127.0.0.1:3306` como contingencia. El arranque normal intenta primero
+`MYSQL_INTERNO_IP:3306` y recien despues usa esta base local.
 
-Produccion sigue usando MySQL remoto mediante variables del servicio Ubuntu. Local sigue
-usando MySQL local por defecto.
+Produccion y trabajo siguen usando MySQL remoto mediante variables del servicio Ubuntu o del
+script local. No escribir credenciales reales en documentos, commits ni chat.
 
 ## Datos locales
 
@@ -77,7 +77,16 @@ Con la base local preparada:
 .\scripts\start-local-ad.ps1
 ```
 
-El script pide:
+El script prueba primero MySQL remoto. Si responde, pide:
+
+```text
+Usuario MySQL REMOTO [inventario_modular_app]
+Clave MySQL REMOTO
+Usuario lector AD
+Clave AD
+```
+
+Si MySQL remoto no responde o no autentica, recien pide:
 
 ```text
 Usuario MySQL LOCAL [inventario_local]
@@ -85,6 +94,9 @@ Clave MySQL LOCAL
 Usuario lector AD
 Clave AD
 ```
+
+Si Active Directory no responde, por ejemplo en casa sin VPN/red interna, el script no se
+corta: arranca con `INVENTARIO_LDAP_ENABLED=false` y usa los usuarios locales de la base.
 
 Para AD local en el trabajo usa:
 
@@ -117,14 +129,16 @@ La segunda URL es la que debe probarse desde el celular.
 
 ## Configuracion aplicada
 
-El perfil `local` usa MySQL local por defecto:
+El perfil `local` usa MySQL remoto como primario:
 
 ```properties
-inventario.datasource.primary.url=jdbc:mysql://127.0.0.1:3306/inventario_modular
-inventario.datasource.primary.username=inventario_local
+inventario.datasource.primary.url=jdbc:mysql://MYSQL_INTERNO_IP:3306/inventario_modular
+inventario.datasource.primary.username=inventario_modular_app
+inventario.datasource.fallback.url=jdbc:mysql://127.0.0.1:3306/inventario_modular
+inventario.datasource.fallback.username=inventario_local
 ```
 
-Para produccion, la unidad systemd o el archivo de entorno del servidor debe definir:
+La unidad systemd o el archivo de entorno del servidor debe definir:
 
 ```text
 SPRING_PROFILES_ACTIVE=local

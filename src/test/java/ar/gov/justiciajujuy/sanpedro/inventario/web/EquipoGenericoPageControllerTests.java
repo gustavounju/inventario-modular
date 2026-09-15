@@ -72,6 +72,23 @@ class EquipoGenericoPageControllerTests {
 
 	@Test
 	@Sql(statements = {
+			"INSERT INTO tareas_stock_usos (id, tarea_id, stock_componente_id, registrado_por, observacion) VALUES (10, 1, 1, 'admin.local', 'Cambio preventivo')"
+	})
+	void fichaDeEquipoRealMuestraTareasComentariosYComponentes() throws Exception {
+		mockMvc.perform(get("/admin/equipos/1#tab-tareas").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(view().name("admin/equipo-detalle"))
+			.andExpect(content().string(containsString("Tareas del equipo")))
+			.andExpect(content().string(containsString("Tareas asignadas a este equipo")))
+			.andExpect(content().string(containsString("Revisar mantenimiento preventivo")))
+			.andExpect(content().string(containsString("Comentario inicial de seguimiento.")))
+			.andExpect(content().string(containsString("Ver componentes vinculados (1)")))
+			.andExpect(content().string(containsString("Memoria RAM nueva para armado")))
+			.andExpect(content().string(containsString("Cambio preventivo")));
+	}
+
+	@Test
+	@Sql(statements = {
 			"INSERT INTO equipos (id, nombre, ultimo_usuario, fuero, ubicacion, sistema_operativo, monitoreo, activo) VALUES (3, 'PC-GENERICA', 'Sin asignar', 'Sin fuero informado', 'Mesa de ayuda', 'No aplica', 'AUXILIAR_TAREAS', TRUE)",
 			"INSERT INTO tareas_tecnicas (id, equipo_id, titulo, descripcion, solicitante_username, solicitante_nombre, solicitante_fuero, estado, prioridad, responsable, creado_por) VALUES (2, 3, 'Reclamo sin PC identificada', 'El usuario no conoce el nombre del equipo.', 'mesa.entrada', 'Mesa de Entrada', 'Mesa de ayuda', 'PENDIENTE', 'ALTA', 'admin.local', 'admin.local')"
 	})

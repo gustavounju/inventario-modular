@@ -25,8 +25,9 @@ formulario, para no perder lo escrito. Guardar o volver a abrir el visor reanuda
 
 El movil usa las operaciones y autorizaciones existentes de `/api/v1/tareas-tecnicas`.
 Permite crear, buscar por tarea/usuario/equipo, tomar, editar, comentar, finalizar,
-cancelar y eliminar segun los permisos existentes. Las tareas creadas por un tecnico
-quedan a su cargo; un administrador puede dejarlas libres para que alguien las tome.
+cancelar y eliminar segun los permisos existentes. El responsable es opcional al crear:
+si se deja vacio, todos los tecnicos y administradores moviles reciben el aviso; si se
+elige un tecnico, el aviso queda dirigido solo a ese usuario.
 El estado visible de una tarea abierta es Pendiente, aunque internamente se conserva
 EN_PROCESO para las tareas tomadas. Finalizadas y canceladas se distinguen.
 
@@ -34,10 +35,17 @@ El listado movil muestra una vista previa de hasta dos comentarios por tarea. La
 hace despues de pintar la lista para que la pantalla siga respondiendo rapido en celulares
 con Wi-Fi institucional irregular.
 
-El formulario movil de nueva tarea evita pedir datos repetidos al tecnico: solo muestra
-problema y prioridad. El usuario logueado queda como solicitante/dueno operativo y el
-cliente genera un titulo interno corto desde el problema para mantener el contrato de
-`/api/v1/tareas-tecnicas`.
+El formulario movil de nueva tarea permite cargar solicitante, problema, prioridad y
+responsable opcional. El solicitante puede buscarse contra Active Directory o escribirse
+manualmente cuando LDAP no esta disponible. El responsable se elige con autocompletado
+de tecnicos locales y usuarios de AD; el cliente genera un titulo interno corto desde el
+problema para mantener el contrato de `/api/v1/tareas-tecnicas`.
+
+El rol `TELEFONISTA` identifica a mesa de ayuda telefonica. Puede crear tareas, comentar
+siempre sus tareas, editar una tarea propia antes de que un tecnico la tome y borrar una
+tarea propia si nadie la tomo. En el celular no ve el filtro **Mis tareas** ni tareas
+finalizadas, porque no opera trabajos tecnicos. Los tecnicos y administradores moviles si
+pueden tomar, finalizar, cancelar y operar stock segun permisos.
 
 Cuando LDAP esta habilitado, el backend valida que el `solicitanteUsername` exista en
 Active Directory antes de crear o editar una tarea. Se aceptan formatos `usuario`,
@@ -70,6 +78,10 @@ destinatario opcional. Una creacion de tarea queda como aviso general. Un coment
 en tarea sin responsable queda como aviso general; un comentario en tarea tomada queda
 dirigido al responsable.
 
+La migracion `V25__rol_telefonista_tareas_movil.sql` agrega el rol `TELEFONISTA` con
+permiso de creacion de tareas. Los perfiles `local` y `casa` la ejecutan desde su SQL
+idempotente porque no usan Flyway en el arranque de laboratorio.
+
 Ejemplo de variable en la unidad systemd existente, usando la ruta real del archivo:
 
 ```ini
@@ -91,6 +103,10 @@ para autocompletar solicitantes. Requiere sesion autenticada y permiso `TAREAS/V
 la respuesta marca `disponible=false` si LDAP esta deshabilitado o no se pudo consultar.
 La validacion final igualmente ocurre al guardar la tarea, no solo en el autocompletado.
 
+`GET /api/v1/movil/tecnicos-asignables?q=texto` devuelve candidatos para responsable
+opcional. Primero incluye tecnicos/administradores locales habilitados y luego agrega
+coincidencias de Active Directory cuando LDAP responde.
+
 `GET /api/v1/movil/avisos` inicia el seguimiento en el ultimo cursor, sin historial.
 
 `GET /api/v1/movil/avisos?despuesDe=123` devuelve hasta 100 avisos posteriores y
@@ -102,11 +118,12 @@ de la APK publicada, junto con `version`. Requiere usuario autorizado, pero no p
 `TAREAS/VER`, para permitir diagnosticar una instalacion antes de resolver permisos del
 modulo.
 
-Los avisos cubren creacion de tareas y comentarios. La creacion y los comentarios en
-tareas sin responsable se anuncian a todos los tecnicos habilitados; los comentarios
-en tareas tomadas se dirigen al responsable. No hay aun seleccion de destinatarios por
-sede ni confirmacion de lectura por tecnico. Las operaciones posteriores de la tarea se
-siguen consultando por la API existente.
+Los avisos cubren creacion de tareas, asignacion de responsable y comentarios. La
+creacion y los comentarios en tareas sin responsable se anuncian a todos los tecnicos y
+administradores moviles habilitados; la creacion asignada, la asignacion posterior y los
+comentarios en tareas tomadas se dirigen al responsable. No hay aun seleccion de
+destinatarios por sede ni confirmacion de lectura por tecnico. Las operaciones
+posteriores de la tarea se siguen consultando por la API existente.
 
 Desde la APK Android se habilita **Dictar problema** para abrir el reconocimiento de voz
 del telefono y completar la descripcion. No hay consulta a IA externa; la voz solo
@@ -161,3 +178,11 @@ Prueba posterior de validacion AD de solicitantes:
 ```
 
 Resultado del 14 de septiembre de 2026: 27 pruebas, 0 fallos, 0 errores.
+
+Prueba completa posterior al contrato `TELEFONISTA`:
+
+```powershell
+.\mvnw.cmd test
+```
+
+Resultado del 14 de septiembre de 2026: 143 pruebas, 0 fallos, 0 errores.

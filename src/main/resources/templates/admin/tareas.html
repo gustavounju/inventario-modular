@@ -9,7 +9,7 @@
 <body>
 	<main class="shell shell-wide">
 		<section class="status-panel admin-users-panel" aria-labelledby="tareas-title">
-			<header th:replace="~{admin/nav :: topbar('Módulo operativo', 'Tareas Técnicas', 'tareas')}"></header>
+			<header th:replace="~{admin/nav :: topbar('', 'Tareas Técnicas', 'tareas')}"></header>
 
 			<!-- Barra de Acciones Rápidas y Navegación Cruzada -->
 			<nav class="quick-nav-bar" aria-label="Navegación rápida de tareas">
@@ -36,56 +36,6 @@
 
 			<!-- Mensaje de Éxito -->
 			<p class="success-message" th:if="${creado}">Tarea técnica actualizada o registrada correctamente.</p>
-
-			<!-- 🚀 GUÍA COMPACTA Y CLARA: Ciclo de Resolución Técnica -->
-			<section class="workflow-banner">
-				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-					<div style="display: flex; align-items: center; gap: 12px;">
-						<span style="font-size: 1.6rem;">🔧</span>
-						<div>
-							<strong style="font-size: 1.05rem; display: block;">Mesa de Ayuda Técnica: Circuito de resolución paso a paso</strong>
-							<span style="font-size: 0.85rem;">Flujo operativo para soporte, reparaciones y mantenimiento de equipamiento judicial:</span>
-						</div>
-					</div>
-					<span class="authorization-badge is-authorized">SOPORTE TÉCNICO</span>
-				</div>
-
-				<!-- 3 Pasos del Circuito -->
-				<div class="workflow-steps-grid">
-					<!-- Paso 1 -->
-					<div class="workflow-step-card">
-						<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-							<span class="step-badge" style="background: #2563eb; color: #fff; width: 22px; height: 22px; font-size: 0.8rem;">1</span>
-							<strong style="font-size: 0.9rem;">Apertura e Incidente</strong>
-						</div>
-						<p>
-							Registra el desperfecto, vincula la PC afectada y asigna la prioridad (Baja, Media o Alta).
-						</p>
-					</div>
-
-					<!-- Paso 2 -->
-					<div class="workflow-step-card">
-						<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-							<span class="step-badge" style="background: #0284c7; color: #fff; width: 22px; height: 22px; font-size: 0.8rem;">2</span>
-							<strong style="font-size: 0.9rem;">Intervención y Bitácora</strong>
-						</div>
-						<p>
-							El técnico a cargo añade comentarios de avance sobre las acciones realizadas en la máquina.
-						</p>
-					</div>
-
-					<!-- Paso 3 -->
-					<div class="workflow-step-card" style="border-left: 3px solid #22c55e;">
-						<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-							<span class="step-badge" style="background: #16a34a; color: #fff; width: 22px; height: 22px; font-size: 0.8rem;">3</span>
-							<strong style="font-size: 0.9rem; color: #4ade80;">Cierre y Conformidad</strong>
-						</div>
-						<p>
-							Cambio de estado a <code>CERRADA</code> con detalle del trabajo finalizado para archivo histórico.
-						</p>
-					</div>
-				</div>
-			</section>
 
 			<!-- Pestañas de Navegación Limpias -->
 			<ul class="subnav-tabs" role="tablist">
@@ -172,26 +122,63 @@
 											<span class="table-subtext" th:each="comentario : ${comentariosPorTarea[tarea.id]}"
 													th:text="${comentario.autor + ': ' + comentario.comentario}" style="display: block; margin-bottom: 2px;">admin.local: Se revisó cableado</span>
 										</div>
-										<div class="comment-thread" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
-								     style="margin-top: 8px; border-left: 2px solid #16a34a; padding-left: 8px;">
-									<div th:each="uso : ${stockPorTarea[tarea.id]}" style="margin-bottom: 6px;">
-										<span class="table-subtext"
-												th:text="'🔩 #' + ${uso.stockComponenteId} + ' ' + ${uso.tipo} + ' — ' + ${uso.descripcion} + (${uso.serial} != null ? ' (S/N: ' + ${uso.serial} + ')' : '')"
-												style="display: block; color: #4ade80; font-weight: 600;">Stock usado</span>
-										<!-- Botón instalar: solo si hay equipo real (no PC genérica) y el stock está RESERVADO -->
-										<form th:if="${puedeEditarTareas and tarea.equipoId != null and equipoGenericoId != tarea.equipoId}"
-											  th:action="@{/admin/tareas/{id}/stock/{usoId}/instalar(id=${tarea.id},usoId=${uso.id})}"
-											  method="post" style="display:inline; margin-top:3px;"
-											  onsubmit="return confirm('¿Instalar esta pieza en el equipo ' + this.dataset.equipo + '? El stock pasará a ASIGNADO y se creará un componente oficial en el equipo.');"
-											  th:attr="data-equipo=${tarea.equipoNombre}">
-											<button type="submit" class="secondary-action"
-													style="font-size:0.75rem; padding:3px 8px; background:#0c4a6e; color:#7dd3fc; border:1px solid #0369a1;"
-													title="Instalar esta pieza en el equipo de la tarea">
-												📦 Instalar en equipo
-											</button>
-										</form>
-									</div>
-								</div>
+										<div class="task-stock-summary" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}">
+											<button type="button" class="secondary-action task-stock-open"
+													th:onclick="|document.getElementById('stock-modal-list-${tarea.id}').showModal()|"
+													th:text="'Ver stock (' + ${#lists.size(stockPorTarea[tarea.id])} + ')'">Ver stock</button>
+										</div>
+										<dialog class="modal-dialog task-stock-modal" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+												th:id="|stock-modal-list-${tarea.id}|">
+											<div class="modal-content">
+												<header class="task-stock-modal-header">
+													<div>
+														<strong th:text="'Tarea #' + ${tarea.id} + ' - ' + ${tarea.titulo}">Tarea</strong>
+														<span th:text="${tarea.equipoNombre ?: 'PC generica'}">Equipo</span>
+													</div>
+													<button type="button" class="secondary-action" th:onclick="|document.getElementById('stock-modal-list-${tarea.id}').close()|">Cerrar</button>
+												</header>
+												<section class="task-stock-ledger" aria-label="Movimientos de stock en tarea">
+													<header class="task-stock-ledger-header">
+														<span>Movimientos de stock</span>
+														<small th:text="${#lists.size(stockPorTarea[tarea.id])} + ' registros'">0 registros</small>
+													</header>
+													<article th:each="uso : ${stockPorTarea[tarea.id]}" class="task-stock-item" th:classappend="${uso.estadoCssClass()}">
+														<div class="task-stock-topline">
+															<span class="task-stock-state" th:text="${uso.etiquetaEstadoTarea()}">Estado</span>
+															<span class="task-stock-date" th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">14/09/2026 20:38</span>
+														</div>
+														<div class="task-stock-body">
+															<strong th:text="'#' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">#75 - TECLADO</strong>
+															<span th:text="${uso.descripcion}">Descripcion</span>
+														</div>
+														<div class="task-stock-meta">
+															<span th:text="${uso.estadoStock}">ASIGNADO</span>
+															<span th:if="${uso.serial != null}" th:text="'Serial: ' + ${uso.serial}">Serial</span>
+															<span th:if="${uso.observacion != null}" th:text="'Nota: ' + ${uso.observacion}">Nota</span>
+														</div>
+														<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn != null}"
+																th:text="|Asignado a ${uso.equipoDesvinculadoTexto()} y luego desvinculado por ${uso.usuarioDesvinculadoTexto()} el ${#temporals.format(uso.desvinculadoEn, 'dd/MM/yyyy HH:mm')}. Motivo: ${uso.motivoDesvinculacionTexto()}|">Componente desvinculado</p>
+														<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn == null}"
+																th:text="'Este componente ya no está instalado/asignado al equipo de la tarea; volvió a stock como DISPONIBLE.'">Componente desvinculado</p>
+												<form class="inline-action-form"
+													  th:if="${puedeEditarTareas and uso.estadoStock == 'RESERVADO' and !#lists.isEmpty(equipos)}"
+													  th:action="@{/admin/tareas/{id}/stock/{usoStockId}/instalar(id=${tarea.id},usoStockId=${uso.id})}"
+													  method="post"
+													  style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px;">
+													<select name="equipoId" aria-label="Equipo destino" required style="font-size: 0.78rem; padding: 4px;">
+														<option value="">Instalar en equipo</option>
+														<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
+													</select>
+													<input name="ubicacion" maxlength="120" placeholder="Ranura o ubicación" style="font-size: 0.78rem; padding: 4px;">
+													<button type="submit" class="secondary-action"
+															style="font-size:0.75rem; padding:3px 8px; background:#0c4a6e; color:#7dd3fc; border:1px solid #0369a1;">
+															Instalar
+													</button>
+												</form>
+													</article>
+												</section>
+											</div>
+										</dialog>
 									</td>
 									<td data-label="Solicitante">
 										<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Juan Pérez</strong>

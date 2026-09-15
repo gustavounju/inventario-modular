@@ -18,6 +18,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.AgregarComentarioTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.CambiarEstadoTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.GuardarTareaTecnicaCommand;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.InstalarStockReservadoCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.RegistrarUsoStockCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaComentarioDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaStockUsoDetalle;
@@ -206,16 +207,19 @@ public class TareaTecnicaPageController {
 		return redireccionTareas(origen);
 	}
 
-	@PostMapping("/admin/tareas/{id}/stock/{usoId}/instalar")
-	public String instalarEnEquipo(
+	@PostMapping("/admin/tareas/{id}/stock/{usoStockId}/instalar")
+	public String instalarStockReservado(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
-			@PathVariable Long usoId,
+			@PathVariable Long usoStockId,
+			@RequestParam Long equipoId,
+			@RequestParam(required = false) String ubicacion,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
 		exigirAdministradorTareas(userDetails);
 		exigirTareaPropiaOAdministrador(userDetails, id);
-		tareaTecnicaService.instalarEnEquipo(id, usoId, userDetails.getUsername());
+		tareaTecnicaService.instalarStockReservadoEnEquipo(id, usoStockId,
+				new InstalarStockReservadoCommand(equipoId, ubicacion, userDetails.getUsername()));
 		redirectAttributes.addAttribute("creado", "1");
 		return redireccionTareas(origen);
 	}

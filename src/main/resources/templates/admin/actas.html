@@ -9,7 +9,7 @@
 <body>
 	<main class="shell shell-wide">
 		<section class="status-panel admin-users-panel" aria-labelledby="actas-title">
-			<header th:replace="~{admin/nav :: topbar('Módulo funcional', 'Actas y Documentación Oficial', 'actas')}"></header>
+			<header th:replace="~{admin/nav :: topbar('', 'Actas y Documentación Oficial', 'actas')}"></header>
 
 			<!-- Barra de Acciones Rápidas y Navegación Contextual -->
 			<nav class="quick-nav-bar" aria-label="Navegación rápida de actas">
@@ -48,63 +48,6 @@
 					</div>
 				</div>
 			</div>
-
-			<!-- Stepper Visual del Circuito Documental de Actas (3 Pasos) -->
-			<section class="workflow-stepper" aria-label="Circuito Documental de Actas">
-				<!-- Paso 1: Selección y Tipo -->
-				<div class="workflow-step" th:classappend="${totalActas > 0} ? ' is-done' : ' is-current'">
-					<div class="step-header">
-						<span class="step-badge">1</span>
-						<span class="authorization-badge" th:classappend="${totalActas > 0} ? ' is-authorized' : ' is-pending'"
-							  th:text="${totalActas > 0} ? 'ORIGEN DEFINIDO ✅' : 'PENDIENTE ⚠️'">
-							PENDIENTE
-						</span>
-					</div>
-					<h3 class="step-title">1. Selección y Tipo</h3>
-					<p class="step-desc">
-						Define el tipo de movimiento (ENTREGA, DEVOLUCIÓN, TRASLADO o BAJA) y el equipo o bienes involucrados.
-					</p>
-					<div class="step-action-area">
-						<button type="button" class="primary-action" th:if="${puedeEditarActas}" onclick="switchTab('nueva')" style="width: 100%; font-size: 0.85rem; padding: 7px 10px;">
-							➕ Redactar Nueva Acta
-						</button>
-					</div>
-				</div>
-
-				<!-- Paso 2: Intervinientes y Fuero -->
-				<div class="workflow-step" th:classappend="${emitidasCount > 0} ? ' is-done' : ''">
-					<div class="step-header">
-						<span class="step-badge">2</span>
-						<span class="count-badge" th:text="${emitidasCount} + ' emitidas'">0 emitidas</span>
-					</div>
-					<h3 class="step-title">2. Responsables y Destino</h3>
-					<p class="step-desc">
-						Identifica el funcionario que entrega (Área Técnica) y el agente judicial que recibe en destino.
-					</p>
-					<div class="step-action-area">
-						<button type="button" class="secondary-action" onclick="switchTab('listado')" style="width: 100%; font-size: 0.85rem; padding: 7px 10px;">
-							👥 Ver Intervinientes
-						</button>
-					</div>
-				</div>
-
-				<!-- Paso 3: Emisión y Descarga PDF -->
-				<div class="workflow-step">
-					<div class="step-header">
-						<span class="step-badge">3</span>
-						<span class="authorization-badge is-authorized">DOCUMENTO OFICIAL 🖨️</span>
-					</div>
-					<h3 class="step-title">3. Emisión y Descarga PDF</h3>
-					<p class="step-desc">
-						Generación automática del PDF institucional listo para impresión, firma hológrafa y archivo.
-					</p>
-					<div class="step-action-area">
-						<button type="button" class="secondary-action" onclick="switchTab('listado')" style="width: 100%; font-size: 0.85rem; padding: 7px 10px;">
-							📥 Descargar Actas en PDF
-						</button>
-					</div>
-				</div>
-			</section>
 
 			<!-- Resumen Estadístico de Actas -->
 			<section class="summary-grid" aria-label="Resumen rápido de actas">

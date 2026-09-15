@@ -36,6 +36,18 @@ public class TareaStockUso {
 	@Column(length = 500)
 	private String observacion;
 
+	@Column(name = "desvinculado_en")
+	private LocalDateTime desvinculadoEn;
+
+	@Column(name = "desvinculado_por", length = 120)
+	private String desvinculadoPor;
+
+	@Column(name = "desvinculacion_motivo", length = 500)
+	private String desvinculacionMotivo;
+
+	@Column(name = "desvinculado_equipo_nombre", length = 180)
+	private String desvinculadoEquipoNombre;
+
 	@CreationTimestamp
 	@Column(name = "creado_en", nullable = false, updatable = false)
 	private LocalDateTime creadoEn;
@@ -55,5 +67,16 @@ public class TareaStockUso {
 	public StockComponente getStockComponente() { return stockComponente; }
 	public String getRegistradoPor() { return registradoPor; }
 	public String getObservacion() { return observacion; }
+	public LocalDateTime getDesvinculadoEn() { return desvinculadoEn; }
+	public String getDesvinculadoPor() { return desvinculadoPor; }
+	public String getDesvinculacionMotivo() { return desvinculacionMotivo; }
+	public String getDesvinculadoEquipoNombre() { return desvinculadoEquipoNombre; }
 	public LocalDateTime getCreadoEn() { return creadoEn; }
+
+	public void registrarDesvinculacion(String usuario, String motivo, String equipoNombre) {
+		this.desvinculadoEn = LocalDateTime.now();
+		this.desvinculadoPor = usuario;
+		this.desvinculacionMotivo = motivo;
+		this.desvinculadoEquipoNombre = equipoNombre;
+	}
 }

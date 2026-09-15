@@ -231,6 +231,10 @@ CREATE TABLE IF NOT EXISTS tareas_stock_usos (
   stock_componente_id BIGINT NOT NULL,
   registrado_por VARCHAR(120) NOT NULL,
   observacion VARCHAR(500),
+  desvinculado_en TIMESTAMP,
+  desvinculado_por VARCHAR(120),
+  desvinculacion_motivo VARCHAR(500),
+  desvinculado_equipo_nombre VARCHAR(180),
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

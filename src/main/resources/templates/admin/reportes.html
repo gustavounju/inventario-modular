@@ -9,7 +9,7 @@
 <body>
 	<main class="shell shell-wide">
 		<section class="status-panel admin-users-panel" aria-labelledby="reportes-title">
-			<header th:replace="~{admin/nav :: topbar('Módulo transversal', 'Reportes y Exportaciones', 'reportes')}"></header>
+			<header th:replace="~{admin/nav :: topbar('', 'Reportes y Exportaciones', 'reportes')}"></header>
 
 			<!-- Barra de Acciones Rápidas y Navegación Cruzada -->
 			<nav class="quick-nav-bar" aria-label="Navegación rápida de reportes">
@@ -25,60 +25,7 @@
 						📦 Stock
 					</a>
 				</div>
-				<div class="quick-nav-group">
-					<span class="count-badge" th:if="${puedeExportarReportes}">Descargas Habilitadas</span>
-				</div>
 			</nav>
-
-			<!-- 🚀 GUÍA COMPACTA Y CLARA: Informes y Auditoría -->
-			<section class="workflow-banner">
-				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-					<div style="display: flex; align-items: center; gap: 12px;">
-						<span style="font-size: 1.6rem;">📊</span>
-						<div>
-							<strong style="font-size: 1.05rem; display: block;">Centro de Reportes: Información ejecutiva y planillas</strong>
-							<span style="font-size: 0.85rem;">Supervisión global del inventario y exportación directa para auditoría judicial o contable:</span>
-						</div>
-					</div>
-					<span class="authorization-badge is-authorized">REPORTES OFICIALES</span>
-				</div>
-
-				<!-- 3 Pasos del Módulo -->
-				<div class="workflow-steps-grid">
-					<!-- Paso 1 -->
-					<div class="workflow-step-card">
-						<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-							<span class="step-badge" style="background: #2563eb; color: #fff; width: 22px; height: 22px; font-size: 0.8rem;">1</span>
-							<strong style="font-size: 0.9rem;">Métricas Consolidadas</strong>
-						</div>
-						<p>
-							Visualiza en vivo la cantidad de computadoras, muebles, bienes patrimoniales, actas y tareas abiertas.
-						</p>
-					</div>
-
-					<!-- Paso 2 -->
-					<div class="workflow-step-card">
-						<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-							<span class="step-badge" style="background: #0284c7; color: #fff; width: 22px; height: 22px; font-size: 0.8rem;">2</span>
-							<strong style="font-size: 0.9rem;">Filtrado por Dependencia</strong>
-						</div>
-						<p>
-							Filtra por fuero, custodio o juzgado para obtener planillas acotadas a una secretaría o sede.
-						</p>
-					</div>
-
-					<!-- Paso 3 -->
-					<div class="workflow-step-card" style="border-left: 3px solid #22c55e;">
-						<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-							<span class="step-badge" style="background: #16a34a; color: #fff; width: 22px; height: 22px; font-size: 0.8rem;">3</span>
-							<strong style="font-size: 0.9rem; color: #4ade80;">Descarga Inmediata en CSV</strong>
-						</div>
-						<p>
-							Exporta archivos livianos listos para abrir en Excel o enviar a superintendencia y administración.
-						</p>
-					</div>
-				</div>
-			</section>
 
 			<!-- Pestañas de Navegación Limpias -->
 			<ul class="subnav-tabs" role="tablist">

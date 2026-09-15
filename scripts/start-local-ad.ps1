@@ -1,9 +1,13 @@
 param(
     [string]$ServerPort = "8081",
-    [string]$MysqlHost = "127.0.0.1",
-    [string]$MysqlPort = "3306",
-    [string]$MysqlDatabase = "inventario_modular",
-    [string]$MysqlDefaultUser = "inventario_local",
+    [string]$RemoteMysqlHost = "MYSQL_INTERNO_IP",
+    [string]$RemoteMysqlPort = "3306",
+    [string]$RemoteMysqlDatabase = "inventario_modular",
+    [string]$RemoteMysqlDefaultUser = "inventario_modular_app",
+    [string]$LocalMysqlHost = "127.0.0.1",
+    [string]$LocalMysqlPort = "3306",
+    [string]$LocalMysqlDatabase = "inventario_modular",
+    [string]$LocalMysqlDefaultUser = "inventario_local",
     [string]$LdapUrl = "ldap://10.15.0.41:389",
     [string]$LdapDomain = "podjudsp.local",
     [string]$LdapBaseDn = "DC=podjudsp,DC=local",
@@ -69,54 +73,86 @@ function Test-MysqlLogin {
 }
 
 Write-Host "Inventario Modular local + Active Directory" -ForegroundColor Cyan
-Write-Host "Base de datos: MySQL local (${MysqlHost}:$MysqlPort/$MysqlDatabase), sin tocar MySQL de produccion."
+Write-Host "Base de datos: primero MySQL remoto (${RemoteMysqlHost}:$RemoteMysqlPort/$RemoteMysqlDatabase); fallback MySQL local (${LocalMysqlHost}:$LocalMysqlPort/$LocalMysqlDatabase)."
 Write-Host "LDAP: $LdapUrl / $LdapDomain"
 Write-Host "LDAP base login: $LdapBaseDn"
 Write-Host "LDAP base busqueda usuarios: $LdapUserSearchBase"
 Write-Host ""
-
-$ldapUri = [Uri]$LdapUrl
-$ldapPort = if ($ldapUri.Port -gt 0) { $ldapUri.Port } else { 389 }
-$ldapReachable = Test-NetConnection -ComputerName $ldapUri.Host -Port $ldapPort -InformationLevel Quiet
-if (-not $ldapReachable) {
-    throw "No se puede conectar a Active Directory en $($ldapUri.Host):$ldapPort. Revise red, VPN, DNS o firewall."
-}
 
 $mysqlExe = Find-MysqlExe
 if (-not $mysqlExe) {
     throw "No encontre mysql.exe para validar credenciales MySQL. Ejecute primero .\scripts\setup-local-mysql.ps1."
 }
 
-$mysqlOk = $false
-for ($attempt = 1; $attempt -le 3 -and -not $mysqlOk; $attempt++) {
-    $mysqlUser = Read-Host -Prompt "Usuario MySQL LOCAL [$MysqlDefaultUser]"
-    if ([string]::IsNullOrWhiteSpace($mysqlUser)) {
-        $mysqlUser = $MysqlDefaultUser
-    }
-    $mysqlPassword = Read-SecretPlain -Prompt "Clave MySQL LOCAL para $mysqlUser"
-    $mysqlOk = Test-MysqlLogin $mysqlExe $MysqlHost $MysqlPort $MysqlDatabase $mysqlUser $mysqlPassword
-    if (-not $mysqlOk) {
-        Write-Host "MySQL rechazo ese usuario o clave para $MysqlDatabase. Reintente o ejecute .\scripts\setup-local-mysql.ps1." -ForegroundColor Yellow
-    }
-}
-if (-not $mysqlOk) {
-    throw "No se pudo validar MySQL local. No se arranca la app hasta corregir usuario/clave/base."
-}
-Write-Host "OK   MySQL local valido para $mysqlUser" -ForegroundColor Green
+$remoteJdbcUrl = "jdbc:mysql://$RemoteMysqlHost`:$RemoteMysqlPort/$RemoteMysqlDatabase`?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Argentina/Buenos_Aires"
+$localJdbcUrl = "jdbc:mysql://$LocalMysqlHost`:$LocalMysqlPort/$LocalMysqlDatabase`?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Argentina/Buenos_Aires"
 
-$ldapUser = Read-Host -Prompt "Usuario lector AD (usuario@podjudsp.local o PODJUDSP\usuario)"
-if ($ldapUser -notmatch "[@\\]") {
-    $ldapUser = "$ldapUser@$LdapDomain"
+$remoteReachable = Test-NetConnection -ComputerName $RemoteMysqlHost -Port $RemoteMysqlPort -InformationLevel Quiet -WarningAction SilentlyContinue
+$remoteOk = $false
+$remoteMysqlUser = $RemoteMysqlDefaultUser
+$remoteMysqlPassword = ""
+if ($remoteReachable) {
+    Write-Host "OK   MySQL remoto responde en ${RemoteMysqlHost}:$RemoteMysqlPort" -ForegroundColor Green
+    for ($attempt = 1; $attempt -le 3 -and -not $remoteOk; $attempt++) {
+        $remoteMysqlUser = Read-Host -Prompt "Usuario MySQL REMOTO [$RemoteMysqlDefaultUser]"
+        if ([string]::IsNullOrWhiteSpace($remoteMysqlUser)) {
+            $remoteMysqlUser = $RemoteMysqlDefaultUser
+        }
+        $remoteMysqlPassword = Read-SecretPlain -Prompt "Clave MySQL REMOTO para $remoteMysqlUser"
+        $remoteOk = Test-MysqlLogin $mysqlExe $RemoteMysqlHost $RemoteMysqlPort $RemoteMysqlDatabase $remoteMysqlUser $remoteMysqlPassword
+        if (-not $remoteOk) {
+            Write-Host "MySQL remoto rechazo ese usuario o clave para $RemoteMysqlDatabase. Reintente." -ForegroundColor Yellow
+        }
+    }
+} else {
+    Write-Host "AVISO MySQL remoto no responde en ${RemoteMysqlHost}:$RemoteMysqlPort. Se probara MySQL local." -ForegroundColor Yellow
 }
-$ldapPassword = Read-SecretPlain -Prompt "Clave AD para $ldapUser"
+
+$localOk = $false
+$localMysqlUser = $LocalMysqlDefaultUser
+$localMysqlPassword = ""
+if (-not $remoteOk) {
+    for ($attempt = 1; $attempt -le 3 -and -not $localOk; $attempt++) {
+        $localMysqlUser = Read-Host -Prompt "Usuario MySQL LOCAL [$LocalMysqlDefaultUser]"
+        if ([string]::IsNullOrWhiteSpace($localMysqlUser)) {
+            $localMysqlUser = $LocalMysqlDefaultUser
+        }
+        $localMysqlPassword = Read-SecretPlain -Prompt "Clave MySQL LOCAL para $localMysqlUser"
+        $localOk = Test-MysqlLogin $mysqlExe $LocalMysqlHost $LocalMysqlPort $LocalMysqlDatabase $localMysqlUser $localMysqlPassword
+        if (-not $localOk) {
+            Write-Host "MySQL local rechazo ese usuario o clave para $LocalMysqlDatabase. Reintente o ejecute .\scripts\setup-local-mysql.ps1." -ForegroundColor Yellow
+        }
+    }
+}
+if (-not $remoteOk -and -not $localOk) {
+    throw "No se pudo validar MySQL remoto ni MySQL local. No se arranca la app hasta corregir red, usuario, clave o base."
+}
+$activeDbLabel = if ($remoteOk) { "remoto" } else { "local" }
+Write-Host "OK   MySQL $activeDbLabel valido" -ForegroundColor Green
+
+$ldapUri = [Uri]$LdapUrl
+$ldapPort = if ($ldapUri.Port -gt 0) { $ldapUri.Port } else { 389 }
+$ldapReachable = Test-NetConnection -ComputerName $ldapUri.Host -Port $ldapPort -InformationLevel Quiet -WarningAction SilentlyContinue
+$ldapEnabled = $false
+$ldapUser = ""
+$ldapPassword = ""
+if ($ldapReachable) {
+    $ldapEnabled = $true
+    Write-Host "OK   Active Directory responde en $($ldapUri.Host):$ldapPort" -ForegroundColor Green
+    $ldapUser = Read-Host -Prompt "Usuario lector AD (usuario@podjudsp.local o PODJUDSP\usuario)"
+    if ($ldapUser -notmatch "[@\\]") {
+        $ldapUser = "$ldapUser@$LdapDomain"
+    }
+    $ldapPassword = Read-SecretPlain -Prompt "Clave AD para $ldapUser"
+} else {
+    Write-Host "AVISO Active Directory no responde en $($ldapUri.Host):$ldapPort. Se arrancara con LDAP deshabilitado y usuarios locales." -ForegroundColor Yellow
+}
 
 $localIpv4 = (Get-NetIPConfiguration |
     Where-Object { $_.IPv4DefaultGateway -and $_.IPv4Address } |
     ForEach-Object { $_.IPv4Address.IPAddress } |
     Where-Object { $_ -notlike "169.254.*" -and $_ -ne "127.0.0.1" } |
     Select-Object -First 1)
-
-$jdbcUrl = "jdbc:mysql://$MysqlHost`:$MysqlPort/$MysqlDatabase`?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Argentina/Buenos_Aires"
 
 $env:SPRING_PROFILES_ACTIVE = "local"
 $env:INVENTARIO_SERVER_PORT = $ServerPort
@@ -126,14 +162,20 @@ $env:INVENTARIO_LOCAL_AUTH_PASSWORD = $LocalAdminPassword
 $env:INVENTARIO_LOCAL_DB_AUTH_ENABLED = "true"
 $env:INVENTARIO_MOVIL_APK_PATH = Join-Path $repoRoot "output\android\inventario-tareas-lan-piloto.apk"
 
-$env:INVENTARIO_DB_PRIMARY_URL = $jdbcUrl
-$env:INVENTARIO_DB_PRIMARY_USER = $mysqlUser
-$env:INVENTARIO_DB_PRIMARY_PASSWORD = $mysqlPassword
-$env:INVENTARIO_DB_FALLBACK_URL = $jdbcUrl
-$env:INVENTARIO_DB_FALLBACK_USER = $mysqlUser
-$env:INVENTARIO_DB_FALLBACK_PASSWORD = $mysqlPassword
+if ($remoteOk) {
+    $env:INVENTARIO_DB_PRIMARY_URL = $remoteJdbcUrl
+    $env:INVENTARIO_DB_PRIMARY_USER = $remoteMysqlUser
+    $env:INVENTARIO_DB_PRIMARY_PASSWORD = $remoteMysqlPassword
+} else {
+    $env:INVENTARIO_DB_PRIMARY_URL = $localJdbcUrl
+    $env:INVENTARIO_DB_PRIMARY_USER = $localMysqlUser
+    $env:INVENTARIO_DB_PRIMARY_PASSWORD = $localMysqlPassword
+}
+$env:INVENTARIO_DB_FALLBACK_URL = $localJdbcUrl
+$env:INVENTARIO_DB_FALLBACK_USER = $localMysqlUser
+$env:INVENTARIO_DB_FALLBACK_PASSWORD = $localMysqlPassword
 
-$env:INVENTARIO_LDAP_ENABLED = "true"
+$env:INVENTARIO_LDAP_ENABLED = if ($ldapEnabled) { "true" } else { "false" }
 $env:INVENTARIO_LDAP_URL = $LdapUrl
 $env:INVENTARIO_LDAP_DOMAIN = $LdapDomain
 $env:INVENTARIO_LDAP_BASE_DN = $LdapBaseDn
@@ -150,7 +192,10 @@ Write-Host "Arrancando en http://localhost:$ServerPort" -ForegroundColor Green
 if ($localIpv4) {
     Write-Host "Desde el celular, pruebe: http://$localIpv4`:$ServerPort/movil/login" -ForegroundColor Green
 }
-Write-Host "MySQL local: ${MysqlHost}:$MysqlPort/$MysqlDatabase con usuario $mysqlUser"
+Write-Host "MySQL primario remoto: ${RemoteMysqlHost}:$RemoteMysqlPort/$RemoteMysqlDatabase con usuario $remoteMysqlUser"
+Write-Host "MySQL fallback local: ${LocalMysqlHost}:$LocalMysqlPort/$LocalMysqlDatabase con usuario $localMysqlUser"
+Write-Host "MySQL activo validado antes de arrancar: $activeDbLabel"
+Write-Host "Active Directory: $(if ($ldapEnabled) { 'habilitado' } else { 'deshabilitado; usuarios locales' })"
 Write-Host "Usuario local de prueba: admin.local / $LocalAdminPassword"
 Write-Host "Para detener: Ctrl+C en esta ventana."
 Write-Host ""

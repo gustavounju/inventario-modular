@@ -1,6 +1,7 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.tareas;
 
 import java.util.List;
+import java.util.Collection;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -47,4 +48,16 @@ public interface TareaTecnicaRepository extends JpaRepository<TareaTecnica, Long
 	long countByCerradoEnBetween(java.time.LocalDateTime desde, java.time.LocalDateTime hasta);
 
 	List<TareaTecnica> findByEquipoId(Long equipoId);
+
+	@Query("""
+			SELECT t
+			FROM TareaTecnica t
+			LEFT JOIN FETCH t.equipo e
+			WHERE LOWER(COALESCE(t.solicitanteUsername, '')) = LOWER(:solicitanteUsername)
+			  AND t.estado IN :estados
+			  AND (e IS NULL OR UPPER(e.nombre) = 'PC-GENERICA')
+			""")
+	List<TareaTecnica> buscarAbiertasSinEquipoRealPorSolicitante(
+			@Param("solicitanteUsername") String solicitanteUsername,
+			@Param("estados") Collection<EstadoTareaTecnica> estados);
 }

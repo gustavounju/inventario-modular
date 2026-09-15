@@ -126,7 +126,9 @@
 				☰
 			</button>
 			<div>
-				<p class="eyebrow" th:text="${eyebrow}">Modulo</p>
+				<p class="eyebrow"
+				   th:if="${eyebrow != null and !#strings.isEmpty(eyebrow) and !#strings.startsWith(eyebrow, 'Módulo') and !#strings.startsWith(eyebrow, 'Modulo')}"
+				   th:text="${eyebrow}">Modulo</p>
 				<h1 id="panel-title" th:text="${title}">Titulo</h1>
 			</div>
 		</div>

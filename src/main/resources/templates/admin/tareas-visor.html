@@ -141,13 +141,60 @@
 								<p th:text="${comentario.comentario}">Comentario de avance.</p>
 							</div>
 						</section>
-						<section class="task-comments" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}" aria-label="Stock usado en tarea">
-							<div th:each="uso : ${stockPorTarea[tarea.id]}" class="task-comment">
-								<strong th:text="'Stock #' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">Stock</strong>
-								<span th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : ''}">09/09/2026 10:00</span>
-								<p th:text="${uso.descripcion + (uso.serial != null ? ' | Serial ' + uso.serial : '') + (uso.observacion != null ? ' | ' + uso.observacion : '')}">Uso de stock.</p>
+						<div class="task-stock-summary" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}">
+							<button type="button" class="secondary-action task-stock-open"
+									th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').showModal()|"
+									th:text="'Ver stock (' + ${#lists.size(stockPorTarea[tarea.id])} + ')'">Ver stock</button>
+						</div>
+						<dialog class="modal-dialog task-stock-modal" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+								th:id="|stock-modal-visor-${tarea.id}|">
+							<div class="modal-content">
+								<header class="task-stock-modal-header">
+									<div>
+										<strong th:text="'Tarea #' + ${tarea.id} + ' - ' + ${tarea.titulo}">Tarea</strong>
+										<span th:text="${tarea.equipoNombre ?: 'PC generica'}">Equipo</span>
+									</div>
+									<button type="button" class="secondary-action" th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').close()|">Cerrar</button>
+								</header>
+								<section class="task-stock-ledger" aria-label="Movimientos de stock en tarea">
+									<header class="task-stock-ledger-header">
+										<span>Movimientos de stock</span>
+										<small th:text="${#lists.size(stockPorTarea[tarea.id])} + ' registros'">0 registros</small>
+									</header>
+									<article th:each="uso : ${stockPorTarea[tarea.id]}" class="task-stock-item" th:classappend="${uso.estadoCssClass()}">
+										<div class="task-stock-topline">
+											<span class="task-stock-state" th:text="${uso.etiquetaEstadoTarea()}">Estado</span>
+											<span class="task-stock-date" th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">09/09/2026 10:00</span>
+										</div>
+										<div class="task-stock-body">
+											<strong th:text="'#' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">#54 - DISCO</strong>
+											<span th:text="${uso.descripcion}">Descripcion</span>
+										</div>
+										<div class="task-stock-meta">
+											<span th:text="${uso.estadoStock}">DISPONIBLE</span>
+											<span th:if="${uso.serial != null}" th:text="'Serial: ' + ${uso.serial}">Serial</span>
+											<span th:if="${uso.observacion != null}" th:text="'Nota: ' + ${uso.observacion}">Nota</span>
+										</div>
+										<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn != null}"
+										   th:text="|Asignado a ${uso.equipoDesvinculadoTexto()} y luego desvinculado por ${uso.usuarioDesvinculadoTexto()} el ${#temporals.format(uso.desvinculadoEn, 'dd/MM/yyyy HH:mm')}. Motivo: ${uso.motivoDesvinculacionTexto()}|">Componente desvinculado.</p>
+										<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn == null}"
+										   th:text="'Este componente ya no está instalado/asignado al equipo de la tarea; volvió a stock como DISPONIBLE.'">Componente desvinculado.</p>
+										<form class="task-inline-form"
+											  th:if="${puedeEditarTareas and uso.estadoStock == 'RESERVADO' and !#lists.isEmpty(equipos)}"
+											  th:action="@{/admin/tareas/{id}/stock/{usoStockId}/instalar(id=${tarea.id},usoStockId=${uso.id})}"
+											  method="post">
+											<input type="hidden" name="origen" value="visor">
+											<select name="equipoId" aria-label="Equipo destino" required>
+												<option value="">Instalar en equipo</option>
+												<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
+											</select>
+											<input name="ubicacion" maxlength="120" placeholder="Ranura o ubicacion">
+											<button class="primary-action" type="submit">Instalar en equipo</button>
+										</form>
+									</article>
+								</section>
 							</div>
-						</section>
+						</dialog>
 						<p class="table-subtext" th:if="${comentariosPorTarea[tarea.id] == null or #lists.isEmpty(comentariosPorTarea[tarea.id])}">Sin comentarios cargados.</p>
 
 						<div class="task-row-actions" th:if="${puedeEditarTareas}">

@@ -203,6 +203,12 @@
 						<span class="tab-badge" th:text="${#lists.size(componentes)}">0</span>
 					</button>
 				</li>
+				<li>
+					<button type="button" class="subnav-tab" id="tab-btn-tareas" onclick="switchTab('tareas')" role="tab" aria-selected="false" aria-controls="pane-tareas">
+						Tareas del equipo
+						<span class="tab-badge" th:text="${#lists.size(tareasEquipo)}">0</span>
+					</button>
+				</li>
 
 				<li th:if="${puedeEditar}">
 					<button type="button" class="subnav-tab" id="tab-btn-editar" onclick="switchTab('editar')" role="tab" aria-selected="false" aria-controls="pane-editar">
@@ -315,7 +321,138 @@
 			</div>
 
 			<!-- ==========================================================
-			     PESTAÑA 2: Gemelo Digital y Componentes
+			     PESTAÑA 2: Tareas del Equipo
+			     ========================================================== -->
+			<div class="tab-pane" id="pane-tareas" role="tabpanel" aria-labelledby="tab-btn-tareas">
+				<section class="equipment-tasks-panel" aria-labelledby="equipo-tareas-title">
+					<div class="section-header">
+						<div>
+							<h2 id="equipo-tareas-title" style="margin: 0; font-size: 1.1rem;">Tareas asignadas a este equipo</h2>
+							<p class="section-note" style="margin: 2px 0 0;">
+								Seguimiento técnico, comentarios y componentes vinculados a <strong th:text="${equipo.nombre}">DESKTOP</strong>.
+							</p>
+						</div>
+						<a class="secondary-action" th:href="@{/admin/tareas(equipoId=${equipo.id})}">Abrir en visor de tareas</a>
+					</div>
+
+					<p class="empty-state" th:if="${#lists.isEmpty(tareasEquipo)}">
+						Este equipo todavía no tiene tareas técnicas asignadas.
+					</p>
+
+					<div class="equipment-task-list" th:if="${!#lists.isEmpty(tareasEquipo)}">
+						<article class="equipment-task-card" th:each="tarea : ${tareasEquipo}">
+							<header class="equipment-task-header">
+								<div>
+									<span class="equipment-task-kicker" th:text="'Tarea #' + ${tarea.id}">Tarea #4</span>
+									<h3 th:text="${tarea.titulo}">con el monitor</h3>
+									<p th:text="${tarea.descripcion ?: 'Sin descripción registrada.'}">Detalle de la tarea</p>
+								</div>
+								<div class="equipment-task-status">
+									<span class="authorization-badge" th:classappend="${tarea.estado.name() == 'CERRADA'} ? ' is-authorized' : ' is-pending'"
+										  th:text="${tarea.estado}">PENDIENTE</span>
+									<span class="count-badge" th:text="${tarea.prioridad}">MEDIA</span>
+								</div>
+							</header>
+
+							<dl class="equipment-task-meta">
+								<div>
+									<dt>Solicitante</dt>
+									<dd>
+										<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Solicitante</strong>
+										<span th:text="${tarea.solicitanteFuero ?: 'Sin fuero'}">Fuero</span>
+									</dd>
+								</div>
+								<div>
+									<dt>Responsable</dt>
+									<dd>
+										<strong th:text="${tarea.responsable ?: 'Pendiente de tomar'}">Responsable</strong>
+										<span th:text="${tarea.creadoPor ?: 'Sin creador registrado'}">Creado por</span>
+									</dd>
+								</div>
+								<div>
+									<dt>Fechas</dt>
+									<dd>
+										<strong th:text="${tarea.creadoEn != null ? #temporals.format(tarea.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">13/09/2026 21:34</strong>
+										<span th:if="${tarea.cerradoEn != null}" th:text="'Cierre: ' + ${#temporals.format(tarea.cerradoEn, 'dd/MM/yyyy HH:mm')}">Cierre</span>
+										<span th:if="${tarea.cerradoEn == null}">Sin cierre</span>
+									</dd>
+								</div>
+							</dl>
+
+							<p class="equipment-task-close-note" th:if="${tarea.observacionesCierre}" th:text="'Cierre: ' + ${tarea.observacionesCierre}">
+								Cierre
+							</p>
+
+							<section class="equipment-task-comments" aria-label="Comentarios de la tarea">
+								<header>
+									<strong>Comentarios</strong>
+									<span th:text="${comentariosPorTarea[tarea.id] != null ? #lists.size(comentariosPorTarea[tarea.id]) : 0} + ' registros'">0 registros</span>
+								</header>
+								<p class="table-subtext" th:if="${comentariosPorTarea[tarea.id] == null or #lists.isEmpty(comentariosPorTarea[tarea.id])}">
+									Sin comentarios registrados.
+								</p>
+								<div class="equipment-comment-row" th:each="comentario : ${comentariosPorTarea[tarea.id]}"
+									 th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}">
+									<strong th:text="${comentario.autor}">usuario3</strong>
+									<span th:text="${comentario.creadoEn != null ? #temporals.format(comentario.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">13/09/2026 21:35</span>
+									<p th:text="${comentario.comentario}">Comentario</p>
+								</div>
+							</section>
+
+							<div class="equipment-task-stock">
+								<button type="button" class="secondary-action task-stock-open"
+										th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('stock-modal-equipo-${tarea.id}').showModal()|"
+										th:text="'Ver componentes vinculados (' + ${#lists.size(stockPorTarea[tarea.id])} + ')'">Ver componentes</button>
+								<span class="table-subtext" th:if="${stockPorTarea[tarea.id] == null or #lists.isEmpty(stockPorTarea[tarea.id])}">
+									Sin componentes vinculados a esta tarea.
+								</span>
+							</div>
+
+							<dialog class="modal-dialog task-stock-modal" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+									th:id="|stock-modal-equipo-${tarea.id}|">
+								<div class="modal-content">
+									<header class="task-stock-modal-header">
+										<div>
+											<strong th:text="'Tarea #' + ${tarea.id} + ' - ' + ${tarea.titulo}">Tarea</strong>
+											<span th:text="${equipo.nombre}">Equipo</span>
+										</div>
+										<button type="button" class="secondary-action" th:onclick="|document.getElementById('stock-modal-equipo-${tarea.id}').close()|">Cerrar</button>
+									</header>
+									<section class="task-stock-ledger" aria-label="Componentes vinculados a la tarea">
+										<header class="task-stock-ledger-header">
+											<span>Componentes vinculados</span>
+											<small th:text="${#lists.size(stockPorTarea[tarea.id])} + ' registros'">0 registros</small>
+										</header>
+										<article th:each="uso : ${stockPorTarea[tarea.id]}" class="task-stock-item" th:classappend="${uso.estadoCssClass()}">
+											<div class="task-stock-topline">
+												<span class="task-stock-state" th:text="${uso.etiquetaEstadoTarea()}">Estado</span>
+												<span class="task-stock-date" th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">14/09/2026 20:38</span>
+											</div>
+											<div class="task-stock-body">
+												<strong th:text="'#' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">#75 - TECLADO</strong>
+												<span th:text="${uso.descripcion}">Descripcion</span>
+											</div>
+											<div class="task-stock-meta">
+												<span th:text="${uso.estadoStock}">ASIGNADO</span>
+												<span th:if="${uso.serial != null}" th:text="'Serial: ' + ${uso.serial}">Serial</span>
+												<span th:if="${uso.observacion != null}" th:text="'Nota: ' + ${uso.observacion}">Nota</span>
+											</div>
+											<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn != null}"
+													th:text="|Asignado a ${uso.equipoDesvinculadoTexto()} y luego desvinculado por ${uso.usuarioDesvinculadoTexto()} el ${#temporals.format(uso.desvinculadoEn, 'dd/MM/yyyy HH:mm')}. Motivo: ${uso.motivoDesvinculacionTexto()}|">Componente desvinculado</p>
+											<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn == null}"
+													th:text="'Este componente ya no está instalado/asignado al equipo de la tarea; volvió a stock como DISPONIBLE.'">Componente desvinculado</p>
+										</article>
+									</section>
+								</div>
+							</dialog>
+						</article>
+					</div>
+				</section>
+			</div>
+
+			<!-- ==========================================================
+			     PESTAÑA 3: Gemelo Digital y Componentes
 			     ========================================================== -->
 			<div class="tab-pane" id="pane-gemelo" role="tabpanel" aria-labelledby="tab-btn-gemelo">
 				<!-- Banner Deductivo: Si aún no tiene Gemelo Oficial PERO ya reportó vía script -->
@@ -424,7 +561,7 @@
 											</div>
 											<div th:if="${disc.resultado.name() == 'FALTA'}">
 												<span style="color: #f87171; display: block; font-weight: 600;">• Si retiraste la pieza:</span>
-												<span style="color: var(--text-secondary);">Usa el botón 📦 <strong>A Stock</strong> o 🗑️ en la tabla de abajo para desvincularla.</span>
+							<span style="color: var(--text-secondary);">Usa el botón 📦 <strong>A Stock</strong> o <strong>↩ Stock</strong> en la tabla de abajo para desvincularla.</span>
 												<span style="color: #facc15; display: block; font-weight: 600; margin-top: 4px;">• Si falta físicamente:</span>
 												<span style="color: var(--text-secondary);">Instala el hardware en la PC e ingresalo por sistema desde el Stock.</span>
 												<span style="color: #60a5fa; display: block; font-weight: 600; margin-top: 4px;">• Si acabas de sumar esta pieza o es un periférico:</span>
@@ -500,9 +637,9 @@
 														❌ Baja
 													</button>
 												</form>
-												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Está seguro de desvincular este componente del equipo?');">
-													<button type="submit" class="secondary-action" title="Desvincular del equipo" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
-														🗑️
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular este componente del equipo y devolverlo a Stock como DISPONIBLE?');">
+													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
+														↩ Stock
 													</button>
 												</form>
 											</div>
@@ -584,9 +721,9 @@
 														❌ Baja
 													</button>
 												</form>
-												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Está seguro de desvincular esta memoria del equipo?');">
-													<button type="submit" class="secondary-action" title="Desvincular del equipo" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
-														🗑️
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular esta memoria del equipo y devolverla a Stock como DISPONIBLE?');">
+													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
+														↩ Stock
 													</button>
 												</form>
 											</div>
@@ -668,9 +805,9 @@
 														❌ Baja
 													</button>
 												</form>
-												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Está seguro de desvincular este disco del equipo?');">
-													<button type="submit" class="secondary-action" title="Desvincular del equipo" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
-														🗑️
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular este disco del equipo y devolverlo a Stock como DISPONIBLE?');">
+													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
+														↩ Stock
 													</button>
 												</form>
 											</div>
@@ -742,9 +879,9 @@
 														❌ Baja
 													</button>
 												</form>
-												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Está seguro de desvincular este dispositivo del equipo?');">
-													<button type="submit" class="secondary-action" title="Desvincular del equipo" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
-														🗑️
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular este dispositivo del equipo y devolverlo a Stock como DISPONIBLE?');">
+													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
+														↩ Stock
 													</button>
 												</form>
 											</div>
@@ -1093,7 +1230,7 @@
 	<!-- Script de Pestañas Interactivas Liviano y Accesible -->
 	<script th:unless="${equipoGenerico}">
 		function switchTab(tabId) {
-			const tabs = ['ficha', 'gemelo', 'editar'];
+			const tabs = ['ficha', 'gemelo', 'tareas', 'editar'];
 			tabs.forEach(function(id) {
 				const btn = document.getElementById('tab-btn-' + id);
 				const pane = document.getElementById('pane-' + id);
@@ -1120,6 +1257,8 @@
 			if (hash === '#tab-gemelo') {
 				switchTab('gemelo');
 
+			} else if (hash === '#tab-tareas') {
+				switchTab('tareas');
 			} else if (hash === '#tab-editar') {
 				switchTab('editar');
 			} else if (hash === '#tab-ficha') {

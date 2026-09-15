@@ -8,15 +8,22 @@
     const native = navigator.userAgent.includes('InventarioLAN/');
     let session, tasks = [], selected, editing, filter = 'pending', limit = 40, stockAvailable = [];
     let cursor, cursorKey, busy = false, audio, sound = false, stopped = false;
-    let applicantSearchTimer;
+    let applicantSearchTimer, assigneeSearchTimer;
     const applicantOptions = new Map();
+    const assigneeOptions = new Map();
     // Los previews de comentarios se cargan aparte para no retrasar el listado principal de tareas.
     let renderToken = 0;
     const commentPreviewCache = new Map();
     const icons = () => window.lucide?.createIcons();
     const isOpen = task => ['PENDIENTE', 'EN_PROCESO'].includes(task.estado);
     const owns = task => task.responsable?.toLowerCase() === session.usuario.username.toLowerCase();
-    const mayEdit = task => session.puedeEditar && (session.administrador || owns(task));
+    const createdByMe = task => task.creadoPor?.toLowerCase() === session.usuario.username.toLowerCase();
+    const mayManage = task => session.puedeEditar && (session.administrador || owns(task) || createdByMe(task));
+    // Mesa telefonica conserva edicion/borrado solo antes de que un tecnico tome la tarea.
+    const mayOperateOwnOpen = task => session.puedeOperarPropias && createdByMe(task) && !task.responsable && isOpen(task);
+    const mayEdit = task => mayManage(task) || mayOperateOwnOpen(task);
+    const mayDelete = task => mayManage(task) || mayOperateOwnOpen(task);
+    const mayComment = task => mayManage(task) || createdByMe(task);
     const status = task => isOpen(task) ? 'Pendiente' : task.estado === 'CERRADA' ? 'Finalizada' : 'Cancelada';
     const date = value => value ? new Date(value).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '-';
     function message(text, error = false, target = 'message') {
@@ -63,9 +70,12 @@
         $('pending-count').textContent = tasks.filter(isOpen).length;
         $('mine-count').textContent = tasks.filter(t => isOpen(t) && owns(t)).length;
         $('done-count').textContent = tasks.filter(t => t.estado === 'CERRADA' && t.cerradoEn && new Date(t.cerradoEn).toLocaleDateString('en-CA') === today).length;
+        if (!session.mostrarMisTareas && filter === 'mine') filter = 'pending';
+        if (!session.mostrarFinalizadas && filter === 'done') filter = 'pending';
         const query = $('search').value.trim().toLocaleLowerCase();
         const found = tasks.filter(t => {
             const match = filter === 'all' || (filter === 'pending' && isOpen(t)) || (filter === 'mine' && owns(t)) || (filter === 'done' && !isOpen(t));
+            if (!session.mostrarFinalizadas && !isOpen(t)) return false;
             const text = [t.id, t.titulo, t.descripcion, t.equipoNombre, t.solicitanteUsername, t.solicitanteNombre, t.solicitanteFuero, t.responsable].join(' ').toLocaleLowerCase();
             return match && text.includes(query);
         });
@@ -142,6 +152,43 @@
         form.elements.solicitanteFuero.value = (user.fuero || session.usuario.fuero || 'Sin fuero informado').trim().slice(0, 120);
         $('solicitante-search').value = label || applicantLabel(user);
     }
+    function assigneeLabel(user) {
+        const name = user.nombreVisible || user.username || '';
+        const username = user.username ? ' (' + user.username + ')' : '';
+        const fuero = user.fuero ? ' - ' + user.fuero : '';
+        const source = user.fuente ? ' · ' + user.fuente : '';
+        return name + username + fuero + source;
+    }
+    function rememberAssignee(user) {
+        const label = assigneeLabel(user);
+        assigneeOptions.set(label.toLocaleLowerCase(), user);
+        if (user.username) assigneeOptions.set(user.username.toLocaleLowerCase(), user);
+        if (user.nombreVisible) assigneeOptions.set(user.nombreVisible.toLocaleLowerCase(), user);
+        return label;
+    }
+    function setAssignee(user, label) {
+        const form = $('task-form');
+        form.elements.responsable.value = (user.username || label || '').trim().slice(0, 120);
+        $('responsable-search').value = label || assigneeLabel(user);
+    }
+    function syncAssigneeFromInput() {
+        const form = $('task-form');
+        const input = $('responsable-search').value.trim();
+        if (!input) {
+            form.elements.responsable.value = '';
+            $('responsable-help').textContent = 'Sin técnico asignado: sonará en todos los celulares de técnicos y administradores.';
+            return true;
+        }
+        const match = assigneeOptions.get(input.toLocaleLowerCase());
+        if (match) {
+            setAssignee(match, assigneeLabel(match));
+            $('responsable-help').textContent = 'Técnico seleccionado para aviso dirigido.';
+            return true;
+        }
+        form.elements.responsable.value = input.slice(0, 120);
+        $('responsable-help').textContent = 'Responsable cargado manualmente. Se enviará aviso dirigido a ese usuario.';
+        return true;
+    }
     function syncApplicantFromInput() {
         const input = $('solicitante-search').value.trim();
         const match = applicantOptions.get(input.toLocaleLowerCase());
@@ -178,6 +225,26 @@
             }
         } catch {
             $('solicitante-help').textContent = 'No se pudo consultar AD; puede cargar el solicitante manualmente.';
+        }
+    }
+    async function searchAssignees(query) {
+        const options = $('responsable-options');
+        try {
+            const result = await request('api/v1/movil/tecnicos-asignables?q=' + encodeURIComponent(query || ''));
+            options.replaceChildren();
+            assigneeOptions.clear();
+            for (const user of result.usuarios || []) {
+                const option = document.createElement('option');
+                option.value = rememberAssignee(user);
+                options.append(option);
+            }
+            if (result.usuarios?.length) {
+                $('responsable-help').textContent = result.usuarios.length + ' responsables disponibles. Deje vacío para aviso general.';
+            } else {
+                $('responsable-help').textContent = result.mensaje || 'Sin coincidencias; puede dejarlo vacío o escribir un usuario.';
+            }
+        } catch {
+            $('responsable-help').textContent = 'No se pudo consultar responsables; puede dejarlo vacío o escribir un usuario.';
         }
     }
     function renderStockOptions() {
@@ -246,10 +313,12 @@
             $('detail-meta').append(element('dt', key), element('dd', value || '-'));
         }
         $('take-task').hidden = !session.puedeEditar || !!task.responsable || !isOpen(task);
-        for (const id of ['edit-task', 'delete-task', 'comment-form']) $(id).hidden = !mayEdit(task);
-        $('state-form').hidden = !mayEdit(task) || !isOpen(task);
-        $('stock-form').hidden = !mayEdit(task) || !isOpen(task) || !stockAvailable.length;
-        $('stock-section').hidden = !mayEdit(task) && !session.puedeEditar;
+        $('edit-task').hidden = !mayEdit(task);
+        $('delete-task').hidden = !mayDelete(task);
+        $('comment-form').hidden = !mayComment(task);
+        $('state-form').hidden = !mayManage(task) || !isOpen(task);
+        $('stock-form').hidden = !mayManage(task) || !isOpen(task) || !stockAvailable.length;
+        $('stock-section').hidden = !mayManage(task) && !session.puedeEditar;
         $('state-form').elements.estado.value = isOpen(task) ? 'PENDIENTE' : task.estado;
         $('state-form').elements.observacionesCierre.value = task.observacionesCierre || '';
         $('comment-form').reset();
@@ -284,8 +353,14 @@
             nombreVisible: defaults.solicitanteNombre,
             fuero: defaults.solicitanteFuero
         }, defaults.solicitanteNombre || defaults.solicitanteUsername || '');
-        $('responsable-field').hidden = !session.administrador;
-        $('voice-problem').hidden = !native || !session.puedeEditar;
+        $('responsable-field').hidden = !session.puedeAsignarResponsable;
+        $('responsable-search').value = defaults.responsable || '';
+        $('responsable-help').textContent = defaults.responsable
+            ? 'Responsable asignado. Puede cambiarlo antes de guardar.'
+            : 'Si lo deja vacío, sonará en todos los celulares de técnicos y administradores.';
+        if (session.puedeAsignarResponsable) searchAssignees(defaults.responsable || '');
+        const puedeDictar = task ? mayEdit(task) : session.puedeCrear;
+        $('voice-problem').hidden = !native || !puedeDictar;
         message('', false, 'form-message');
         $('task-dialog').showModal();
     }
@@ -318,7 +393,8 @@
             // En movil el tecnico carga el problema; el titulo queda derivado para cumplir el contrato API.
             data.titulo = titleFromProblem(data.descripcion);
             data.equipoId = editing?.equipoId || null;
-            data.responsable = data.responsable?.trim() || null;
+            syncAssigneeFromInput();
+            data.responsable = event.target.elements.responsable.value?.trim() || null;
             const saved = await request(api + (editing ? '/' + editing.id : ''), editing ? 'PUT' : 'POST', data);
             $('task-dialog').close();
             commentPreviewCache.delete(saved.id);
@@ -376,6 +452,12 @@
         applicantSearchTimer = setTimeout(() => searchApplicants(value), 300);
     });
     $('solicitante-search').addEventListener('change', syncApplicantFromInput);
+    $('responsable-search').addEventListener('input', event => {
+        clearTimeout(assigneeSearchTimer);
+        const value = event.target.value.trim();
+        assigneeSearchTimer = setTimeout(() => searchAssignees(value), 300);
+    });
+    $('responsable-search').addEventListener('change', syncAssigneeFromInput);
     $('voice-task').onclick = () => {
         openForm();
         if (window.TareasLan?.dictarTarea) window.TareasLan.dictarTarea();
@@ -438,8 +520,12 @@
         try {
             session = await request('api/v1/movil/sesion');
             $('username').textContent = session.usuario.nombreVisible + ' | ' + session.usuario.username;
-            $('new-task').hidden = !session.puedeEditar;
-            $('voice-task').hidden = !native || !session.puedeEditar;
+            $('mine-metric').hidden = !session.mostrarMisTareas;
+            $('done-metric').hidden = !session.mostrarFinalizadas;
+            $('filter-mine').hidden = !session.mostrarMisTareas;
+            $('filter-done').hidden = !session.mostrarFinalizadas;
+            $('new-task').hidden = !session.puedeCrear;
+            $('voice-task').hidden = !native || !session.puedeCrear;
             stockAvailable = session.puedeEditar ? await request(api + '/stock-disponible') : [];
             cursorKey = 'tareas.cursor.' + base + '.' + session.usuario.username;
             try { const value = localStorage.getItem(cursorKey); if (value !== null && /^\d+$/.test(value)) cursor = Number(value); } catch { /* Almacenamiento opcional. */ }

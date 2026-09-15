@@ -148,7 +148,7 @@ class TareaTecnicaControllerTests {
 			"INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (3, 2)",
 			"INSERT INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) VALUES (2, 9, 1), (2, 9, 3)"
 	})
-	void tecnicoComunQuedaComoResponsableYPuedeTomarTareaLibre() throws Exception {
+	void tecnicoComunPuedeAsignarResponsableOpcionalYPuedeTomarTareaLibre() throws Exception {
 		String tareaPropia = """
 				{
 				  "equipoId": null,
@@ -180,7 +180,7 @@ class TareaTecnicaControllerTests {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(tareaPropia))
 			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.responsable").value("tecnico.local"))
+			.andExpect(jsonPath("$.responsable").value("otro.tecnico"))
 			.andExpect(jsonPath("$.equipoNombre").value("PC-GENERICA"));
 
 		String creada = mockMvc.perform(post("/api/v1/tareas-tecnicas")

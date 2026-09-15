@@ -10,7 +10,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.Agreg
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.CambiarEstadoTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.EquipoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.GuardarTareaTecnicaCommand;
-import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.InstalarEnEquipoDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.InstalarStockReservadoCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.RegistrarUsoStockCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.SolicitanteDominioNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockComponenteNoDisponibleParaTareaException;
@@ -20,6 +20,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.Stock
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.StockUsoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaComentarioDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaEquipoGenericoException;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaStockUsoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaStockUsoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaNoEncontradaException;
@@ -51,6 +52,7 @@ public class TareaTecnicaController {
 
 	private static final String MODULO_TAREAS = "TAREAS";
 	private static final String PERMISO_VER = "VER";
+	private static final String PERMISO_CREAR = "CREAR";
 	private static final String PERMISO_EDITAR = "EDITAR";
 
 	private final AuthorizationService authorizationService;
@@ -68,7 +70,13 @@ public class TareaTecnicaController {
 			@RequestParam(required = false) Long equipoId,
 			@RequestParam(required = false) String responsable) {
 		exigirPermiso(userDetails, PERMISO_VER);
-		return tareaTecnicaService.buscar(estado, equipoId, responsable);
+		List<TareaTecnicaDetalle> tareas = tareaTecnicaService.buscar(estado, equipoId, responsable);
+		if (esTelefonistaSinGestionTecnica(userDetails)) {
+			return tareas.stream()
+					.filter(this::estaAbierta)
+					.toList();
+		}
+		return tareas;
 	}
 
 	@GetMapping("/stock-disponible")
@@ -82,8 +90,8 @@ public class TareaTecnicaController {
 	public TareaTecnicaDetalle crear(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody GuardarTareaTecnicaRequest request) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
-		return tareaTecnicaService.crear(request.toCommand(userDetails, authorizationService.puedeAdministrarUsuarios(userDetails)));
+		exigirPermisoCrear(userDetails);
+		return tareaTecnicaService.crear(request.toCommand(userDetails, true, false));
 	}
 
 	@PutMapping("/{id}")
@@ -91,9 +99,8 @@ public class TareaTecnicaController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
 			@Valid @RequestBody GuardarTareaTecnicaRequest request) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
-		exigirTareaPropiaOAdministrador(userDetails, id);
-		return tareaTecnicaService.actualizar(id, request.toCommand(userDetails, authorizationService.puedeAdministrarUsuarios(userDetails)));
+		exigirPuedeActualizar(userDetails, id);
+		return tareaTecnicaService.actualizar(id, request.toCommand(userDetails, true, false));
 	}
 
 	@PostMapping("/{id}/tomar")
@@ -119,8 +126,7 @@ public class TareaTecnicaController {
 	public void eliminar(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
-		exigirTareaPropiaOAdministrador(userDetails, id);
+		exigirPuedeEliminar(userDetails, id);
 		tareaTecnicaService.eliminar(id);
 	}
 
@@ -138,8 +144,7 @@ public class TareaTecnicaController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
 			@Valid @RequestBody AgregarComentarioTareaRequest request) {
-		exigirPermiso(userDetails, PERMISO_EDITAR);
-		exigirTareaPropiaOAdministrador(userDetails, id);
+		exigirPuedeComentar(userDetails, id);
 		return tareaTecnicaService.comentar(id, request.toCommand(userDetails.getUsername()));
 	}
 
@@ -162,15 +167,16 @@ public class TareaTecnicaController {
 		return tareaTecnicaService.registrarUsoStock(id, request.toCommand(userDetails.getUsername()));
 	}
 
-	@PostMapping("/{id}/stock/{usoId}/instalar")
-	@ResponseStatus(HttpStatus.CREATED)
-	public InstalarEnEquipoDetalle instalarEnEquipo(
+	@PostMapping("/{id}/stock/{usoStockId}/instalar")
+	public TareaTecnicaDetalle instalarStockReservado(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
-			@PathVariable Long usoId) {
+			@PathVariable Long usoStockId,
+			@Valid @RequestBody InstalarStockReservadoRequest request) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		exigirTareaPropiaOAdministrador(userDetails, id);
-		return tareaTecnicaService.instalarEnEquipo(id, usoId, userDetails.getUsername());
+		return tareaTecnicaService.instalarStockReservadoEnEquipo(id, usoStockId,
+				request.toCommand(userDetails.getUsername()));
 	}
 
 	private void exigirPermiso(UserDetails userDetails, String permiso) {
@@ -179,21 +185,92 @@ public class TareaTecnicaController {
 		}
 	}
 
+	private void exigirPermisoCrear(UserDetails userDetails) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_CREAR)
+				&& !authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear tareas tecnicas.");
+		}
+	}
+
+	private void exigirPuedeActualizar(UserDetails userDetails, Long tareaId) {
+		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
+		if (authorizationService.puedeAdministrarUsuarios(userDetails)
+				|| puedeGestionarComoTecnico(userDetails, tarea)
+				|| puedeOperarTareaPropiaNoTomada(userDetails, tarea)) {
+			return;
+		}
+		throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+				"Solo puede editar tareas tecnicas propias que aun no fueron tomadas.");
+	}
+
+	private void exigirPuedeComentar(UserDetails userDetails, Long tareaId) {
+		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
+		if (authorizationService.puedeAdministrarUsuarios(userDetails)
+				|| puedeGestionarComoTecnico(userDetails, tarea)
+				|| esCreador(tarea, userDetails)) {
+			return;
+		}
+		throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+				"Solo puede comentar tareas propias o asignadas.");
+	}
+
+	private void exigirPuedeEliminar(UserDetails userDetails, Long tareaId) {
+		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
+		if (authorizationService.puedeAdministrarUsuarios(userDetails)
+				|| puedeGestionarComoTecnico(userDetails, tarea)
+				|| puedeOperarTareaPropiaNoTomada(userDetails, tarea)) {
+			return;
+		}
+		throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+				"Solo puede eliminar tareas propias que aun no fueron tomadas.");
+	}
+
 	private void exigirTareaPropiaOAdministrador(UserDetails userDetails, Long tareaId) {
 		if (authorizationService.puedeAdministrarUsuarios(userDetails)) {
 			return;
 		}
 		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
-		boolean esResponsable = tarea.responsable() != null && tarea.responsable().equalsIgnoreCase(userDetails.getUsername());
-		boolean esCreador = tarea.creadoPor() != null && tarea.creadoPor().equalsIgnoreCase(userDetails.getUsername());
-		if (!esResponsable && !esCreador) {
+		if (!esResponsable(tarea, userDetails) && !esCreador(tarea, userDetails)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
 					"La tarea debe estar tomada por el tecnico en sesion o haber sido creada por el.");
 		}
 	}
 
+	private boolean puedeGestionarComoTecnico(UserDetails userDetails, TareaTecnicaDetalle tarea) {
+		return authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_EDITAR)
+				&& (esResponsable(tarea, userDetails) || esCreador(tarea, userDetails));
+	}
+
+	private boolean puedeOperarTareaPropiaNoTomada(UserDetails userDetails, TareaTecnicaDetalle tarea) {
+		// Telefonista puede corregir o borrar su alta solo mientras la tarea sigue libre y abierta.
+		return authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_CREAR)
+				&& esCreador(tarea, userDetails)
+				&& !org.springframework.util.StringUtils.hasText(tarea.responsable())
+				&& estaAbierta(tarea);
+	}
+
+	private boolean esTelefonistaSinGestionTecnica(UserDetails userDetails) {
+		// TAREAS/CREAR sin TAREAS/EDITAR identifica mesa telefonica: crea y comenta, no toma trabajos.
+		return authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_CREAR)
+				&& !authorizationService.tienePermiso(userDetails, MODULO_TAREAS, PERMISO_EDITAR)
+				&& !authorizationService.puedeAdministrarUsuarios(userDetails);
+	}
+
+	private boolean esResponsable(TareaTecnicaDetalle tarea, UserDetails userDetails) {
+		return tarea.responsable() != null && tarea.responsable().equalsIgnoreCase(userDetails.getUsername());
+	}
+
+	private boolean esCreador(TareaTecnicaDetalle tarea, UserDetails userDetails) {
+		return tarea.creadoPor() != null && tarea.creadoPor().equalsIgnoreCase(userDetails.getUsername());
+	}
+
+	private boolean estaAbierta(TareaTecnicaDetalle tarea) {
+		return tarea.estado() == EstadoTareaTecnica.PENDIENTE || tarea.estado() == EstadoTareaTecnica.EN_PROCESO;
+	}
+
 	@ExceptionHandler({TareaTecnicaNoEncontradaException.class, EquipoNoEncontradoException.class,
-			StockComponenteNoEncontradoException.class, StockUsoNoEncontradoException.class})
+			StockComponenteNoEncontradoException.class, StockUsoNoEncontradoException.class,
+			TareaStockUsoNoEncontradoException.class})
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	void noEncontrado() {
 	}
@@ -224,8 +301,9 @@ public class TareaTecnicaController {
 			PrioridadTareaTecnica prioridad,
 			@Size(max = 120) String responsable) {
 
-		private GuardarTareaTecnicaCommand toCommand(UserDetails userDetails, boolean puedeAsignarResponsable) {
-			String responsableFinal = puedeAsignarResponsable ? responsable : userDetails.getUsername();
+		private GuardarTareaTecnicaCommand toCommand(UserDetails userDetails, boolean puedeAsignarResponsable,
+				boolean autoAsignarCreador) {
+			String responsableFinal = puedeAsignarResponsable ? responsable : (autoAsignarCreador ? userDetails.getUsername() : null);
 			return new GuardarTareaTecnicaCommand(
 					equipoId,
 					titulo,
@@ -262,6 +340,15 @@ public class TareaTecnicaController {
 
 		private RegistrarUsoStockCommand toCommand(String registradoPor) {
 			return new RegistrarUsoStockCommand(stockComponenteId, registradoPor, observacion);
+		}
+	}
+
+	public record InstalarStockReservadoRequest(
+			@NotNull Long equipoId,
+			@Size(max = 120) String ubicacion) {
+
+		private InstalarStockReservadoCommand toCommand(String registradoPor) {
+			return new InstalarStockReservadoCommand(equipoId, ubicacion, registradoPor);
 		}
 	}
 }
