@@ -10,6 +10,8 @@ import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchControls;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.config.ActiveDirectoryProperties;
+import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.LdapConfigurationService;
+import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.LdapRuntimeConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.ldap.core.AttributesMapper;
@@ -32,12 +34,18 @@ public class ActiveDirectoryDomainService {
 
 	private final ActiveDirectoryProperties properties;
 	private final LdapOperations ldapOperations;
+	private final LdapConfigurationService ldapConfigurationService;
+	private final RuntimeLdapClientFactory runtimeLdapClientFactory;
 
 	@Autowired
 	public ActiveDirectoryDomainService(
 			ActiveDirectoryProperties properties,
-			ObjectProvider<LdapOperations> ldapOperations) {
-		this(properties, ldapOperations.getIfAvailable());
+			ObjectProvider<LdapOperations> ldapOperations,
+			ObjectProvider<LdapConfigurationService> ldapConfigurationService,
+			ObjectProvider<RuntimeLdapClientFactory> runtimeLdapClientFactory) {
+		this(properties, ldapOperations.getIfAvailable(),
+				ldapConfigurationService.getIfAvailable(),
+				runtimeLdapClientFactory.getIfAvailable());
 	}
 
 	ActiveDirectoryDomainService(
@@ -45,6 +53,19 @@ public class ActiveDirectoryDomainService {
 			LdapOperations ldapOperations) {
 		this.properties = properties;
 		this.ldapOperations = ldapOperations;
+		this.ldapConfigurationService = null;
+		this.runtimeLdapClientFactory = null;
+	}
+
+	ActiveDirectoryDomainService(
+			ActiveDirectoryProperties properties,
+			LdapOperations ldapOperations,
+			LdapConfigurationService ldapConfigurationService,
+			RuntimeLdapClientFactory runtimeLdapClientFactory) {
+		this.properties = properties;
+		this.ldapOperations = ldapOperations;
+		this.ldapConfigurationService = ldapConfigurationService;
+		this.runtimeLdapClientFactory = runtimeLdapClientFactory;
 	}
 
 	public DominioUsuarios listarUsuarios() {
@@ -53,36 +74,38 @@ public class ActiveDirectoryDomainService {
 	}
 
 	public DominioUsuarios listarUsuariosParaTareas() {
-		if (!properties.isEnabled()) {
+		LdapRuntimeConfig config = currentConfig();
+		LdapOperations operations = currentOperations(config);
+		if (!config.enabled()) {
 			return DominioUsuarios.noDisponible("LDAP esta desactivado en este entorno.", "");
 		}
 
-		if (ldapOperations == null) {
+		if (operations == null) {
 			return DominioUsuarios.noDisponible("No hay cliente LDAP de lectura configurado.", "");
 		}
 
-		if (StringUtils.hasText(properties.getReadOnlyUserDn())
-				&& !StringUtils.hasText(properties.getReadOnlyPassword())) {
+		if (StringUtils.hasText(config.readOnlyUserDn())
+				&& !StringUtils.hasText(config.readOnlyPassword())) {
 			return DominioUsuarios.noDisponible("La cuenta LDAP lectora no tiene clave configurada.", "");
 		}
 
 		try {
-			String displayNameAttribute = safeAttributeName(properties.getDisplayNameAttribute(), "displayName");
+			String displayNameAttribute = safeAttributeName(config.displayNameAttribute(), "displayName");
 			SearchControls controls = new SearchControls();
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-			controls.setCountLimit(Math.max(1, properties.getUserSearchLimit()));
+			controls.setCountLimit(Math.max(1, config.userSearchLimit()));
 			controls.setReturningAttributes(new String[] {
 					"sAMAccountName",
 					"userPrincipalName",
 					displayNameAttribute,
-					properties.getFueroAttribute()
+					config.fueroAttribute()
 			});
 
-			List<UsuarioDominio> usuarios = ldapOperations.search(
-					properties.getUserSearchBase(),
-					properties.getUserSearchFilter(),
+			List<UsuarioDominio> usuarios = operations.search(
+					config.userSearchBase(),
+					config.userSearchFilter(),
 					controls,
-					(AttributesMapper<UsuarioDominio>) this::toUsuarioDominio)
+					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config))
 				.stream()
 				.filter(usuario -> !esCuentaAdministrativa(usuario.username()))
 				.toList();
@@ -94,42 +117,44 @@ public class ActiveDirectoryDomainService {
 	}
 
 	public DominioUsuarios buscarUsuarios(String query) {
+		LdapRuntimeConfig config = currentConfig();
+		LdapOperations operations = currentOperations(config);
 		String queryNormalizada = query == null ? "" : query.trim();
 		if (queryNormalizada.length() < MIN_QUERY_LENGTH) {
 			return DominioUsuarios.esperandoBusqueda(
 					"Ingrese al menos " + MIN_QUERY_LENGTH + " caracteres para buscar usuarios de dominio.");
 		}
 
-		if (!properties.isEnabled()) {
+		if (!config.enabled()) {
 			return DominioUsuarios.noDisponible("LDAP esta desactivado en este entorno.", queryNormalizada);
 		}
 
-		if (ldapOperations == null) {
+		if (operations == null) {
 			return DominioUsuarios.noDisponible("No hay cliente LDAP de lectura configurado.", queryNormalizada);
 		}
 
-		if (StringUtils.hasText(properties.getReadOnlyUserDn())
-				&& !StringUtils.hasText(properties.getReadOnlyPassword())) {
+		if (StringUtils.hasText(config.readOnlyUserDn())
+				&& !StringUtils.hasText(config.readOnlyPassword())) {
 			return DominioUsuarios.noDisponible("La cuenta LDAP lectora no tiene clave configurada.", queryNormalizada);
 		}
 
 		try {
-			String displayNameAttribute = safeAttributeName(properties.getDisplayNameAttribute(), "displayName");
+			String displayNameAttribute = safeAttributeName(config.displayNameAttribute(), "displayName");
 			SearchControls controls = new SearchControls();
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-			controls.setCountLimit(Math.max(1, properties.getUserSearchLimit()));
+			controls.setCountLimit(Math.max(1, config.userSearchLimit()));
 			controls.setReturningAttributes(new String[] {
 					"sAMAccountName",
 					"userPrincipalName",
 					displayNameAttribute,
-					properties.getFueroAttribute()
+					config.fueroAttribute()
 			});
 
-			List<UsuarioDominio> usuarios = ldapOperations.search(
-					properties.getUserSearchBase(),
-					buildSearchFilter(queryNormalizada, displayNameAttribute),
+			List<UsuarioDominio> usuarios = operations.search(
+					config.userSearchBase(),
+					buildSearchFilter(queryNormalizada, displayNameAttribute, config),
 					controls,
-					(AttributesMapper<UsuarioDominio>) this::toUsuarioDominio);
+					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config));
 			return DominioUsuarios.disponible(usuarios, queryNormalizada);
 		} catch (RuntimeException exception) {
 			LOGGER.warn("No se pudo consultar Active Directory para autorizar usuarios: {}", exception.getMessage());
@@ -138,21 +163,23 @@ public class ActiveDirectoryDomainService {
 	}
 
 	public boolean ldapHabilitado() {
-		return properties.isEnabled();
+		return currentConfig().enabled();
 	}
 
 	public boolean existeUsuario(String username) {
+		LdapRuntimeConfig config = currentConfig();
+		LdapOperations operations = currentOperations(config);
 		if (!StringUtils.hasText(username)) {
 			return false;
 		}
-		if (!properties.isEnabled()) {
+		if (!config.enabled()) {
 			return false;
 		}
-		if (ldapOperations == null) {
+		if (operations == null) {
 			throw new IllegalStateException("No hay cliente LDAP de lectura configurado.");
 		}
-		if (StringUtils.hasText(properties.getReadOnlyUserDn())
-				&& !StringUtils.hasText(properties.getReadOnlyPassword())) {
+		if (StringUtils.hasText(config.readOnlyUserDn())
+				&& !StringUtils.hasText(config.readOnlyPassword())) {
 			throw new IllegalStateException("La cuenta LDAP lectora no tiene clave configurada.");
 		}
 
@@ -161,9 +188,9 @@ public class ActiveDirectoryDomainService {
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			controls.setCountLimit(1);
 			controls.setReturningAttributes(new String[] { "sAMAccountName" });
-			return !ldapOperations.search(
-					properties.getUserSearchBase(),
-					buildExactUserFilter(username),
+			return !operations.search(
+					config.userSearchBase(),
+					buildExactUserFilter(username, config),
 					controls,
 					(AttributesMapper<String>) attrs -> firstText(attrs, "sAMAccountName", "")).isEmpty();
 		} catch (RuntimeException exception) {
@@ -180,14 +207,16 @@ public class ActiveDirectoryDomainService {
 	 * Obtiene todas las Unidades Organizativas (OUs) de Active Directory que representan fueros, juzgados y áreas.
 	 */
 	public List<String> listarFuerosDesdeAd() {
-		if (!properties.isEnabled() || ldapOperations == null) {
+		LdapRuntimeConfig config = currentConfig();
+		LdapOperations operations = currentOperations(config);
+		if (!config.enabled() || operations == null) {
 			return List.of();
 		}
 		try {
 			SearchControls controls = new SearchControls();
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			controls.setReturningAttributes(new String[] { "ou", "name" });
-			List<String> ous = ldapOperations.search(
+			List<String> ous = operations.search(
 					"",
 					"(objectClass=organizationalUnit)",
 					controls,
@@ -214,7 +243,9 @@ public class ActiveDirectoryDomainService {
 	 * Busca una computadora en AD por su nombre y deduce su Fuero jerárquico a partir de las OUs de su distinguishedName.
 	 */
 	public String obtenerFueroDeEquipo(String nombreEquipo) {
-		if (!properties.isEnabled() || ldapOperations == null || !StringUtils.hasText(nombreEquipo)) {
+		LdapRuntimeConfig config = currentConfig();
+		LdapOperations operations = currentOperations(config);
+		if (!config.enabled() || operations == null || !StringUtils.hasText(nombreEquipo)) {
 			return null;
 		}
 		try {
@@ -224,7 +255,7 @@ public class ActiveDirectoryDomainService {
 			controls.setCountLimit(1);
 			controls.setReturningAttributes(new String[] { "distinguishedName" });
 			String filter = "(|(sAMAccountName=" + cleanName + "$)(sAMAccountName=" + cleanName + "))";
-			List<String> results = ldapOperations.search(
+			List<String> results = operations.search(
 					"",
 					filter,
 					controls,
@@ -264,10 +295,10 @@ public class ActiveDirectoryDomainService {
 		return String.join(" - ", ous);
 	}
 
-	private String buildSearchFilter(String query, String displayNameAttribute) {
+	private String buildSearchFilter(String query, String displayNameAttribute, LdapRuntimeConfig config) {
 		String encodedQuery = encodeLdapFilterValue(query);
 		return "(&"
-				+ properties.getUserSearchFilter()
+				+ config.userSearchFilter()
 				+ "(|"
 				+ "(sAMAccountName=*" + encodedQuery + "*)"
 				+ "(userPrincipalName=*" + encodedQuery + "*)"
@@ -275,10 +306,10 @@ public class ActiveDirectoryDomainService {
 				+ "))";
 	}
 
-	private String buildExactUserFilter(String username) {
-		Set<String> candidates = normalizedUserCandidates(username);
+	private String buildExactUserFilter(String username, LdapRuntimeConfig config) {
+		Set<String> candidates = normalizedUserCandidates(username, config);
 		StringBuilder filter = new StringBuilder("(&")
-				.append(properties.getUserSearchFilter())
+				.append(config.userSearchFilter())
 				.append("(|");
 		for (String candidate : candidates) {
 			String encoded = encodeLdapFilterValue(candidate);
@@ -288,7 +319,7 @@ public class ActiveDirectoryDomainService {
 		return filter.append("))").toString();
 	}
 
-	private Set<String> normalizedUserCandidates(String username) {
+	private Set<String> normalizedUserCandidates(String username, LdapRuntimeConfig config) {
 		String clean = username.trim();
 		Set<String> candidates = new LinkedHashSet<>();
 		candidates.add(clean);
@@ -299,8 +330,8 @@ public class ActiveDirectoryDomainService {
 		int at = clean.indexOf('@');
 		if (at > 0) {
 			candidates.add(clean.substring(0, at));
-		} else if (StringUtils.hasText(properties.getDomain()) && !clean.contains("\\")) {
-			candidates.add(clean + "@" + properties.getDomain());
+		} else if (StringUtils.hasText(config.domain()) && !clean.contains("\\")) {
+			candidates.add(clean + "@" + config.domain());
 		}
 		return candidates;
 	}
@@ -321,14 +352,38 @@ public class ActiveDirectoryDomainService {
 		return fallback;
 	}
 
-	private UsuarioDominio toUsuarioDominio(Attributes attributes) throws NamingException {
+	private UsuarioDominio toUsuarioDominio(Attributes attributes, LdapRuntimeConfig config) throws NamingException {
 		String username = firstText(attributes, "sAMAccountName", "");
 		if (!StringUtils.hasText(username)) {
 			username = firstText(attributes, "userPrincipalName", "");
 		}
-		String nombreVisible = firstText(attributes, properties.getDisplayNameAttribute(), username);
-		String fuero = firstText(attributes, properties.getFueroAttribute(), "Sin fuero informado");
+		String nombreVisible = firstText(attributes, config.displayNameAttribute(), username);
+		String fuero = firstText(attributes, config.fueroAttribute(), "Sin fuero informado");
 		return new UsuarioDominio(username, nombreVisible, fuero);
+	}
+
+	private LdapRuntimeConfig currentConfig() {
+		return ldapConfigurationService != null ? ldapConfigurationService.current()
+				: new LdapRuntimeConfig(
+						properties.isEnabled(),
+						properties.getUrl(),
+						properties.getDomain(),
+						properties.getBaseDn(),
+						properties.getDisplayNameAttribute(),
+						properties.getFueroAttribute(),
+						properties.getReadOnlyUserDn(),
+						properties.getReadOnlyPassword(),
+						properties.getUserSearchBase(),
+						properties.getUserSearchFilter(),
+						properties.getUserSearchLimit(),
+						false);
+	}
+
+	private LdapOperations currentOperations(LdapRuntimeConfig config) {
+		if (runtimeLdapClientFactory != null && config.enabled()) {
+			return runtimeLdapClientFactory.createOperations(config);
+		}
+		return ldapOperations;
 	}
 
 	private String firstText(Attributes attributes, String attributeName, String fallback) throws NamingException {

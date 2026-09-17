@@ -106,4 +106,9 @@ public class AdminNavModelAdvice {
 	public boolean canManageUsers(@AuthenticationPrincipal UserDetails userDetails) {
 		return userDetails != null && authorizationService.tienePermiso(userDetails, "USUARIOS", "ADMINISTRAR");
 	}
+
+	@ModelAttribute("canManageSystem")
+	public boolean canManageSystem(@AuthenticationPrincipal UserDetails userDetails) {
+		return userDetails != null && authorizationService.tienePermiso(userDetails, "SISTEMA", "ADMINISTRAR");
+	}
 }

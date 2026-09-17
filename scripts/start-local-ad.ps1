@@ -12,7 +12,8 @@ param(
     [string]$LdapDomain = "podjudsp.local",
     [string]$LdapBaseDn = "DC=podjudsp,DC=local",
     [string]$LdapUserSearchBase = "OU=USUARIOS,OU=PODJUDSP",
-    [string]$LocalAdminPassword = "ClaveLocalSegura123!"
+    [string]$LdapDefaultUser = "gmurad",
+    [string]$LocalAdminPassword = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -139,7 +140,10 @@ $ldapPassword = ""
 if ($ldapReachable) {
     $ldapEnabled = $true
     Write-Host "OK   Active Directory responde en $($ldapUri.Host):$ldapPort" -ForegroundColor Green
-    $ldapUser = Read-Host -Prompt "Usuario lector AD (usuario@podjudsp.local o PODJUDSP\usuario)"
+    $ldapUser = Read-Host -Prompt "Usuario lector AD [$LdapDefaultUser]"
+    if ([string]::IsNullOrWhiteSpace($ldapUser)) {
+        $ldapUser = $LdapDefaultUser
+    }
     if ($ldapUser -notmatch "[@\\]") {
         $ldapUser = "$ldapUser@$LdapDomain"
     }
@@ -158,6 +162,9 @@ $env:SPRING_PROFILES_ACTIVE = "local"
 $env:INVENTARIO_SERVER_PORT = $ServerPort
 $env:INVENTARIO_LOCAL_AUTH_ENABLED = "true"
 $env:INVENTARIO_LOCAL_AUTH_USERNAME = "admin.local"
+if ([string]::IsNullOrWhiteSpace($LocalAdminPassword)) {
+    $LocalAdminPassword = Read-SecretPlain -Prompt "Clave bootstrap para admin.local"
+}
 $env:INVENTARIO_LOCAL_AUTH_PASSWORD = $LocalAdminPassword
 $env:INVENTARIO_LOCAL_DB_AUTH_ENABLED = "true"
 $env:INVENTARIO_MOVIL_APK_PATH = Join-Path $repoRoot "output\android\inventario-tareas-lan-piloto.apk"
@@ -196,8 +203,16 @@ Write-Host "MySQL primario remoto: ${RemoteMysqlHost}:$RemoteMysqlPort/$RemoteMy
 Write-Host "MySQL fallback local: ${LocalMysqlHost}:$LocalMysqlPort/$LocalMysqlDatabase con usuario $localMysqlUser"
 Write-Host "MySQL activo validado antes de arrancar: $activeDbLabel"
 Write-Host "Active Directory: $(if ($ldapEnabled) { 'habilitado' } else { 'deshabilitado; usuarios locales' })"
-Write-Host "Usuario local de prueba: admin.local / $LocalAdminPassword"
+Write-Host "Usuario local bootstrap: admin.local habilitado hasta guardar Active Directory; clave oculta"
 Write-Host "Para detener: Ctrl+C en esta ventana."
 Write-Host ""
 
-.\mvnw.cmd spring-boot:run
+try {
+    .\mvnw.cmd spring-boot:run
+} finally {
+    Remove-Item Env:\INVENTARIO_DB_PRIMARY_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:\INVENTARIO_DB_FALLBACK_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:\INVENTARIO_LDAP_READ_ONLY_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:\INVENTARIO_LOCAL_AUTH_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:\MYSQL_PWD -ErrorAction SilentlyContinue
+}

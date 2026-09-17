@@ -1,6 +1,5 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.config;
 
-import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetailsContextMapper;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LanOnlyAccessFilter;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginAttemptService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginRateLimitFilter;
@@ -8,7 +7,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.ldap.core.LdapOperations;
 import org.springframework.ldap.core.LdapTemplate;
@@ -19,7 +17,6 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.StringUtils;
 
@@ -121,19 +118,4 @@ public class SecurityConfig {
 		return new LdapTemplate(contextSource);
 	}
 
-	@Bean
-	@Order(30)
-	@ConditionalOnProperty(name = "inventario.ldap.enabled", havingValue = "true")
-	AuthenticationProvider activeDirectoryAuthenticationProvider(
-			ActiveDirectoryProperties properties,
-			ActiveDirectoryUserDetailsContextMapper userDetailsContextMapper) {
-		ActiveDirectoryLdapAuthenticationProvider provider =
-				new ActiveDirectoryLdapAuthenticationProvider(
-						properties.getDomain(),
-						properties.getUrl(),
-						properties.getBaseDn());
-		provider.setConvertSubErrorCodesToExceptions(true);
-		provider.setUserDetailsContextMapper(userDetailsContextMapper);
-		return provider;
-	}
 }

@@ -6,14 +6,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ActiveDirectoryProperties {
 
 	private boolean enabled;
-	private String url = "ldap://SERVIDOR_AD:389";
-	private String domain = "DOMINIO";
-	private String baseDn = "DC=ejemplo,DC=local";
+	private String url = "ldap://10.15.0.41:389";
+	private String domain = "podjudsp.local";
+	private String baseDn = "DC=podjudsp,DC=local";
 	private String displayNameAttribute = "displayName";
 	private String fueroAttribute = "department";
 	private String readOnlyUserDn = "";
 	private String readOnlyPassword = "";
-	private String userSearchBase = "";
+	private String userSearchBase = "OU=USUARIOS,OU=PODJUDSP";
 	private String userSearchFilter = "(&(objectClass=user)(!(objectClass=computer)))";
 	private int userSearchLimit = 50;
 

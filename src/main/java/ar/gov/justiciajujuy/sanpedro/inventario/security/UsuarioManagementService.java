@@ -122,6 +122,21 @@ public class UsuarioManagementService {
 	}
 
 	@Transactional
+	public UsuarioResumen asegurarAdministradorDominio(String username, String nombreVisible, String fuero) {
+		String usernameNormalizado = normalizar(username);
+		Set<Rol> rolAdministrador = buscarRoles(Set.of("ADMINISTRADOR"));
+		UsuarioSistema usuario = usuarioSistemaRepository.findByUsernameIgnoreCase(usernameNormalizado)
+				.orElseGet(() -> new UsuarioSistema(
+						usernameNormalizado,
+						StringUtils.hasText(nombreVisible) ? nombreVisible.trim() : usernameNormalizado,
+						StringUtils.hasText(fuero) ? fuero.trim() : "Sin fuero informado",
+						OrigenIdentidad.AD));
+		usuario.setActivo(true);
+		usuario.reemplazarRoles(rolAdministrador);
+		return toResumen(usuarioSistemaRepository.save(usuario));
+	}
+
+	@Transactional
 	public void cambiarPasswordLocal(Long id, String nuevoPassword) {
 		UsuarioSistema usuario = usuarioSistemaRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + id));

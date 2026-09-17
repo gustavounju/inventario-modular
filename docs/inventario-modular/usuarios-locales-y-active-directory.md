@@ -153,6 +153,12 @@ en LDAP.
 
 ## Configuracion y fallback
 
+La configuracion operativa de Active Directory puede cargarse desde
+`Configuracion tecnica -> Active Directory`. Ese flujo arranca con `admin.local`, prueba la
+cuenta lectora LDAP, guarda la clave cifrada en MySQL y deshabilita `admin.local` en el
+siguiente ingreso. El procedimiento completo esta documentado en
+[Configuracion Active Directory desde el sistema](./configuracion-active-directory-bootstrap.md).
+
 El proveedor de usuarios locales de base se controla con:
 
 ```properties

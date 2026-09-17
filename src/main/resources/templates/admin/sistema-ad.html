@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Active Directory - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="shell-wide">
+	<section class="status-panel admin-users-panel">
+		<header th:replace="~{admin/nav :: topbar('Configuracion tecnica', 'Active Directory', 'sistema')}"></header>
+
+		<div class="success-message" th:if="${success != null}" th:text="${success}">Guardado.</div>
+		<div class="error-message" th:if="${error != null}" th:text="${error}">Error.</div>
+
+		<section class="modules-section system-config-console" aria-labelledby="ad-config-title">
+			<div class="section-header">
+				<div>
+					<h2 id="ad-config-title">Conexion institucional</h2>
+					<p class="section-note">Esta configuracion se guarda cifrada en MySQL. La clave lectora no se muestra despues de guardarse.</p>
+				</div>
+				<span class="authorization-badge"
+					  th:classappend="${ldapActual.enabled} ? ' is-authorized' : ' is-pending'"
+					  th:text="${ldapActual.enabled} ? 'AD habilitado' : 'Bootstrap local'">Bootstrap local</span>
+			</div>
+
+			<div class="runtime-grid">
+				<div>
+					<dt>Origen</dt>
+					<dd th:text="${ldapActual.persisted} ? 'MySQL' : 'Propiedades de arranque'">MySQL</dd>
+				</div>
+				<div>
+					<dt>Servidor</dt>
+					<dd th:text="${ldapActual.url}">ldap://10.15.0.41:389</dd>
+				</div>
+				<div>
+					<dt>Usuario lector</dt>
+					<dd th:text="${ldapActual.readOnlyUserDn} ?: 'Sin configurar'">gmurad@podjudsp.local</dd>
+				</div>
+				<div>
+					<dt>Clave</dt>
+					<dd th:text="${hasSavedPassword} ? 'Guardada cifrada' : 'Sin guardar'">Guardada cifrada</dd>
+				</div>
+			</div>
+
+			<form class="user-form system-config-form" th:object="${form}" method="post">
+				<label class="toggle-row">
+					<input type="checkbox" th:field="*{enabled}">
+					<span>Habilitar Active Directory en el proximo ingreso</span>
+				</label>
+
+				<div class="form-grid">
+					<label>
+						<span>URL LDAP</span>
+						<input type="text" th:field="*{url}" placeholder="ldap://10.15.0.41:389" required>
+					</label>
+					<label>
+						<span>Dominio</span>
+						<input type="text" th:field="*{domain}" placeholder="podjudsp.local" required>
+					</label>
+					<label>
+						<span>Base DN login</span>
+						<input type="text" th:field="*{baseDn}" placeholder="DC=podjudsp,DC=local" required>
+					</label>
+					<label>
+						<span>Base busqueda usuarios</span>
+						<input type="text" th:field="*{userSearchBase}" placeholder="OU=USUARIOS,OU=PODJUDSP" required>
+					</label>
+					<label>
+						<span>Usuario lector</span>
+						<input type="text" th:field="*{readOnlyUserDn}" placeholder="gmurad@podjudsp.local" autocomplete="username" required>
+					</label>
+					<label>
+						<span>Clave lector</span>
+						<input type="password" th:field="*{readOnlyPassword}" autocomplete="new-password"
+							   th:placeholder="${hasSavedPassword} ? 'Dejar vacio para conservar la clave guardada' : 'Clave AD del lector'">
+					</label>
+					<label>
+						<span>Atributo nombre</span>
+						<input type="text" th:field="*{displayNameAttribute}" placeholder="displayName">
+					</label>
+					<label>
+						<span>Atributo fuero</span>
+						<input type="text" th:field="*{fueroAttribute}" placeholder="department">
+					</label>
+					<label class="wide-field">
+						<span>Filtro LDAP</span>
+						<input type="text" th:field="*{userSearchFilter}" placeholder="(&(objectClass=user)(!(objectClass=computer)))">
+					</label>
+					<label>
+						<span>Limite busqueda</span>
+						<input type="number" min="1" max="500" th:field="*{userSearchLimit}">
+					</label>
+				</div>
+
+				<div class="decision-actions">
+					<button class="secondary-action" type="submit" th:formaction="@{/admin/sistema/ad/probar}">Probar conexion</button>
+					<button class="primary-action" type="submit" th:formaction="@{/admin/sistema/ad}">Guardar configuracion</button>
+				</div>
+			</form>
+		</section>
+	</section>
+</body>
+</html>

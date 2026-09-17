@@ -86,6 +86,10 @@
 					<span class="sidebar-icon">US</span>
 					<span class="sidebar-text">Usuarios y Permisos</span>
 				</a>
+				<a class="sidebar-link" th:if="${canManageSystem != null ? canManageSystem : true}" th:classappend="${activeModule == 'sistema'} ? ' is-active' : ''" th:href="@{/admin/sistema/ad}">
+					<span class="sidebar-icon">AD</span>
+					<span class="sidebar-text">Active Directory</span>
+				</a>
 			</div>
 		</nav>
 

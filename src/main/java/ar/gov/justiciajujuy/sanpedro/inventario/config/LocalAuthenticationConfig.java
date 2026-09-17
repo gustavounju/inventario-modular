@@ -3,6 +3,7 @@ package ar.gov.justiciajujuy.sanpedro.inventario.config;
 import java.util.List;
 import java.util.Map;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.LdapConfigurationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -27,9 +28,10 @@ import org.springframework.util.StringUtils;
 public class LocalAuthenticationConfig {
 
 	@Bean
-	@Order(20)
+	@Order(30)
 	AuthenticationProvider localAuthenticationProvider(
 			LocalAuthenticationProperties properties,
+			LdapConfigurationService ldapConfigurationService,
 			PasswordEncoder passwordEncoder) {
 		/*
 		 * Este usuario existe solo para estudiar y probar en casa, donde no hay acceso al
@@ -51,6 +53,10 @@ public class LocalAuthenticationConfig {
 			public Authentication authenticate(Authentication authentication) {
 				String username = String.valueOf(authentication.getPrincipal());
 				String password = String.valueOf(authentication.getCredentials());
+				if (ldapConfigurationService.persistentAdEnabled()) {
+					// Cuando AD queda probado y guardado, admin.local deja de ser puerta de entrada normal.
+					throw new BadCredentialsException("El bootstrap local queda deshabilitado cuando Active Directory esta configurado.");
+				}
 				if (coincideUsuarioYPassword(username, password)) {
 					ActiveDirectoryUserDetails principal = crearPrincipalLocal(encodedPassword, properties);
 					return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());

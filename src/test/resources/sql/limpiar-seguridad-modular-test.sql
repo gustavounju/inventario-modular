@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS auditoria_eventos;
 DROP TABLE IF EXISTS rol_modulo_permisos;
 DROP TABLE IF EXISTS usuario_roles;
 DROP TABLE IF EXISTS credenciales_locales;
+DROP TABLE IF EXISTS sistema_configuracion;
 DROP TABLE IF EXISTS permisos;
 DROP TABLE IF EXISTS modulos;
 DROP TABLE IF EXISTS roles;

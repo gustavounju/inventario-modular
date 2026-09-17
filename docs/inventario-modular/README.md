@@ -43,6 +43,7 @@ Inventario Modular se disena como una aplicacion **API-first**:
 - [Modo local Windows sin dominio](./modo-local-windows-sin-dominio.md)
 - [Incidente login local repetido](./incidente-login-local-repetido.md)
 - [Usuarios locales y Active Directory](./usuarios-locales-y-active-directory.md)
+- [Configuracion Active Directory desde el sistema](./configuracion-active-directory-bootstrap.md)
 - [Metodologia ITAM/CMDB de taller](./metodologia-itam-cmdb-taller.md)
 - [Modulo Equipos](./modulo-equipos.md)
 - [Modulo Componentes y Gemelo Digital](./modulo-componentes-gemelo-digital.md)
