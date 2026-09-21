@@ -23,16 +23,16 @@
 			<a th:href="@{/admin/tareas/visor}" class="is-active">Tareas</a>
 			<a th:href="@{/admin}">Panel general</a>
 			<a th:href="@{/movil/tareas}">Vista móvil</a>
-			<a th:if="${session.usuario == null}" th:href="@{/login(redirect='/admin/tareas/visor')}" class="judicial-nav-login" style="font-weight:700; color:#fff; background:rgba(255,255,255,0.18); padding:5px 12px; border-radius:6px; text-decoration:none;">🔑 Iniciar sesión</a>
-			<span th:if="${session.usuario != null}" style="color:rgba(255,255,255,0.85); font-size:0.82rem; margin-left:8px;" th:text="'👤 ' + (${session.usuario.nombreVisible ?: session.usuario.username})"></span>
+			<a th:if="${currentUser == null and (username == null or username.isEmpty())}" th:href="@{/login(redirect='/admin/tareas/visor')}" class="judicial-nav-login" style="font-weight:700; color:#fff; background:rgba(255,255,255,0.18); padding:5px 12px; border-radius:6px; text-decoration:none;">🔑 Iniciar sesión</a>
+			<form th:if="${currentUser != null or (username != null and !username.isEmpty())}" class="judicial-logout-form" th:action="@{/logout}" method="post" style="display:inline; margin:0;">
+				<button type="submit" style="background:transparent; border:none; color:#fff; cursor:pointer; font-weight:600; font-size:0.82rem; padding:5px 10px; border-radius:6px;">Salir</button>
+			</form>
 		</nav>
 	</header>
 
 	<main class="kanban-shell">
 
-		<!-- Notificaciones -->
-		<div th:if="${error}" class="kanban-alert kanban-alert--error" style="background:#fee2e2; border:1px solid #f87171; color:#991b1b; padding:10px 16px; border-radius:8px; margin-bottom:12px; font-weight:600;" th:text="${error}"></div>
-		<div th:if="${mensajeExito}" class="kanban-alert kanban-alert--success" style="background:#dcfce7; border:1px solid #4ade80; color:#166534; padding:10px 16px; border-radius:8px; margin-bottom:12px; font-weight:600;" th:text="${mensajeExito}"></div>
+		<!-- Notificaciones removidas del flujo principal para convertirlas en toasts -->
 
 		<!-- Barra compacta -->
 		<div class="kanban-topbar">
@@ -45,10 +45,36 @@
 				<span id="visor-live-status" class="kanban-live-status" role="status"></span>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin}">Panel general</a>
 				<button type="button" class="kbtn kbtn--primary" onclick="document.getElementById('modal-nueva-tarea').showModal()" th:if="${puedeEditarTareas}">➕ Nueva Tarea</button>
-				<a class="kbtn kbtn--primary" th:if="${session.usuario == null}" th:href="@{/login(redirect='/admin/tareas/visor')}">🔑 Iniciar sesión</a>
-				<form th:if="${session.usuario != null}" th:action="@{/logout}" method="post" style="display:inline;margin:0;">
-					<button type="submit" class="kbtn kbtn--ghost">Salir ↩</button>
-				</form>
+
+				<!-- Botón Iniciar sesión si es visitante -->
+				<a class="kbtn kbtn--primary" th:if="${currentUser == null and (username == null or username.isEmpty())}" th:href="@{/login(redirect='/admin/tareas/visor')}">🔑 Iniciar sesión</a>
+
+				<!-- Pill de usuario y botón Salir como en el panel general si está logueado -->
+				<div class="user-session-pill" th:if="${currentUser != null or (username != null and !username.isEmpty())}" title="Sesión activa">
+					<div class="user-avatar" aria-hidden="true">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+							<circle cx="12" cy="7" r="4"></circle>
+						</svg>
+					</div>
+					<div class="user-meta">
+						<span class="user-name" th:text="${displayName != null and !displayName.isEmpty() ? displayName : (username != null and !username.isEmpty() ? username : 'Usuario')}">Usuario</span>
+						<span class="user-subtext">
+							<span class="user-account" th:text="'@' + ${username != null and !username.isEmpty() ? username : 'local'}">@usuario</span>
+							<span class="user-badge" th:if="${fuero != null and !#strings.isEmpty(fuero)}" th:text="${fuero}">Fuero</span>
+						</span>
+					</div>
+					<form class="logout-form" th:action="@{/logout}" method="post">
+						<button type="submit" class="logout-pill-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
+							<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+								<polyline points="16 17 21 12 16 7"></polyline>
+								<line x1="21" y1="12" x2="9" y2="12"></line>
+							</svg>
+							<span>Salir</span>
+						</button>
+					</form>
+				</div>
 			</div>
 		</div>
 
@@ -83,7 +109,7 @@
 			</div>
 		</form>
 
-		<p class="success-message" th:if="${creado}">La tarea fue actualizada correctamente.</p>
+		<!-- Mensaje removido del flujo principal para convertirlo en toast -->
 
 		<!-- ===== TABLERO KANBAN ===== -->
 		<div class="kanban-board" id="kanban-board">
@@ -540,7 +566,7 @@
 					<select name="responsable" id="dnd-resolver-responsable" class="form-input" required style="width:100%;">
 						<option value="" disabled selected>Seleccione el técnico o responsable...</option>
 						<option th:each="user : ${tecnicosAsignables ?: usuariosFrecuentes}" th:value="${user.username}" th:text="${user.nombreVisible ?: user.username}"></option>
-						<option th:if="${session.usuario != null}" th:value="${session.usuario.username}">A mí mismo (<span th:text="${session.usuario.username}"></span>)</option>
+						<option th:if="${username != null and !username.isEmpty()}" th:value="${username}">A mí mismo (<span th:text="${username}"></span>)</option>
 					</select>
 				</label>
 				<label class="form-label" style="display:flex; flex-direction:column; gap:4px;">
@@ -592,7 +618,7 @@
 					<select name="responsable" class="form-input" required style="width:100%;">
 						<option value="" disabled selected>Seleccione un técnico...</option>
 						<option th:each="user : ${tecnicosAsignables ?: usuariosFrecuentes}" th:value="${user.username}" th:text="${user.nombreVisible ?: user.username}"></option>
-						<option th:if="${session.usuario != null}" th:value="${session.usuario.username}">A mí mismo (<span th:text="${session.usuario.username}"></span>)</option>
+						<option th:if="${username != null and !username.isEmpty()}" th:value="${username}">A mí mismo (<span th:text="${username}"></span>)</option>
 					</select>
 				</label>
 			</div>
@@ -603,5 +629,49 @@
 		</form>
 	</dialog>
 
+	<div class="kanban-toast-container">
+		<div th:if="${error}" class="kanban-toast toast-error" th:text="${error}"></div>
+		<div th:if="${mensajeExito}" class="kanban-toast toast-success" th:text="${mensajeExito}"></div>
+		<div th:if="${creado and mensajeExito == null}" class="kanban-toast toast-success">La tarea fue actualizada correctamente.</div>
+	</div>
+	
+	<style>
+		.kanban-toast-container {
+			position: fixed;
+			bottom: 24px;
+			right: 24px;
+			z-index: 9999;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			pointer-events: none;
+		}
+		.kanban-toast {
+			background: #fff;
+			border-radius: 8px;
+			padding: 14px 20px;
+			box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+			font-weight: 600;
+			font-size: 0.9rem;
+			pointer-events: auto;
+			animation: slideInBottom 0.3s ease-out forwards;
+			transition: opacity 0.5s ease;
+		}
+		.kanban-toast.toast-success { border-left: 5px solid #4ade80; color: #166534; }
+		.kanban-toast.toast-error { border-left: 5px solid #f87171; color: #991b1b; }
+		@keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+	</style>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			const toasts = document.querySelectorAll('.kanban-toast');
+			toasts.forEach(t => {
+				setTimeout(() => {
+					t.style.opacity = '0';
+					setTimeout(() => t.remove(), 500);
+				}, 4000);
+			});
+		});
+	</script>
 </body>
 </html>

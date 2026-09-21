@@ -315,7 +315,7 @@
         $('edit-task').hidden = !mayEdit(task);
         $('delete-task').hidden = !mayDelete(task);
         $('comment-form').hidden = !mayComment(task);
-        $('state-form').hidden = !session.administrador || !isOpen(task);
+        $('state-form').hidden = !(session.administrador || owns(task)) || !isOpen(task);
         $('stock-form').hidden = !mayStock(task) || !isOpen(task) || !stockAvailable.length;
         $('stock-section').hidden = !mayStock(task) && !session.puedeEditar;
         const estadoSelect = $('state-form').elements.estado;
