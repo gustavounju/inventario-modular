@@ -40,7 +40,11 @@ if (Test-HasText $ServerUrl) {
 }
 
 if (-not (Test-HasText $Token)) {
-    throw "Debe indicar un token de inventario en -Token o en la variable INVENTARIO_REPORT_TOKEN."
+    if (Test-HasText $env:INVENTARIO_REPORT_TOKEN) {
+        $Token = $env:INVENTARIO_REPORT_TOKEN
+    } else {
+        $Token = "inventario-lan-token-2026"
+    }
 }
 
 # Escapado minimo para armar JSON compatible con PowerShell viejo y moderno.
