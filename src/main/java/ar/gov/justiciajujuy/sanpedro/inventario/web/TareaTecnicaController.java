@@ -111,13 +111,25 @@ public class TareaTecnicaController {
 		return tareaTecnicaService.tomar(id, userDetails.getUsername());
 	}
 
+	@PostMapping("/{id}/soltar")
+	public TareaTecnicaDetalle soltar(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		exigirTareaPropiaOAdministrador(userDetails, id);
+		return tareaTecnicaService.soltar(id, userDetails.getUsername());
+	}
+
 	@PatchMapping("/{id}/estado")
 	public TareaTecnicaDetalle cambiarEstado(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
 			@Valid @RequestBody CambiarEstadoTareaRequest request) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
-		exigirTareaPropiaOAdministrador(userDetails, id);
+		if (!authorizationService.puedeAdministrarUsuarios(userDetails)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+					"Solo los administradores pueden cambiar el estado de las tareas.");
+		}
 		return tareaTecnicaService.cambiarEstado(id, request.toCommand(), userDetails.getUsername());
 	}
 
@@ -195,18 +207,17 @@ public class TareaTecnicaController {
 	private void exigirPuedeActualizar(UserDetails userDetails, Long tareaId) {
 		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
 		if (authorizationService.puedeAdministrarUsuarios(userDetails)
-				|| puedeGestionarComoTecnico(userDetails, tarea)
-				|| puedeOperarTareaPropiaNoTomada(userDetails, tarea)) {
+				|| esCreador(tarea, userDetails)) {
 			return;
 		}
 		throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-				"Solo puede editar tareas tecnicas propias que aun no fueron tomadas.");
+				"Solo el creador de la tarea o un administrador pueden editarla.");
 	}
 
 	private void exigirPuedeComentar(UserDetails userDetails, Long tareaId) {
 		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
 		if (authorizationService.puedeAdministrarUsuarios(userDetails)
-				|| puedeGestionarComoTecnico(userDetails, tarea)
+				|| esResponsable(tarea, userDetails)
 				|| esCreador(tarea, userDetails)) {
 			return;
 		}
@@ -215,14 +226,11 @@ public class TareaTecnicaController {
 	}
 
 	private void exigirPuedeEliminar(UserDetails userDetails, Long tareaId) {
-		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
-		if (authorizationService.puedeAdministrarUsuarios(userDetails)
-				|| puedeGestionarComoTecnico(userDetails, tarea)
-				|| puedeOperarTareaPropiaNoTomada(userDetails, tarea)) {
+		if (authorizationService.puedeAdministrarUsuarios(userDetails)) {
 			return;
 		}
 		throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-				"Solo puede eliminar tareas propias que aun no fueron tomadas.");
+				"Solo los administradores pueden eliminar tareas técnicas.");
 	}
 
 	private void exigirTareaPropiaOAdministrador(UserDetails userDetails, Long tareaId) {

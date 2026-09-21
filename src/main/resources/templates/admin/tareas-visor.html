@@ -3,11 +3,18 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" th:content="${_csrf.token}">
+	<meta name="csrf-header" th:content="${_csrf.headerName}">
 	<title>Visor de tareas - Inventario Modular</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
+	<link rel="stylesheet" th:href="@{/css/visor-kanban.css}">
 	<script defer th:src="@{/js/visor-live.js}"></script>
+	<script defer th:src="@{/js/visor-dnd.js}"></script>
 </head>
-<body>
+<body th:attr="data-base=@{/}, data-is-admin=${puedeEditarTareas}">
 	<header class="judicial-global-header">
 		<div class="judicial-brand">
 			<h1>Poder Judicial de la Provincia de Jujuy</h1>
@@ -15,288 +22,392 @@
 		<nav class="judicial-main-nav" aria-label="Navegación principal">
 			<a th:href="@{/admin/tareas/visor}" class="is-active">Tareas</a>
 			<a th:href="@{/admin}">Panel general</a>
-			<a th:href="@{/movil/tareas}">Vista movil</a>
+			<a th:href="@{/movil/tareas}">Vista móvil</a>
+			<a th:if="${session.usuario == null}" th:href="@{/login(redirect='/admin/tareas/visor')}" class="judicial-nav-login" style="font-weight:700; color:#fff; background:rgba(255,255,255,0.18); padding:5px 12px; border-radius:6px; text-decoration:none;">🔑 Iniciar sesión</a>
+			<span th:if="${session.usuario != null}" style="color:rgba(255,255,255,0.85); font-size:0.82rem; margin-left:8px;" th:text="'👤 ' + (${session.usuario.nombreVisible ?: session.usuario.username})"></span>
 		</nav>
 	</header>
-	<main class="task-viewer-shell">
-		<section class="task-viewer" aria-labelledby="tareas-visor-title">
-			<p class="success-message" th:if="${creado}">La tarea fue actualizada correctamente.</p>
 
-			<section class="task-viewer-hero" aria-labelledby="tareas-visor-title">
-				<div>
-					<p class="eyebrow">Centro Judicial San Pedro</p>
-					<h2 id="tareas-visor-title">Seguimiento completo del trabajo diario</h2>
-					<p class="section-note">Taller Informatica · Consulta tareas por estado, responsable, solicitante, equipo o texto. Cada fila conserva su historial de comentarios y acciones rápidas.</p>
-				</div>
-				<div class="task-viewer-actions">
-					<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
-					<span id="visor-live-status" class="section-note" role="status"></span>
-					<a class="secondary-action" th:href="@{/admin}">Panel general</a>
-					<a class="primary-action" href="#nueva-tarea" th:if="${puedeEditarTareas}">Nueva tarea</a>
-				</div>
-			</section>
+	<main class="kanban-shell">
 
-			<section class="task-metric-grid" aria-label="Resumen de tareas">
-				<a class="task-metric-card" th:href="@{/admin/tareas/visor}">
-					<span>Total</span>
-					<strong th:text="${resumenTareas.total}">0</strong>
-				</a>
-				<a class="task-metric-card metric-pending" th:href="@{/admin/tareas/visor(estado='PENDIENTE')}">
-					<span>Pendientes</span>
-					<strong th:text="${resumenTareas.pendientes + resumenTareas.enProceso}">0</strong>
-				</a>
-				<a class="task-metric-card metric-done" th:href="@{/admin/tareas/visor(estado='CERRADA')}">
-					<span>Realizadas hoy</span>
-					<strong th:text="${resumenTareas.realizadasHoy}">0</strong>
-				</a>
-				<div class="task-metric-card metric-created">
-					<span>Creadas hoy</span>
-					<strong th:text="${resumenTareas.creadasHoy}">0</strong>
-				</div>
-			</section>
+		<!-- Notificaciones -->
+		<div th:if="${error}" class="kanban-alert kanban-alert--error" style="background:#fee2e2; border:1px solid #f87171; color:#991b1b; padding:10px 16px; border-radius:8px; margin-bottom:12px; font-weight:600;" th:text="${error}"></div>
+		<div th:if="${mensajeExito}" class="kanban-alert kanban-alert--success" style="background:#dcfce7; border:1px solid #4ade80; color:#166534; padding:10px 16px; border-radius:8px; margin-bottom:12px; font-weight:600;" th:text="${mensajeExito}"></div>
 
-			<form class="task-viewer-filter" th:action="@{/admin/tareas/visor}" method="get" role="search">
-				<label>
-					<span>Estado</span>
-					<select name="estado">
-						<option value="">Todos</option>
-						<option th:each="estado : ${estadosTarea}" th:value="${estado}" th:text="${estado}"
-								th:selected="${estado == filtroEstado}">PENDIENTE</option>
-					</select>
-				</label>
-				<label>
-					<span>Equipo</span>
-					<select name="equipoId">
-						<option value="">Todos los equipos</option>
-						<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
-								th:selected="${equipo.id == filtroEquipoId}">PC-INF-001</option>
-					</select>
-				</label>
-				<label class="task-viewer-query">
-					<span>Buscar tarea, usuario o comentario</span>
-					<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120"
-						   placeholder="Ej: Fredes, usuario.tecnico, impresora, PC-INF-001">
-				</label>
-				<div class="form-actions">
-					<button class="primary-action" type="submit">Buscar</button>
-					<a class="secondary-action" th:href="@{/admin/tareas/visor}">Limpiar</a>
-				</div>
-			</form>
-
-			<div class="task-viewer-layout">
-				<section class="task-board" aria-labelledby="tareas-list-title">
-					<div class="section-header">
-						<div>
-							<h2 id="tareas-list-title">Tareas encontradas</h2>
-							<p class="section-note" th:text="${#lists.size(tareas)} + ' registros para el filtro actual'">0 registros para el filtro actual</p>
-						</div>
-					</div>
-
-					<p class="empty-state" th:if="${#lists.isEmpty(tareas)}">No hay tareas con esos criterios.</p>
-
-					<article class="task-row-card" th:each="tarea : ${tareas}">
-						<div class="task-row-main">
-							<div class="task-row-title">
-								<span class="task-id" th:text="'#' + ${tarea.id}">#1</span>
-								<h3 th:text="${tarea.titulo}">Revisar mantenimiento preventivo</h3>
-							</div>
-							<p th:text="${tarea.descripcion ?: 'Sin descripción cargada.'}">Detalle de la tarea.</p>
-							<div class="task-row-tags">
-								<span class="authorization-badge" th:classappend="${tarea.estado.name() == 'CERRADA'} ? ' is-authorized' : (${tarea.estado.name() == 'CANCELADA'} ? ' is-rejected' : ' is-pending')" th:text="${tarea.estado.name() == 'EN_PROCESO' ? 'PENDIENTE' : tarea.estado}">PENDIENTE</span>
-								<span class="count-badge" th:text="${tarea.prioridad}">MEDIA</span>
-								<span class="count-badge" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
-							</div>
-						</div>
-
-						<dl class="task-row-meta">
-							<div>
-								<dt>Solicitante</dt>
-								<dd>
-									<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Mesa de Entrada</strong>
-									<span th:if="${tarea.solicitanteUsername != null and tarea.solicitanteNombre != null and not #strings.equalsIgnoreCase(tarea.solicitanteUsername, tarea.solicitanteNombre)}"
-										  th:text="'Usuario AD: ' + ${tarea.solicitanteUsername}">Usuario AD: mesa.entrada</span>
-									<span th:text="'Fuero solicitante: ' + ${tarea.solicitanteFuero ?: 'Sin fuero informado'}">Fuero solicitante: Mesa de ayuda</span>
-								</dd>
-							</div>
-							<div>
-								<dt>Responsable</dt>
-								<dd>
-									<strong th:text="${tarea.responsable ?: 'Sin tomar'}">admin.local</strong>
-									<span th:text="${tarea.responsable != null ? 'Tecnico del taller' : 'Pendiente de tomar'}">Tecnico del taller</span>
-								</dd>
-							</div>
-							<div>
-								<dt>Fechas</dt>
-								<dd>
-									<strong th:text="${tarea.creadoEn != null ? #temporals.format(tarea.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">09/09/2026 09:00</strong>
-									<span th:if="${tarea.cerradoEn != null}" th:text="'Cierre ' + ${#temporals.format(tarea.cerradoEn, 'dd/MM/yyyy HH:mm')}">Cierre</span>
-								</dd>
-							</div>
-						</dl>
-
-						<section class="task-comments" th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}" aria-label="Comentarios de tarea">
-							<div th:each="comentario : ${comentariosPorTarea[tarea.id]}" class="task-comment">
-								<strong th:text="${comentario.autor}">admin.local</strong>
-								<span th:text="${comentario.creadoEn != null ? #temporals.format(comentario.creadoEn, 'dd/MM/yyyy HH:mm') : ''}">09/09/2026 10:00</span>
-								<p th:text="${comentario.comentario}">Comentario de avance.</p>
-							</div>
-						</section>
-						<div class="task-stock-summary" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}">
-							<button type="button" class="secondary-action task-stock-open"
-									th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').showModal()|"
-									th:text="'Ver stock (' + ${#lists.size(stockPorTarea[tarea.id])} + ')'">Ver stock</button>
-						</div>
-						<dialog class="modal-dialog task-stock-modal" th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
-								th:id="|stock-modal-visor-${tarea.id}|">
-							<div class="modal-content">
-								<header class="task-stock-modal-header">
-									<div>
-										<strong th:text="'Tarea #' + ${tarea.id} + ' - ' + ${tarea.titulo}">Tarea</strong>
-										<span th:text="${tarea.equipoNombre ?: 'PC generica'}">Equipo</span>
-									</div>
-									<button type="button" class="secondary-action" th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').close()|">Cerrar</button>
-								</header>
-								<section class="task-stock-ledger" aria-label="Movimientos de stock en tarea">
-									<header class="task-stock-ledger-header">
-										<span>Movimientos de stock</span>
-										<small th:text="${#lists.size(stockPorTarea[tarea.id])} + ' registros'">0 registros</small>
-									</header>
-									<article th:each="uso : ${stockPorTarea[tarea.id]}" class="task-stock-item" th:classappend="${uso.estadoCssClass()}">
-										<div class="task-stock-topline">
-											<span class="task-stock-state" th:text="${uso.etiquetaEstadoTarea()}">Estado</span>
-											<span class="task-stock-date" th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">09/09/2026 10:00</span>
-										</div>
-										<div class="task-stock-body">
-											<strong th:text="'#' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">#54 - DISCO</strong>
-											<span th:text="${uso.descripcion}">Descripcion</span>
-										</div>
-										<div class="task-stock-meta">
-											<span th:text="${uso.estadoStock}">DISPONIBLE</span>
-											<span th:if="${uso.serial != null}" th:text="'Serial: ' + ${uso.serial}">Serial</span>
-											<span th:if="${uso.observacion != null}" th:text="'Nota: ' + ${uso.observacion}">Nota</span>
-										</div>
-										<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn != null}"
-										   th:text="|Asignado a ${uso.equipoDesvinculadoTexto()} y luego desvinculado por ${uso.usuarioDesvinculadoTexto()} el ${#temporals.format(uso.desvinculadoEn, 'dd/MM/yyyy HH:mm')}. Motivo: ${uso.motivoDesvinculacionTexto()}|">Componente desvinculado.</p>
-										<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn == null}"
-										   th:text="'Este componente ya no está instalado/asignado al equipo de la tarea; volvió a stock como DISPONIBLE.'">Componente desvinculado.</p>
-										<form class="task-inline-form"
-											  th:if="${puedeEditarTareas and uso.estadoStock == 'RESERVADO' and !#lists.isEmpty(equipos)}"
-											  th:action="@{/admin/tareas/{id}/stock/{usoStockId}/instalar(id=${tarea.id},usoStockId=${uso.id})}"
-											  method="post">
-											<input type="hidden" name="origen" value="visor">
-											<select name="equipoId" aria-label="Equipo destino" required>
-												<option value="">Instalar en equipo</option>
-												<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
-											</select>
-											<input name="ubicacion" maxlength="120" placeholder="Ranura o ubicacion">
-											<button class="primary-action" type="submit">Instalar en equipo</button>
-										</form>
-									</article>
-								</section>
-							</div>
-						</dialog>
-						<p class="table-subtext" th:if="${comentariosPorTarea[tarea.id] == null or #lists.isEmpty(comentariosPorTarea[tarea.id])}">Sin comentarios cargados.</p>
-
-						<div class="task-row-actions" th:if="${puedeEditarTareas}">
-							<form th:if="${tarea.responsable == null}" th:action="@{/admin/tareas/{id}/tomar(id=${tarea.id})}" method="post">
-								<input type="hidden" name="origen" value="visor">
-								<button class="secondary-action" type="submit">Tomar</button>
-							</form>
-							<form class="task-inline-form" th:if="${tarea.estado.name() == 'PENDIENTE' or tarea.estado.name() == 'EN_PROCESO'}"
-								  th:action="@{/admin/tareas/{id}/estado(id=${tarea.id})}" method="post">
-								<input type="hidden" name="origen" value="visor">
-								<select name="estado" aria-label="Estado">
-									<option th:each="estado : ${estadosTarea}" th:value="${estado}" th:text="${estado}"
-											th:selected="${estado == tarea.estado}">PENDIENTE</option>
-								</select>
-								<input name="observacionesCierre" maxlength="1000" placeholder="Nota de cierre o cambio">
-								<button class="primary-action" type="submit">Actualizar</button>
-							</form>
-							<form class="task-inline-form" th:action="@{/admin/tareas/{id}/comentarios(id=${tarea.id})}" method="post">
-								<input type="hidden" name="origen" value="visor">
-								<input name="comentario" maxlength="1000" required placeholder="Agregar comentario">
-								<button class="secondary-action" type="submit">Comentar</button>
-							</form>
-							<form class="task-inline-form" th:if="${!#lists.isEmpty(stockDisponibleParaTareas)}" th:action="@{/admin/tareas/{id}/stock(id=${tarea.id})}" method="post">
-								<input type="hidden" name="origen" value="visor">
-								<select name="stockComponenteId" aria-label="Stock usado" required>
-									<option value="">Usar stock</option>
-									<option th:each="stock : ${stockDisponibleParaTareas}" th:value="${stock.id}"
-											th:text="'#' + ${stock.id} + ' ' + ${stock.tipo} + ' - ' + ${stock.descripcion}">Stock</option>
-								</select>
-								<input name="observacion" maxlength="500" placeholder="Motivo o destino">
-								<button class="secondary-action" type="submit">Registrar stock</button>
-							</form>
-							<form th:action="@{/admin/tareas/{id}/eliminar(id=${tarea.id})}" method="post" onsubmit="return confirm('¿Eliminar esta tarea y sus comentarios?');">
-								<input type="hidden" name="origen" value="visor">
-								<button class="secondary-action button-danger-subtle" type="submit">Eliminar</button>
-							</form>
-						</div>
-					</article>
-				</section>
-
-				<aside class="task-create-panel" id="nueva-tarea" th:if="${puedeEditarTareas}" aria-labelledby="nueva-tarea-title">
-					<h2 id="nueva-tarea-title">Crear tarea</h2>
-					<form class="equipment-form" th:action="@{/admin/tareas}" th:object="${tareaForm}" method="post">
-						<input type="hidden" name="origen" value="visor">
-						<label>
-							<span>Quién solicita</span>
-							<select id="visor-solicitante-select" required>
-								<option value="">Seleccione solicitante</option>
-								<option th:each="solicitante : ${solicitantes}"
-										th:value="${solicitante.username}"
-										th:text="${solicitante.username + ' - ' + solicitante.nombreVisible}"
-										th:attr="data-nombre=${solicitante.nombreVisible},data-fuero=${solicitante.fuero}">
-									mesa.entrada - Mesa de Entrada
-								</option>
-							</select>
-							<input type="hidden" th:field="*{solicitanteUsername}" id="visor-solicitante-username">
-							<input type="hidden" th:field="*{solicitanteNombre}" id="visor-solicitante-nombre">
-						</label>
-						<label>
-							<span>Fuero / Unidad</span>
-							<select th:field="*{solicitanteFuero}" id="visor-solicitante-fuero" required>
-								<option value="">Seleccione fuero</option>
-								<option th:each="fuero : ${fuerosDisponibles}" th:value="${fuero}" th:text="${fuero}">Informatica</option>
-							</select>
-						</label>
-						<label>
-							<span>Equipo afectado</span>
-							<select th:field="*{equipoId}">
-								<option value="">PC genérica</option>
-								<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
-							</select>
-						</label>
-						<label>
-							<span>Prioridad</span>
-							<select th:field="*{prioridad}">
-								<option th:each="prioridad : ${prioridadesTarea}" th:value="${prioridad}" th:text="${prioridad}">MEDIA</option>
-							</select>
-						</label>
-						<label>
-							<span>Responsable</span>
-							<select th:if="${puedeAsignarResponsable}" th:field="*{responsable}">
-								<option value="">Sin tomar</option>
-								<option th:each="tecnico : ${tecnicosAsignables}" th:value="${tecnico.username}" th:text="${tecnico.username + ' - ' + tecnico.nombreVisible}">usuario.tecnico</option>
-							</select>
-							<input th:unless="${puedeAsignarResponsable}" th:field="*{responsable}" th:value="${usuarioActual}" maxlength="120" readonly>
-						</label>
-						<label>
-							<span>Título</span>
-							<input th:field="*{titulo}" maxlength="180" required placeholder="Ej: revisar equipo de Fredes">
-						</label>
-						<label>
-							<span>Descripción</span>
-							<textarea th:field="*{descripcion}" maxlength="1000" rows="5" placeholder="Detalle del pedido, usuario, oficina y síntomas."></textarea>
-						</label>
-						<button class="primary-action" type="submit">Guardar tarea</button>
-					</form>
-				</aside>
+		<!-- Barra compacta -->
+		<div class="kanban-topbar">
+			<a class="kanban-total-pill" th:href="@{/admin/tareas/visor}">
+				<span class="kanban-total-num" th:text="${resumenTareas.total}">0</span>
+				<span class="kanban-total-lbl">tareas</span>
+			</a>
+			<div class="kanban-topbar-actions">
+				<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
+				<span id="visor-live-status" class="kanban-live-status" role="status"></span>
+				<a class="kbtn kbtn--secondary" th:href="@{/admin}">Panel general</a>
+				<button type="button" class="kbtn kbtn--primary" onclick="document.getElementById('modal-nueva-tarea').showModal()" th:if="${puedeEditarTareas}">➕ Nueva Tarea</button>
+				<a class="kbtn kbtn--primary" th:if="${session.usuario == null}" th:href="@{/login(redirect='/admin/tareas/visor')}">🔑 Iniciar sesión</a>
+				<form th:if="${session.usuario != null}" th:action="@{/logout}" method="post" style="display:inline;margin:0;">
+					<button type="submit" class="kbtn kbtn--ghost">Salir ↩</button>
+				</form>
 			</div>
-		</section>
+		</div>
+
+		<!-- Filtros -->
+		<form class="kanban-filters" th:action="@{/admin/tareas/visor}" method="get" role="search">
+			<label class="kfilter-label">
+				<span>Estado</span>
+				<select name="estado" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
+					<option value="">Todos</option>
+					<option th:each="estado : ${estadosTarea}" th:value="${estado}"
+							th:text="${estado.name() == 'EN_PROCESO' ? 'EN PROCESO' : estado}"
+							th:selected="${estado == filtroEstado}">PENDIENTE</option>
+				</select>
+			</label>
+			<label class="kfilter-label">
+				<span>Equipo</span>
+				<select name="equipoId" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
+					<option value="">Todos</option>
+					<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
+							th:selected="${equipo.id == filtroEquipoId}">PC-INF-001</option>
+				</select>
+			</label>
+			<label class="kfilter-label kfilter-label--wide">
+				<span>Buscar</span>
+				<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120"
+					   class="kfilter-input" th:disabled="${!puedeEditarTareas}"
+					   th:placeholder="${puedeEditarTareas ? 'Tarea, usuario, equipo o comentario…' : 'Búsqueda disponible sólo para administradores'}">
+			</label>
+			<div class="kfilter-actions">
+				<button class="kbtn kbtn--primary" type="submit" th:disabled="${!puedeEditarTareas}" th:title="${!puedeEditarTareas ? 'Modo sólo lectura' : ''}">Buscar</button>
+				<a class="kbtn kbtn--ghost" th:href="@{/admin/tareas/visor}" th:if="${puedeEditarTareas}">Limpiar</a>
+			</div>
+		</form>
+
+		<p class="success-message" th:if="${creado}">La tarea fue actualizada correctamente.</p>
+
+		<!-- ===== TABLERO KANBAN ===== -->
+		<div class="kanban-board" id="kanban-board">
+
+			<!-- Columna: NUEVAS (PENDIENTE sin responsable) -->
+			<section class="kanban-col kanban-col--new" aria-labelledby="col-new-title" data-status="PENDIENTE">
+				<header class="kanban-col-header">
+					<span class="kanban-col-dot kanban-col-dot--new"></span>
+					<h3 class="kanban-col-title" id="col-new-title">Nuevas</h3>
+					<span class="kanban-col-count" th:text="${resumenTareas.pendientes}">0</span>
+				</header>
+				<div class="kanban-col-content">
+					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'PENDIENTE' and responsable == null])}">Sin tareas nuevas.</p>
+					<th:block th:each="tarea : ${tareas}"
+							  th:if="${tarea.estado.name() == 'PENDIENTE' and tarea.responsable == null}">
+						<article class="kcard kcard--new" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
+							<div class="kcard-header">
+								<span class="kcard-id" th:text="'#' + ${tarea.id}">#1</span>
+								<span class="kbadge kbadge--priority"
+									  th:classappend="${tarea.prioridad.name() == 'ALTA' ? ' kbadge--alta' : (tarea.prioridad.name() == 'BAJA' ? ' kbadge--baja' : ' kbadge--media')}"
+									  th:text="${tarea.prioridad}">MEDIA</span>
+							</div>
+							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
+							<p class="kcard-desc" th:if="${tarea.descripcion != null and !#strings.isEmpty(tarea.descripcion)}"
+							   th:text="${tarea.descripcion}">Descripción</p>
+							<div class="kcard-meta">
+								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
+								<span class="kcard-meta-item kcard-meta-item--solicitante"
+									  th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: '—'}">Solicitante</span>
+								<span class="kcard-meta-item kcard-meta-item--fuero"
+									  th:if="${tarea.solicitanteFuero != null and !#strings.isEmpty(tarea.solicitanteFuero)}"
+									  th:text="${tarea.solicitanteFuero}">Fuero</span>
+								<span class="kcard-meta-item kcard-meta-item--date"
+									  th:text="${tarea.creadoEn != null ? #temporals.format(tarea.creadoEn, 'dd/MM HH:mm') : ''}">01/01 09:00</span>
+							</div>
+							<!-- Botones de comentarios y stock (solo si tienen contenido) -->
+							<div class="kcard-badges">
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--comments"
+										th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('comments-modal-${tarea.id}').showModal()|"
+										th:text="'💬 ' + ${#lists.size(comentariosPorTarea[tarea.id])}">💬 2</button>
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--stock"
+										th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').showModal()|"
+										th:text="'📦 ' + ${#lists.size(stockPorTarea[tarea.id])}">📦 1</button>
+							</div>
+							<!-- Acciones rápidas -->
+							<div class="kcard-actions" th:if="${puedeEditarTareas}">
+								<form th:action="@{/admin/tareas/{id}/tomar(id=${tarea.id})}" method="post">
+									<input type="hidden" name="origen" value="visor">
+									<button class="kbtn kbtn--sm kbtn--primary" type="submit">Tomar</button>
+								</form>
+								<a class="kbtn kbtn--sm kbtn--ghost" th:href="@{/admin/tareas/visor(estado=PENDIENTE)}">Ver filtro</a>
+							</div>
+						</article>
+					</th:block>
+				</div>
+			</section>
+
+			<!-- Columna: EN PROCESO -->
+			<section class="kanban-col kanban-col--progress" aria-labelledby="col-progress-title" data-status="EN_PROCESO">
+				<header class="kanban-col-header">
+					<span class="kanban-col-dot kanban-col-dot--progress"></span>
+					<h3 class="kanban-col-title" id="col-progress-title">En proceso</h3>
+					<span class="kanban-col-count" th:text="${resumenTareas.enProceso}">0</span>
+				</header>
+				<div class="kanban-col-content">
+					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'EN_PROCESO' or (estado.name() == 'PENDIENTE' and responsable != null)])}">Sin tareas en proceso.</p>
+					<th:block th:each="tarea : ${tareas}"
+							  th:if="${tarea.estado.name() == 'EN_PROCESO' or (tarea.estado.name() == 'PENDIENTE' and tarea.responsable != null)}">
+						<article class="kcard kcard--progress" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
+							<div class="kcard-header">
+								<span class="kcard-id" th:text="'#' + ${tarea.id}">#1</span>
+								<span class="kbadge kbadge--priority"
+									  th:classappend="${tarea.prioridad.name() == 'ALTA' ? ' kbadge--alta' : (tarea.prioridad.name() == 'BAJA' ? ' kbadge--baja' : ' kbadge--media')}"
+									  th:text="${tarea.prioridad}">MEDIA</span>
+							</div>
+							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
+							<p class="kcard-desc" th:if="${tarea.descripcion != null and !tarea.descripcion.isEmpty()}"
+							   th:text="${tarea.descripcion}">Descripción</p>
+							<div class="kcard-meta">
+								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
+								<span class="kcard-meta-item kcard-meta-item--solicitante"
+									  th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: '—'}">Solicitante</span>
+								<span class="kcard-meta-item kcard-meta-item--fuero"
+									  th:if="${tarea.solicitanteFuero != null and !#strings.isEmpty(tarea.solicitanteFuero)}"
+									  th:text="${tarea.solicitanteFuero}">Fuero</span>
+								<span class="kcard-meta-item kcard-meta-item--assignee"
+									  th:if="${tarea.responsable != null}"
+									  th:text="'→ ' + ${tarea.responsable}">→ técnico</span>
+								<span class="kcard-meta-item kcard-meta-item--date"
+									  th:text="${tarea.creadoEn != null ? #temporals.format(tarea.creadoEn, 'dd/MM HH:mm') : ''}">01/01 09:00</span>
+							</div>
+							<div class="kcard-badges">
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--comments"
+										th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('comments-modal-${tarea.id}').showModal()|"
+										th:text="'💬 ' + ${#lists.size(comentariosPorTarea[tarea.id])}">💬 2</button>
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--stock"
+										th:if="${(stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])) or tarea.estado.name() == 'EN_PROCESO'}"
+										th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').showModal()|"
+										th:text="'📦 ' + (${stockPorTarea[tarea.id] != null ? #lists.size(stockPorTarea[tarea.id]) : 0})">📦 1</button>
+							</div>
+							<div class="kcard-actions" th:if="${puedeEditarTareas}">
+								<form class="kcard-inline-form"
+									  th:action="@{/admin/tareas/{id}/estado(id=${tarea.id})}" method="post">
+									<input type="hidden" name="origen" value="visor">
+									<select name="estado" class="kfilter-select kfilter-select--sm" aria-label="Cambiar estado">
+										<option th:each="est : ${estadosTarea}" th:value="${est}"
+												th:text="${est.name() == 'EN_PROCESO' ? 'EN PROCESO' : est}"
+												th:selected="${est == tarea.estado}">PENDIENTE</option>
+									</select>
+									<input name="observacionesCierre" maxlength="200" class="kfilter-input kfilter-input--sm" placeholder="Nota de cierre…">
+									<button class="kbtn kbtn--sm kbtn--primary" type="submit">Aplicar</button>
+								</form>
+								<form class="kcard-inline-form" th:action="@{/admin/tareas/{id}/comentarios(id=${tarea.id})}" method="post">
+									<input type="hidden" name="origen" value="visor">
+									<input name="comentario" maxlength="1000" required class="kfilter-input kfilter-input--sm" placeholder="Agregar comentario…">
+									<button class="kbtn kbtn--sm kbtn--secondary" type="submit">💬</button>
+								</form>
+								<form class="kcard-inline-form" th:action="@{/admin/tareas/{id}/soltar(id=${tarea.id})}" method="post">
+									<input type="hidden" name="origen" value="visor">
+									<button class="kbtn kbtn--sm kbtn--ghost kbtn--danger" type="submit" title="Soltar tarea">⏏ Soltar</button>
+								</form>
+							</div>
+						</article>
+					</th:block>
+				</div>
+			</section>
+
+			<!-- Columna: CERRADAS -->
+			<section class="kanban-col kanban-col--done" aria-labelledby="col-done-title" data-status="CERRADA">
+				<header class="kanban-col-header">
+					<span class="kanban-col-dot kanban-col-dot--done"></span>
+					<h3 class="kanban-col-title" id="col-done-title">Terminadas</h3>
+					<span class="kanban-col-count" th:text="${resumenTareas.realizadasHoy}">0</span>
+				</header>
+				<div class="kanban-col-content">
+					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'CERRADA'])}">Sin tareas cerradas en el filtro actual.</p>
+					<th:block th:each="tarea : ${tareas}" th:if="${tarea.estado.name() == 'CERRADA'}">
+						<article class="kcard kcard--done" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
+							<div class="kcard-header">
+								<span class="kcard-id" th:text="'#' + ${tarea.id}">#1</span>
+								<span class="kbadge kbadge--done">✔ Cerrada</span>
+							</div>
+							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
+							<p class="kcard-desc" th:if="${tarea.observacionesCierre != null and !#strings.isEmpty(tarea.observacionesCierre)}"
+							   th:text="${tarea.observacionesCierre}">Nota de cierre</p>
+							<div class="kcard-meta">
+								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
+								<span class="kcard-meta-item kcard-meta-item--assignee"
+									  th:if="${tarea.responsable != null}"
+									  th:text="'→ ' + ${tarea.responsable}">→ técnico</span>
+								<span class="kcard-meta-item kcard-meta-item--date"
+									  th:if="${tarea.cerradoEn != null}"
+									  th:text="'Cierre: ' + ${#temporals.format(tarea.cerradoEn, 'dd/MM HH:mm')}">Cierre: 01/01 10:00</span>
+							</div>
+							<div class="kcard-badges">
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--comments"
+										th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('comments-modal-${tarea.id}').showModal()|"
+										th:text="'💬 ' + ${#lists.size(comentariosPorTarea[tarea.id])}">💬 2</button>
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--stock"
+										th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').showModal()|"
+										th:text="'📦 ' + ${#lists.size(stockPorTarea[tarea.id])}">📦 1</button>
+							</div>
+						</article>
+					</th:block>
+				</div>
+			</section>
+
+			<!-- Columna: CANCELADAS -->
+			<section class="kanban-col kanban-col--cancelled" aria-labelledby="col-cancel-title" data-status="CANCELADA">
+				<header class="kanban-col-header">
+					<span class="kanban-col-dot kanban-col-dot--cancelled"></span>
+					<h3 class="kanban-col-title" id="col-cancel-title">Canceladas</h3>
+					<span class="kanban-col-count" th:text="${#lists.size(tareas.?[estado.name() == 'CANCELADA'])}">0</span>
+				</header>
+				<div class="kanban-col-content">
+					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'CANCELADA'])}">Sin tareas canceladas.</p>
+					<th:block th:each="tarea : ${tareas}" th:if="${tarea.estado.name() == 'CANCELADA'}">
+						<article class="kcard kcard--cancelled" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
+							<div class="kcard-header">
+								<span class="kcard-id" th:text="'#' + ${tarea.id}">#1</span>
+								<span class="kbadge kbadge--cancelled">✕ Cancelada</span>
+							</div>
+							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
+							<p class="kcard-desc" th:if="${tarea.observacionesCierre != null and !#strings.isEmpty(tarea.observacionesCierre)}"
+							   th:text="${tarea.observacionesCierre}">Motivo cancelación</p>
+							<div class="kcard-meta">
+								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
+								<span class="kcard-meta-item kcard-meta-item--date"
+									  th:if="${tarea.cerradoEn != null}"
+									  th:text="${#temporals.format(tarea.cerradoEn, 'dd/MM HH:mm')}">01/01 10:00</span>
+							</div>
+							<div class="kcard-badges">
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--comments"
+										th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('comments-modal-${tarea.id}').showModal()|"
+										th:text="'💬 ' + ${#lists.size(comentariosPorTarea[tarea.id])}">💬 2</button>
+								<button type="button" class="kcard-badge-btn kcard-badge-btn--stock"
+										th:if="${stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])}"
+										th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').showModal()|"
+										th:text="'📦 ' + ${#lists.size(stockPorTarea[tarea.id])}">📦 1</button>
+							</div>
+						</article>
+					</th:block>
+				</div>
+			</section>
+
+		</div><!-- /kanban-board -->
+
 	</main>
 
+	<!-- ===== MODALES (fuera del main para z-index correcto) ===== -->
+	<th:block th:each="tarea : ${tareas}">
+
+		<!-- Modal: Comentarios -->
+		<dialog class="kmodal" th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}"
+				th:id="'comments-modal-' + ${tarea.id}">
+			<div class="kmodal-content">
+				<header class="kmodal-header">
+					<div class="kmodal-header-text">
+						<strong th:text="'Tarea #' + ${tarea.id} + ' — ' + ${tarea.titulo}">Tarea</strong>
+						<span class="kmodal-header-sub">Comentarios</span>
+					</div>
+					<button type="button" class="kmodal-close" th:onclick="|document.getElementById('comments-modal-${tarea.id}').close()|" aria-label="Cerrar">✕</button>
+				</header>
+				<div class="kmodal-body">
+					<div class="kcomment" th:each="comentario : ${comentariosPorTarea[tarea.id]}">
+						<div class="kcomment-meta">
+							<span class="kcomment-author" th:text="${comentario.autor}">autor</span>
+							<span class="kcomment-date" th:text="${comentario.creadoEn != null ? #temporals.format(comentario.creadoEn, 'dd/MM/yyyy HH:mm') : ''}">01/01 10:00</span>
+						</div>
+						<p class="kcomment-text" th:text="${comentario.comentario}">Texto del comentario.</p>
+					</div>
+					<!-- Agregar comentario desde el modal (solo si puede editar) -->
+					<form class="kcomment-form" th:if="${puedeEditarTareas}"
+						  th:action="@{/admin/tareas/{id}/comentarios(id=${tarea.id})}" method="post">
+						<input type="hidden" name="origen" value="visor">
+						<textarea name="comentario" maxlength="1000" required rows="3" placeholder="Escribir comentario…"></textarea>
+						<button class="kbtn kbtn--primary kbtn--sm" type="submit">Agregar comentario</button>
+					</form>
+				</div>
+			</div>
+		</dialog>
+
+		<!-- Modal: Stock usado -->
+		<dialog class="kmodal kmodal--wide" th:if="${(stockPorTarea[tarea.id] != null and !#lists.isEmpty(stockPorTarea[tarea.id])) or tarea.estado.name() == 'EN_PROCESO'}"
+				th:id="'stock-modal-visor-' + ${tarea.id}">
+			<div class="kmodal-content">
+				<header class="kmodal-header">
+					<div class="kmodal-header-text">
+						<strong th:text="'Tarea #' + ${tarea.id} + ' — ' + ${tarea.titulo}">Tarea</strong>
+						<span class="kmodal-header-sub" th:text="${tarea.equipoNombre ?: 'PC genérica'}">Equipo</span>
+					</div>
+					<button type="button" class="kmodal-close" th:onclick="|document.getElementById('stock-modal-visor-${tarea.id}').close()|" aria-label="Cerrar">✕</button>
+				</header>
+				<div class="kmodal-body">
+					<p class="kmodal-section-label">Movimientos de stock
+						<small th:text="'(' + (${stockPorTarea[tarea.id] != null ? #lists.size(stockPorTarea[tarea.id]) : 0}) + ' registros)'"></small>
+					</p>
+					
+					<p class="kanban-empty" th:if="${stockPorTarea[tarea.id] == null or #lists.isEmpty(stockPorTarea[tarea.id])}">
+						No hay stock asociado a esta tarea.
+					</p>
+
+					<article th:each="uso : ${stockPorTarea[tarea.id]}" class="kstock-item" th:classappend="${uso.estadoCssClass()}">
+						<div class="kstock-topline">
+							<span class="kstock-state" th:text="${uso.etiquetaEstadoTarea()}">Estado</span>
+							<span class="kstock-date" th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">01/01 10:00</span>
+						</div>
+						<div class="kstock-body">
+							<strong th:text="'#' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">#54 - DISCO</strong>
+							<span th:text="${uso.descripcion}">Descripción</span>
+						</div>
+						<div class="kstock-meta">
+							<span th:text="${uso.estadoStock}">DISPONIBLE</span>
+							<span th:if="${uso.serial != null}" th:text="'Serial: ' + ${uso.serial}">Serial</span>
+							<span th:if="${uso.observacion != null}" th:text="'Nota: ' + ${uso.observacion}">Nota</span>
+						</div>
+						<p class="kstock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn != null}"
+						   th:text="|Asignado a ${uso.equipoDesvinculadoTexto()} y luego desvinculado por ${uso.usuarioDesvinculadoTexto()} el ${#temporals.format(uso.desvinculadoEn, 'dd/MM/yyyy HH:mm')}. Motivo: ${uso.motivoDesvinculacionTexto()}|"></p>
+						<p class="kstock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn == null}">
+							Este componente volvió a stock como DISPONIBLE.
+						</p>
+						<form class="kstock-install-form"
+							  th:if="${puedeEditarTareas and uso.estadoStock == 'RESERVADO' and !#lists.isEmpty(equipos)}"
+							  th:action="@{/admin/tareas/{id}/stock/{usoStockId}/instalar(id=${tarea.id},usoStockId=${uso.id})}"
+							  method="post">
+							<input type="hidden" name="origen" value="visor">
+							<select name="equipoId" aria-label="Equipo destino" required>
+								<option value="">Instalar en equipo…</option>
+								<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
+							</select>
+							<input name="ubicacion" maxlength="120" placeholder="Ranura o ubicación">
+							<button class="kbtn kbtn--sm kbtn--primary" type="submit">Instalar</button>
+						</form>
+					</article>
+					
+					<!-- Formulario para agregar stock a la tarea (si está en proceso) -->
+					<div th:if="${puedeEditarTareas and tarea.estado.name() == 'EN_PROCESO'}" class="kstock-add-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-subtle);">
+						<p class="kmodal-section-label">Agregar componente de stock</p>
+						<form th:action="@{/admin/tareas/{id}/stock(id=${tarea.id})}" method="post" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+							<input type="hidden" name="origen" value="visor">
+							<select name="stockComponenteId" class="kfilter-select" required style="flex: 1; min-width: 200px;">
+								<option value="">Seleccionar componente disponible…</option>
+								<option th:each="stock : ${stockDisponibleParaTareas}" th:value="${stock.id}" 
+										th:text="'#' + ${stock.id} + ' - ' + ${stock.tipo} + ' - ' + ${stock.descripcion}"></option>
+							</select>
+							<input type="text" name="observacion" maxlength="120" placeholder="Motivo o nota (opcional)" class="kfilter-input" style="flex: 1; min-width: 150px;">
+							<button type="submit" class="kbtn kbtn--primary">Asignar</button>
+						</form>
+						<p class="kanban-empty" style="font-size: 0.8rem; margin-top: 8px;" th:if="${#lists.isEmpty(stockDisponibleParaTareas)}">No hay componentes en stock DISPONIBLE.</p>
+					</div>
+				</div>
+			</div>
+		</dialog>
+
+	</th:block>
+
 	<script>
+		// Sync solicitante
 		function syncVisorSolicitante() {
 			const select = document.getElementById('visor-solicitante-select');
 			if (!select) return;
@@ -312,13 +423,185 @@
 			}
 		}
 
-		window.addEventListener('DOMContentLoaded', function() {
+		// Cerrar modal al hacer clic en el backdrop
+		document.addEventListener('DOMContentLoaded', function () {
 			const solicitanteSelect = document.getElementById('visor-solicitante-select');
 			if (solicitanteSelect) {
 				solicitanteSelect.addEventListener('change', syncVisorSolicitante);
 				syncVisorSolicitante();
 			}
+			document.querySelectorAll('.kmodal').forEach(function (dialog) {
+				dialog.addEventListener('click', function (e) {
+					const rect = dialog.getBoundingClientRect();
+					if (e.clientX < rect.left || e.clientX > rect.right ||
+						e.clientY < rect.top || e.clientY > rect.bottom) {
+						dialog.close();
+					}
+				});
+			});
 		});
 	</script>
+	<!-- ============================================== -->
+	<!-- Modal para Crear Nueva Tarea -->
+	<!-- ============================================== -->
+	<dialog id="modal-nueva-tarea" class="kmodal modal-dialog" style="max-width: 640px;" th:if="${puedeEditarTareas}">
+		<div class="kmodal-content" style="padding: 20px;">
+			<header class="kmodal-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+				<div class="kmodal-header-text">
+					<h3 style="margin:0; font-size:1.15rem; font-weight:700; color:var(--text-primary);">➕ Crear Nueva Tarea Técnica</h3>
+					<span style="font-size:0.8rem; color:var(--text-muted);">Asignación para soporte y mantenimiento informático</span>
+				</div>
+				<button type="button" class="modal-close" onclick="document.getElementById('modal-nueva-tarea').close()" title="Cerrar">✕</button>
+			</header>
+			<form class="equipment-form" th:action="@{/admin/tareas}" th:object="${tareaForm}" method="post" onsubmit="syncVisorSolicitante()">
+				<input type="hidden" name="origen" value="visor">
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+					<label style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px;">
+						<span style="font-size:0.8rem; font-weight:600;">Quién solicita *</span>
+						<select id="visor-solicitante-select" required class="kfilter-select" style="width:100%;">
+							<option value="">-- Seleccione un solicitante --</option>
+							<option th:each="solicitante : ${solicitantes}"
+									th:value="${solicitante.username}"
+									th:text="${solicitante.username + ' - ' + solicitante.nombreVisible}"
+									th:attr="data-nombre=${solicitante.nombreVisible},data-fuero=${solicitante.fuero}">
+								mesa.entrada - Mesa de Entrada
+							</option>
+						</select>
+						<input type="hidden" th:field="*{solicitanteUsername}" id="visor-solicitante-username">
+						<input type="hidden" th:field="*{solicitanteNombre}" id="visor-solicitante-nombre">
+					</label>
+
+					<label style="display:flex; flex-direction:column; gap:4px;">
+						<span style="font-size:0.8rem; font-weight:600;">Fuero / Dependencia *</span>
+						<select th:field="*{solicitanteFuero}" id="visor-solicitante-fuero" required class="kfilter-select" style="width:100%;">
+							<option value="">Seleccione fuero</option>
+							<option th:each="fuero : ${fuerosDisponibles}" th:value="${fuero}" th:text="${fuero}">Informatica</option>
+						</select>
+					</label>
+
+					<label style="display:flex; flex-direction:column; gap:4px;">
+						<span style="font-size:0.8rem; font-weight:600;">Equipo afectado</span>
+						<select th:field="*{equipoId}" class="kfilter-select" style="width:100%;">
+							<option value="">PC genérica</option>
+							<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
+						</select>
+					</label>
+
+					<label style="display:flex; flex-direction:column; gap:4px;">
+						<span style="font-size:0.8rem; font-weight:600;">Prioridad</span>
+						<select th:field="*{prioridad}" class="kfilter-select" style="width:100%;">
+							<option th:each="prioridad : ${prioridadesTarea}" th:value="${prioridad}" th:text="${prioridad}">MEDIA</option>
+						</select>
+					</label>
+
+					<label style="display:flex; flex-direction:column; gap:4px;">
+						<span style="font-size:0.8rem; font-weight:600;">Responsable técnico</span>
+						<select th:if="${puedeAsignarResponsable}" th:field="*{responsable}" class="kfilter-select" style="width:100%;">
+							<option value="">Sin asignar (queda en Nuevas)</option>
+							<option th:each="tecnico : ${tecnicosAsignables ?: usuariosFrecuentes}" th:value="${tecnico.username}" th:text="${tecnico.username + ' - ' + (tecnico.nombreVisible ?: tecnico.username)}">usuario.tecnico</option>
+						</select>
+						<input th:unless="${puedeAsignarResponsable}" th:field="*{responsable}" th:value="${usuarioActual}" maxlength="120" readonly class="kfilter-input" style="width:100%;">
+					</label>
+
+					<label style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px;">
+						<span style="font-size:0.8rem; font-weight:600;">Título del requerimiento *</span>
+						<input th:field="*{titulo}" maxlength="180" required placeholder="Ej: No enciende equipo / Configurar firma digital" class="kfilter-input" style="width:100%;">
+					</label>
+
+					<label style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px;">
+						<span style="font-size:0.8rem; font-weight:600;">Descripción del problema</span>
+						<textarea th:field="*{descripcion}" maxlength="1000" rows="3" placeholder="Detalle de la falla, oficina, usuario de contacto..." class="kfilter-input" style="width:100%; resize:vertical; font-family:inherit;"></textarea>
+					</label>
+				</div>
+				<div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+					<button type="button" class="kbtn kbtn--ghost" onclick="document.getElementById('modal-nueva-tarea').close()">Cancelar</button>
+					<button class="kbtn kbtn--primary" type="submit">💾 Guardar Tarea</button>
+				</div>
+			</form>
+		</div>
+	</dialog>
+
+	<!-- ============================================== -->
+	<!-- Modales Drag & Drop -->
+	<!-- ============================================== -->
+
+	<!-- Modal para Resolver Tarea -->
+	<dialog id="modal-dnd-resolver" class="modal-dialog">
+		<header class="modal-header">
+			<h3>Terminar Tarea</h3>
+			<button class="modal-close" onclick="document.getElementById('modal-dnd-resolver').close()" title="Cerrar">✕</button>
+		</header>
+		<form id="form-dnd-resolver" method="post">
+			<input type="hidden" name="estado" value="CERRADA">
+			<input type="hidden" name="origen" value="visor">
+			<div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+				<label class="form-label" style="display:flex; flex-direction:column; gap:4px;">
+					<span style="font-weight:600;">Técnico / Responsable que la resolvió *</span>
+					<select name="responsable" id="dnd-resolver-responsable" class="form-input" required style="width:100%;">
+						<option value="" disabled selected>Seleccione el técnico o responsable...</option>
+						<option th:each="user : ${tecnicosAsignables ?: usuariosFrecuentes}" th:value="${user.username}" th:text="${user.nombreVisible ?: user.username}"></option>
+						<option th:if="${session.usuario != null}" th:value="${session.usuario.username}">A mí mismo (<span th:text="${session.usuario.username}"></span>)</option>
+					</select>
+				</label>
+				<label class="form-label" style="display:flex; flex-direction:column; gap:4px;">
+					<span style="font-weight:600;">Explicar solución dada (obligatorio) *</span>
+					<textarea name="observacionesCierre" id="dnd-resolver-solucion" class="form-input" rows="3" required placeholder="Explique la solución que se le dio a la tarea..." style="width:100%; resize:vertical; font-family:inherit;"></textarea>
+				</label>
+			</div>
+			<div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+				<button type="button" class="kbtn kbtn--ghost" onclick="document.getElementById('modal-dnd-resolver').close()">Cancelar</button>
+				<button type="submit" class="kbtn kbtn--primary">Terminar Tarea</button>
+			</div>
+		</form>
+	</dialog>
+
+	<!-- Modal para Cancelar Tarea -->
+	<dialog id="modal-dnd-cancelar" class="modal-dialog">
+		<header class="modal-header">
+			<h3>Cancelar Tarea</h3>
+			<button class="modal-close" onclick="document.getElementById('modal-dnd-cancelar').close()" title="Cerrar">✕</button>
+		</header>
+		<form id="form-dnd-cancelar" method="post">
+			<input type="hidden" name="estado" value="CANCELADA">
+			<input type="hidden" name="origen" value="visor">
+			<div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+				<label class="form-label" style="display:flex; flex-direction:column; gap:4px;">
+					<span style="font-weight:600;">Motivo de cancelación (obligatorio) *</span>
+					<textarea name="observacionesCierre" class="form-input" rows="3" required placeholder="Explique detalladamente el motivo de la cancelación..." style="width:100%; resize:vertical; font-family:inherit;"></textarea>
+				</label>
+			</div>
+			<div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+				<button type="button" class="kbtn kbtn--ghost" onclick="document.getElementById('modal-dnd-cancelar').close()">Cerrar modal</button>
+				<button type="submit" class="kbtn kbtn--primary kbtn--danger">Confirmar Cancelación</button>
+			</div>
+		</form>
+	</dialog>
+
+	<!-- Modal para Asignar Tarea (Admin) -->
+	<dialog id="modal-dnd-asignar" class="modal-dialog">
+		<header class="modal-header">
+			<h3>Asignar Tarea</h3>
+			<button class="modal-close" onclick="document.getElementById('modal-dnd-asignar').close()" title="Cerrar">✕</button>
+		</header>
+		<form id="form-dnd-asignar" method="post">
+			<input type="hidden" name="origen" value="visor">
+			<div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+				<p>Vas a pasar la tarea a <strong>"En proceso"</strong>. ¿A quién deseas asignársela?</p>
+				<label class="form-label" style="display:flex; flex-direction:column; gap:4px;">
+					<span style="font-weight:600;">Técnico / Responsable *</span>
+					<select name="responsable" class="form-input" required style="width:100%;">
+						<option value="" disabled selected>Seleccione un técnico...</option>
+						<option th:each="user : ${tecnicosAsignables ?: usuariosFrecuentes}" th:value="${user.username}" th:text="${user.nombreVisible ?: user.username}"></option>
+						<option th:if="${session.usuario != null}" th:value="${session.usuario.username}">A mí mismo (<span th:text="${session.usuario.username}"></span>)</option>
+					</select>
+				</label>
+			</div>
+			<div class="modal-footer" style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+				<button type="button" class="kbtn kbtn--ghost" onclick="document.getElementById('modal-dnd-asignar').close()">Cancelar</button>
+				<button type="submit" class="kbtn kbtn--primary">Asignar y Empezar</button>
+			</div>
+		</form>
+	</dialog>
+
 </body>
 </html>

@@ -105,14 +105,19 @@ public class TareaTecnicaPageController {
 			BindingResult bindingResult,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirAdministradorTareas(userDetails);
-		tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
-		if (bindingResult.hasErrors()) {
-			prepararModelo(model, userDetails, tareaForm, null, null, null);
-			return vistaTareas(origen);
+		try {
+			exigirAdministradorTareas(userDetails);
+			tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
+			if (bindingResult.hasErrors()) {
+				redirectAttributes.addFlashAttribute("error", "Por favor complete todos los campos obligatorios para guardar la tarea.");
+				return redireccionTareas(origen);
+			}
+			tareaTecnicaService.crear(tareaForm.toCommand());
+			redirectAttributes.addAttribute("creado", "1");
+			redirectAttributes.addFlashAttribute("mensajeExito", "Tarea técnica creada exitosamente.");
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "Error al crear la tarea: " + e.getMessage());
 		}
-		tareaTecnicaService.crear(tareaForm.toCommand());
-		redirectAttributes.addAttribute("creado", "1");
 		return redireccionTareas(origen);
 	}
 
@@ -125,15 +130,20 @@ public class TareaTecnicaPageController {
 			BindingResult bindingResult,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirAdministradorTareas(userDetails);
-		exigirTareaPropiaOAdministrador(userDetails, id);
-		tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
-		if (bindingResult.hasErrors()) {
-			prepararModelo(model, userDetails, tareaForm, null, null, null);
-			return vistaTareas(origen);
+		try {
+			exigirAdministradorTareas(userDetails);
+			exigirTareaPropiaOAdministrador(userDetails, id);
+			tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
+			if (bindingResult.hasErrors()) {
+				redirectAttributes.addFlashAttribute("error", "Por favor revise los campos de la tarea.");
+				return redireccionTareas(origen);
+			}
+			tareaTecnicaService.actualizar(id, tareaForm.toCommand());
+			redirectAttributes.addAttribute("creado", "1");
+			redirectAttributes.addFlashAttribute("mensajeExito", "Tarea técnica actualizada.");
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "Error al actualizar la tarea: " + e.getMessage());
 		}
-		tareaTecnicaService.actualizar(id, tareaForm.toCommand());
-		redirectAttributes.addAttribute("creado", "1");
 		return redireccionTareas(origen);
 	}
 
@@ -141,11 +151,18 @@ public class TareaTecnicaPageController {
 	public String tomar(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
+			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirAdministradorTareas(userDetails);
-		tareaTecnicaService.tomar(id, userDetails.getUsername());
-		redirectAttributes.addAttribute("creado", "1");
+		try {
+			exigirAdministradorTareas(userDetails);
+			String tecnico = org.springframework.util.StringUtils.hasText(responsable) ? responsable : (userDetails != null ? userDetails.getUsername() : "");
+			tareaTecnicaService.tomar(id, tecnico);
+			redirectAttributes.addAttribute("creado", "1");
+			redirectAttributes.addFlashAttribute("mensajeExito", "Tarea asignada a " + tecnico);
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "Error al tomar/asignar la tarea: " + e.getMessage());
+		}
 		return redireccionTareas(origen);
 	}
 
@@ -154,13 +171,43 @@ public class TareaTecnicaPageController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
 			@RequestParam EstadoTareaTecnica estado,
+			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String observacionesCierre,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirAdministradorTareas(userDetails);
-		exigirTareaPropiaOAdministrador(userDetails, id);
-		tareaTecnicaService.cambiarEstado(id, new CambiarEstadoTareaCommand(estado, observacionesCierre), userDetails.getUsername());
-		redirectAttributes.addAttribute("creado", "1");
+		try {
+			exigirAdministradorTareas(userDetails);
+			exigirTareaPropiaOAdministrador(userDetails, id);
+			if (org.springframework.util.StringUtils.hasText(responsable)) {
+				try {
+					tareaTecnicaService.tomar(id, responsable.trim());
+				} catch (Exception ignored) {
+				}
+			}
+			tareaTecnicaService.cambiarEstado(id, new CambiarEstadoTareaCommand(estado, observacionesCierre), userDetails != null ? userDetails.getUsername() : null);
+			redirectAttributes.addAttribute("creado", "1");
+			redirectAttributes.addFlashAttribute("mensajeExito", "Estado actualizado a " + estado);
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "No se pudo cambiar el estado: " + e.getMessage());
+		}
+		return redireccionTareas(origen);
+	}
+
+	@PostMapping("/admin/tareas/{id}/soltar")
+	public String soltar(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam(required = false) String origen,
+			RedirectAttributes redirectAttributes) {
+		try {
+			exigirAdministradorTareas(userDetails);
+			exigirTareaPropiaOAdministrador(userDetails, id);
+			tareaTecnicaService.soltar(id, userDetails != null ? userDetails.getUsername() : null);
+			redirectAttributes.addAttribute("creado", "1");
+			redirectAttributes.addFlashAttribute("mensajeExito", "Tarea liberada y devuelta a Nuevas.");
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "Error al soltar la tarea: " + e.getMessage());
+		}
 		return redireccionTareas(origen);
 	}
 
@@ -170,10 +217,14 @@ public class TareaTecnicaPageController {
 			@PathVariable Long id,
 			@RequestParam(required = false) String origen,
 			RedirectAttributes redirectAttributes) {
-		exigirAdministradorTareas(userDetails);
-		exigirTareaPropiaOAdministrador(userDetails, id);
-		tareaTecnicaService.eliminar(id);
-		redirectAttributes.addFlashAttribute("eliminado", true);
+		try {
+			exigirAdministradorTareas(userDetails);
+			exigirTareaPropiaOAdministrador(userDetails, id);
+			tareaTecnicaService.eliminar(id);
+			redirectAttributes.addFlashAttribute("eliminado", true);
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "Error al eliminar la tarea: " + e.getMessage());
+		}
 		return redireccionTareas(origen);
 	}
 
@@ -257,6 +308,7 @@ public class TareaTecnicaPageController {
 		model.addAttribute("solicitantes", solicitantes);
 		model.addAttribute("fuerosDisponibles", fuerosParaTareas(solicitantes));
 		model.addAttribute("tecnicosAsignables", usuarioManagementService.listarTecnicosAsignables());
+		model.addAttribute("usuariosFrecuentes", usuarioManagementService.listarTecnicosAsignables());
 	}
 
 	private String vistaTareas(String origen) {

@@ -18,13 +18,11 @@
     const isOpen = task => ['PENDIENTE', 'EN_PROCESO'].includes(task.estado);
     const owns = task => task.responsable?.toLowerCase() === session.usuario.username.toLowerCase();
     const createdByMe = task => task.creadoPor?.toLowerCase() === session.usuario.username.toLowerCase();
-    const mayManage = task => session.puedeEditar && (session.administrador || owns(task) || createdByMe(task));
-    // Mesa telefonica conserva edicion/borrado solo antes de que un tecnico tome la tarea.
-    const mayOperateOwnOpen = task => session.puedeOperarPropias && createdByMe(task) && !task.responsable && isOpen(task);
-    const mayEdit = task => mayManage(task) || mayOperateOwnOpen(task);
-    const mayDelete = task => mayManage(task) || mayOperateOwnOpen(task);
-    const mayComment = task => mayManage(task) || createdByMe(task);
-    const status = task => isOpen(task) ? 'Pendiente' : task.estado === 'CERRADA' ? 'Finalizada' : 'Cancelada';
+    const mayEdit = task => session.administrador || createdByMe(task);
+    const mayDelete = task => session.administrador;
+    const mayStock = task => session.administrador || owns(task);
+    const mayComment = task => session.administrador || owns(task) || createdByMe(task);
+    const status = task => task.estado === 'PENDIENTE' ? 'Pendiente' : task.estado === 'EN_PROCESO' ? 'En Proceso' : task.estado === 'CERRADA' ? 'Finalizada' : 'Cancelada';
     const date = value => value ? new Date(value).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '-';
     function message(text, error = false, target = 'message') {
         $(target).textContent = text;
@@ -67,14 +65,14 @@
     function render() {
         const token = ++renderToken;
         const today = new Date().toLocaleDateString('en-CA');
-        $('pending-count').textContent = tasks.filter(isOpen).length;
+        $('pending-count').textContent = tasks.filter(t => t.estado === 'PENDIENTE').length;
         $('mine-count').textContent = tasks.filter(t => isOpen(t) && owns(t)).length;
         $('done-count').textContent = tasks.filter(t => t.estado === 'CERRADA' && t.cerradoEn && new Date(t.cerradoEn).toLocaleDateString('en-CA') === today).length;
         if (!session.mostrarMisTareas && filter === 'mine') filter = 'pending';
         if (!session.mostrarFinalizadas && filter === 'done') filter = 'pending';
         const query = $('search').value.trim().toLocaleLowerCase();
         const found = tasks.filter(t => {
-            const match = filter === 'all' || (filter === 'pending' && isOpen(t)) || (filter === 'mine' && owns(t)) || (filter === 'done' && !isOpen(t));
+            const match = filter === 'all' || (filter === 'pending' && t.estado === 'PENDIENTE') || (filter === 'mine' && owns(t)) || (filter === 'done' && t.estado === 'CERRADA');
             if (!session.mostrarFinalizadas && !isOpen(t)) return false;
             const text = [t.id, t.titulo, t.descripcion, t.equipoNombre, t.solicitanteUsername, t.solicitanteNombre, t.solicitanteFuero, t.responsable].join(' ').toLocaleLowerCase();
             return match && text.includes(query);
@@ -84,7 +82,7 @@
             const row = element('article', null, 'task-row');
             const title = element('button', '#' + t.id + '  ' + t.titulo, 'task-open');
             title.onclick = () => openDetail(t);
-            const badge = element('span', status(t), 'badge' + (t.estado === 'CERRADA' ? ' done' : t.estado === 'CANCELADA' ? ' cancelled' : ''));
+            const badge = element('span', status(t), 'badge' + (t.estado === 'CERRADA' ? ' done' : t.estado === 'CANCELADA' ? ' cancelled' : t.estado === 'EN_PROCESO' ? ' progress' : ''));
             row.append(title, badge);
             if (t.descripcion) row.append(element('p', t.descripcion, 'task-description'));
             const meta = element('div', null, 'task-meta');
@@ -313,14 +311,23 @@
             $('detail-meta').append(element('dt', key), element('dd', value || '-'));
         }
         $('take-task').hidden = !session.puedeEditar || !!task.responsable || !isOpen(task);
+        if ($('release-task')) $('release-task').hidden = !owns(task) || !isOpen(task);
         $('edit-task').hidden = !mayEdit(task);
         $('delete-task').hidden = !mayDelete(task);
         $('comment-form').hidden = !mayComment(task);
-        $('state-form').hidden = !mayManage(task) || !isOpen(task);
-        $('stock-form').hidden = !mayManage(task) || !isOpen(task) || !stockAvailable.length;
-        $('stock-section').hidden = !mayManage(task) && !session.puedeEditar;
-        $('state-form').elements.estado.value = isOpen(task) ? 'PENDIENTE' : task.estado;
-        $('state-form').elements.observacionesCierre.value = task.observacionesCierre || '';
+        $('state-form').hidden = !session.administrador || !isOpen(task);
+        $('stock-form').hidden = !mayStock(task) || !isOpen(task) || !stockAvailable.length;
+        $('stock-section').hidden = !mayStock(task) && !session.puedeEditar;
+        const estadoSelect = $('state-form').elements.estado;
+        const observacionesInput = $('state-form').elements.observacionesCierre;
+        estadoSelect.value = isOpen(task) ? 'PENDIENTE' : task.estado;
+        observacionesInput.value = task.observacionesCierre || '';
+        
+        const updateRequired = () => {
+            observacionesInput.required = estadoSelect.value === 'CERRADA' || estadoSelect.value === 'CANCELADA';
+        };
+        estadoSelect.onchange = updateRequired;
+        updateRequired();
         $('comment-form').reset();
         $('stock-form').reset();
         renderStockOptions();
@@ -407,6 +414,12 @@
         const task = await request(api + '/' + selected.id + '/tomar', 'POST');
         await refresh(); await openDetail(task); message('La tarea quedo a su cargo.', false, 'detail-message');
     });
+    if ($('release-task')) {
+        $('release-task').onclick = () => act(async () => {
+            const task = await request(api + '/' + selected.id + '/soltar', 'POST');
+            await refresh(); await openDetail(task); message('Tarea liberada y devuelta a Nuevas.', false, 'detail-message');
+        });
+    }
     $('state-form').onsubmit = event => {
         event.preventDefault();
         act(async () => {

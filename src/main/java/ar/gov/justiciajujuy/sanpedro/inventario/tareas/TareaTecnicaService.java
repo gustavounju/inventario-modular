@@ -177,6 +177,20 @@ public class TareaTecnicaService {
 	}
 
 	@Transactional
+	public TareaTecnicaDetalle soltar(Long id, String autor) {
+		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
+				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
+		if (tarea.getEstado() != EstadoTareaTecnica.EN_PROCESO) {
+			throw new IllegalStateException("Solo se pueden soltar tareas en proceso");
+		}
+		String responsableAnterior = tarea.getResponsable();
+		tarea.soltar();
+		auditoriaService.registrar("TAREAS", "SOLTAR", "TareaTecnica", tarea.getId(),
+				"Tarea tecnica " + tarea.getId() + " soltada por " + autor + ". Responsable anterior: " + responsableAnterior + ".");
+		return toDetalle(tarea);
+	}
+
+	@Transactional
 	public TareaTecnicaDetalle reasignarEquipo(Long id, Long equipoDestinoId, String usuario) {
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
@@ -201,7 +215,16 @@ public class TareaTecnicaService {
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
 		EstadoTareaTecnica estado = command.estado() == null ? EstadoTareaTecnica.PENDIENTE : command.estado();
-		tarea.cambiarEstado(estado, textoOpcional(command.observacionesCierre()));
+		
+		String observaciones = command.observacionesCierre();
+		if ((estado == EstadoTareaTecnica.CERRADA || estado == EstadoTareaTecnica.CANCELADA) 
+				&& !org.springframework.util.StringUtils.hasText(observaciones)) {
+			observaciones = estado == EstadoTareaTecnica.CANCELADA 
+					? "Cancelada por el administrador." 
+					: "Tarea finalizada.";
+		}
+		
+		tarea.cambiarEstado(estado, textoOpcional(observaciones));
 		auditoriaService.registrar("TAREAS", "CAMBIAR_ESTADO", "TareaTecnica", tarea.getId(),
 				"Tarea tecnica " + tarea.getId() + " cambio a " + estado + ".");
 		avisoService.registrarCambioEstado(tarea, textoOpcional(autor));

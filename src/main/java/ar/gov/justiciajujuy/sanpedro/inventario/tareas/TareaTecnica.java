@@ -99,6 +99,11 @@ public class TareaTecnica {
 		this.estado = EstadoTareaTecnica.EN_PROCESO;
 	}
 
+	public void soltar() {
+		this.responsable = null;
+		this.estado = EstadoTareaTecnica.PENDIENTE;
+	}
+
 	public void reasignarEquipo(Equipo equipo) {
 		this.equipo = equipo;
 	}

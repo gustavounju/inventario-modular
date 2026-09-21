@@ -60,6 +60,7 @@ a.icon-button { display: inline-flex; align-items: center; justify-content: cent
 .task-comments-preview strong { color: #006f99; font-size: 11px; text-transform: uppercase; }
 .task-comments-preview span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .badge { font-size: 10px; font-weight: 700; padding: 4px 6px; border-radius: 0; align-self: start; white-space: nowrap; color: #805a0b; background: #fcf0c8; }
+.badge.progress { background: #e5f1fa; color: #005777; }
 .badge.done { background: #e1f1e7; color: #176544; }
 .badge.cancelled { background: #ecefee; color: #626a67; }
 .priority-high { color: #a13930; font-weight: 600; }
