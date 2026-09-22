@@ -18,4 +18,12 @@ public interface UsuarioSistemaRepository extends JpaRepository<UsuarioSistema, 
 			ORDER BY u.username
 			""")
 	java.util.List<UsuarioSistema> findAllWithRoles();
+
+	/**
+	 * Cuenta la cantidad de usuarios activos en el sistema que poseen el rol de ADMINISTRADOR.
+	 * Utilizado principalmente para validar que el sistema no se quede sin administradores
+	 * o para forzar la configuración inicial si el conteo es cero.
+	 */
+	@Query("SELECT COUNT(u) FROM UsuarioSistema u JOIN u.roles r WHERE r.codigo = 'ADMINISTRADOR' AND u.activo = true")
+	long countAdministradores();
 }

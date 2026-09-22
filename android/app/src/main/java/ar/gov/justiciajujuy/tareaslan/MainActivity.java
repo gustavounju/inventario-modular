@@ -337,10 +337,24 @@ public class MainActivity extends Activity {
                     startForegroundService(new Intent(this, AvisosService.class).putExtra("server", base).putExtra("username", username));
                     setAlerts(true);
                     if (!getSystemService(PowerManager.class).isIgnoringBatteryOptimizations(getPackageName())) {
-                        new AlertDialog.Builder(this).setTitle("Avisos con pantalla bloqueada")
-                                .setMessage("Permita el uso de bateria sin restricciones para recibir avisos durante la jornada.")
-                                .setPositiveButton("Abrir bateria", (d, w) -> openBatterySettings())
-                                .setNegativeButton("Ahora no", null).show();
+                        // Se utiliza SharedPreferences para almacenar la preferencia del usuario
+                        // de modo que el cartel de optimización de batería no se muestre en cada inicio
+                        // si el usuario ya lo descartó o realizó la acción.
+                        android.content.SharedPreferences prefs = getSharedPreferences("LanApp", MODE_PRIVATE);
+                        if (!prefs.getBoolean("battery_dismissed", false)) {
+                            new AlertDialog.Builder(MainActivity.this).setTitle("Avisos con pantalla bloqueada")
+                                    .setMessage("Permita el uso de bateria sin restricciones para recibir avisos durante la jornada.")
+                                    .setPositiveButton("Abrir bateria", (d, w) -> {
+                                        // Si el usuario acepta, se guarda la preferencia y se abren los ajustes
+                                        prefs.edit().putBoolean("battery_dismissed", true).apply();
+                                        openBatterySettings();
+                                    })
+                                    .setNegativeButton("Ya lo hice / No volver a mostrar", (d, w) -> {
+                                        // Si el usuario lo descarta, se guarda la preferencia para no volver a molestarlo
+                                        prefs.edit().putBoolean("battery_dismissed", true).apply();
+                                    })
+                                    .show();
+                        }
                     }
                 });
             } catch (Exception e) { runOnUiThread(() -> { setAlerts(false); toast("Ingrese con su usuario y verifique la conexion antes de activar avisos."); }); }

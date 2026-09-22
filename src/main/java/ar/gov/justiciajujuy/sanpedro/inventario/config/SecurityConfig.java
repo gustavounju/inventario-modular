@@ -3,6 +3,7 @@ package ar.gov.justiciajujuy.sanpedro.inventario.config;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LanOnlyAccessFilter;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginAttemptService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginRateLimitFilter;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.SetupFilter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
@@ -42,10 +43,12 @@ public class SecurityConfig {
 			HttpSecurity http,
 			NetworkAccessProperties networkAccessProperties,
 			ObjectProvider<AuthenticationProvider> authenticationProviders,
-			LoginAttemptService loginAttemptService) throws Exception {
+			LoginAttemptService loginAttemptService,
+			SetupFilter setupFilter) throws Exception {
 		authenticationProviders.orderedStream().forEach(http::authenticationProvider);
 
 		http
+			.addFilterBefore(setupFilter, UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new LanOnlyAccessFilter(networkAccessProperties), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new TokenAuthenticationFilter(reportToken), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new LoginRateLimitFilter(loginAttemptService), UsernamePasswordAuthenticationFilter.class)
@@ -69,7 +72,7 @@ public class SecurityConfig {
 			)
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers(
-					"/", "/login", "/movil/login", "/logout",
+					"/", "/login", "/setup", "/movil/login", "/logout",
 					"/css/**", "/js/**", "/images/**", "/scripts/**", "/webjars/**", "/favicon.ico"
 				).permitAll()
 				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor").permitAll()

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title th:text="${applicationName} + ' - Setup Inicial'">Inventario Modular - Setup Inicial</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<header class="judicial-global-header">
+		<div class="judicial-brand">
+			<h1>Poder Judicial de la Provincia de Jujuy</h1>
+		</div>
+		<nav class="judicial-main-nav" aria-label="Navegación principal">
+			<a th:href="@{/login}">Iniciar sesión</a>
+			<a th:href="@{/admin/tareas/visor}">Tareas</a>
+		</nav>
+	</header>
+	<main class="shell">
+		<section class="status-panel login-panel" aria-labelledby="login-title">
+			<p class="eyebrow">Configuración Inicial</p>
+			<h1 id="login-title" th:text="${applicationName}">Inventario Modular</h1>
+			<p class="login-intro">Bienvenido al sistema. Por favor, crea la cuenta del Administrador Principal para comenzar.</p>
+
+			<p class="error-message" th:if="${error}" th:text="${error}"></p>
+
+			<form class="login-form" th:action="@{/setup}" method="post">
+				<label>
+					<span>Usuario</span>
+					<input type="text" name="username" autocomplete="username" required autofocus>
+				</label>
+				
+				<label>
+					<span>Nombre Visible (Ej: Juan Perez)</span>
+					<input type="text" name="nombreVisible" required>
+				</label>
+
+				<label>
+					<span>Clave (Usa una clave segura)</span>
+					<input type="password" name="password" autocomplete="new-password" required>
+				</label>
+
+				<button class="primary-action" type="submit">Crear Administrador</button>
+			</form>
+		</section>
+	</main>
+</body>
+</html>

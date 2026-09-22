@@ -37,10 +37,7 @@ public class DatabaseLocalAuthenticationProvider implements AuthenticationProvid
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		String username = String.valueOf(authentication.getPrincipal());
 		String password = String.valueOf(authentication.getCredentials());
-		if ("admin.local".equalsIgnoreCase(username.trim()) && ldapConfigurationService.persistentAdEnabled()) {
-			// admin.local es bootstrap: sirve para configurar AD, no para convivir con AD ya persistido.
-			throw new BadCredentialsException("admin.local queda deshabilitado cuando Active Directory esta configurado.");
-		}
+		// Validacion de bootstrap eliminada (ahora manejado por SetupController)
 		CredencialLocal credencial = credencialLocalRepository.findActivaByUsername(username)
 				.orElseThrow(() -> new BadCredentialsException("Credenciales invalidas."));
 

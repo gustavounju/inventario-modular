@@ -27,6 +27,10 @@ a.icon-button { display: inline-flex; align-items: center; justify-content: cent
 .lucide { width: 19px; height: 19px; flex-shrink: 0; }
 .mobile-header { padding: 14px max(16px, calc((100% - 1000px) / 2)); background: #006f99; color: #fff; border-bottom: 1px solid #005777; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .header-actions { display: flex; gap: 8px; }
+/* Corrección para los botones del header en móvil (ej. botón salir, cámara)
+   Se asegura que el ícono sea visible sobre el fondo y no se vea blanco sobre blanco */
+.mobile-header .icon-button { background: rgba(255, 255, 255, 0.15); border: 0; color: #fff; border-radius: 4px; }
+.mobile-header .icon-button:hover { background: rgba(255, 255, 255, 0.25); }
 .mobile-main { max-width: 1032px; padding: 16px; margin: auto; }
 .session-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 12px; margin-bottom: 16px; }
 #connection { color: #006f99; }
