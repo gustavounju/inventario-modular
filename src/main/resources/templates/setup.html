@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Configuración Inicial - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+	<header class="judicial-global-header">
+		<div class="judicial-brand">
+			<h1>Poder Judicial de la Provincia de Jujuy</h1>
+		</div>
+		<nav class="judicial-main-nav" aria-label="Navegación principal">
+			<a th:href="@{/logout}">Cerrar Sesión</a>
+		</nav>
+	</header>
+	<main class="shell">
+		<section class="status-panel login-panel" aria-labelledby="login-title">
+			<p class="eyebrow">Asistente de Configuración</p>
+			<h1 id="login-title">Inventario Modular</h1>
+			
+			<p class="error-message" style="margin-top: 1rem;">
+				<strong>¡Atención!</strong> El sistema ha detectado que actualmente no existe ningún administrador activo.
+			</p>
+
+			<p class="login-intro" style="margin-top: 1rem; margin-bottom: 2rem;">
+				Has iniciado sesión como <strong th:text="${#authentication.name}">usuario</strong>.
+				Para garantizar el acceso al panel de gestión, el primer usuario en iniciar sesión debe reclamar los privilegios de administrador.
+			</p>
+
+			<form class="login-form" th:action="@{/setup}" method="post">
+				<button class="primary-action" type="submit">⭐ Reclamar rol de Administrador</button>
+			</form>
+		</section>
+	</main>
+</body>
+</html>

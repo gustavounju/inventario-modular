@@ -36,6 +36,11 @@ public class UsuarioManagementService {
 	}
 
 	@Transactional(readOnly = true)
+	public boolean tieneAdministradoresActivos() {
+		return usuarioSistemaRepository.existsByActivoTrueAndRolesCodigo("ADMINISTRADOR");
+	}
+
+	@Transactional(readOnly = true)
 	public List<UsuarioResumen> listarUsuariosActivosNoAdministrativos() {
 		return listarUsuarios().stream()
 				.filter(UsuarioResumen::activo)

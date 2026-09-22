@@ -24,22 +24,19 @@ public class SecurityStartupValidator implements ApplicationRunner {
 	private final LocalAuthenticationProperties localAuthenticationProperties;
 	private final NetworkAccessProperties networkAccessProperties;
 	private final boolean localDbAuthenticationEnabled;
-	private final String primaryDataSourceUrl;
-	private final String fallbackDataSourceUrl;
+	private final String dataSourceUrl;
 
 	public SecurityStartupValidator(
 			ActiveDirectoryProperties activeDirectoryProperties,
 			LocalAuthenticationProperties localAuthenticationProperties,
 			NetworkAccessProperties networkAccessProperties,
 			@Value("${inventario.local-db-auth.enabled:false}") boolean localDbAuthenticationEnabled,
-			@Value("${inventario.datasource.primary.url:}") String primaryDataSourceUrl,
-			@Value("${inventario.datasource.fallback.url:}") String fallbackDataSourceUrl) {
+			@Value("${spring.datasource.url:}") String dataSourceUrl) {
 		this.activeDirectoryProperties = activeDirectoryProperties;
 		this.localAuthenticationProperties = localAuthenticationProperties;
 		this.networkAccessProperties = networkAccessProperties;
 		this.localDbAuthenticationEnabled = localDbAuthenticationEnabled;
-		this.primaryDataSourceUrl = primaryDataSourceUrl;
-		this.fallbackDataSourceUrl = fallbackDataSourceUrl;
+		this.dataSourceUrl = dataSourceUrl;
 	}
 
 	@Override
@@ -58,8 +55,7 @@ public class SecurityStartupValidator implements ApplicationRunner {
 
 		if (networkAccessProperties.isLanOnly()) {
 			NetworkAddressPolicy addressPolicy = new NetworkAddressPolicy(networkAccessProperties.getAllowedCidrs());
-			requireLanHost(extractJdbcMysqlHost(primaryDataSourceUrl), "inventario.datasource.primary.url", addressPolicy);
-			requireLanHost(extractJdbcMysqlHost(fallbackDataSourceUrl), "inventario.datasource.fallback.url", addressPolicy);
+			requireLanHost(extractJdbcMysqlHost(dataSourceUrl), "spring.datasource.url", addressPolicy);
 			if (activeDirectoryProperties.isEnabled()) {
 				requireLanHost(extractUriHost(activeDirectoryProperties.getUrl()), "inventario.ldap.url", addressPolicy);
 			}

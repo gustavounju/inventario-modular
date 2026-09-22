@@ -43,7 +43,7 @@
 				</div>
 			</div>
 
-			<form class="user-form system-config-form" th:object="${form}" method="post">
+			<form class="user-form system-config-form" th:action="@{/admin/sistema/ad}" th:object="${form}" method="post">
 				<label class="toggle-row">
 					<input type="checkbox" th:field="*{enabled}">
 					<span>Habilitar Active Directory en el proximo ingreso</span>
@@ -72,7 +72,7 @@
 					</label>
 					<label>
 						<span>Clave lector</span>
-						<input type="password" th:field="*{readOnlyPassword}" autocomplete="new-password"
+						<input type="password" id="readOnlyPassword" name="readOnlyPassword" th:value="*{readOnlyPassword}" autocomplete="new-password"
 							   th:placeholder="${hasSavedPassword} ? 'Dejar vacio para conservar la clave guardada' : 'Clave AD del lector'">
 					</label>
 					<label>

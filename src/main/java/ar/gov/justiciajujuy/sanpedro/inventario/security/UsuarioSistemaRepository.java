@@ -11,6 +11,8 @@ public interface UsuarioSistemaRepository extends JpaRepository<UsuarioSistema, 
 
 	boolean existsByUsernameIgnoreCase(String username);
 
+	boolean existsByActivoTrueAndRolesCodigo(String codigo);
+
 	@Query("""
 			SELECT DISTINCT u
 			FROM UsuarioSistema u

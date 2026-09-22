@@ -1037,10 +1037,10 @@
 							</label>
 							<label>
 								<span>Fuero / Area</span>
-								<input th:field="*{fuero}" list="lista-fueros" maxlength="120" required autocomplete="off" placeholder="Seleccione o escriba el Fuero...">
-								<datalist id="lista-fueros">
+								<select th:field="*{fuero}" required>
+									<option value="">Seleccione el Fuero...</option>
 									<option th:each="f : ${fuerosDisponibles}" th:value="${f}" th:text="${f}"></option>
-								</datalist>
+								</select>
 								<small class="field-error" th:if="${#fields.hasErrors('fuero')}" th:errors="*{fuero}">Error</small>
 							</label>
 							<label>

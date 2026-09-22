@@ -64,7 +64,6 @@
 								<th scope="col">Equipo y Origen</th>
 								<th scope="col">Usuario Actual</th>
 								<th scope="col">Fuero / Ubicación</th>
-								<th scope="col">IP</th>
 								<th scope="col">Sistema Operativo</th>
 								<th scope="col">Gemelo / Estado</th>
 								<th scope="col">Acciones</th>
@@ -79,14 +78,13 @@
 										<span th:if="${equipo.ultimoReporteEn != null}" class="authorization-badge" style="font-size: 0.68rem; padding: 2px 6px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3);">🚀 Sumado via Script</span>
 										<span th:if="${equipo.ultimoReporteEn == null}" class="authorization-badge" style="font-size: 0.68rem; padding: 2px 6px; background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3);">📝 Manual</span>
 									</div>
-									<span class="table-subtext" th:text="${equipo.ubicacion ?: 'Sin ubicación asignada'}">Oficina</span>
+									<span class="table-subtext" th:text="${(equipo.ubicacion != null and !#strings.isEmpty(equipo.ubicacion) ? equipo.ubicacion : 'Sin ubicación asignada') + ' - IP: ' + (equipo.ip != null and !#strings.isEmpty(equipo.ip) ? equipo.ip : 'Sin IP')}">Oficina - IP: 192.168.0.20</span>
 								</td>
 								<td data-label="Usuario Actual">
 									<strong th:if="${equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" th:text="${equipo.ultimoUsuario}">usuario.tecnico</strong>
 									<span th:if="${equipo.ultimoUsuario == null or #strings.isEmpty(equipo.ultimoUsuario)}" style="color: #facc15; font-size: 0.82rem; font-weight: 600;">⚠️ Sin asignar</span>
 								</td>
 								<td data-label="Fuero / Ubicación" th:text="${equipo.fuero}">Informática</td>
-								<td data-label="IP" th:text="${equipo.ip ?: 'Sin dato'}">192.0.2.20</td>
 								<td data-label="Sistema Operativo" th:text="${equipo.sistemaOperativo ?: 'Sin dato'}">Windows 11</td>
 								<td data-label="Gemelo / Estado">
 									<div style="display: flex; flex-direction: column; gap: 3px;">
