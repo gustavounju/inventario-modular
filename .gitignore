@@ -67,3 +67,4 @@ static/
 /output/android/
 /output/entrega-lan/
 /output/entrega-lan.zip
+application-secrets.properties

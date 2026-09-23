@@ -1,0 +1,1 @@
+org.springframework.boot.env.EnvironmentPostProcessor=ar.gov.justiciajujuy.sanpedro.inventario.config.NetworkEnvironmentPostProcessor

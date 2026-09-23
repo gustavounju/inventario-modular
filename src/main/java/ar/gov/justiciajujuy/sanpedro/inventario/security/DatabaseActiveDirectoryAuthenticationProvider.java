@@ -41,7 +41,15 @@ public class DatabaseActiveDirectoryAuthenticationProvider implements Authentica
 				new ActiveDirectoryLdapAuthenticationProvider(config.domain(), config.url(), config.baseDn());
 		provider.setConvertSubErrorCodesToExceptions(true);
 		provider.setUserDetailsContextMapper(userDetailsContextMapper);
-		return provider.authenticate(authentication);
+		try {
+			return provider.authenticate(authentication);
+		} catch (org.springframework.security.authentication.AuthenticationServiceException e) {
+			throw new BadCredentialsException("LDAP service down, falling back", e);
+		} catch (AuthenticationException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new BadCredentialsException("No se pudo conectar al servidor LDAP: " + e.getMessage(), e);
+		}
 	}
 
 	@Override
