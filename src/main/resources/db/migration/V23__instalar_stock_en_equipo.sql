@@ -11,4 +11,4 @@
 --   El sincronizador de stock huerfano respeta el estado ASIGNADO mientras el Componente este activo.
 
 -- Indice de apoyo para busquedas de uso por id de tarea (optimiza la consulta de instalacion)
-CREATE INDEX IF NOT EXISTS idx_tareas_stock_usos_tarea_id ON tareas_stock_usos (tarea_id);
+CREATE INDEX idx_tareas_stock_usos_tarea_id ON tareas_stock_usos (tarea_id);
