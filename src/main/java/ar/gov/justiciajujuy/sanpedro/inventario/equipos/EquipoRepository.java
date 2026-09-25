@@ -13,6 +13,8 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 
 	Optional<Equipo> findByNombreIgnoreCase(String nombre);
 
+	long countByNombreIgnoreCaseNot(String nombre);
+
 	List<Equipo> findAllByOrderByNombreAsc();
 
 	@Query("""

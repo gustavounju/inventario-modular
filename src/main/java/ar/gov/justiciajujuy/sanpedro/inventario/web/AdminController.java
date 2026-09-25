@@ -129,7 +129,7 @@ public class AdminController {
 		long stockDisponible = puedeVerStock
 				? stockComponenteRepository.countByActivoTrueAndEstado(EstadoStockComponente.DISPONIBLE)
 				: 0;
-		long equipos = puedeVerEquipos ? equipoRepository.count() : 0;
+		long equipos = puedeVerEquipos ? equipoRepository.countByNombreIgnoreCaseNot(TareaTecnicaService.EQUIPO_GENERICO_NOMBRE) : 0;
 		long diferencias = puedeVerDiferencias ? gemeloDigitalService.dashboardDiferencias().conteo().pendientes() : 0;
 
 		return new DecisionPanel(tareas, stockPendiente, stockDisponible, equipos, diferencias);
