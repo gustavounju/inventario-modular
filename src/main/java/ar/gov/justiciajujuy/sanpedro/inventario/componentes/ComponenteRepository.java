@@ -18,4 +18,9 @@ public interface ComponenteRepository extends JpaRepository<Componente, Long> {
 	void deleteByEquipoIdAndOrigen(Long equipoId, OrigenComponente origen);
 
 	void deleteByEquipoId(Long equipoId);
+	
+	long countByOrigenNot(OrigenComponente origen);
+	
+	@org.springframework.data.jpa.repository.Query("SELECT c FROM Componente c JOIN FETCH c.equipo WHERE c.origen != :origen")
+	List<Componente> findAllWithEquipoAndOrigenNot(@org.springframework.data.repository.query.Param("origen") OrigenComponente origen);
 }

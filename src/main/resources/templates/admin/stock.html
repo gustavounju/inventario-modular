@@ -75,17 +75,6 @@
 					<span class="metric-card-action" style="color: #facc15;">En armado</span>
 				</div>
 
-				<!-- Tarjeta Naranja: Instalados en PC - Piezas que salieron de stock y se auditan activas en computadoras -->
-				<a class="metric-card border-orange" th:if="${puedeVerEquipos}" th:href="@{/admin/equipos}" title="Ver catálogo de equipos con hardware instalado">
-					<span class="metric-card-title">INSTALADOS</span>
-					<strong class="metric-card-value" style="color: #fb923c;" th:text="${asignadosCount}">0</strong>
-					<span class="metric-card-action" style="color: #fb923c;">Ver en PC</span>
-				</a>
-				<div class="metric-card border-orange" th:unless="${puedeVerEquipos}">
-					<span class="metric-card-title">INSTALADOS</span>
-					<strong class="metric-card-value" style="color: #fb923c;" th:text="${asignadosCount}">0</strong>
-					<span class="metric-card-action" style="color: #fb923c;">En equipos</span>
-				</div>
 			</section>
 
 			<!-- Pestañas de Navegación Limpia (Subnav Tabs) -->
@@ -97,7 +86,10 @@
 				</button>
 				<button type="button" id="tab-btn-disponibles" class="subnav-tab" th:classappend="${pendientesCount == 0} ? ' is-active' : ''"
 						role="tab" th:attr="aria-selected=${pendientesCount == 0}" aria-controls="pane-disponibles" onclick="switchTab('disponibles')">
-					Componentes (<span th:text="${totalStock}">0</span>)
+					Componentes Libres (<span th:text="${#lists.size(componentesLibres)}">0</span>)
+				</button>
+				<button type="button" id="tab-btn-asignados" class="subnav-tab" role="tab" aria-selected="false" aria-controls="pane-asignados" onclick="switchTab('asignados')">
+					Instalados (<span th:text="${#lists.size(componentesAsignados)}">0</span>)
 				</button>
 				<button type="button" id="tab-btn-nuevo" class="subnav-tab" th:if="${puedeEditarStock}" role="tab" aria-selected="false" aria-controls="pane-nuevo" onclick="switchTab('nuevo')">
 					Ingresar pieza
@@ -114,75 +106,79 @@
 						</div>
 						<div class="stock-function-bar" th:if="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}">
 							<span class="count-badge" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
-							<button type="button" class="primary-action" data-panel-toggle="stock-pending-bulk-form" onclick="toggleFunctionPanel('stock-pending-bulk-form')">Completar seleccionados</button>
+							<button type="button" class="primary-action" onclick="document.getElementById('stock-pending-bulk-modal').showModal()">Completar seleccionados</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+
 						</div>
 						<span class="count-badge" th:unless="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
 					</div>
 
-					<form id="stock-pending-bulk-form" class="equipment-form stock-bulk-panel stock-bulk-panel-pending" th:if="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}"
-							th:action="@{/admin/stock/componentes/lote}" method="post" hidden>
-						<div class="stock-bulk-heading">
-							<div>
-								<strong>Completar lote escaneado</strong>
-								<span>Los campos vacíos no pisan datos ya cargados.</span>
+					<dialog id="stock-pending-bulk-modal" class="admin-modal">
+						<form id="stock-pending-bulk-form" class="equipment-form stock-bulk-panel stock-bulk-panel-pending" th:if="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}"
+								th:action="@{/admin/stock/componentes/lote}" method="post">
+							<div class="stock-bulk-heading">
+								<div>
+									<strong>Completar lote escaneado</strong>
+									<span>Los campos vacíos no pisan datos ya cargados.</span>
+								</div>
+								<span class="stock-bulk-chip">Pasa a Stock al guardar</span>
 							</div>
-							<span class="stock-bulk-chip">Pasa a Stock al guardar</span>
-						</div>
-						<div class="form-grid">
-							<label>
-								<span>Tipo de Componente</span>
-								<select name="tipo">
-									<option value="">No cambiar</option>
-									<option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
-								</select>
-							</label>
-							<label>
-								<span>Estado</span>
-								<select name="estado">
-									<option value="">No cambiar</option>
-									<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}">DISPONIBLE</option>
-								</select>
-							</label>
-							<label style="grid-column: 1 / -1;">
-								<span>Descripción Técnica</span>
-								<input name="descripcion" placeholder="Ej: Cartucho de tinta Epson 664 negro / Monitor LED 22 pulgadas" maxlength="255">
-							</label>
-							<label>
-								<span>Marca</span>
-								<input name="marca" placeholder="Ej: Epson, HP, Samsung..." maxlength="120">
-							</label>
-							<label>
-								<span>Modelo</span>
-								<input name="modelo" placeholder="Ej: 664 BK, E1920H..." maxlength="180">
-							</label>
-							<label>
-								<span>Capacidad / Medida</span>
-								<input name="capacidad" placeholder="Ej: Negro, 22 pulgadas, 8GB..." maxlength="120">
-							</label>
-							<label>
-								<span>N° de Remito</span>
-								<input name="remito" placeholder="Ej: R-0001-00084321" maxlength="80">
-							</label>
-							<label>
-								<span>Orden de Compra</span>
-								<input name="ordenCompra" placeholder="Ej: OC-2025-089" maxlength="80">
-							</label>
-							<label>
-								<span>Proveedor</span>
-								<input name="proveedor" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
-							</label>
-							<label style="grid-column: 1 / -1;">
-								<span>Observaciones</span>
-								<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
-							</label>
-						</div>
-						<div class="form-actions stock-action-strip">
-							<button class="primary-action" type="submit">Guardar lote seleccionado</button>
-							<button class="secondary-action" type="button" onclick="toggleFunctionPanel('stock-pending-bulk-form', false)">Cerrar panel</button>
-						</div>
-					</form>
+							<div class="form-grid">
+								<label>
+									<span>Tipo de Componente</span>
+									<select name="tipo">
+										<option value="">No cambiar</option>
+										<option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+									</select>
+								</label>
+								<label>
+									<span>Estado</span>
+									<select name="estado">
+										<option value="">No cambiar</option>
+										<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}">DISPONIBLE</option>
+									</select>
+								</label>
+								<label style="grid-column: 1 / -1;">
+									<span>Descripción Técnica</span>
+									<input name="descripcion" placeholder="Ej: Cartucho de tinta Epson 664 negro / Monitor LED 22 pulgadas" maxlength="255">
+								</label>
+								<label>
+									<span>Marca</span>
+									<input name="marca" placeholder="Ej: Epson, HP, Samsung..." maxlength="120">
+								</label>
+								<label>
+									<span>Modelo</span>
+									<input name="modelo" placeholder="Ej: 664 BK, E1920H..." maxlength="180">
+								</label>
+								<label>
+									<span>Capacidad / Medida</span>
+									<input name="capacidad" placeholder="Ej: Negro, 22 pulgadas, 8GB..." maxlength="120">
+								</label>
+								<label>
+									<span>N° de Remito</span>
+									<input name="remito" placeholder="Ej: R-0001-00084321" maxlength="80">
+								</label>
+								<label>
+									<span>Orden de Compra</span>
+									<input name="ordenCompra" placeholder="Ej: OC-2025-089" maxlength="80">
+								</label>
+								<label>
+									<span>Proveedor</span>
+									<input name="proveedor" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
+								</label>
+								<label style="grid-column: 1 / -1;">
+									<span>Observaciones</span>
+									<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
+								</label>
+							</div>
+							<div class="form-actions stock-action-strip">
+								<button class="primary-action" type="submit">Guardar lote seleccionado</button>
+								<button class="secondary-action" type="button" onclick="document.getElementById('stock-pending-bulk-modal').close()">Cancelar</button>
+							</div>
+						</form>
+					</dialog>
+
 
 					<div class="responsive-table stock-table-wrap" th:if="${!#lists.isEmpty(componentesPendientes)}">
 						<table>
@@ -250,86 +246,90 @@
 				<section class="modules-section" aria-labelledby="stock-list-title">
 					<div class="section-header">
 						<div>
-							<h2 id="stock-list-title">Componentes disponibles</h2>
-							<p class="section-note">Tabla principal de piezas disponibles, reservadas o instaladas.</p>
+							<h2 id="stock-list-title">Componentes libres</h2>
+							<p class="section-note">Tabla principal de piezas disponibles o reservadas en el taller.</p>
 						</div>
-						<div class="stock-function-bar" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}">
-							<span class="count-badge" th:text="${#lists.size(componentesStock)} + ' piezas'">0 piezas</span>
-							<button type="button" class="primary-action" data-panel-toggle="stock-bulk-form" onclick="toggleFunctionPanel('stock-bulk-form')">Aplicar datos</button>
+						<div class="stock-function-bar" th:if="${puedeEditarStock and !#lists.isEmpty(componentesLibres)}">
+							<span class="count-badge" th:text="${#lists.size(componentesLibres)} + ' piezas'">0 piezas</span>
+							<button type="button" class="primary-action" onclick="document.getElementById('stock-bulk-modal').showModal()">Modificar seleccionados</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
+
 						</div>
-						<span class="count-badge" th:unless="${puedeEditarStock and !#lists.isEmpty(componentesStock)}" th:text="${#lists.size(componentesStock)} + ' piezas'">0 piezas</span>
+						<span class="count-badge" th:unless="${puedeEditarStock and !#lists.isEmpty(componentesLibres)}" th:text="${#lists.size(componentesLibres)} + ' piezas'">0 piezas</span>
 					</div>
 
-					<p class="empty-state" th:if="${#lists.isEmpty(componentesStock)}">
+					<p class="empty-state" th:if="${#lists.isEmpty(componentesLibres)}">
 						Todavía no hay componentes cargados en stock. Utiliza la pestaña <strong>"Ingresar pieza"</strong> para dar de alta discos, memorias o periféricos.
 					</p>
 
-					<form id="stock-bulk-form" class="equipment-form stock-bulk-panel" th:if="${puedeEditarStock and !#lists.isEmpty(componentesStock)}"
-							th:action="@{/admin/stock/componentes/lote}" method="post" hidden>
-						<div class="stock-bulk-heading">
-							<div>
-								<strong>Aplicar datos al lote</strong>
-								<span>Seleccione filas y aplique datos compartidos sin abrir cada registro.</span>
+					<dialog id="stock-bulk-modal" class="admin-modal">
+						<form id="stock-bulk-form" class="equipment-form stock-bulk-panel" th:if="${puedeEditarStock and !#lists.isEmpty(componentesLibres)}"
+								th:action="@{/admin/stock/componentes/lote}" method="post">
+							<div class="stock-bulk-heading">
+								<div>
+									<strong>Aplicar datos al lote</strong>
+									<span>Seleccione filas y aplique datos compartidos sin abrir cada registro.</span>
+								</div>
+								<span class="stock-bulk-chip">No pisa campos vacíos</span>
 							</div>
-							<span class="stock-bulk-chip">No pisa campos vacíos</span>
-						</div>
-						<div class="form-grid">
-							<label>
-								<span>Tipo de Componente</span>
-								<select name="tipo">
-									<option value="">No cambiar</option>
-									<option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
-								</select>
-							</label>
-							<label>
-								<span>Estado</span>
-								<select name="estado">
-									<option value="">No cambiar</option>
-									<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}">DISPONIBLE</option>
-								</select>
-							</label>
-							<label style="grid-column: 1 / -1;">
-								<span>Descripción Técnica</span>
-								<input name="descripcion" placeholder="Ej: Cartucho de tinta Epson 664 negro / Monitor LED 22 pulgadas" maxlength="255">
-							</label>
-							<label>
-								<span>Marca</span>
-								<input name="marca" placeholder="Ej: Epson, HP, Samsung..." maxlength="120">
-							</label>
-							<label>
-								<span>Modelo</span>
-								<input name="modelo" placeholder="Ej: 664 BK, E1920H..." maxlength="180">
-							</label>
-							<label>
-								<span>Capacidad / Medida</span>
-								<input name="capacidad" placeholder="Ej: Negro, 22 pulgadas, 8GB..." maxlength="120">
-							</label>
-							<label>
-								<span>N° de Remito</span>
-								<input name="remito" placeholder="Ej: R-0001-00084321" maxlength="80">
-							</label>
-							<label>
-								<span>Orden de Compra</span>
-								<input name="ordenCompra" placeholder="Ej: OC-2025-089" maxlength="80">
-							</label>
-							<label>
-								<span>Proveedor</span>
-								<input name="proveedor" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
-							</label>
-							<label style="grid-column: 1 / -1;">
-								<span>Observaciones</span>
-								<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
-							</label>
-						</div>
-						<div class="form-actions stock-action-strip">
-							<button class="primary-action" type="submit">Aplicar a seleccionados</button>
-							<button class="secondary-action" type="button" onclick="toggleFunctionPanel('stock-bulk-form', false)">Cerrar panel</button>
-						</div>
-					</form>
+							<div class="form-grid">
+								<label>
+									<span>Tipo de Componente</span>
+									<select name="tipo">
+										<option value="">No cambiar</option>
+										<option th:each="tipo : ${tiposComponente}" th:if="${tipo.name() != 'PENDIENTE'}" th:value="${tipo}" th:text="${tipo}">RAM</option>
+									</select>
+								</label>
+								<label>
+									<span>Estado</span>
+									<select name="estado">
+										<option value="">No cambiar</option>
+										<option th:each="estado : ${estadosStock}" th:value="${estado}" th:text="${estado}">DISPONIBLE</option>
+									</select>
+								</label>
+								<label style="grid-column: 1 / -1;">
+									<span>Descripción Técnica</span>
+									<input name="descripcion" placeholder="Ej: Cartucho de tinta Epson 664 negro / Monitor LED 22 pulgadas" maxlength="255">
+								</label>
+								<label>
+									<span>Marca</span>
+									<input name="marca" placeholder="Ej: Epson, HP, Samsung..." maxlength="120">
+								</label>
+								<label>
+									<span>Modelo</span>
+									<input name="modelo" placeholder="Ej: 664 BK, E1920H..." maxlength="180">
+								</label>
+								<label>
+									<span>Capacidad / Medida</span>
+									<input name="capacidad" placeholder="Ej: Negro, 22 pulgadas, 8GB..." maxlength="120">
+								</label>
+								<label>
+									<span>N° de Remito</span>
+									<input name="remito" placeholder="Ej: R-0001-00084321" maxlength="80">
+								</label>
+								<label>
+									<span>Orden de Compra</span>
+									<input name="ordenCompra" placeholder="Ej: OC-2025-089" maxlength="80">
+								</label>
+								<label>
+									<span>Proveedor</span>
+									<input name="proveedor" placeholder="Ej: PC Arts / Banghó..." maxlength="150">
+								</label>
+								<label style="grid-column: 1 / -1;">
+									<span>Observaciones</span>
+									<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
+								</label>
+							</div>
+							<div class="form-actions stock-action-strip">
+								<button class="primary-action" type="submit">Aplicar a seleccionados</button>
+								<button class="secondary-action" type="button" onclick="document.getElementById('stock-bulk-modal').close()">Cancelar</button>
+							</div>
+						</form>
+					</dialog>
 
-					<div class="responsive-table stock-table-wrap" th:if="${!#lists.isEmpty(componentesStock)}">
+
+					<div class="responsive-table stock-table-wrap" th:if="${!#lists.isEmpty(componentesLibres)}">
 						<table>
 							<thead>
 								<tr>
@@ -346,7 +346,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								<th:block th:each="componente : ${componentesStock}">
+								<th:block th:each="componente : ${componentesLibres}">
 									<tr>
 										<td data-label="Seleccionar" th:if="${puedeEditarStock}">
 											<input data-stock-check form="stock-bulk-form" type="checkbox" name="componentesIds" th:value="${componente.id}"
@@ -392,6 +392,8 @@
 										<td data-label="Acciones">
 											<div style="display: flex; gap: 6px; flex-wrap: wrap;">
 												<button type="button" th:if="${puedeEditarStock}" class="secondary-action compact-row-action"
+														th:disabled="${componente.estado.name() == 'ASIGNADO'}"
+														th:title="${componente.estado.name() == 'ASIGNADO' ? 'Editar desde la ficha del equipo' : 'Editar'}"
 														th:attr="onclick=|toggleStockEdit(${componente.id})|">
 													Editar
 												</button>
@@ -482,6 +484,76 @@
 					</div>
 				</section>
 			</div>
+			
+			<!-- Panel: Lista de Componentes Instalados -->
+			<div id="pane-asignados" class="tab-pane stock-workspace" role="tabpanel" aria-labelledby="tab-btn-asignados">
+				<section class="modules-section" aria-labelledby="stock-installed-title">
+					<div class="section-header">
+						<div>
+							<h2 id="stock-installed-title">Componentes instalados en equipos</h2>
+							<p class="section-note">Visualización de las piezas que están operativas en PCs (no figuran en el taller).</p>
+						</div>
+						<span class="count-badge" th:text="${#lists.size(componentesAsignados)} + ' piezas'">0 piezas</span>
+					</div>
+
+					<p class="empty-state" th:if="${#lists.isEmpty(componentesAsignados)}">
+						Todavía no hay piezas registradas como instaladas en ningún equipo.
+					</p>
+
+					<div class="responsive-table stock-table-wrap" th:if="${!#lists.isEmpty(componentesAsignados)}">
+						<table>
+							<thead>
+								<tr>
+									<th scope="col">Tipo</th>
+									<th scope="col">Descripción Técnica</th>
+									<th scope="col">Marca / Modelo / Capacidad</th>
+									<th scope="col">N° Serial</th>
+									<th scope="col">Remito / O. Compra</th>
+									<th scope="col">Ingresado por</th>
+									<th scope="col">Vinculado a</th>
+								</tr>
+							</thead>
+							<tbody>
+								<th:block th:each="componente : ${componentesAsignados}">
+									<tr>
+										<td data-label="Tipo">
+											<span class="stock-type-chip" th:text="${componente.tipo}">RAM</span>
+										</td>
+										<td data-label="Descripción">
+											<strong th:text="${componente.descripcion}">Memoria RAM</strong>
+											<span class="table-subtext" th:if="${componente.observaciones}" th:text="${componente.observaciones}">Observaciones</span>
+										</td>
+										<td data-label="Marca / Modelo">
+											<span th:text="${componente.marca ?: 'Genérico'}">Kingston</span>
+											<span class="table-subtext" th:text="${(componente.modelo ?: '') + ' ' + (componente.capacidad ?: '')}">DDR4 8GB</span>
+										</td>
+										<td data-label="N° Serial">
+											<code th:text="${componente.serial ?: 'Sin serial'}" style="font-size: 0.85rem; color: var(--text-link);">SN-001</code>
+										</td>
+										<td data-label="Remito / O. Compra">
+											<div th:if="${componente.remito != null or componente.ordenCompra != null}">
+												<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600;">Rem: <span th:text="${componente.remito}">R-001</span></span>
+												<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: var(--text-secondary);">OC: <span th:text="${componente.ordenCompra}">OC-12</span></span>
+												<span th:if="${componente.proveedor}" style="display: block; font-size: 0.75rem; color: var(--text-muted);" th:text="${componente.proveedor}">Banghó</span>
+											</div>
+											<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+										</td>
+										<td data-label="Ingresado por" th:text="${componente.ingresadoPor ?: '-'}">usuario3</td>
+										<td data-label="Vinculado a">
+											<div th:if="${componente.equipoId != null}">
+												<a th:if="${puedeVerEquipos}" th:href="@{/admin/equipos/{id}(id=${componente.equipoId})}" style="color: var(--text-link); font-weight: 700;" th:text="${componente.equipoNombre}">PC-INF-001</a>
+												<strong th:unless="${puedeVerEquipos}" th:text="${componente.equipoNombre}">PC-INF-001</strong>
+												<span class="table-subtext" th:if="${componente.ultimoUsuarioEquipo}" th:text="|Usuario: ${componente.ultimoUsuarioEquipo}|">Usuario</span>
+											</div>
+											<span th:if="${componente.equipoId == null}" class="authorization-badge is-rejected">Sin vínculo activo</span>
+										</td>
+									</tr>
+								</th:block>
+							</tbody>
+						</table>
+					</div>
+				</section>
+			</div>
 
 			<!-- Panel 2: Ingresar Nuevo Componente -->
 			<div id="pane-nuevo" class="tab-pane" th:if="${puedeEditarStock}" role="tabpanel" aria-labelledby="tab-btn-nuevo">
@@ -564,7 +636,7 @@
 	<!-- Script de Pestañas Interactivas Liviano y Accesible -->
 	<script>
 		function switchTab(tabId) {
-			const tabs = ['pendientes', 'disponibles', 'nuevo'];
+			const tabs = ['pendientes', 'disponibles', 'asignados', 'nuevo'];
 			if (!document.getElementById('tab-btn-' + tabId) || !document.getElementById('pane-' + tabId)) {
 				tabId = 'disponibles';
 			}
@@ -622,6 +694,8 @@
 				switchTab('pendientes');
 			} else if (hash === '#tab-disponibles') {
 				switchTab('disponibles');
+			} else if (hash === '#tab-asignados') {
+				switchTab('asignados');
 			}
 		});
 	</script>

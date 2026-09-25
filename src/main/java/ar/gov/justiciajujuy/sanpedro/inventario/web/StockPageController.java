@@ -7,10 +7,12 @@ import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.ActualizarStockLoteCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.GuardarStockComponenteCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.StockComponenteDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -35,10 +37,12 @@ public class StockPageController {
 
 	private final AuthorizationService authorizationService;
 	private final StockService stockService;
+	private final ComponenteRepository componenteRepository;
 
-	public StockPageController(AuthorizationService authorizationService, StockService stockService) {
+	public StockPageController(AuthorizationService authorizationService, StockService stockService, ComponenteRepository componenteRepository) {
 		this.authorizationService = authorizationService;
 		this.stockService = stockService;
+		this.componenteRepository = componenteRepository;
 	}
 
 	@GetMapping("/admin/stock")
@@ -130,18 +134,50 @@ public class StockPageController {
 	}
 
 	private void prepararModelo(Model model, UserDetails userDetails, StockForm stockForm) {
-		var componentes = stockService.listarDisponiblesYActivos();
-		var componentesPendientes = componentes.stream().filter(c -> !c.datosCompletos()).toList();
-		var componentesStock = componentes.stream().filter(StockComponenteDetalle::datosCompletos).toList();
+		var componentesStockRaw = stockService.listarDisponiblesYActivos();
+		List<StockComponenteDetalle> componentesTotales = new java.util.ArrayList<>(componentesStockRaw);
+		
+		componenteRepository.findAllWithEquipoAndOrigenNot(ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.SCRIPT).stream()
+			.map(c -> new StockComponenteDetalle(
+					c.getId(),
+					c.getTipo(),
+					EstadoStockComponente.ASIGNADO,
+					c.getDescripcion(),
+					c.getMarca(),
+					c.getModelo(),
+					c.getSerial(),
+					c.getCapacidad(),
+					c.getRemito(),
+					c.getOrdenCompra(),
+					c.getProveedor(),
+					"Sistema",
+					true,
+					java.util.List.of(),
+					c.getUbicacion(),
+					c.getObservaciones(),
+					c.getEquipo().getId(),
+					c.getEquipo().getNombre(),
+					c.getEquipo().getUltimoUsuario(),
+					c.isActivo()
+			))
+			.forEach(componentesTotales::add);
+		
+		var componentesPendientes = componentesTotales.stream().filter(c -> !c.datosCompletos()).toList();
+		var componentesStock = componentesTotales.stream().filter(StockComponenteDetalle::datosCompletos).toList();
+		var componentesLibres = componentesStock.stream().filter(c -> c.estado() != EstadoStockComponente.ASIGNADO).toList();
+		var componentesAsignados = componentesStock.stream().filter(c -> c.estado() == EstadoStockComponente.ASIGNADO).toList();
+		
 		long disponiblesCount = componentesStock.stream().filter(c -> c.estado() == EstadoStockComponente.DISPONIBLE).count();
 		long reservadosCount = componentesStock.stream().filter(c -> c.estado() == EstadoStockComponente.RESERVADO).count();
-		long asignadosCount = componentesStock.stream().filter(c -> c.estado() == EstadoStockComponente.ASIGNADO).count();
+		long asignadosCount = componenteRepository.countByOrigenNot(ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.SCRIPT);
 		long pendientesCount = componentesPendientes.size();
 
 		model.addAttribute("componentesPendientes", componentesPendientes);
 		model.addAttribute("componentesStock", componentesStock);
+		model.addAttribute("componentesLibres", componentesLibres);
+		model.addAttribute("componentesAsignados", componentesAsignados);
 		model.addAttribute("totalStock", componentesStock.size());
-		model.addAttribute("totalComponentes", componentes.size());
+		model.addAttribute("totalComponentes", componentesTotales.size());
 		model.addAttribute("disponiblesCount", disponiblesCount);
 		model.addAttribute("reservadosCount", reservadosCount);
 		model.addAttribute("asignadosCount", asignadosCount);

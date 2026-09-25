@@ -624,7 +624,7 @@
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
 											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
-												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}"><span class="missing-pulse-dot" aria-hidden="true"></span>Resolver</span>
+												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}" title="El componente fue asignado pero el script de la PC aún no lo reportó"><span class="missing-pulse-dot" aria-hidden="true"></span>Falta Reporte</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar este componente y regresarlo a Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
 													<button type="submit" class="secondary-action" title="Retirar pieza y regresarla a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); cursor: pointer;">
@@ -635,11 +635,6 @@
 													<input type="hidden" name="destino" value="BAJA">
 													<button type="submit" class="secondary-action" title="Dar de baja el componente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer;">
 														❌ Baja
-													</button>
-												</form>
-												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular este componente del equipo y devolverlo a Stock como DISPONIBLE?');">
-													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
-														↩ Stock
 													</button>
 												</form>
 											</div>
