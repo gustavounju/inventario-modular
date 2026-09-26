@@ -74,3 +74,9 @@ El script pide credenciales en consola. No escribir claves en commits, documento
 - `docs/inventario-modular/base-datos-local-windows.md`
 - `docs/inventario-modular/tareas-moviles-lan.md`
 - `docs/inventario-modular/instalacion-tareas-lan-2026-09-10.md`
+
+## Reglas Estrictas de Base de Datos (Flyway)
+
+- **¡CRITICO!** Nunca modificar ni renombrar un archivo de migración `V...sql` que ya ha sido creado o sugerido previamente.
+- Si se requiere alterar el esquema de la base de datos (agregar tablas, columnas, índices, cambiar tipos), se debe **SIEMPRE crear un nuevo archivo de migración** (ej. `V[SIGUIENTE_NUMERO]__descripcion.sql`) con instrucciones `ALTER TABLE` o `CREATE TABLE`.
+- Esta regla aplica para el código generado por IA. La IA no debe modificar archivos antiguos bajo ninguna circunstancia, para evitar corromper el `flyway_schema_history` local y en producción.

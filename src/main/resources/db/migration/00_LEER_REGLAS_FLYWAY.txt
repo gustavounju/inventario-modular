@@ -1,0 +1,14 @@
+🛑 REGLA ESTRICTA DE BASE DE DATOS (FLYWAY) 🛑
+
+NUNCA, BAJO NINGUNA CIRCUNSTANCIA, MODIFIQUES UN ARCHIVO QUE YA FUE SUBIDO AL REPOSITORIO (GIT).
+
+Si necesitas modificar una tabla existente, crear una nueva, o cambiar un tipo de dato:
+❌ NO edites los archivos antiguos (Ej: V1__..., V2__...).
+✅ SÍ debes crear un archivo NUEVO (Ej: V8__agregar_columna_x.sql) con la instrucción "ALTER TABLE..." o "CREATE TABLE..."
+
+¿Por qué?
+Flyway es un control de versiones estricto. Si modificas un archivo antiguo, destruirás el historial 
+criptográfico de Flyway. Esto hará que la base de datos de producción falle catastróficamente al intentar arrancar, 
+y obligará a todo el equipo de desarrollo a borrar sus bases de datos locales para poder seguir trabajando.
+
+-> ¡Los archivos .sql en esta carpeta están grabados en piedra! <-

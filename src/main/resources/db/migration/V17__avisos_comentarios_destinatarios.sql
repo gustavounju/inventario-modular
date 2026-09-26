@@ -1,2 +1,3 @@
-ALTER TABLE tareas_avisos ADD COLUMN tipo VARCHAR(40) NOT NULL DEFAULT 'CREACION';
-ALTER TABLE tareas_avisos ADD COLUMN destinatario_username VARCHAR(120);
+-- Las columnas 'tipo' y 'destinatario_username' ya fueron agregadas en V15 (error de versionado resuelto).
+-- ALTER TABLE tareas_avisos ADD COLUMN tipo VARCHAR(40) NOT NULL DEFAULT 'CREACION';
+-- ALTER TABLE tareas_avisos ADD COLUMN destinatario_username VARCHAR(120);

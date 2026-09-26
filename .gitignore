@@ -64,7 +64,6 @@ standalone_pdf_tool/
 inventario-next/
 static/
 !src/main/resources/static/
-/output/android/
 /output/entrega-lan/
 /output/entrega-lan.zip
 application-secrets.properties
