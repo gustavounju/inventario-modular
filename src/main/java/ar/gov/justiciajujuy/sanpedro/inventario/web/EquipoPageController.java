@@ -171,6 +171,22 @@ public class EquipoPageController {
 		return "admin/equipos";
 	}
 
+	@org.springframework.web.bind.annotation.GetMapping("/admin/equipos/{id:\\d+}/acta")
+	public String imprimirActa(
+			Model model,
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER)) {
+			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para ver equipos.");
+		}
+		EquipoDetalle equipo = obtenerEquipoOResponder404(id);
+		if (esEquipoGenerico(equipo.nombre())) {
+			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede emitir acta de un equipo genérico.");
+		}
+		prepararDetalle(model, userDetails, equipo, EquipoForm.desde(equipo));
+		return "admin/equipo-acta";
+	}
+
 	private boolean esEquipoGenerico(String nombre) {
 		return nombre != null && TareaTecnicaService.EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(nombre);
 	}

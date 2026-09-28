@@ -1,0 +1,172 @@
+﻿<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<title>Acta de Componentes - Inventario Modular</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			margin: 40px;
+			color: #333;
+			line-height: 1.6;
+		}
+		.header {
+			text-align: center;
+			margin-bottom: 30px;
+			border-bottom: 2px solid #000;
+			padding-bottom: 20px;
+		}
+		.title {
+			font-size: 24px;
+			font-weight: bold;
+			text-transform: uppercase;
+		}
+		.subtitle {
+			font-size: 16px;
+			color: #555;
+		}
+		.info-section {
+			margin-bottom: 30px;
+		}
+		.info-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 15px;
+		}
+		.info-item {
+			background: #f9f9f9;
+			padding: 10px;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+		}
+		.info-label {
+			font-weight: bold;
+			font-size: 12px;
+			color: #666;
+			text-transform: uppercase;
+		}
+		.info-value {
+			font-size: 16px;
+			margin-top: 5px;
+		}
+		.components-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-bottom: 40px;
+		}
+		.components-table th, .components-table td {
+			border: 1px solid #000;
+			padding: 10px;
+			text-align: left;
+		}
+		.components-table th {
+			background-color: #eee;
+			font-weight: bold;
+		}
+		.signatures {
+			display: flex;
+			justify-content: space-around;
+			margin-top: 60px;
+		}
+		.signature-box {
+			text-align: center;
+			width: 250px;
+		}
+		.signature-line {
+			border-top: 1px solid #000;
+			margin-top: 50px;
+			padding-top: 10px;
+		}
+		@media print {
+			body { margin: 0; }
+			.no-print { display: none !important; }
+		}
+		.print-btn {
+			display: block;
+			width: 200px;
+			margin: 0 auto 30px;
+			padding: 10px;
+			text-align: center;
+			background: #2563eb;
+			color: #fff;
+			text-decoration: none;
+			font-weight: bold;
+			border-radius: 5px;
+			cursor: pointer;
+			border: none;
+		}
+	</style>
+</head>
+<body>
+	<button class="print-btn no-print" onclick="window.print()">🖨️ Imprimir Acta</button>
+
+	<div class="header">
+		<div class="title">Acta de Componentes Homologados</div>
+		<div class="subtitle">Inventario Informático - Poder Judicial de Jujuy</div>
+	</div>
+
+	<div class="info-section">
+		<h3>Datos del Equipo</h3>
+		<div class="info-grid">
+			<div class="info-item">
+				<div class="info-label">Nombre del Equipo</div>
+				<div class="info-value" th:text="${equipo.nombre}">SISTEMAS-105</div>
+			</div>
+			<div class="info-item">
+				<div class="info-label">Usuario Asignado</div>
+				<div class="info-value" th:text="${equipo.usuario ?: 'Sin asignar'}">gmurad</div>
+			</div>
+			<div class="info-item">
+				<div class="info-label">Ubicación / Fuero</div>
+				<div class="info-value" th:text="${equipo.ubicacion ?: 'Sin ubicación'}">Dpto. Informática</div>
+			</div>
+			<div class="info-item">
+				<div class="info-label">Sistema Operativo</div>
+				<div class="info-value" th:text="${equipo.sistemaOperativo ?: 'No registrado'}">Windows 11</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="info-section">
+		<h3>Componentes Relevados</h3>
+		<table class="components-table">
+			<thead>
+				<tr>
+					<th>Tipo</th>
+					<th>Fabricante / Modelo</th>
+					<th>Capacidad / Detalle</th>
+					<th>Número de Serie</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="comp : ${listaComponentes}">
+					<td th:text="${comp.tipo}">RAM</td>
+					<td th:text="${(comp.fabricante ?: '') + ' ' + (comp.modelo ?: '')}">Kingston</td>
+					<td th:text="${comp.capacidad ?: '-'}">8 GB</td>
+					<td th:text="${comp.numeroSerie ?: '-'}">12345</td>
+				</tr>
+				<tr th:if="${#lists.isEmpty(listaComponentes)}">
+					<td colspan="4" style="text-align: center; font-style: italic;">No hay componentes registrados para este equipo.</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="signatures">
+		<div class="signature-box">
+			<div class="signature-line">
+				<strong>Firma del Técnico</strong><br>
+				Aclaración:<br>
+				Fecha: ___/___/20___
+			</div>
+		</div>
+		<div class="signature-box">
+			<div class="signature-line">
+				<strong>Firma del Usuario Responsable</strong><br>
+				Aclaración:<br>
+				Fecha: ___/___/20___
+			</div>
+		</div>
+	</div>
+</body>
+</html>

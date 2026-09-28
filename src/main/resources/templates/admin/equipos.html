@@ -115,6 +115,11 @@
 										   style="font-size: 0.82rem; padding: 6px 12px; font-weight: 700;">
 											🖥️ Ver Ficha
 										</a>
+										<a th:if="${equipo.ultimoReporteEn == null or (equiposConGemelo != null and equiposConGemelo.contains(equipo.id))}"
+										   class="secondary-action" th:href="@{/admin/equipos/{id}/acta(id=${equipo.id})}" target="_blank"
+										   style="font-size: 0.82rem; padding: 6px 12px; font-weight: 700; color: #4b5563; border-color: #9ca3af;">
+											🖨️ Acta
+										</a>
 										<a th:if="${canViewTareas}"
 										   class="secondary-action" th:href="@{/admin/tareas(equipoId=${equipo.id})}"
 										   style="font-size: 0.78rem; padding: 5px 10px; font-weight: 700;"
