@@ -217,7 +217,7 @@ public class MainActivity extends Activity {
 
     private void showSettings(String updateLabel, String subtitle) {
         String[] options = { "Servidor", "Diagnostico", updateLabel, "Bateria", "Notificaciones", "Probar sonido", "Recargar tareas" };
-        new AlertDialog.Builder(this).setTitle("Tareas LAN").setMessage(subtitle).setItems(options, (dialog, which) -> {
+        new AlertDialog.Builder(this).setTitle("Tareas LAN\n" + subtitle).setItems(options, (dialog, which) -> {
             switch (which) {
                 case 0 -> configureServer();
                 case 1 -> diagnostics();
