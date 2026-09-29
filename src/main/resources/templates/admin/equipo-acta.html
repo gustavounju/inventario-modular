@@ -20,12 +20,7 @@
 			padding: 10px 20px;
 			overflow: hidden; /* Evita que crezca si hay demasiados items */
 		}
-		.cut-line {
-			border: none;
-			border-top: 2px dotted #000;
-			margin: 0;
-			padding: 0;
-		}
+
 		.header {
 			text-align: center;
 			margin-bottom: 10px;
@@ -118,7 +113,8 @@
 				<strong>Equipo:</strong> <span th:text="${equipo.nombre}">SISTEMAS-105</span> &nbsp;&nbsp;|&nbsp;&nbsp;
 				<strong>Usuario:</strong> <span th:text="${equipo.ultimoUsuario ?: 'Sin asignar'}">gmurad</span> &nbsp;&nbsp;|&nbsp;&nbsp;
 				<strong>Fuero:</strong> <span th:text="${equipo.fuero ?: 'No registrado'}">Penal</span> &nbsp;&nbsp;|&nbsp;&nbsp;
-				<strong>S.O.:</strong> <span th:text="${equipo.sistemaOperativo ?: 'No registrado'}">Windows 11</span>
+				<strong>S.O.:</strong> <span th:text="${equipo.sistemaOperativo ?: 'No registrado'}">Windows 11</span> &nbsp;&nbsp;|&nbsp;&nbsp;
+				<strong>Fecha Impresión:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}">29/09/2026</span>
 			</div>
 
 			<div class="info-section">
@@ -177,8 +173,8 @@
 		</div>
 	</div>
 
-	<!-- Línea de corte para separar -->
-	<hr th:if="${actaHabilitada}" class="cut-line">
+	<!-- Espaciado entre las actas sin línea -->
+	<div th:if="${actaHabilitada}" style="height: 10px;"></div>
 
 	<!-- Duplicado (Mitad de abajo) -->
 	<div th:if="${actaHabilitada}" th:replace="~{::acta-content}"></div>
