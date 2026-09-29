@@ -22,9 +22,20 @@
 					<a class="secondary-action" th:href="@{/admin/equipos}" title="Volver a la lista de equipos">
 						⬅ Volver al listado
 					</a>
-					<a class="secondary-action" th:unless="${equipoGenerico}" th:href="@{/admin/equipos/{id}/acta(id=${equipo.id})}" target="_blank" title="Imprimir Acta de Componentes">
-						🖨️ Imprimir Acta
-					</a>
+					<!-- Botón Acta: solo activo si la impresora del puesto está configurada -->
+					<th:block th:unless="${equipoGenerico}">
+						<a th:if="${actaHabilitada}" class="secondary-action"
+						   th:href="@{/admin/equipos/{id}/acta(id=${equipo.id})}" target="_blank"
+						   title="Imprimir Acta de Componentes">
+							🖨️ Imprimir Acta
+						</a>
+						<span th:unless="${actaHabilitada}"
+							  class="secondary-action"
+							  style="opacity:0.45; cursor:not-allowed;"
+							  th:title="${motivoBloqueada}">
+							🔒 Acta no disponible
+						</span>
+					</th:block>
 				</div>
 				<div class="quick-nav-group" th:unless="${equipoGenerico}">
 					<span class="authorization-badge" th:classappend="${equipo.activo} ? ' is-authorized' : ' is-pending'"
@@ -43,6 +54,7 @@
 			<p class="success-message" th:if="${actualizado == true and relevamientoConsolidado != true}">
 				Equipo actualizado correctamente.
 			</p>
+			<p class="success-message" th:if="${mensajeImpresora}" th:text="${mensajeImpresora}"></p>
 			<p class="success-message" th:if="${relevamientoConsolidado}">
 				✅ ¡Gemelo Digital registrado con éxito! Los componentes detectados quedaron confirmados como la línea base oficial del equipo.
 			</p>
@@ -320,6 +332,69 @@
 							<span class="attribute-value" th:text="${equipo.impresora ?: 'Sin impresora vinculada'}">HP LaserJet</span>
 						</div>
 					</div>
+				</div>
+			</div>
+
+			<!-- ============================================================
+			     PANEL: Gestión de Impresora del Puesto
+			     ============================================================ -->
+			<div th:unless="${equipoGenerico}" class="table-section" style="margin-top: 1rem;">
+				<div class="section-header">
+					<div>
+						<h2 style="margin: 0; font-size: 1.05rem;">🖨️ Impresora del Puesto</h2>
+						<p class="section-note" style="margin: 2px 0 0;">
+							Seleccione la impresora activa del puesto para habilitar el Acta. Si imprime en red, indíquelo a continuación.
+						</p>
+					</div>
+				</div>
+
+				<!-- Alerta si no está configurada -->
+				<div th:unless="${actaHabilitada}" style="background:#fef3c7; border:1px solid #f59e0b; border-radius:6px; padding:10px 14px; margin-bottom:1rem; font-size:0.9rem; color:#92400e;">
+					⚠️ <strong>Acta no disponible:</strong> <span th:text="${motivoBloqueada}">Falta configurar la impresora.</span>
+				</div>
+
+				<!-- Toggle: Imprime en red -->
+				<div style="margin-bottom: 1rem;" th:if="${puedeEditarComponentes}">
+					<form th:action="@{/admin/equipos/{id}/toggle-impresora-en-red(id=${equipo.id})}" method="post" style="display:inline;">
+						<input type="hidden" name="enRed" th:value="${!equipo.impresoraEnRed}">
+						<button type="submit" class="secondary-action"
+								th:style="${equipo.impresoraEnRed} ? 'background:#dcfce7; border-color:#16a34a; color:#166534;' : ''">
+							<span th:text="${equipo.impresoraEnRed} ? '✅ Imprime en red (activo)' : '🌐 Marcar como: imprime en red'">🌐 Marcar como: imprime en red</span>
+						</button>
+					</form>
+				</div>
+
+				<!-- Lista de impresoras detectadas con selector de activa -->
+				<div th:with="impresoras=${componentes.?[tipo.name() == 'IMPRESORA']}">
+					<p th:if="${impresoras.empty}" style="font-size:0.88rem; color:#6b7280; font-style:italic;">No hay impresoras detectadas para este equipo.</p>
+					<table th:unless="${impresoras.empty}" class="equipo-table" style="font-size:0.9rem;">
+						<thead>
+							<tr>
+								<th>Activa</th>
+								<th>Descripción</th>
+								<th>Origen</th>
+								<th th:if="${puedeEditarComponentes}">Acción</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="imp : ${impresoras}">
+								<td style="text-align:center; font-size:1.1rem;">
+									<span th:if="${imp.esImpresoraActiva}">✅</span>
+									<span th:unless="${imp.esImpresoraActiva}" style="color:#d1d5db;">○</span>
+								</td>
+								<td th:text="${imp.descripcion}">HP LaserJet</td>
+								<td><span class="status-badge" th:text="${imp.origen}">SCRIPT</span></td>
+								<td th:if="${puedeEditarComponentes}">
+									<form th:unless="${imp.esImpresoraActiva}"
+										  th:action="@{/admin/equipos/{id}/marcar-impresora-activa(id=${equipo.id})}" method="post" style="display:inline;">
+										<input type="hidden" name="componenteId" th:value="${imp.id}">
+										<button type="submit" class="secondary-action" style="font-size:0.78rem; padding:3px 8px;">Marcar como activa</button>
+									</form>
+									<span th:if="${imp.esImpresoraActiva}" style="font-size:0.82rem; color:#16a34a; font-weight:600;">Impresora activa</span>
+								</td>
+							</tr>
+						</tbody>
+					</table>
 				</div>
 			</div>
 

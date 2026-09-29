@@ -183,8 +183,59 @@ public class EquipoPageController {
 		if (esEquipoGenerico(equipo.nombre())) {
 			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede emitir acta de un equipo genérico.");
 		}
-		prepararDetalle(model, userDetails, equipo, EquipoForm.desde(equipo));
+		var todosComponentes = componenteService.listarPorEquipo(id);
+		var impresoras = todosComponentes.stream()
+				.filter(c -> c.tipo() == ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA)
+				.toList();
+		boolean tieneImpresoraActiva = impresoras.stream().anyMatch(c -> c.esImpresoraActiva());
+		boolean actaHabilitada = equipo.impresoraEnRed() || tieneImpresoraActiva;
+		String motivoBloqueada = null;
+		if (!actaHabilitada) {
+			if (impresoras.isEmpty()) {
+				motivoBloqueada = "Este equipo no tiene impresoras detectadas. Agregue una impresora o marque que imprime en red desde la ficha del equipo.";
+			} else {
+				motivoBloqueada = "Tiene " + impresoras.size() + " impresora(s) detectada(s). Debe indicar cuál es la activa del puesto desde la ficha del equipo, o marcar que imprime en red.";
+			}
+		}
+		var componentesActa = todosComponentes.stream()
+				.filter(c -> c.tipo() != ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA || c.esImpresoraActiva())
+				.toList();
+		model.addAttribute("equipo", equipo);
+		model.addAttribute("componentes", componentesActa);
+		model.addAttribute("actaHabilitada", actaHabilitada);
+		model.addAttribute("motivoBloqueada", motivoBloqueada);
+		model.addAttribute("impresoraEnRed", equipo.impresoraEnRed());
 		return "admin/equipo-acta";
+	}
+
+	@PostMapping("/admin/equipos/{id:\\d+}/marcar-impresora-activa")
+	public String marcarImpresoraActiva(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam Long componenteId,
+			RedirectAttributes redirectAttributes) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para editar componentes.");
+		}
+		componenteService.marcarImpresoraActiva(id, componenteId);
+		redirectAttributes.addFlashAttribute("mensajeImpresora", "Impresora activa del puesto actualizada correctamente.");
+		return "redirect:/admin/equipos/" + id;
+	}
+
+	@PostMapping("/admin/equipos/{id:\\d+}/toggle-impresora-en-red")
+	public String toggleImpresoraEnRed(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam boolean enRed,
+			RedirectAttributes redirectAttributes) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para editar equipos.");
+		}
+		equipoService.actualizarImpresoraEnRed(id, enRed);
+		redirectAttributes.addFlashAttribute("mensajeImpresora", enRed
+				? "Equipo marcado como: imprime en red (sin impresora local)."
+				: "Configuración de impresora en red removida.");
+		return "redirect:/admin/equipos/" + id;
 	}
 
 	private boolean esEquipoGenerico(String nombre) {
@@ -502,6 +553,23 @@ public class EquipoPageController {
 				.toList());
 		model.addAttribute("actualizado", false);
 		model.addAttribute("relevamientoConsolidado", false);
+
+		// Cálculo de habilitación del acta (impresora activa o en red configurada)
+		var impresorasGestion = listaComponentes.stream()
+				.filter(c -> c.tipo() == TipoComponente.IMPRESORA)
+				.toList();
+		boolean tieneImpresoraActiva = impresorasGestion.stream().anyMatch(c -> c.esImpresoraActiva());
+		boolean actaHabilitada = equipo.impresoraEnRed() || tieneImpresoraActiva;
+		String motivoBloqueada = null;
+		if (!actaHabilitada) {
+			if (impresorasGestion.isEmpty()) {
+				motivoBloqueada = "No hay impresoras detectadas. Agregue una impresora o marque que imprime en red.";
+			} else {
+				motivoBloqueada = "Hay " + impresorasGestion.size() + " impresora(s) detectada(s). Indique cuál es la activa del puesto, o marque que imprime en red.";
+			}
+		}
+		model.addAttribute("actaHabilitada", actaHabilitada);
+		model.addAttribute("motivoBloqueada", motivoBloqueada);
 	}
 
 	private void prepararDetalleGenerico(Model model, UserDetails userDetails, EquipoDetalle equipo) {

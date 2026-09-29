@@ -75,6 +75,9 @@ public class Equipo {
 	@Column(length = 180)
 	private String impresora;
 
+	@Column(name = "impresora_en_red", nullable = false)
+	private boolean impresoraEnRed = false;
+
 	@Column(nullable = false, length = 60)
 	private String monitoreo = "SIN_REPORTE";
 
@@ -190,6 +193,14 @@ public class Equipo {
 
 	public String getImpresora() {
 		return impresora;
+	}
+
+	public boolean isImpresoraEnRed() {
+		return impresoraEnRed;
+	}
+
+	public void setImpresoraEnRed(boolean impresoraEnRed) {
+		this.impresoraEnRed = impresoraEnRed;
 	}
 
 	public String getMonitoreo() {

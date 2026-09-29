@@ -353,6 +353,18 @@ public class EquipoService {
 		return toDetalle(guardado);
 	}
 
+	@Transactional
+	public void actualizarImpresoraEnRed(Long id, boolean enRed) {
+		Equipo equipo = equipoRepository.findById(id)
+				.orElseThrow(() -> new EquipoNoEncontradoException(id));
+		equipo.setImpresoraEnRed(enRed);
+		equipoRepository.save(equipo);
+		if (auditoriaService != null) {
+			auditoriaService.registrar("EQUIPOS", "IMPRESORA_EN_RED", "Equipo", id,
+					"Impresora en red: " + (enRed ? "activada" : "desactivada") + " para equipo " + equipo.getNombre() + ".");
+		}
+	}
+
 	/**
 	 * Crea de forma ágil una estación en el Taller de Informática para iniciar su ensamblado.
 	 * Si no se indica un código manual, genera correlativamente un nombre secuencial libre
@@ -426,6 +438,7 @@ public class EquipoService {
 				equipo.getTeclado(),
 				equipo.getMouse(),
 				equipo.getImpresora(),
+				equipo.isImpresoraEnRed(),
 				equipo.getMonitoreo(),
 				equipo.isActivo(),
 				equipo.getUltimoReporteEn());
@@ -529,6 +542,7 @@ public class EquipoService {
 			String teclado,
 			String mouse,
 			String impresora,
+			boolean impresoraEnRed,
 			String monitoreo,
 			boolean activo,
 			LocalDateTime ultimoReporteEn) {

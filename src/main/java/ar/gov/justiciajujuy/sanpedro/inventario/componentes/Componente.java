@@ -72,6 +72,9 @@ public class Componente {
 	@Column(nullable = false)
 	private boolean activo = true;
 
+	@Column(name = "es_impresora_activa", nullable = false)
+	private boolean esImpresoraActiva = false;
+
 	@Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
 	private LocalDateTime creadoEn;
 
@@ -155,6 +158,14 @@ public class Componente {
 
 	public boolean isActivo() {
 		return activo;
+	}
+
+	public boolean isEsImpresoraActiva() {
+		return esImpresoraActiva;
+	}
+
+	public void setEsImpresoraActiva(boolean esImpresoraActiva) {
+		this.esImpresoraActiva = esImpresoraActiva;
 	}
 
 	public void actualizar(TipoComponente tipo, OrigenComponente origen, EstadoComparacion estadoComparacion, String descripcion,

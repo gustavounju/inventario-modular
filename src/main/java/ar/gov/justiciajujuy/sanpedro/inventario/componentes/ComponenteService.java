@@ -458,6 +458,28 @@ public class ComponenteService {
 		return listarPorEquipo(equipoId);
 	}
 
+	/**
+	 * Marca una impresora como la activa del puesto para que aparezca en el acta.
+	 * Desactiva el flag en todas las impresoras del equipo primero (solo puede haber una activa).
+	 */
+	@Transactional
+	public void marcarImpresoraActiva(Long equipoId, Long componenteId) {
+		// Desmarcar todas las impresoras del equipo
+		componenteRepository.findByEquipoIdOrderByTipoAscDescripcionAsc(equipoId).stream()
+				.filter(c -> c.getTipo() == TipoComponente.IMPRESORA)
+				.forEach(c -> {
+					c.setEsImpresoraActiva(false);
+					componenteRepository.save(c);
+				});
+		// Marcar la elegida
+		Componente elegida = componenteRepository.findById(componenteId)
+				.orElseThrow(() -> new ComponenteNoEncontradoException(componenteId));
+		elegida.setEsImpresoraActiva(true);
+		componenteRepository.save(elegida);
+		auditoriaService.registrar("COMPONENTES", "MARCAR_IMPRESORA_ACTIVA", "Componente", componenteId,
+				"Impresora " + elegida.getDescripcion() + " marcada como activa del puesto para equipo ID " + equipoId + ".");
+	}
+
 	@Transactional
 	public List<ComponenteDetalle> registrarDetectadosDesdeReporte(Long equipoId, ReporteInventarioCommand command) {
 		Equipo equipo = equipoRepository.findById(equipoId)
@@ -471,6 +493,15 @@ public class ComponenteService {
 		registrarSiHayDato(equipo, TipoComponente.TECLADO, "Teclado detectado", null, command.teclado(), null, null, "Puesto de trabajo", command.teclado());
 		registrarSiHayDato(equipo, TipoComponente.MOUSE, "Mouse detectado", null, command.mouse(), null, null, "Puesto de trabajo", command.mouse());
 		registrarSiHayDato(equipo, TipoComponente.IMPRESORA, "Impresora detectada", null, command.impresora(), null, null, "Puesto de trabajo", command.impresora());
+		// Detección automática de impresora en red: si el nombre contiene \\ (UNC path) o una IP
+		if (command.impresora() != null) {
+			boolean esEnRed = command.impresora().contains("\\\\") ||
+					command.impresora().matches(".*\\d+\\.\\d+\\.\\d+\\.\\d+.*");
+			if (esEnRed) {
+				equipo.setImpresoraEnRed(true);
+				equipoRepository.save(equipo);
+			}
+		}
 		auditoriaService.registrar("COMPONENTES", "REGISTRAR_SCRIPT", "Equipo", equipoId,
 				"Se registraron componentes detectados por script para " + equipo.getNombre() + ".");
 		return listarPorEquipo(equipoId);
@@ -582,7 +613,8 @@ public class ComponenteService {
 				componente.getProveedor(),
 				componente.getUbicacion(),
 				componente.getObservaciones(),
-				componente.isActivo());
+				componente.isActivo(),
+				componente.isEsImpresoraActiva());
 	}
 
 	private String textoOpcional(String valor) {
@@ -629,7 +661,8 @@ public class ComponenteService {
 			String proveedor,
 			String ubicacion,
 			String observaciones,
-			boolean activo) {
+			boolean activo,
+			boolean esImpresoraActiva) {
 	}
 
 	public static class ComponenteNoEncontradoException extends RuntimeException {
