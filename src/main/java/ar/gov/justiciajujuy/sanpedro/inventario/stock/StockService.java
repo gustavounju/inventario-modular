@@ -41,6 +41,14 @@ public class StockService {
 	}
 
 	@Transactional
+	public StockComponenteDetalle obtenerDetalle(Long id) {
+		StockComponente componente = stockComponenteRepository.findById(id)
+				.orElseThrow(() -> new StockComponenteNoEncontradoException(id));
+		sincronizarEstadoConVinculoActivo(componente);
+		return toDetalle(componente);
+	}
+
+	@Transactional
 	public StockComponenteDetalle crear(GuardarStockComponenteCommand command) {
 		StockComponente componente = new StockComponente(command.tipo(), textoRequerido(command.descripcion(), "descripcion"));
 		aplicarCampos(componente, command);

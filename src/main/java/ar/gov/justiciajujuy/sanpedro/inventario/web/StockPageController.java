@@ -135,9 +135,8 @@ public class StockPageController {
 			RedirectAttributes redirectAttributes) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		
-		var componente = componenteRepository.findById(id)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-		String serial = componente.getSerial();
+		var componente = stockService.obtenerDetalle(id);
+		String serial = componente.serial();
 		
 		try {
 			stockService.eliminar(id);
@@ -157,9 +156,8 @@ public class StockPageController {
 			RedirectAttributes redirectAttributes) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		
-		var componente = componenteRepository.findById(id)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-		String serial = componente.getSerial();
+		var componente = stockService.obtenerDetalle(id);
+		String serial = componente.serial();
 		
 		try {
 			stockService.eliminar(id);
