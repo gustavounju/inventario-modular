@@ -211,6 +211,13 @@ function Get-DiskDetails {
         $Serials = @()
         foreach ($Disk in $Disks) {
             $Model = ([string]$Disk.Model).Trim()
+            $SizeGb = 0
+            if ($Disk.Size) {
+                $SizeGb = [Math]::Round($Disk.Size / 1GB, 0)
+            }
+            if ($SizeGb -gt 0) {
+                $Model = "$Model ($SizeGb GB)"
+            }
             if (Test-HasText $Model) {
                 $Models += $Model
             }

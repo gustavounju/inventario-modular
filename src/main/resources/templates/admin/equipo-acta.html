@@ -127,6 +127,7 @@
 					<thead>
 						<tr>
 							<th>Tipo</th>
+							<th>Descripción y Capacidad</th>
 							<th>Fabricante / Modelo</th>
 							<th>Número de Serie</th>
 						</tr>
@@ -134,16 +135,17 @@
 					<tbody>
 						<tr th:each="comp : ${componentes}">
 							<td th:text="${comp.tipo}">RAM</td>
+							<td th:text="${comp.descripcion + (comp.capacidad != null ? ' - ' + comp.capacidad : '')}">Descripción</td>
 							<td th:text="${(comp.marca ?: '') + ' ' + (comp.modelo ?: '')}">Kingston</td>
 							<td th:text="${comp.serial ?: '-'}">12345</td>
 						</tr>
 						<!-- Fila especial si imprime en red -->
 						<tr th:if="${impresoraEnRed}">
 							<td>IMPRESORA</td>
-							<td colspan="2" style="font-style:italic; color:#555;">Imprime en red — sin impresora local</td>
+							<td colspan="3" style="font-style:italic; color:#555;">Imprime en red — sin impresora local</td>
 						</tr>
 						<tr th:if="${#lists.isEmpty(componentes) and !impresoraEnRed}">
-							<td colspan="3" style="text-align: center; font-style: italic;">No hay componentes registrados para este equipo.</td>
+							<td colspan="4" style="text-align: center; font-style: italic;">No hay componentes registrados para este equipo.</td>
 						</tr>
 					</tbody>
 				</table>
