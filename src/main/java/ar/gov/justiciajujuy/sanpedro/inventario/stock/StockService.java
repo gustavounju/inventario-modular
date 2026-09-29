@@ -192,7 +192,8 @@ public class StockService {
 		StockComponente componente = stockComponenteRepository.findById(id)
 				.orElseThrow(() -> new StockComponenteNoEncontradoException(id));
 		
-		if (componente.getEstado() == EstadoStockComponente.ASIGNADO) {
+		boolean esPendiente = !camposFaltantesParaStock(componente).isEmpty();
+		if (componente.getEstado() == EstadoStockComponente.ASIGNADO && !esPendiente) {
 			throw new IllegalStateException("No se puede eliminar del stock porque ya fue ASIGNADO a un equipo. Para removerlo, ve a la ficha del equipo y desvincúlalo.");
 		}
 		
