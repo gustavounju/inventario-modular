@@ -656,6 +656,7 @@
 	<!-- Modal Impresora (Desde Stock) -->
 	<dialog id="modal-impresora" class="modal-dialog">
 		<form id="form-impresora" action="" method="post" class="modal-content">
+			<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 			<h3 style="margin-top:0;">🖨️ Crear Impresora desde Scan</h3>
 			<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un registro de equipo Impresora asignándole automáticamente el número de serie escaneado.</p>
 			
@@ -691,6 +692,7 @@
 	<!-- Modal Vincular a Impresora (Desde Stock) -->
 	<dialog id="modal-vincular-impresora" class="modal-dialog">
 		<form id="form-vincular-impresora" action="" method="post" class="modal-content">
+			<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 			<h3 style="margin-top:0;">🔗 Vincular Serial a Impresora</h3>
 			<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Selecciona una impresora de red existente para asignarle automáticamente este número de serie escaneado.</p>
 			
