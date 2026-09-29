@@ -445,6 +445,7 @@ public class EquipoService {
 				equipo.getSistemaOperativo(),
 				equipo.getMonitoreo(),
 				equipo.isActivo(),
+				equipo.getMotherboardSerial(),
 				equipo.getUltimoReporteEn());
 	}
 
@@ -550,6 +551,7 @@ public class EquipoService {
 			String sistemaOperativo,
 			String monitoreo,
 			boolean activo,
+			String motherboardSerial,
 			LocalDateTime ultimoReporteEn) {
 	}
 
