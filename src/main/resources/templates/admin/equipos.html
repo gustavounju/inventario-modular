@@ -163,7 +163,10 @@
 				</label>
 				<label style="display:block; margin-bottom: 1rem;">
 					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Ubicación (Oficina / Área)</span>
-					<input type="text" name="ubicacion" required placeholder="Ej: Mesa de Entradas" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+					<select name="ubicacion" required style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+						<option value="" disabled selected>Seleccione una ubicación...</option>
+						<option th:each="u : ${ubicacionesActivas}" th:value="${u.nombre}" th:text="${u.nombre}"></option>
+					</select>
 				</label>
 				
 				<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">

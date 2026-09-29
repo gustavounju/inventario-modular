@@ -169,6 +169,7 @@ public class EquipoPageController {
 		model.addAttribute("puedeVerActas", authorizationService.tienePermiso(userDetails, "ACTAS", PERMISO_VER));
 		model.addAttribute("puedeVerDiferencias", authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER));
 		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
+		model.addAttribute("ubicacionesActivas", ubicacionService.activas());
 		return "admin/equipos";
 	}
 
