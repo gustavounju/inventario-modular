@@ -56,7 +56,7 @@ public class EquipoService {
 	public void asignarSerialMotherboard(Long id, String serial) {
 		Equipo equipo = equipoRepository.findById(id)
 				.orElseThrow(() -> new EquipoNoEncontradoException(id));
-		equipo.setMotherboardSerial(serial);
+		equipo.vincularSerial(serial);
 		equipoRepository.save(equipo);
 		
 		if (auditoriaService != null) {

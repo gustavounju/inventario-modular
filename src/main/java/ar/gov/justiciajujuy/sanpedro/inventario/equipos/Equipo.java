@@ -179,6 +179,10 @@ public class Equipo {
 		return motherboardSerial;
 	}
 
+	public void vincularSerial(String serial) {
+		this.motherboardSerial = serial;
+	}
+
 	public String getMonitores() {
 		return monitores;
 	}
