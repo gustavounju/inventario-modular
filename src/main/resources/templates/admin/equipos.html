@@ -80,7 +80,7 @@
 										<span th:if="${equipo.ultimoReporteEn == null and equipo.sistemaOperativo != 'Impresora de Red'}" class="authorization-badge" style="font-size: 0.68rem; padding: 2px 6px; background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3);">📝 Manual</span>
 										<span th:if="${equipo.sistemaOperativo == 'Impresora de Red'}" class="authorization-badge" style="font-size: 0.68rem; padding: 2px 6px; background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3);">🖨️ Impresora en Red</span>
 									</div>
-									<span class="table-subtext" th:text="${(equipo.ubicacion != null and !#strings.isEmpty(equipo.ubicacion) ? equipo.ubicacion : 'Sin ubicación asignada') + ' - IP: ' + (equipo.ip != null and !#strings.isEmpty(equipo.ip) ? equipo.ip : 'Sin IP')}">Oficina - IP: 192.168.0.20</span>
+									<span class="table-subtext" th:text="${(equipo.ubicacion != null and !#strings.isEmpty(equipo.ubicacion) ? equipo.ubicacion : 'Sin ubicación asignada') + ' - IP: ' + (equipo.ip != null and !#strings.isEmpty(equipo.ip) ? equipo.ip : 'Sin IP') + (equipo.sistemaOperativo == 'Impresora de Red' and equipo.motherboardSerial != null and !#strings.isEmpty(equipo.motherboardSerial) ? ' - S/N: ' + equipo.motherboardSerial : '')}">Oficina - IP: 192.168.0.20</span>
 								</td>
 								<td data-label="Usuario Actual">
 									<strong th:if="${equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" th:text="${equipo.ultimoUsuario}">usuario.tecnico</strong>

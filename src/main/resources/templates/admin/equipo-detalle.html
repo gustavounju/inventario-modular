@@ -264,6 +264,10 @@
 							<span class="attribute-name">Último Reporte Recibido</span>
 							<span class="attribute-value" th:text="${equipo.ultimoReporteEn != null} ? ${#temporals.format(equipo.ultimoReporteEn, 'dd/MM/yyyy HH:mm')} : 'Sin fecha'">Reciente</span>
 						</div>
+						<div class="attribute-row" th:if="${esImpresora}">
+							<span class="attribute-name">Número de Serie</span>
+							<span class="attribute-value" th:text="${equipo.motherboardSerial ?: 'Sin cargar'}" style="font-family: monospace; font-weight: 600;">S/N</span>
+						</div>
 					</div>
 
 					<!-- Tarjeta 2: Sistema y Procesamiento -->
