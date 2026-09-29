@@ -65,6 +65,12 @@ public class StockPageController {
 		model.addAttribute("creado", "1".equals(creado));
 		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
 		model.addAttribute("ubicacionesActivas", ubicacionService.activas());
+		
+		var impresoras = equipoService.listar(null, 0, 1000).equipos().stream()
+				.filter(e -> "Impresora de Red".equals(e.sistemaOperativo()))
+				.toList();
+		model.addAttribute("impresorasRed", impresoras);
+		
 		return "admin/stock";
 	}
 
@@ -137,6 +143,28 @@ public class StockPageController {
 			stockService.eliminar(id);
 			EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, "Impresora de Red", serial);
 			return "redirect:/admin/equipos/" + equipo.id();
+		} catch (IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/admin/stock";
+		}
+	}
+
+	@PostMapping("/admin/stock/{id}/vincular-impresora")
+	public String vincularImpresora(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam Long equipoId,
+			RedirectAttributes redirectAttributes) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		
+		var componente = componenteRepository.findById(id)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		String serial = componente.getSerial();
+		
+		try {
+			stockService.eliminar(id);
+			equipoService.asignarSerialMotherboard(equipoId, serial);
+			return "redirect:/admin/equipos/" + equipoId;
 		} catch (IllegalStateException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
 			return "redirect:/admin/stock";

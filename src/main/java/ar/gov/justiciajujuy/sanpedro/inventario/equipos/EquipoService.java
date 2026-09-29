@@ -53,6 +53,19 @@ public class EquipoService {
 	}
 
 	@Transactional
+	public void asignarSerialMotherboard(Long id, String serial) {
+		Equipo equipo = equipoRepository.findById(id)
+				.orElseThrow(() -> new EquipoNoEncontradoException(id));
+		equipo.setMotherboardSerial(serial);
+		equipoRepository.save(equipo);
+		
+		if (auditoriaService != null) {
+			auditoriaService.registrar("EQUIPOS", "VINCULAR_SERIAL", "Equipo", id,
+					"Número de serie vinculado directamente desde stock: " + serial);
+		}
+	}
+
+	@Transactional
 	public void eliminar(Long id) {
 		Equipo equipo = equipoRepository.findById(id)
 				.orElseThrow(() -> new EquipoNoEncontradoException(id));

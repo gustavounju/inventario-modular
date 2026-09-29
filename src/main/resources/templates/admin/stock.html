@@ -248,7 +248,8 @@
 										<span class="authorization-badge stock-status-badge is-pending" th:text="${componente.estado}">DISPONIBLE</span>
 									</td>
 									<td data-label="Acciones">
-										<button th:if="${puedeEditarStock}" type="button" class="primary-action compact-row-action" style="margin-right: 4px; background-color: #3b82f6; color: white;" th:attr="onclick=|abrirModalImpresora(${componente.id})|">🖨️ Impresora</button>
+										<button th:if="${puedeEditarStock}" type="button" class="primary-action compact-row-action" style="margin-right: 4px; background-color: #3b82f6; color: white;" th:attr="onclick=|abrirModalImpresora(${componente.id})|">🖨️ Crear Impresora</button>
+										<button th:if="${puedeEditarStock}" type="button" class="primary-action compact-row-action" style="margin-right: 4px; background-color: #fb923c; color: white; border-color: #f97316;" th:attr="onclick=|abrirModalVincularImpresora(${componente.id})|">🔗 Vincular Serial</button>
 										<form th:if="${puedeEditarStock}" th:action="@{/admin/stock/{id}/eliminar(id=${componente.id})}" method="post" style="display: inline;" onsubmit="return confirm('¿Está seguro de eliminar esta pieza pendiente?');">
 											<button type="submit" class="secondary-action button-danger-subtle compact-row-action">Eliminar</button>
 										</form>
@@ -687,12 +688,37 @@
 		</form>
 	</dialog>
 
+	<!-- Modal Vincular a Impresora (Desde Stock) -->
+	<dialog id="modal-vincular-impresora" class="modal-dialog">
+		<form id="form-vincular-impresora" action="" method="post" class="modal-content">
+			<h3 style="margin-top:0;">🔗 Vincular Serial a Impresora</h3>
+			<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Selecciona una impresora de red existente para asignarle automáticamente este número de serie escaneado.</p>
+			
+			<label style="display:block; margin-bottom: 1rem;">
+				<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Impresora de Destino</span>
+				<select name="equipoId" required style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+					<option value="">Seleccione una impresora...</option>
+					<option th:each="imp : ${impresorasRed}" th:value="${imp.id}" th:text="${imp.nombre} + ' - ' + (${imp.ubicacion ?: 'Sin ubicación'})"></option>
+				</select>
+			</label>
+			<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
+				<button type="button" class="secondary-action" onclick="document.getElementById('modal-vincular-impresora').close()">Cancelar</button>
+				<button type="submit" class="primary-action" style="background-color: #fb923c; border-color: #f97316;">Vincular Serial</button>
+			</div>
+		</form>
+	</dialog>
+
 	<!-- Script de Pestañas Interactivas Liviano y Accesible -->
 	<script>
 		function abrirModalImpresora(idComponente) {
 			const form = document.getElementById('form-impresora');
 			form.action = '/admin/stock/' + idComponente + '/convertir-impresora';
 			document.getElementById('modal-impresora').showModal();
+		}
+		function abrirModalVincularImpresora(idComponente) {
+			const form = document.getElementById('form-vincular-impresora');
+			form.action = '/admin/stock/' + idComponente + '/vincular-impresora';
+			document.getElementById('modal-vincular-impresora').showModal();
 		}
 		function switchTab(tabId) {
 			const tabs = ['pendientes', 'disponibles', 'asignados', 'nuevo'];
