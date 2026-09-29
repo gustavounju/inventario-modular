@@ -10,6 +10,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.StockComponen
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService;
+import ar.gov.justiciajujuy.sanpedro.inventario.ubicaciones.UbicacionService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -43,13 +44,15 @@ public class StockPageController {
 	private final ComponenteRepository componenteRepository;
 	private final EquipoService equipoService;
 	private final FueroService fueroService;
+	private final UbicacionService ubicacionService;
 
-	public StockPageController(AuthorizationService authorizationService, StockService stockService, ComponenteRepository componenteRepository, EquipoService equipoService, FueroService fueroService) {
+	public StockPageController(AuthorizationService authorizationService, StockService stockService, ComponenteRepository componenteRepository, EquipoService equipoService, FueroService fueroService, UbicacionService ubicacionService) {
 		this.authorizationService = authorizationService;
 		this.stockService = stockService;
 		this.componenteRepository = componenteRepository;
 		this.equipoService = equipoService;
 		this.fueroService = fueroService;
+		this.ubicacionService = ubicacionService;
 	}
 
 	@GetMapping("/admin/stock")
@@ -60,8 +63,8 @@ public class StockPageController {
 		exigirPermiso(userDetails, PERMISO_VER);
 		prepararModelo(model, userDetails, new StockForm());
 		model.addAttribute("creado", "1".equals(creado));
-		model.addAttribute("fuerosDisponibles", fueroService.obtenerTodos());
-		model.addAttribute("ubicacionesActivas", fueroService.obtenerUbicacionesFisicas());
+		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
+		model.addAttribute("ubicacionesActivas", ubicacionService.activas());
 		return "admin/stock";
 	}
 
