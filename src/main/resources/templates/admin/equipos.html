@@ -50,7 +50,7 @@
 						<button class="primary-action" type="submit">🔍 Buscar</button>
 						<a class="secondary-action" th:if="${estadoFiltro != null and estadoFiltro != ''}" th:href="@{/admin/equipos}">Limpiar Filtro</a>
 					</form>
-					<button class="primary-action" onclick="document.getElementById('modal-taller').showModal()" style="background-color: #fb923c; color: #fff;">🛠️ Armar PC en Taller</button>
+					<button class="primary-action" onclick="document.getElementById('modal-taller').showModal()" style="background-color: #fb923c; color: #fff;">🛠️ Alta Manual (Taller / Impresora)</button>
 				</div>
 
 				<p class="empty-state" th:if="${#lists.isEmpty(equipos.equipos)}">
@@ -141,18 +141,18 @@
 			</section>
 		</section>
 
-		<!-- Modal Taller -->
+		<!-- Modal Alta Manual -->
 		<dialog id="modal-taller" class="modal-dialog">
 			<form th:action="@{/admin/equipos/taller}" method="post" class="modal-content">
-				<h3 style="margin-top:0;">🛠️ Armar PC en Taller</h3>
-				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un equipo fantasma para pre-ensamblar componentes en el taller. Luego podrás fusionarlo con la PC real cuando esta reporte por red.</p>
+				<h3 style="margin-top:0;">🛠️ Alta Manual de Equipo</h3>
+				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un registro manual para impresoras de red o para pre-ensamblar PCs en el taller (fantasma).</p>
 				<label style="display:block; margin-bottom: 1rem;">
-					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre Provisorio</span>
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre del Equipo / Impresora</span>
 					<input type="text" name="nombre" required th:value="${'TALLER-' + T(java.util.UUID).randomUUID().toString().substring(0,4).toUpperCase()}" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
 				</label>
 				<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
 					<button type="button" class="secondary-action" onclick="document.getElementById('modal-taller').close()">Cancelar</button>
-					<button type="submit" class="primary-action">Crear Equipo Taller</button>
+					<button type="submit" class="primary-action">Crear Equipo Manual</button>
 				</div>
 			</form>
 		</dialog>
