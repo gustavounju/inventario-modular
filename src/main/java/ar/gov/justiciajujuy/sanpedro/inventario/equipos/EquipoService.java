@@ -265,8 +265,9 @@ public class EquipoService {
 			throw new EquipoDuplicadoException(nombreNormalizado);
 		}
 		Equipo equipo = new Equipo(nombreNormalizado, fuero);
-		equipo.setUbicacion(ubicacion);
-		equipo.setSistemaOperativo(sistemaOperativo);
+		equipo.actualizarManualmente(
+				nombreNormalizado, null, fuero, ubicacion, null, sistemaOperativo,
+				null, null, null, null, null, null, null, null, null, null, null, null, true);
 		Equipo guardado = equipoRepository.save(equipo);
 
 		if (auditoriaService != null) {
