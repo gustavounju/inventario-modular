@@ -367,12 +367,13 @@ public class EquipoPageController {
 			@RequestParam String nombre,
 			@RequestParam String fuero,
 			@RequestParam String ubicacion,
+			@RequestParam(required = false) String ip,
 			@RequestParam String sistemaOperativo,
 			RedirectAttributes redirectAttributes) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
 		}
-		EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, sistemaOperativo);
+		EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, sistemaOperativo);
 		return "redirect:/admin/equipos/" + equipo.id();
 	}
 
