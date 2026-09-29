@@ -109,8 +109,12 @@ public class StockPageController {
 			@PathVariable Long id,
 			RedirectAttributes redirectAttributes) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
-		stockService.eliminar(id);
-		redirectAttributes.addFlashAttribute("eliminado", true);
+		try {
+			stockService.eliminar(id);
+			redirectAttributes.addFlashAttribute("eliminado", true);
+		} catch (IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
 		return "redirect:/admin/stock";
 	}
 
@@ -129,10 +133,14 @@ public class StockPageController {
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		String serial = componente.getSerial();
 		
-		stockService.eliminar(id);
-		EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, "Impresora de Red", serial);
-		
-		return "redirect:/admin/equipos/" + equipo.id();
+		try {
+			stockService.eliminar(id);
+			EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, "Impresora de Red", serial);
+			return "redirect:/admin/equipos/" + equipo.id();
+		} catch (IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/admin/stock";
+		}
 	}
 
 	@PostMapping("/admin/stock/componentes/lote")
