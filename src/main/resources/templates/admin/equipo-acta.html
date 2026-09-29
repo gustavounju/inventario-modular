@@ -42,33 +42,7 @@
 			color: #555;
 		}
 		.info-section {
-			margin-bottom: 15px;
-		}
-		.info-section h3 {
-			font-size: 13px;
-			margin: 5px 0;
-			text-decoration: underline;
-		}
-		.info-grid {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 8px;
-		}
-		.info-item {
-			background: #f9f9f9;
-			padding: 5px 8px;
-			border: 1px solid #ddd;
-			border-radius: 4px;
-		}
-		.info-label {
-			font-weight: bold;
-			font-size: 10px;
-			color: #666;
-			text-transform: uppercase;
-		}
-		.info-value {
-			font-size: 13px;
-			margin-top: 2px;
+			margin-bottom: 10px;
 		}
 		.components-table {
 			width: 100%;
@@ -140,26 +114,11 @@
 				<div class="subtitle">Sede San Pedro</div>
 			</div>
 
-			<div class="info-section">
-				<h3>Datos del Equipo</h3>
-				<div class="info-grid">
-					<div class="info-item">
-						<div class="info-label">Nombre del Equipo</div>
-						<div class="info-value" th:text="${equipo.nombre}">SISTEMAS-105</div>
-					</div>
-					<div class="info-item">
-						<div class="info-label">Usuario Asignado</div>
-						<div class="info-value" th:text="${equipo.ultimoUsuario ?: 'Sin asignar'}">gmurad</div>
-					</div>
-					<div class="info-item">
-						<div class="info-label">Fuero</div>
-						<div class="info-value" th:text="${equipo.fuero ?: 'No registrado'}">Penal</div>
-					</div>
-					<div class="info-item">
-						<div class="info-label">Sistema Operativo</div>
-						<div class="info-value" th:text="${equipo.sistemaOperativo ?: 'No registrado'}">Windows 11</div>
-					</div>
-				</div>
+			<div class="info-section" style="font-size: 12px; background: #f9f9f9; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px;">
+				<strong>Equipo:</strong> <span th:text="${equipo.nombre}">SISTEMAS-105</span> &nbsp;&nbsp;|&nbsp;&nbsp;
+				<strong>Usuario:</strong> <span th:text="${equipo.ultimoUsuario ?: 'Sin asignar'}">gmurad</span> &nbsp;&nbsp;|&nbsp;&nbsp;
+				<strong>Fuero:</strong> <span th:text="${equipo.fuero ?: 'No registrado'}">Penal</span> &nbsp;&nbsp;|&nbsp;&nbsp;
+				<strong>S.O.:</strong> <span th:text="${equipo.sistemaOperativo ?: 'No registrado'}">Windows 11</span>
 			</div>
 
 			<div class="info-section">
