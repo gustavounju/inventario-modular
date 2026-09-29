@@ -9,7 +9,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.GuardarStockC
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.StockComponenteDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDetalle;
-import ar.gov.justiciajujuy.sanpedro.inventario.fueros.FueroService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
