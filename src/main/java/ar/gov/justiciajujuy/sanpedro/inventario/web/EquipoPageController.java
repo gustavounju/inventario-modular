@@ -184,7 +184,13 @@ public class EquipoPageController {
 			throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede emitir acta de un equipo genérico.");
 		}
 		var todosComponentes = componenteService.listarPorEquipo(id);
-		var impresoras = todosComponentes.stream()
+		boolean tieneRelevamientoInicial = todosComponentes.stream()
+				.anyMatch(c -> c.origen() == ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.RELEVAMIENTO_INICIAL);
+		var componentesGestion = tieneRelevamientoInicial
+				? todosComponentes.stream().filter(c -> c.origen() != ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.SCRIPT).toList()
+				: todosComponentes;
+
+		var impresoras = componentesGestion.stream()
 				.filter(c -> c.tipo() == ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA)
 				.toList();
 		boolean tieneImpresoraActiva = impresoras.stream().anyMatch(c -> c.esImpresoraActiva());
@@ -197,7 +203,7 @@ public class EquipoPageController {
 				motivoBloqueada = "Tiene " + impresoras.size() + " impresora(s) detectada(s). Debe indicar cuál es la activa del puesto desde la ficha del equipo, o marcar que imprime en red.";
 			}
 		}
-		var componentesActa = todosComponentes.stream()
+		var componentesActa = componentesGestion.stream()
 				.filter(c -> c.tipo() != ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA || c.esImpresoraActiva())
 				.toList();
 		model.addAttribute("equipo", equipo);
