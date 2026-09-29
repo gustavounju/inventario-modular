@@ -23,7 +23,7 @@
 						⬅ Volver al listado
 					</a>
 					<!-- Botón Acta: solo activo si la impresora del puesto está configurada -->
-					<th:block th:unless="${equipoGenerico}">
+					<th:block th:unless="${equipoGenerico or esImpresora}">
 						<a th:if="${actaHabilitada}" class="secondary-action"
 						   th:href="@{/admin/equipos/{id}/acta(id=${equipo.id})}" target="_blank"
 						   title="Imprimir Acta de Componentes">
