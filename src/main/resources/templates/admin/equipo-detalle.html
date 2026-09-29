@@ -212,9 +212,9 @@
 						📋 Ficha Técnica y Hardware
 					</button>
 				</li>
-				<li th:unless="${esImpresora}">
+				<li>
 					<button type="button" class="subnav-tab" id="tab-btn-gemelo" onclick="switchTab('gemelo')" role="tab" aria-selected="false" aria-controls="pane-gemelo">
-						🤖 Gemelo digital / Componentes
+						<span th:text="${esImpresora ? '📦 Componentes / Insumos' : '🤖 Gemelo digital / Componentes'}">🤖 Gemelo digital / Componentes</span>
 						<span class="tab-badge" th:text="${#lists.size(componentes)}">0</span>
 					</button>
 				</li>
@@ -338,7 +338,7 @@
 			<!-- ============================================================
 			     PANEL: Gestión de Impresora del Puesto
 			     ============================================================ -->
-			<div th:unless="${equipoGenerico}" class="table-section" style="margin-top: 1rem;">
+			<div th:unless="${equipoGenerico or esImpresora}" class="table-section" style="margin-top: 1rem;">
 				<div class="section-header">
 					<div>
 						<h2 style="margin: 0; font-size: 1.05rem;">🖨️ Impresora del Puesto</h2>
@@ -554,9 +554,12 @@
 				<section class="attributes-section" th:if="${puedeVerComponentes}" aria-labelledby="comparacion-title">
 					<div class="section-header">
 						<div>
-							<h2 id="comparacion-title" style="margin: 0; font-size: 1.15rem;">Gemelo digital / Componentes</h2>
-							<p class="section-note" style="margin: 2px 0 0;">
+							<h2 id="comparacion-title" style="margin: 0; font-size: 1.15rem;" th:text="${esImpresora ? 'Componentes y Insumos Asignados' : 'Gemelo digital / Componentes'}">Gemelo digital / Componentes</h2>
+							<p th:unless="${esImpresora}" class="section-note" style="margin: 2px 0 0;">
 								Comparacion del gemelo digital: Hardware oficial del equipo organizado por módulos y verificado en vivo con el script.
+							</p>
+							<p th:if="${esImpresora}" class="section-note" style="margin: 2px 0 0;">
+								Insumos y accesorios oficiales (Tóner, bandejas, repuestos) asignados a esta impresora.
 							</p>
 						</div>
 						<span class="count-badge" th:text="${#lists.size(componentes)} + ' componentes oficiales'">0 componentes</span>
