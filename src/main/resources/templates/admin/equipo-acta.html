@@ -22,7 +22,7 @@
 		}
 		.cut-line {
 			border: none;
-			border-top: 1px dashed #999;
+			border-top: 2px dotted #000;
 			margin: 0;
 			padding: 0;
 		}
@@ -201,7 +201,7 @@
 				<div class="signature-box">
 					<br><br><br>
 					<div class="signature-line">
-						<strong>Firma del Usuario Responsable</strong><br>
+						<strong>Firma de quien recibe / Responsable</strong><br>
 						Fecha: ___/___/20___
 					</div>
 				</div>
@@ -210,7 +210,7 @@
 	</div>
 
 	<!-- Línea de corte para separar -->
-	<hr th:if="${actaHabilitada}" class="cut-line no-print">
+	<hr th:if="${actaHabilitada}" class="cut-line">
 
 	<!-- Duplicado (Mitad de abajo) -->
 	<div th:if="${actaHabilitada}" th:replace="~{::acta-content}"></div>
