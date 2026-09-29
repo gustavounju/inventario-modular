@@ -168,6 +168,7 @@ public class EquipoPageController {
 		model.addAttribute("puedeVerStock", authorizationService.tienePermiso(userDetails, "STOCK", PERMISO_VER));
 		model.addAttribute("puedeVerActas", authorizationService.tienePermiso(userDetails, "ACTAS", PERMISO_VER));
 		model.addAttribute("puedeVerDiferencias", authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER));
+		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
 		return "admin/equipos";
 	}
 
@@ -355,6 +356,21 @@ public class EquipoPageController {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
 		}
 		EquipoDetalle equipo = equipoService.crearEquipoTaller(nombre);
+		return "redirect:/admin/equipos/" + equipo.id();
+	}
+
+	@PostMapping("/admin/equipos/manual")
+	public String crearEquipoManual(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam String nombre,
+			@RequestParam String fuero,
+			@RequestParam String ubicacion,
+			@RequestParam String sistemaOperativo,
+			RedirectAttributes redirectAttributes) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
+		}
+		EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, sistemaOperativo);
 		return "redirect:/admin/equipos/" + equipo.id();
 	}
 

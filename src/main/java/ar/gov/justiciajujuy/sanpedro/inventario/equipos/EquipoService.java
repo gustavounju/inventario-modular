@@ -259,6 +259,23 @@ public class EquipoService {
 		return toDetalle(guardado);
 	}
 
+	public EquipoDetalle crearEquipoManual(String nombre, String fuero, String ubicacion, String sistemaOperativo) {
+		String nombreNormalizado = normalizarNombre(nombre);
+		if (equipoRepository.findByNombreIgnoreCase(nombreNormalizado).isPresent()) {
+			throw new EquipoDuplicadoException(nombreNormalizado);
+		}
+		Equipo equipo = new Equipo(nombreNormalizado, fuero);
+		equipo.setUbicacion(ubicacion);
+		equipo.setSistemaOperativo(sistemaOperativo);
+		Equipo guardado = equipoRepository.save(equipo);
+
+		if (auditoriaService != null) {
+			auditoriaService.registrar("EQUIPOS", "CREAR", "Equipo", guardado.getId(),
+					"Equipo manual '" + nombreNormalizado + "' creado.");
+		}
+		return toDetalle(guardado);
+	}
+
 	@Transactional
 	public void vincularEquipoTaller(Long idReal, Long idTaller) {
 		Equipo equipoReal = equipoRepository.findById(idReal)

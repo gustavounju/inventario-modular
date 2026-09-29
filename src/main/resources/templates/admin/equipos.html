@@ -50,7 +50,8 @@
 						<button class="primary-action" type="submit">🔍 Buscar</button>
 						<a class="secondary-action" th:if="${estadoFiltro != null and estadoFiltro != ''}" th:href="@{/admin/equipos}">Limpiar Filtro</a>
 					</form>
-					<button class="primary-action" onclick="document.getElementById('modal-taller').showModal()" style="background-color: #fb923c; color: #fff;">🛠️ Alta Manual (Taller / Impresora)</button>
+					<button class="primary-action" onclick="document.getElementById('modal-impresora').showModal()" style="background-color: #3b82f6; color: #fff; margin-right: 8px;">🖨️ Registrar Impresora</button>
+					<button class="primary-action" onclick="document.getElementById('modal-taller').showModal()" style="background-color: #fb923c; color: #fff;">🛠️ Armar PC Taller</button>
 				</div>
 
 				<p class="empty-state" th:if="${#lists.isEmpty(equipos.equipos)}">
@@ -141,18 +142,49 @@
 			</section>
 		</section>
 
-		<!-- Modal Alta Manual -->
+		<!-- Modal Impresora -->
+		<dialog id="modal-impresora" class="modal-dialog">
+			<form th:action="@{/admin/equipos/manual}" method="post" class="modal-content">
+				<h3 style="margin-top:0;">🖨️ Registrar Impresora de Red</h3>
+				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un registro de activo independiente para una impresora compartida en red.</p>
+				
+				<input type="hidden" name="sistemaOperativo" value="Impresora de Red">
+				
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre o Modelo</span>
+					<input type="text" name="nombre" required placeholder="Ej: IMP-HP-LASER o IP" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+				</label>
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Fuero Responsable</span>
+					<select name="fuero" required style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+						<option value="" disabled selected>Seleccione un fuero...</option>
+						<option th:each="f : ${fuerosDisponibles}" th:value="${f.nombre}" th:text="${f.nombre}"></option>
+					</select>
+				</label>
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Ubicación (Oficina / Área)</span>
+					<input type="text" name="ubicacion" required placeholder="Ej: Mesa de Entradas" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+				</label>
+				
+				<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
+					<button type="button" class="secondary-action" onclick="document.getElementById('modal-impresora').close()">Cancelar</button>
+					<button type="submit" class="primary-action" style="background-color: #3b82f6;">Registrar Impresora</button>
+				</div>
+			</form>
+		</dialog>
+
+		<!-- Modal Taller -->
 		<dialog id="modal-taller" class="modal-dialog">
 			<form th:action="@{/admin/equipos/taller}" method="post" class="modal-content">
-				<h3 style="margin-top:0;">🛠️ Alta Manual de Equipo</h3>
-				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un registro manual para impresoras de red o para pre-ensamblar PCs en el taller (fantasma).</p>
+				<h3 style="margin-top:0;">🛠️ Armar PC en Taller</h3>
+				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un equipo fantasma para pre-ensamblar componentes en el taller.</p>
 				<label style="display:block; margin-bottom: 1rem;">
-					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre del Equipo / Impresora</span>
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre Provisorio</span>
 					<input type="text" name="nombre" required th:value="${'TALLER-' + T(java.util.UUID).randomUUID().toString().substring(0,4).toUpperCase()}" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
 				</label>
 				<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
 					<button type="button" class="secondary-action" onclick="document.getElementById('modal-taller').close()">Cancelar</button>
-					<button type="submit" class="primary-action">Crear Equipo Manual</button>
+					<button type="submit" class="primary-action">Crear Equipo Taller</button>
 				</div>
 			</form>
 		</dialog>
