@@ -13,7 +13,7 @@
 				<header th:replace="~{admin/nav :: topbar('Tareas auxiliares', 'PC genérica', 'tareas')}"></header>
 			</th:block>
 			<th:block th:unless="${equipoGenerico}">
-				<header th:replace="~{admin/nav :: topbar('Ficha de Equipo y Gemelo Digital', 'Equipo: ' + ${equipo.nombre}, 'equipos')}"></header>
+				<header th:replace="~{admin/nav :: topbar(${esImpresora} ? 'Ficha de Activo (Impresora)' : 'Ficha de Equipo y Gemelo Digital', 'Equipo: ' + ${equipo.nombre}, 'equipos')}"></header>
 			</th:block>
 
 			<!-- Barra de Acciones Rápidas y Navegación -->
@@ -127,7 +127,7 @@
 
 			<th:block th:unless="${equipoGenerico}">
 			<!-- Barra Compacta de Estado e Integridad del Equipo -->
-			<section class="equipo-status-strip" style="padding: 12px 18px; margin: 14px 0 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;" aria-label="Estado del equipo">
+			<section th:unless="${esImpresora}" class="equipo-status-strip" style="padding: 12px 18px; margin: 14px 0 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;" aria-label="Estado del equipo">
 				<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
 					<!-- Origen -->
 					<span class="authorization-badge" th:classappend="${brujula.origenBadgeClass}"
@@ -199,7 +199,7 @@
 					<span>Dirección IP</span>
 					<strong th:text="${equipo.ip ?: 'Sin reportar'}">192.0.2.20</strong>
 				</div>
-				<div>
+				<div th:unless="${esImpresora}">
 					<span>Memoria RAM</span>
 					<strong th:text="${equipo.ramMb != null} ? (${equipo.ramMb} + ' MB (' + (${equipo.ramMb} / 1024) + ' GB)') : 'Sin reportar'">16384 MB</strong>
 				</div>
@@ -212,7 +212,7 @@
 						📋 Ficha Técnica y Hardware
 					</button>
 				</li>
-				<li>
+				<li th:unless="${esImpresora}">
 					<button type="button" class="subnav-tab" id="tab-btn-gemelo" onclick="switchTab('gemelo')" role="tab" aria-selected="false" aria-controls="pane-gemelo">
 						🤖 Gemelo digital / Componentes
 						<span class="tab-badge" th:text="${#lists.size(componentes)}">0</span>
@@ -267,7 +267,7 @@
 					</div>
 
 					<!-- Tarjeta 2: Sistema y Procesamiento -->
-					<div class="attribute-card">
+					<div class="attribute-card" th:unless="${esImpresora}">
 						<h3 class="attribute-card-title">⚙️ Sistema y Procesador</h3>
 						<div class="attribute-row">
 							<span class="attribute-name">Sistema Operativo</span>
@@ -288,7 +288,7 @@
 					</div>
 
 					<!-- Tarjeta 3: Memorias y Discos -->
-					<div class="attribute-card">
+					<div class="attribute-card" th:unless="${esImpresora}">
 						<h3 class="attribute-card-title">💾 Memoria y Almacenamiento</h3>
 						<div class="attribute-row">
 							<span class="attribute-name">Memoria RAM Total</span>

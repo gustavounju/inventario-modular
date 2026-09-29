@@ -270,6 +270,7 @@ public class EquipoPageController {
 		prepararDetalle(model, userDetails, equipo, EquipoForm.desde(equipo));
 		model.addAttribute("actualizado", "1".equals(actualizado) || "relevamiento".equals(actualizado));
 		model.addAttribute("relevamientoConsolidado", "relevamiento".equals(actualizado) || "1".equals(relevamiento));
+		model.addAttribute("esImpresora", "Impresora de Red".equals(equipo.sistemaOperativo()));
 		
 		// Load Taller equipments for linking
 		var tallerEquipos = equipoService.listar(null, 0, 1000).equipos().stream()
