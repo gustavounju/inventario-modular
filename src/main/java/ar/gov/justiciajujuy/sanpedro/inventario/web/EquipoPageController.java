@@ -373,7 +373,7 @@ public class EquipoPageController {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
 		}
-		EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, sistemaOperativo);
+		EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, sistemaOperativo, null);
 		return "redirect:/admin/equipos/" + equipo.id();
 	}
 

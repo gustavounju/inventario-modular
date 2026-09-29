@@ -7,6 +7,9 @@ import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.ActualizarStockLoteCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.GuardarStockComponenteCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService.StockComponenteDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.fueros.FueroService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -38,11 +41,15 @@ public class StockPageController {
 	private final AuthorizationService authorizationService;
 	private final StockService stockService;
 	private final ComponenteRepository componenteRepository;
+	private final EquipoService equipoService;
+	private final FueroService fueroService;
 
-	public StockPageController(AuthorizationService authorizationService, StockService stockService, ComponenteRepository componenteRepository) {
+	public StockPageController(AuthorizationService authorizationService, StockService stockService, ComponenteRepository componenteRepository, EquipoService equipoService, FueroService fueroService) {
 		this.authorizationService = authorizationService;
 		this.stockService = stockService;
 		this.componenteRepository = componenteRepository;
+		this.equipoService = equipoService;
+		this.fueroService = fueroService;
 	}
 
 	@GetMapping("/admin/stock")
@@ -53,6 +60,8 @@ public class StockPageController {
 		exigirPermiso(userDetails, PERMISO_VER);
 		prepararModelo(model, userDetails, new StockForm());
 		model.addAttribute("creado", "1".equals(creado));
+		model.addAttribute("fuerosDisponibles", fueroService.obtenerTodos());
+		model.addAttribute("ubicacionesActivas", fueroService.obtenerUbicacionesFisicas());
 		return "admin/stock";
 	}
 
@@ -100,6 +109,27 @@ public class StockPageController {
 		stockService.eliminar(id);
 		redirectAttributes.addFlashAttribute("eliminado", true);
 		return "redirect:/admin/stock";
+	}
+
+	@PostMapping("/admin/stock/{id}/convertir-impresora")
+	public String convertirImpresora(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam String nombre,
+			@RequestParam String fuero,
+			@RequestParam String ubicacion,
+			@RequestParam(required = false) String ip,
+			RedirectAttributes redirectAttributes) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		
+		var componente = componenteRepository.findById(id)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		String serial = componente.getSerial();
+		
+		stockService.eliminar(id);
+		EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, "Impresora de Red", serial);
+		
+		return "redirect:/admin/equipos/" + equipo.id();
 	}
 
 	@PostMapping("/admin/stock/componentes/lote")
