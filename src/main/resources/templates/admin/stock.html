@@ -5,6 +5,24 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Stock de Componentes - Inventario Modular</title>
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
+	<style>
+		/* Ajuste visual para que la tabla de stock entre sin scroll en monitores típicos */
+		.stock-table-wrap th,
+		.stock-table-wrap td {
+			font-size: 0.8rem;
+			padding: 5px 8px;
+		}
+		.stock-table-wrap .count-badge,
+		.stock-table-wrap .authorization-badge,
+		.stock-table-wrap .stock-type-chip {
+			font-size: 0.7rem;
+			padding: 2px 5px;
+		}
+		.stock-table-wrap code {
+			font-size: 0.75rem !important;
+			word-break: break-all;
+		}
+	</style>
 </head>
 <body>
 	<main class="shell shell-wide">
