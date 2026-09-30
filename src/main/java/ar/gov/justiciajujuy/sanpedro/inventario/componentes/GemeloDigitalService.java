@@ -26,8 +26,11 @@ public class GemeloDigitalService {
 
 	@Transactional(readOnly = true)
 	public List<ComparacionComponente> compararEquipo(Long equipoId) {
+		Equipo equipo = equipoRepository.findById(equipoId).orElseThrow();
 		List<Componente> componentes = componenteRepository.findByEquipoIdOrderByTipoAscDescripcionAsc(equipoId).stream()
 				.filter(Componente::isActivo)
+				.filter(c -> !(equipo.getImpresoraRedAsignada() != null && c.getTipo() == TipoComponente.IMPRESORA && 
+								(c.getOrigen() == OrigenComponente.SCRIPT || c.getOrigen() == OrigenComponente.RELEVAMIENTO_INICIAL)))
 				.toList();
 		List<Componente> esperados = componentes.stream()
 				.filter(this::esEsperado)

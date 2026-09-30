@@ -382,6 +382,10 @@ public class ComponenteService {
 			if (!detectado.isActivo()) {
 				continue;
 			}
+			// Ignorar impresora detectada por script si el equipo ya tiene asignada una impresora de red
+			if (equipo.getImpresoraRedAsignada() != null && detectado.getTipo() == TipoComponente.IMPRESORA) {
+				continue;
+			}
 			Componente relevado = new Componente(
 					equipo,
 					detectado.getTipo(),
@@ -499,7 +503,9 @@ public class ComponenteService {
 		registrarListaSimple(equipo, TipoComponente.MONITOR, "Monitor detectado", command.monitores(), "Puesto de trabajo");
 		registrarSiHayDato(equipo, TipoComponente.TECLADO, "Teclado detectado", null, command.teclado(), null, null, "Puesto de trabajo", command.teclado());
 		registrarSiHayDato(equipo, TipoComponente.MOUSE, "Mouse detectado", null, command.mouse(), null, null, "Puesto de trabajo", command.mouse());
-		registrarSiHayDato(equipo, TipoComponente.IMPRESORA, "Impresora detectada", null, command.impresora(), null, null, "Puesto de trabajo", command.impresora());
+		if (equipo.getImpresoraRedAsignada() == null) {
+			registrarSiHayDato(equipo, TipoComponente.IMPRESORA, "Impresora detectada", null, command.impresora(), null, null, "Puesto de trabajo", command.impresora());
+		}
 		// Detección automática de impresora en red: si el nombre contiene \\ (UNC path) o una IP
 		if (command.impresora() != null) {
 			boolean esEnRed = command.impresora().contains("\\\\") ||
