@@ -468,6 +468,20 @@ public class EquipoPageController {
 		return "redirect:/admin/equipos";
 	}
 
+	@PostMapping("/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo")
+	public String borrarDefinitivamenteComponente(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long equipoId,
+			@PathVariable Long componenteId,
+			RedirectAttributes redirectAttributes) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para editar componentes.");
+		}
+		componenteService.borrarDefinitivo(componenteId, userDetails.getUsername());
+		redirectAttributes.addAttribute("actualizado", "1");
+		return "redirect:/admin/equipos/" + equipoId;
+	}
+
 	@PostMapping("/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar")
 	public String eliminarComponente(
 			@AuthenticationPrincipal UserDetails userDetails,
@@ -609,14 +623,33 @@ public class EquipoPageController {
 		var discos = componentesGestion.stream()
 				.filter(c -> c.tipo() == TipoComponente.DISCO)
 				.toList();
-		var perifericos = componentesGestion.stream()
+		List<ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService.ComponenteDetalle> perifericos = new java.util.ArrayList<>(componentesGestion.stream()
 				.filter(c -> c.tipo() != TipoComponente.CPU
 						&& c.tipo() != TipoComponente.MOTHERBOARD
 						&& c.tipo() != TipoComponente.FUENTE
 						&& c.tipo() != TipoComponente.GABINETE
 						&& c.tipo() != TipoComponente.RAM
 						&& c.tipo() != TipoComponente.DISCO)
-				.toList();
+				.toList());
+
+		if (equipo.getImpresoraRedAsignada() != null) {
+			perifericos.add(new ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService.ComponenteDetalle(
+					null, // no tiene id de componente
+					equipo.getId(),
+					TipoComponente.IMPRESORA,
+					ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.ORDEN_ARMADO, // origen virtual
+					ar.gov.justiciajujuy.sanpedro.inventario.componentes.EstadoComparacion.COINCIDE, // siempre coincide
+					"Impresora de red vinculada",
+					null,
+					equipo.getImpresoraRedAsignada().getNombre(), // usamos nombre como modelo
+					equipo.getImpresoraRedAsignada().getIp(), // serial o IP
+					null, null, null, null,
+					equipo.getImpresoraRedAsignada().getUbicacion(),
+					"Impresora de red vinculada al puesto",
+					true,
+					true
+			));
+		}
 
 		// Componentes del gemelo que presentan discrepancias contra el reporte del script en vivo
 		var discrepancias = comparaciones.stream()

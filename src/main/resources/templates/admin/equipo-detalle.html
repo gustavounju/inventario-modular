@@ -515,15 +515,30 @@
 											<div class="task-stock-topline">
 												<span class="task-stock-state" th:text="${uso.etiquetaEstadoTarea()}">Estado</span>
 												<span class="task-stock-date" th:text="${uso.creadoEn != null ? #temporals.format(uso.creadoEn, 'dd/MM/yyyy HH:mm') : 'Sin fecha'}">14/09/2026 20:38</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 											<div class="task-stock-body">
 												<strong th:text="'#' + ${uso.stockComponenteId} + ' - ' + ${uso.tipo}">#75 - TECLADO</strong>
 												<span th:text="${uso.descripcion}">Descripcion</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 											<div class="task-stock-meta">
 												<span th:text="${uso.estadoStock}">ASIGNADO</span>
 												<span th:if="${uso.serial != null}" th:text="'Serial: ' + ${uso.serial}">Serial</span>
 												<span th:if="${uso.observacion != null}" th:text="'Nota: ' + ${uso.observacion}">Nota</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 											<p class="task-stock-notice" th:if="${uso.mostrarAvisoDesvinculacion() and uso.desvinculadoEn != null}"
 													th:text="|Asignado a ${uso.equipoDesvinculadoTexto()} y luego desvinculado por ${uso.usuarioDesvinculadoTexto()} el ${#temporals.format(uso.desvinculadoEn, 'dd/MM/yyyy HH:mm')}. Motivo: ${uso.motivoDesvinculacionTexto()}|">Componente desvinculado</p>
@@ -648,6 +663,11 @@
 												<span style="color: var(--text-secondary);">Ejecuta el script en la PC física para refrescar el reporte en vivo.</span>
 												<span style="color: #4ade80; display: block; font-weight: 600; margin-top: 4px;">• Si debe quedar en el equipo:</span>
 												<span style="color: var(--text-secondary);">Hacé clic en <strong>✅ Adoptar Hardware Físico como Oficial</strong> (arriba) para oficializar toda la configuración actual.</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 											<div th:if="${disc.resultado.name() == 'FALTA'}">
 												<span style="color: #f87171; display: block; font-weight: 600;">• Si retiraste la pieza:</span>
@@ -656,6 +676,11 @@
 												<span style="color: var(--text-secondary);">Instala el hardware en la PC e ingresalo por sistema desde el Stock.</span>
 												<span style="color: #60a5fa; display: block; font-weight: 600; margin-top: 4px;">• Si acabas de sumar esta pieza o es un periférico:</span>
 												<span style="color: var(--text-secondary);">Si agregaste un monitor o periférico que el script no detecta automáticamente, puedes ignorar esta alerta o usar el botón <strong>✅ Adoptar Hardware Físico como Oficial</strong> si deseas forzar la sincronización (dependiendo del tipo de componente).</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 										</td>
 									</tr>
@@ -698,6 +723,11 @@
 												<span th:text="${componente.marca ?: ''}">Marca</span>
 												<span th:text="${componente.modelo ?: ''}">Modelo</span>
 												<span class="count-badge" style="font-size: 0.7rem; padding: 2px 5px;" th:text="${componente.origen}">RELEVAMIENTO_INICIAL</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 										</td>
 										<td data-label="Serial">
@@ -713,7 +743,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}" title="El componente fue asignado pero el script de la PC aún no lo reportó"><span class="missing-pulse-dot" aria-hidden="true"></span>Falta Reporte</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar este componente y regresarlo a Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -725,6 +755,11 @@
 													<input type="hidden" name="destino" value="BAJA">
 													<button type="submit" class="secondary-action" title="Dar de baja el componente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer;">
 														❌ Baja
+													</button>
+												</form>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
 													</button>
 												</form>
 											</div>
@@ -769,6 +804,11 @@
 												<span th:text="${componente.marca ?: ''}">Kingston</span>
 												<span th:text="${componente.modelo ?: ''}">DDR4</span>
 												<span class="count-badge" style="font-size: 0.7rem; padding: 2px 5px;" th:text="${componente.origen}">RELEVAMIENTO_INICIAL</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 										</td>
 										<td data-label="Capacidad">
@@ -782,6 +822,11 @@
 											<div th:if="${componente.remito != null or componente.ordenCompra != null}">
 												<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600; color: #0f172a;">📄 <span th:text="${componente.remito}">R-001</span></span>
 												<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: #475569;">🛒 <span th:text="${componente.ordenCompra}">OC-12</span></span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 											<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: #94a3b8; font-size: 0.8rem;">-</span>
 										</td>
@@ -792,7 +837,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}"><span class="missing-pulse-dot" aria-hidden="true"></span>Resolver</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar esta memoria RAM y regresarla al Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -809,6 +854,11 @@
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular esta memoria del equipo y devolverla a Stock como DISPONIBLE?');">
 													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
 														↩ Stock
+													</button>
+												</form>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
 													</button>
 												</form>
 											</div>
@@ -852,6 +902,11 @@
 											<div class="table-subtext">
 												<span th:text="${componente.capacidad ?: ''}">480GB</span>
 												<span class="count-badge" style="font-size: 0.7rem; padding: 2px 5px;" th:text="${componente.origen}">RELEVAMIENTO_INICIAL</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 										</td>
 										<td data-label="Modelo">
@@ -866,6 +921,11 @@
 											<div th:if="${componente.remito != null or componente.ordenCompra != null}">
 												<span th:if="${componente.remito}" style="display: block; font-size: 0.8rem; font-weight: 600; color: #0f172a;">📄 <span th:text="${componente.remito}">R-001</span></span>
 												<span th:if="${componente.ordenCompra}" style="display: block; font-size: 0.78rem; color: #475569;">🛒 <span th:text="${componente.ordenCompra}">OC-12</span></span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 											<span th:unless="${componente.remito != null or componente.ordenCompra != null}" style="color: #94a3b8; font-size: 0.8rem;">-</span>
 										</td>
@@ -876,7 +936,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}"><span class="missing-pulse-dot" aria-hidden="true"></span>Resolver</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar este disco y regresarlo al Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -893,6 +953,11 @@
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular este disco del equipo y devolverlo a Stock como DISPONIBLE?');">
 													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
 														↩ Stock
+													</button>
+												</form>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
 													</button>
 												</form>
 											</div>
@@ -937,6 +1002,11 @@
 												<span th:text="${componente.marca ?: ''}">Samsung</span>
 												<span th:text="${componente.modelo ?: ''}">S24</span>
 												<span class="count-badge" style="font-size: 0.7rem; padding: 2px 5px;" th:text="${componente.origen}">RELEVAMIENTO_INICIAL</span>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
+													</button>
+												</form>
 											</div>
 										</td>
 										<td data-label="Serial">
@@ -950,7 +1020,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}"><span class="missing-pulse-dot" aria-hidden="true"></span>Resolver</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar este dispositivo y regresarlo a Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -967,6 +1037,11 @@
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Desvincular este dispositivo del equipo y devolverlo a Stock como DISPONIBLE?');">
 													<button type="submit" class="secondary-action" title="Desvincular y devolver a Stock" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(148, 163, 184, 0.12); color: var(--text-secondary); border: 1px solid var(--border-color); cursor: pointer;">
 														↩ Stock
+													</button>
+												</form>
+												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/borrar-definitivo(equipoId=, componenteId=)}" method="post" onsubmit="return confirm('¿Borrar definitivamente este componente del sistema? (Usar solo si se cargó por error)');">
+													<button type="submit" class="secondary-action" title="Borrar del sistema definitivamente" style="font-size: 0.76rem; padding: 3px 6px; background: rgba(0, 0, 0, 0.05); color: #475569; border: 1px solid var(--border-color); cursor: pointer;">
+														🗑️ Borrar
 													</button>
 												</form>
 											</div>

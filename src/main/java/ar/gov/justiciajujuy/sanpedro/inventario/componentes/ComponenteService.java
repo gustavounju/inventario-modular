@@ -123,6 +123,19 @@ public class ComponenteService {
 	 * @param motivo       justificación u observación técnica opcional
 	 */
 	@Transactional
+	public void borrarDefinitivo(Long componenteId, String usuario) {
+		Componente componente = componenteRepository.findById(componenteId)
+				.orElseThrow(() -> new ComponenteNoEncontradoException(componenteId));
+		Long equipoId = componente.getEquipo().getId();
+		String tipoDesc = (componente.getTipo() != null ? componente.getTipo().name() : "COMPONENTE") + " - " + componente.getDescripcion();
+		
+		componenteRepository.delete(componente);
+		
+		auditoriaService.registrar("COMPONENTES", "BORRADO_DEFINITIVO", "Componente", componenteId,
+				"El componente " + tipoDesc + " del equipo ID " + equipoId + " fue borrado definitivamente por el usuario " + (usuario != null ? usuario : "sistema") + ".");
+	}
+
+	@Transactional
 	public void retirar(Long componenteId, String destino, String motivo) {
 		retirar(componenteId, destino, motivo, null);
 	}
