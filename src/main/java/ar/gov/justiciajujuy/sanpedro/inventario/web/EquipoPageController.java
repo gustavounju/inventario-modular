@@ -632,19 +632,19 @@ public class EquipoPageController {
 						&& c.tipo() != TipoComponente.DISCO)
 				.toList());
 
-		if (equipo.getImpresoraRedAsignada() != null) {
+		if (equipo.impresoraRedId() != null) {
 			perifericos.add(new ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService.ComponenteDetalle(
 					null, // no tiene id de componente
-					equipo.getId(),
+					equipo.id(),
 					TipoComponente.IMPRESORA,
 					ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.ORDEN_ARMADO, // origen virtual
 					ar.gov.justiciajujuy.sanpedro.inventario.componentes.EstadoComparacion.COINCIDE, // siempre coincide
 					"Impresora de red vinculada",
 					null,
-					equipo.getImpresoraRedAsignada().getNombre(), // usamos nombre como modelo
-					equipo.getImpresoraRedAsignada().getIp(), // serial o IP
+					equipo.impresoraRedNombre(), // usamos nombre como modelo
+					equipo.impresoraRedIp(), // serial o IP
 					null, null, null, null,
-					equipo.getImpresoraRedAsignada().getUbicacion(),
+					equipo.impresoraRedFuero(),
 					"Impresora de red vinculada al puesto",
 					true,
 					true
