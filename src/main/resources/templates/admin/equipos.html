@@ -117,8 +117,17 @@
 										   title="Confirmar componentes reportados como el Gemelo Digital oficial">
 											🤖 Registrar Gemelo
 										</a>
-										<!-- Si ya tiene gemelo o es manual: botón estándar de ver ficha -->
-										<a th:if="${equipo.ultimoReporteEn == null or (equiposConGemelo != null and equiposConGemelo.contains(equipo.id))}"
+										<!-- Para Impresoras de Red: Botón de Editar Impresora en Modal -->
+										<button th:if="${equipo.sistemaOperativo == 'Impresora de Red' and puedeEditar}"
+										        type="button"
+										        class="primary-action"
+										        style="font-size: 0.82rem; padding: 6px 12px; font-weight: 700; background-color: #3b82f6;"
+										        th:attr="onclick='abrirModalEditarImpresora(' + ${equipo.id} + ', \'' + ${#strings.escapeJavaScript(equipo.nombre)} + '\', \'' + ${#strings.escapeJavaScript(equipo.fuero)} + '\', \'' + ${#strings.escapeJavaScript(equipo.ubicacion ?: '')} + '\', \'' + ${#strings.escapeJavaScript(equipo.ip ?: '')} + '\', \'' + ${#strings.escapeJavaScript(equipo.motherboardSerial ?: '')} + '\')'">
+											✏️ Editar
+										</button>
+										
+										<!-- Si ya tiene gemelo o es manual: botón estándar de ver ficha (solo si NO es impresora de red o quieres dejar el Ver Ficha también, aquí lo quitamos para impresoras) -->
+										<a th:if="${(equipo.ultimoReporteEn == null or (equiposConGemelo != null and equiposConGemelo.contains(equipo.id))) and equipo.sistemaOperativo != 'Impresora de Red'}"
 										   class="primary-action" th:href="@{/admin/equipos/{id}(id=${equipo.id})}"
 										   style="font-size: 0.82rem; padding: 6px 12px; font-weight: 700;">
 											🖥️ Ver Ficha
@@ -203,6 +212,47 @@
 			</form>
 		</dialog>
 
+		<!-- Modal Editar Impresora -->
+		<dialog id="modal-editar-impresora" class="modal-dialog">
+			<form id="form-editar-impresora" method="post" class="modal-content">
+				<h3 style="margin-top:0;">✏️ Editar Impresora de Red</h3>
+				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Modifica rápidamente los datos de la impresora sin entrar a su ficha completa.</p>
+				<input type="hidden" name="sistemaOperativo" value="Impresora de Red">
+				
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre o Modelo</span>
+					<input type="text" id="edit-impresora-nombre" name="nombre" required style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+				</label>
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Dirección IP (Opcional)</span>
+					<input type="text" id="edit-impresora-ip" name="ip" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+				</label>
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Número de Serie (S/N)</span>
+					<input type="text" id="edit-impresora-sn" name="motherboardSerial" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+				</label>
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Fuero Responsable</span>
+					<select id="edit-impresora-fuero" name="fuero" required style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+						<option value="" disabled>Seleccione un fuero...</option>
+						<option th:each="f : ${fuerosDisponibles}" th:value="${f}" th:text="${f}"></option>
+					</select>
+				</label>
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Ubicación (Oficina / Área)</span>
+					<select id="edit-impresora-ubicacion" name="ubicacion" required style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+						<option value="" disabled>Seleccione una ubicación...</option>
+						<option th:each="u : ${ubicacionesActivas}" th:value="${u.nombre}" th:text="${u.fuero != null ? u.fuero + ' - ' + u.nombre : u.nombre}"></option>
+					</select>
+				</label>
+				
+				<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
+					<button type="button" class="secondary-action" onclick="document.getElementById('modal-editar-impresora').close()">Cancelar</button>
+					<button type="submit" class="primary-action" style="background-color: #3b82f6;">Guardar Cambios</button>
+				</div>
+			</form>
+		</dialog>
+
 		<!-- Modal Equipos Vinculados -->
 		<dialog id="modal-vinculados" class="modal-dialog" style="width: 500px; max-width: 90vw;">
 			<div class="modal-content">
@@ -224,6 +274,17 @@
 	</main>
 	
 	<script>
+		function abrirModalEditarImpresora(id, nombre, fuero, ubicacion, ip, sn) {
+			const form = document.getElementById('form-editar-impresora');
+			form.action = '/admin/equipos/' + id + '/impresora';
+			document.getElementById('edit-impresora-nombre').value = nombre || '';
+			document.getElementById('edit-impresora-fuero').value = fuero || '';
+			document.getElementById('edit-impresora-ubicacion').value = ubicacion || '';
+			document.getElementById('edit-impresora-ip').value = ip || '';
+			document.getElementById('edit-impresora-sn').value = sn || '';
+			document.getElementById('modal-editar-impresora').showModal();
+		}
+
 		async function abrirModalVinculados(impresoraId) {
 			const modal = document.getElementById('modal-vinculados');
 			const lista = document.getElementById('lista-vinculados');

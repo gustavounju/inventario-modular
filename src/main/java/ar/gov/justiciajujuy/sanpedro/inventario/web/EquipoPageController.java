@@ -405,6 +405,32 @@ public class EquipoPageController {
 		return "redirect:/admin/equipos/" + id;
 	}
 
+	@PostMapping("/admin/equipos/{id}/impresora")
+	public String actualizarImpresora(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam String nombre,
+			@RequestParam String fuero,
+			@RequestParam String ubicacion,
+			@RequestParam(required = false) String ip,
+			@RequestParam(required = false) String motherboardSerial,
+			RedirectAttributes redirectAttributes) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para editar equipos.");
+		}
+		equipoService.actualizarManualmente(id, new ActualizarEquipoCommand(
+				nombre,
+				null,
+				fuero,
+				ubicacion,
+				ip,
+				"Impresora de Red",
+				null, null, null, null, null, null, null, motherboardSerial, null, null, null, null, null, true
+		));
+		redirectAttributes.addFlashAttribute("mensajeExito", "Impresora actualizada correctamente.");
+		return "redirect:/admin/equipos";
+	}
+
 	@PostMapping("/admin/equipos/{equipoId}/componentes/{componenteId}/eliminar")
 	public String eliminarComponente(
 			@AuthenticationPrincipal UserDetails userDetails,
