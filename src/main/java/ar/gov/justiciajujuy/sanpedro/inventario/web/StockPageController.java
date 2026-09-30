@@ -43,14 +43,16 @@ public class StockPageController {
 	private final StockService stockService;
 	private final ComponenteRepository componenteRepository;
 	private final EquipoService equipoService;
+	private final ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository equipoRepository;
 	private final FueroService fueroService;
 	private final UbicacionService ubicacionService;
 
-	public StockPageController(AuthorizationService authorizationService, StockService stockService, ComponenteRepository componenteRepository, EquipoService equipoService, FueroService fueroService, UbicacionService ubicacionService) {
+	public StockPageController(AuthorizationService authorizationService, StockService stockService, ComponenteRepository componenteRepository, EquipoService equipoService, ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository equipoRepository, FueroService fueroService, UbicacionService ubicacionService) {
 		this.authorizationService = authorizationService;
 		this.stockService = stockService;
 		this.componenteRepository = componenteRepository;
 		this.equipoService = equipoService;
+		this.equipoRepository = equipoRepository;
 		this.fueroService = fueroService;
 		this.ubicacionService = ubicacionService;
 	}
@@ -230,26 +232,26 @@ public class StockPageController {
 			.forEach(componentesTotales::add);
 			
 		// Add virtual components for network printers assigned to equipments
-		equipoService.listar(null, 0, 1000).equipos().stream()
-			.filter(e -> e.impresoraRedId() != null)
+		equipoRepository.findAll().stream()
+			.filter(e -> e.getImpresoraRedAsignada() != null)
 			.map(e -> new StockComponenteDetalle(
 					null, // Virtual, no physical ID
 					ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA,
 					EstadoStockComponente.ASIGNADO,
 					"Impresora de red vinculada",
 					null,
-					e.impresoraRedNombre(),
-					e.impresoraRedIp(),
+					e.getImpresoraRedAsignada().getNombre(),
+					e.getImpresoraRedAsignada().getIp(),
 					null, null, null, null,
 					"Sistema",
 					true,
 					java.util.List.of(),
-					e.impresoraRedFuero(),
+					e.getImpresoraRedAsignada().getFuero(),
 					"Impresora de red vinculada al puesto",
-					e.id(),
-					e.nombre(),
-					e.ultimoUsuario(),
-					e.activo()
+					e.getId(),
+					e.getNombre(),
+					e.getUltimoUsuario(),
+					e.isActivo()
 			))
 			.forEach(componentesTotales::add);
 		
