@@ -214,7 +214,7 @@
 
 		<!-- Modal Editar Impresora -->
 		<dialog id="modal-editar-impresora" class="modal-dialog">
-			<form id="form-editar-impresora" method="post" class="modal-content">
+			<form id="form-editar-impresora" th:action="@{/admin/equipos/0/impresora}" method="post" class="modal-content">
 				<h3 style="margin-top:0;">✏️ Editar Impresora de Red</h3>
 				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Modifica rápidamente los datos de la impresora sin entrar a su ficha completa.</p>
 				<input type="hidden" name="sistemaOperativo" value="Impresora de Red">
