@@ -169,10 +169,10 @@ public class EquipoPageController {
 				for (var e : resultadoEquipos.equipos()) {
 					if (e.ultimoUsuario() != null) {
 						String raw = e.ultimoUsuario();
-						String key = raw;
+						String tempKey = raw;
 						int slash = raw.indexOf('\\');
-						if (slash >= 0) key = raw.substring(slash + 1);
-						key = key.toLowerCase();
+						if (slash >= 0) tempKey = raw.substring(slash + 1);
+						final String key = tempKey.toLowerCase();
 						if (dict.containsKey(key)) {
 							nombresUsuarios.put(raw, dict.get(key));
 						} else {
