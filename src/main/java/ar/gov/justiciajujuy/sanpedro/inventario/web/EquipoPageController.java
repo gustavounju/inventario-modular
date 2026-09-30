@@ -175,6 +175,16 @@ public class EquipoPageController {
 						key = key.toLowerCase();
 						if (dict.containsKey(key)) {
 							nombresUsuarios.put(raw, dict.get(key));
+						} else {
+							var busquedaIndividual = activeDirectoryDomainService.buscarUsuarios(key);
+							if (busquedaIndividual.disponible() && busquedaIndividual.usuarios() != null) {
+								var match = busquedaIndividual.usuarios().stream()
+										.filter(u -> u.username().equalsIgnoreCase(key))
+										.findFirst();
+								if (match.isPresent()) {
+									nombresUsuarios.put(raw, match.get().nombreVisible());
+								}
+							}
 						}
 					}
 				}
