@@ -83,7 +83,8 @@
 									<span class="table-subtext" th:text="${(equipo.ubicacion != null and !#strings.isEmpty(equipo.ubicacion) ? equipo.ubicacion : 'Sin ubicación asignada') + ' - IP: ' + (equipo.ip != null and !#strings.isEmpty(equipo.ip) ? equipo.ip : 'Sin IP') + (equipo.sistemaOperativo == 'Impresora de Red' and equipo.motherboardSerial != null and !#strings.isEmpty(equipo.motherboardSerial) ? ' - S/N: ' + equipo.motherboardSerial : '')}">Oficina - IP: 192.168.0.20</span>
 								</td>
 								<td data-label="Usuario Actual">
-									<strong th:if="${equipo.sistemaOperativo != 'Impresora de Red' and equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" th:text="${equipo.ultimoUsuario}">usuario.tecnico</strong>
+									<strong th:if="${equipo.sistemaOperativo != 'Impresora de Red' and equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" 
+									        th:text="${nombresUsuarios != null and nombresUsuarios.containsKey(equipo.ultimoUsuario) ? nombresUsuarios.get(equipo.ultimoUsuario) + ' (' + equipo.ultimoUsuario + ')' : equipo.ultimoUsuario}">usuario.tecnico</strong>
 									<span th:if="${equipo.sistemaOperativo != 'Impresora de Red' and (equipo.ultimoUsuario == null or #strings.isEmpty(equipo.ultimoUsuario))}" style="color: #facc15; font-size: 0.82rem; font-weight: 600;">⚠️ Sin asignar</span>
 									<button th:if="${equipo.sistemaOperativo == 'Impresora de Red'}" class="secondary-action" th:attr="onclick='abrirModalVinculados(' + ${equipo.id} + ')'" style="font-size: 0.78rem; padding: 4px 8px; border-color: #3b82f6; color: #3b82f6;">🔗 Ver equipos vinculados</button>
 								</td>

@@ -12,6 +12,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDeta
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDuplicadoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoNoEncontradoException;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.InventarioViejoImportService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
@@ -71,13 +72,15 @@ public class EquipoPageController {
 	private final ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService fueroService;
 	private final StockService stockService;
 	private final TareaTecnicaService tareaTecnicaService;
+	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 
 	public EquipoPageController(AuthorizationService authorizationService, EquipoService equipoService,
 			ComponenteService componenteService, GemeloDigitalService gemeloDigitalService,
 			UbicacionService ubicacionService, InventarioViejoImportService inventarioViejoImportService,
 			ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService fueroService,
 			StockService stockService,
-			TareaTecnicaService tareaTecnicaService) {
+			TareaTecnicaService tareaTecnicaService,
+			ActiveDirectoryDomainService activeDirectoryDomainService) {
 		this.authorizationService = authorizationService;
 		this.equipoService = equipoService;
 		this.componenteService = componenteService;
@@ -87,6 +90,7 @@ public class EquipoPageController {
 		this.fueroService = fueroService;
 		this.stockService = stockService;
 		this.tareaTecnicaService = tareaTecnicaService;
+		this.activeDirectoryDomainService = activeDirectoryDomainService;
 	}
 
 	/**
@@ -155,6 +159,28 @@ public class EquipoPageController {
 				listaFiltrada,
 				new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.Paginacion(0, 50, listaFiltrada.size(), 1));
 
+		// 3.5 Mapeo de nombres reales de usuarios
+		var nombresUsuarios = new java.util.HashMap<String, String>();
+		if (activeDirectoryDomainService != null) {
+			var dominioUsuarios = activeDirectoryDomainService.listarUsuariosParaTareas();
+			if (dominioUsuarios.disponible()) {
+				var dict = dominioUsuarios.usuarios().stream()
+						.collect(Collectors.toMap(u -> u.username().toLowerCase(), u -> u.nombreVisible(), (a, b) -> a));
+				for (var e : resultadoEquipos.equipos()) {
+					if (e.ultimoUsuario() != null) {
+						String raw = e.ultimoUsuario();
+						String key = raw;
+						int slash = raw.indexOf('\\');
+						if (slash >= 0) key = raw.substring(slash + 1);
+						key = key.toLowerCase();
+						if (dict.containsKey(key)) {
+							nombresUsuarios.put(raw, dict.get(key));
+						}
+					}
+				}
+			}
+		}
+
 		// 4. Carga de atributos en el modelo para renderizado en Thymeleaf
 		model.addAttribute("query", q == null ? "" : q.trim());
 		model.addAttribute("estadoFiltro", estado);
@@ -170,6 +196,7 @@ public class EquipoPageController {
 		model.addAttribute("puedeVerDiferencias", authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER));
 		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
 		model.addAttribute("ubicacionesActivas", ubicacionService.activas());
+		model.addAttribute("nombresUsuarios", nombresUsuarios);
 		return "admin/equipos";
 	}
 
