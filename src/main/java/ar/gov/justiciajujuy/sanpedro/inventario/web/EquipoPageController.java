@@ -144,6 +144,8 @@ public class EquipoPageController {
 					return e.ultimoReporteEn() != null && !equiposConGemelo.contains(e.id());
 				} else if ("TALLER".equalsIgnoreCase(estado)) {
 					return e.ultimoReporteEn() == null;
+				} else if ("IMPRESORA".equalsIgnoreCase(estado)) {
+					return "Impresora de Red".equals(e.sistemaOperativo());
 				}
 				return true;
 			} else {

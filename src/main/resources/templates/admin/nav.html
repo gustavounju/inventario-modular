@@ -1,11 +1,11 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <body>
 
 <header th:fragment="topbar(eyebrow, title, activeModule)" class="panel-header">
 	<div class="judicial-global-header">
 		<div class="judicial-brand">
-			<h1>Poder Judicial de la Provincia de Jujuy <span style="font-size: 0.5em; opacity: 0.7;">v1.0.2</span></h1>
+			<h1>Poder Judicial de la Provincia de Jujuy <span style="font-size: 0.5em; opacity: 0.7;">v1.0.3</span></h1>
 		</div>
 		<nav class="judicial-main-nav" aria-label="NavegaciÃ³n principal">
 			<a th:href="@{/admin}" th:classappend="${activeModule == 'panel'} ? ' is-active' : ''">Inventario</a>
