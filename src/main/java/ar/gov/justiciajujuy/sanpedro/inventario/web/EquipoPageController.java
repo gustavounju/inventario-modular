@@ -405,10 +405,10 @@ public class EquipoPageController {
 		return "redirect:/admin/equipos/" + id;
 	}
 
-	@PostMapping("/admin/equipos/{id}/impresora")
+	@PostMapping("/admin/equipos/impresora/editar")
 	public String actualizarImpresora(
 			@AuthenticationPrincipal UserDetails userDetails,
-			@PathVariable Long id,
+			@RequestParam Long equipoId,
 			@RequestParam String nombre,
 			@RequestParam String fuero,
 			@RequestParam String ubicacion,
@@ -418,7 +418,7 @@ public class EquipoPageController {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para editar equipos.");
 		}
-		equipoService.actualizarManualmente(id, new ActualizarEquipoCommand(
+		equipoService.actualizarManualmente(equipoId, new ActualizarEquipoCommand(
 				nombre,
 				null,
 				fuero,
