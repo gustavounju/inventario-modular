@@ -114,7 +114,7 @@
 									<form class="inline-form" th:action="@{/admin/equipos/generico/tareas/{id}/reasignar(id=${tarea.id})}" method="post">
 										<select name="equipoDestinoId" required>
 											<option value="">Equipo real...</option>
-											<option th:each="destino : ${equiposReasignacion}" th:value="${destino.id}" th:text="${destino.nombre}">PC-INF-001</option>
+											<option th:each="destino : ${equiposReasignacion}" th:value="${destino.id}" th:text="${destino.nombre + ' - ' + (destino.fuero != null and !#strings.isEmpty(destino.fuero) ? destino.fuero : 'Sin fuero') + ' - ' + (destino.ultimoUsuario != null and !#strings.isEmpty(destino.ultimoUsuario) ? destino.ultimoUsuario : 'Sin usuario')}">PC-INF-001</option>
 										</select>
 										<button class="secondary-action" type="submit" th:disabled="${#lists.isEmpty(equiposReasignacion)}">Asignar</button>
 									</form>
@@ -191,7 +191,7 @@
 					<span>Ubicación Física</span>
 					<strong th:text="${equipo.ubicacion ?: 'Sin ubicación'}">Oficina Informatica</strong>
 				</div>
-				<div>
+				<div th:unless="${esImpresora}">
 					<span>Último Usuario</span>
 					<strong th:text="${equipo.ultimoUsuario ?: 'Sin reportar'}">usuario.tecnico</strong>
 				</div>
@@ -212,7 +212,7 @@
 						📋 Ficha Técnica y Hardware
 					</button>
 				</li>
-				<li>
+				<li th:unless="${esImpresora}">
 					<button type="button" class="subnav-tab" id="tab-btn-gemelo" onclick="switchTab('gemelo')" role="tab" aria-selected="false" aria-controls="pane-gemelo">
 						<span th:text="${esImpresora ? '📦 Componentes / Insumos' : '🤖 Gemelo digital / Componentes'}">🤖 Gemelo digital / Componentes</span>
 						<span class="tab-badge" th:text="${#lists.size(componentes)}">0</span>
@@ -225,7 +225,7 @@
 					</button>
 				</li>
 
-				<li th:if="${puedeEditar}">
+				<li th:if="${puedeEditar and !esImpresora}">
 					<button type="button" class="subnav-tab" id="tab-btn-editar" onclick="switchTab('editar')" role="tab" aria-selected="false" aria-controls="pane-editar">
 						✏️ Edición Manual
 					</button>
@@ -252,7 +252,7 @@
 							<span class="attribute-name">Ubicación</span>
 							<span class="attribute-value" th:text="${equipo.ubicacion ?: 'Sin ubicación'}">Oficina Informatica</span>
 						</div>
-						<div class="attribute-row">
+						<div class="attribute-row" th:unless="${esImpresora}">
 							<span class="attribute-name">Último Usuario</span>
 							<span class="attribute-value" th:text="${equipo.ultimoUsuario ?: 'Sin reportar'}">usuario.tecnico</span>
 						</div>
@@ -317,7 +317,7 @@
 					</div>
 
 					<!-- Tarjeta 4: Periféricos y Accesorios -->
-					<div class="attribute-card">
+					<div class="attribute-card" th:unless="${esImpresora}">
 						<h3 class="attribute-card-title">🖱️ Periféricos y Dispositivos</h3>
 						<div class="attribute-row">
 							<span class="attribute-name">Monitores</span>
@@ -331,13 +331,16 @@
 							<span class="attribute-name">Mouse</span>
 							<span class="attribute-value" th:text="${equipo.mouse ?: 'Sin reportar'}">Logitech Mouse</span>
 						</div>
-						<div class="attribute-row">
+						<div class="attribute-row" th:if="${!equipo.impresoraEnRed}">
 							<span class="attribute-name">Impresora Vinculada</span>
-							<span class="attribute-value" th:text="${equipo.impresora ?: 'Sin impresora vinculada'}">HP LaserJet</span>
+							<span class="attribute-value" th:text="${equipo.impresora ?: 'Sin impresora detectada'}">HP LaserJet</span>
+						</div>
+						<div class="attribute-row" th:if="${equipo.impresoraEnRed}">
+							<span class="attribute-name">Impresora en Red (Fija)</span>
+							<span class="attribute-value" th:text="${equipo.impresoraRedNombre != null ? equipo.impresoraRedNombre + (equipo.impresoraRedIp != null ? ' - IP: ' + equipo.impresoraRedIp : '') : 'Usa impresora de red genérica'}">Oficina 1</span>
 						</div>
 					</div>
 				</div>
-			</div>
 
 			<!-- ============================================================
 			     PANEL: Gestión de Impresora del Puesto
@@ -369,7 +372,7 @@
 				</div>
 
 				<!-- Lista de impresoras detectadas con selector de activa -->
-				<div th:with="impresoras=${componentes.?[tipo.name() == 'IMPRESORA']}">
+				<div th:with="impresoras=${componentes.?[tipo.name() == 'IMPRESORA']}" th:unless="${equipo.impresoraEnRed}">
 					<p th:if="${impresoras.empty}" style="font-size:0.88rem; color:#6b7280; font-style:italic;">No hay impresoras detectadas para este equipo.</p>
 					<table th:unless="${impresoras.empty}" class="equipo-table" style="font-size:0.9rem;">
 						<thead>
@@ -401,6 +404,8 @@
 					</table>
 				</div>
 			</div>
+			
+			</div> <!-- Fin Pestaña Ficha -->
 
 			<!-- ==========================================================
 			     PESTAÑA 2: Tareas del Equipo
@@ -1158,9 +1163,17 @@
 								<small class="field-error" th:if="${#fields.hasErrors('ramMb')}" th:errors="*{ramMb}">Error</small>
 							</label>
 							<label>
-								<span>Impresora</span>
+								<span>Impresora (Local)</span>
 								<input th:field="*{impresora}" maxlength="180">
 								<small class="field-error" th:if="${#fields.hasErrors('impresora')}" th:errors="*{impresora}">Error</small>
+							</label>
+							<label>
+								<span>Impresora en Red (Vinculada)</span>
+								<select th:field="*{impresoraRedId}">
+									<option value="">-- Ninguna / Usar genérica --</option>
+									<option th:each="imp : ${impresorasRed}" th:value="${imp.id}" th:text="${imp.nombre + ' (' + imp.ubicacion + ')'}"></option>
+								</select>
+								<small class="field-error" th:if="${#fields.hasErrors('impresoraRedId')}" th:errors="*{impresoraRedId}">Error</small>
 							</label>
 						</div>
 

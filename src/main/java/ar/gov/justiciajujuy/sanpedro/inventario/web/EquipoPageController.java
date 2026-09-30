@@ -195,13 +195,15 @@ public class EquipoPageController {
 		var impresoras = componentesGestion.stream()
 				.filter(c -> c.tipo() == ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA)
 				.toList();
+		boolean esImpresoraDeRed = "Impresora de Red".equals(equipo.sistemaOperativo());
 		boolean tieneImpresoraActiva = impresoras.stream().anyMatch(c -> c.esImpresoraActiva());
-		boolean actaHabilitada = equipo.impresoraEnRed() || tieneImpresoraActiva;
+		
+		boolean actaHabilitada = true;
 		String motivoBloqueada = null;
-		if (!actaHabilitada) {
-			if (impresoras.isEmpty()) {
-				motivoBloqueada = "Este equipo no tiene impresoras detectadas. Agregue una impresora o marque que imprime en red desde la ficha del equipo.";
-			} else {
+		
+		if (!esImpresoraDeRed && !impresoras.isEmpty()) {
+			actaHabilitada = equipo.impresoraEnRed() || tieneImpresoraActiva;
+			if (!actaHabilitada) {
 				motivoBloqueada = "Tiene " + impresoras.size() + " impresora(s) detectada(s). Debe indicar cuál es la activa del puesto desde la ficha del equipo, o marcar que imprime en red.";
 			}
 		}
@@ -213,6 +215,12 @@ public class EquipoPageController {
 		model.addAttribute("actaHabilitada", actaHabilitada);
 		model.addAttribute("motivoBloqueada", motivoBloqueada);
 		model.addAttribute("impresoraEnRed", equipo.impresoraEnRed());
+		model.addAttribute("esImpresora", esImpresoraDeRed);
+		
+		if (esImpresoraDeRed) {
+			model.addAttribute("equiposVinculados", equipoService.obtenerEquiposVinculadosAImpresora(id));
+		}
+		
 		return "admin/equipo-acta";
 	}
 
@@ -281,6 +289,12 @@ public class EquipoPageController {
 		// Stock disponible para el modal de carga masiva de piezas
 		var stockDisponible = stockService.listarDisponiblesYActivos();
 		model.addAttribute("stockDisponible", stockDisponible);
+
+		// Impresoras de red disponibles para vincular
+		var impresorasRed = equipoService.listar(null, 0, 1000).equipos().stream()
+			.filter(e -> "Impresora de Red".equals(e.sistemaOperativo()) && !e.id().equals(id))
+			.toList();
+		model.addAttribute("impresorasRed", impresorasRed);
 
 		return "admin/equipo-detalle";
 	}
@@ -583,18 +597,21 @@ public class EquipoPageController {
 		var impresorasGestion = listaComponentes.stream()
 				.filter(c -> c.tipo() == TipoComponente.IMPRESORA)
 				.toList();
+		boolean esImpresoraDeRed = "Impresora de Red".equals(equipo.sistemaOperativo());
 		boolean tieneImpresoraActiva = impresorasGestion.stream().anyMatch(c -> c.esImpresoraActiva());
-		boolean actaHabilitada = equipo.impresoraEnRed() || tieneImpresoraActiva;
+		
+		boolean actaHabilitada = true;
 		String motivoBloqueada = null;
-		if (!actaHabilitada) {
-			if (impresorasGestion.isEmpty()) {
-				motivoBloqueada = "No hay impresoras detectadas. Agregue una impresora o marque que imprime en red.";
-			} else {
+		
+		if (!esImpresoraDeRed && !impresorasGestion.isEmpty()) {
+			actaHabilitada = equipo.impresoraEnRed() || tieneImpresoraActiva;
+			if (!actaHabilitada) {
 				motivoBloqueada = "Hay " + impresorasGestion.size() + " impresora(s) detectada(s). Indique cuál es la activa del puesto, o marque que imprime en red.";
 			}
 		}
 		model.addAttribute("actaHabilitada", actaHabilitada);
 		model.addAttribute("motivoBloqueada", motivoBloqueada);
+		model.addAttribute("esImpresora", esImpresoraDeRed);
 	}
 
 	private void prepararDetalleGenerico(Model model, UserDetails userDetails, EquipoDetalle equipo) {
@@ -880,6 +897,8 @@ public class EquipoPageController {
 		@Size(max = 180)
 		private String impresora;
 
+		private Long impresoraRedId;
+
 		private boolean activo;
 
 		static EquipoForm desde(EquipoDetalle equipo) {
@@ -902,6 +921,7 @@ public class EquipoPageController {
 			form.teclado = equipo.teclado();
 			form.mouse = equipo.mouse();
 			form.impresora = equipo.impresora();
+			form.impresoraRedId = equipo.impresoraRedId();
 			form.activo = equipo.activo();
 			return form;
 		}
@@ -926,6 +946,7 @@ public class EquipoPageController {
 					teclado,
 					mouse,
 					impresora,
+					impresoraRedId,
 					activo);
 		}
 
@@ -943,6 +964,14 @@ public class EquipoPageController {
 
 		public void setUltimoUsuario(String ultimoUsuario) {
 			this.ultimoUsuario = ultimoUsuario;
+		}
+
+		public Long getImpresoraRedId() {
+			return impresoraRedId;
+		}
+
+		public void setImpresoraRedId(Long impresoraRedId) {
+			this.impresoraRedId = impresoraRedId;
 		}
 
 		public String getFuero() {

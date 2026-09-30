@@ -78,6 +78,10 @@ public class Equipo {
 	@Column(name = "impresora_en_red", nullable = false)
 	private boolean impresoraEnRed = false;
 
+	@jakarta.persistence.ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+	@jakarta.persistence.JoinColumn(name = "impresora_red_id")
+	private Equipo impresoraRedAsignada;
+
 	@Column(nullable = false, length = 60)
 	private String monitoreo = "SIN_REPORTE";
 
@@ -199,12 +203,24 @@ public class Equipo {
 		return impresora;
 	}
 
+	public void setImpresora(String impresora) {
+		this.impresora = impresora;
+	}
+
 	public boolean isImpresoraEnRed() {
 		return impresoraEnRed;
 	}
 
 	public void setImpresoraEnRed(boolean impresoraEnRed) {
 		this.impresoraEnRed = impresoraEnRed;
+	}
+
+	public Equipo getImpresoraRedAsignada() {
+		return impresoraRedAsignada;
+	}
+
+	public void setImpresoraRedAsignada(Equipo impresoraRedAsignada) {
+		this.impresoraRedAsignada = impresoraRedAsignada;
 	}
 
 	public String getMonitoreo() {

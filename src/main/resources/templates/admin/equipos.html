@@ -83,13 +83,14 @@
 									<span class="table-subtext" th:text="${(equipo.ubicacion != null and !#strings.isEmpty(equipo.ubicacion) ? equipo.ubicacion : 'Sin ubicación asignada') + ' - IP: ' + (equipo.ip != null and !#strings.isEmpty(equipo.ip) ? equipo.ip : 'Sin IP') + (equipo.sistemaOperativo == 'Impresora de Red' and equipo.motherboardSerial != null and !#strings.isEmpty(equipo.motherboardSerial) ? ' - S/N: ' + equipo.motherboardSerial : '')}">Oficina - IP: 192.168.0.20</span>
 								</td>
 								<td data-label="Usuario Actual">
-									<strong th:if="${equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" th:text="${equipo.ultimoUsuario}">usuario.tecnico</strong>
-									<span th:if="${equipo.ultimoUsuario == null or #strings.isEmpty(equipo.ultimoUsuario)}" style="color: #facc15; font-size: 0.82rem; font-weight: 600;">⚠️ Sin asignar</span>
+									<strong th:if="${equipo.sistemaOperativo != 'Impresora de Red' and equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" th:text="${equipo.ultimoUsuario}">usuario.tecnico</strong>
+									<span th:if="${equipo.sistemaOperativo != 'Impresora de Red' and (equipo.ultimoUsuario == null or #strings.isEmpty(equipo.ultimoUsuario))}" style="color: #facc15; font-size: 0.82rem; font-weight: 600;">⚠️ Sin asignar</span>
+									<button th:if="${equipo.sistemaOperativo == 'Impresora de Red'}" class="secondary-action" th:attr="onclick='abrirModalVinculados(' + ${equipo.id} + ')'" style="font-size: 0.78rem; padding: 4px 8px; border-color: #3b82f6; color: #3b82f6;">🔗 Ver equipos vinculados</button>
 								</td>
 								<td data-label="Fuero / Ubicación" th:text="${equipo.fuero}">Informática</td>
 								<td data-label="Sistema Operativo" th:text="${equipo.sistemaOperativo ?: 'Sin dato'}">Windows 11</td>
 								<td data-label="Gemelo / Estado">
-									<div style="display: flex; flex-direction: column; gap: 3px;">
+									<div th:if="${equipo.sistemaOperativo != 'Impresora de Red'}" style="display: flex; flex-direction: column; gap: 3px;">
 										<span th:if="${equipo.ultimoReporteEn != null and (equiposConGemelo == null or !equiposConGemelo.contains(equipo.id))}" class="authorization-badge is-pending" style="font-size: 0.72rem; padding: 2px 6px; background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3);">
 											🟡 Pendiente Gemelo
 										</span>
@@ -100,6 +101,11 @@
 											🟡 Esperando Script
 										</span>
 										<span th:if="${equipo.ultimoReporteEn != null}" style="font-size: 0.72rem; color: var(--text-muted);" th:text="${#temporals.format(equipo.ultimoReporteEn, 'dd/MM HH:mm')}">03/09 17:30</span>
+									</div>
+									<div th:if="${equipo.sistemaOperativo == 'Impresora de Red'}" style="display: flex; flex-direction: column; gap: 3px;">
+										<span class="authorization-badge" style="font-size: 0.72rem; padding: 2px 6px; background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3);">
+											🌐 Dispositivo de Red
+										</span>
 									</div>
 								</td>
 								<td data-label="Acciones">
@@ -196,6 +202,95 @@
 				</div>
 			</form>
 		</dialog>
+
+		<!-- Modal Equipos Vinculados -->
+		<dialog id="modal-vinculados" class="modal-dialog" style="width: 500px; max-width: 90vw;">
+			<div class="modal-content">
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+					<h3 style="margin:0;">🔗 Equipos que usan esta impresora</h3>
+					<button type="button" onclick="document.getElementById('modal-vinculados').close()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;">&times;</button>
+				</div>
+				<ul id="lista-vinculados" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; max-height: 400px; overflow-y:auto;">
+					<!-- Contenido generado por JS -->
+				</ul>
+				<div id="vinculados-empty" style="display:none; text-align:center; color:var(--text-muted); font-style:italic; padding: 20px 0;">
+					No hay ningún equipo informático vinculado a esta impresora.
+				</div>
+				<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end; margin-top:20px;">
+					<button type="button" class="secondary-action" onclick="document.getElementById('modal-vinculados').close()">Cerrar</button>
+				</div>
+			</div>
+		</dialog>
 	</main>
+	
+	<script>
+		async function abrirModalVinculados(impresoraId) {
+			const modal = document.getElementById('modal-vinculados');
+			const lista = document.getElementById('lista-vinculados');
+			const empty = document.getElementById('vinculados-empty');
+			
+			lista.innerHTML = '<li style="text-align:center;">Cargando...</li>';
+			empty.style.display = 'none';
+			modal.showModal();
+			
+			try {
+				const response = await fetch('/api/v1/equipos/' + impresoraId + '/vinculados');
+				if (!response.ok) throw new Error('Error de red');
+				const vinculados = await response.json();
+				
+				lista.innerHTML = '';
+				if (vinculados.length === 0) {
+					empty.style.display = 'block';
+				} else {
+					vinculados.forEach(v => {
+						const li = document.createElement('li');
+						li.style.display = 'flex';
+						li.style.justifyContent = 'space-between';
+						li.style.alignItems = 'center';
+						li.style.padding = '10px';
+						li.style.background = '#f9fafb';
+						li.style.border = '1px solid var(--border-light)';
+						li.style.borderRadius = '6px';
+						
+						li.innerHTML = `
+							<div>
+								<strong style="display:block; color:var(--text-main); font-size:0.95rem;">${v.nombre}</strong>
+								<span style="font-size:0.8rem; color:var(--text-muted);">${v.ubicacion || 'Sin ubicación'} - ${v.ultimoUsuario || 'Sin usuario'}</span>
+							</div>
+							<button class="secondary-action button-danger-subtle" onclick="desvincularImpresora(${v.id}, this)" style="font-size:0.8rem; padding: 4px 8px;">Desvincular</button>
+						`;
+						lista.appendChild(li);
+					});
+				}
+			} catch (err) {
+				lista.innerHTML = '<li style="text-align:center; color:red;">Error al cargar equipos vinculados</li>';
+			}
+		}
+		
+		async function desvincularImpresora(equipoId, btnElement) {
+			if (!confirm('¿Está seguro de desvincular este equipo de la impresora? El equipo requerirá configuración nuevamente para emitir su acta.')) return;
+			
+			const originalText = btnElement.innerText;
+			btnElement.innerText = 'Desvinculando...';
+			btnElement.disabled = true;
+			
+			try {
+				const response = await fetch('/api/v1/equipos/' + equipoId + '/desvincular-impresora', { method: 'POST' });
+				if (response.ok) {
+					btnElement.closest('li').remove();
+					const lista = document.getElementById('lista-vinculados');
+					if (lista.children.length === 0) {
+						document.getElementById('vinculados-empty').style.display = 'block';
+					}
+				} else {
+					throw new Error('Error al desvincular');
+				}
+			} catch (err) {
+				alert('Ocurrió un error al intentar desvincular el equipo.');
+				btnElement.innerText = originalText;
+				btnElement.disabled = false;
+			}
+		}
+	</script>
 </body>
 </html>

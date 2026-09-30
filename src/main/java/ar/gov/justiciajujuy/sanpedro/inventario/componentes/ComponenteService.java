@@ -476,6 +476,13 @@ public class ComponenteService {
 				.orElseThrow(() -> new ComponenteNoEncontradoException(componenteId));
 		elegida.setEsImpresoraActiva(true);
 		componenteRepository.save(elegida);
+		
+		// Desactivar impresora en red en el equipo porque ahora tiene una local
+		Equipo equipo = equipoRepository.findById(equipoId)
+				.orElseThrow(() -> new EquipoNoEncontradoException(equipoId));
+		equipo.setImpresoraEnRed(false);
+		equipoRepository.save(equipo);
+
 		auditoriaService.registrar("COMPONENTES", "MARCAR_IMPRESORA_ACTIVA", "Componente", componenteId,
 				"Impresora " + elegida.getDescripcion() + " marcada como activa del puesto para equipo ID " + equipoId + ".");
 	}

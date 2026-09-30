@@ -102,6 +102,23 @@ public class EquipoController {
 		equipoService.vincularEquipoTaller(id, idTaller);
 	}
 
+	@GetMapping("/{id}/vinculados")
+	public java.util.List<EquipoService.EquipoVinculado> obtenerVinculados(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		exigirPermiso(userDetails, PERMISO_VER);
+		return equipoService.obtenerEquiposVinculadosAImpresora(id);
+	}
+
+	@PostMapping("/{id}/desvincular-impresora")
+	@ResponseStatus(HttpStatus.OK)
+	public void desvincularImpresora(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		equipoService.desvincularImpresora(id);
+	}
+
 	@PutMapping("/{id}")
 	public EquipoDetalle actualizar(
 			@AuthenticationPrincipal UserDetails userDetails,
@@ -316,6 +333,7 @@ public class EquipoController {
 					teclado,
 					mouse,
 					impresora,
+					null, // impresoraRedId (no gestionado desde el REST controller directo)
 					activo);
 		}
 	}

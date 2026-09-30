@@ -17,6 +17,8 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 
 	List<Equipo> findAllByOrderByNombreAsc();
 
+	List<Equipo> findByImpresoraRedAsignadaId(Long id);
+
 	@Query("""
 			SELECT e
 			FROM Equipo e

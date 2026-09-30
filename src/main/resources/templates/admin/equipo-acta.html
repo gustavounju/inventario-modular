@@ -56,13 +56,13 @@
 		}
 		.signatures {
 			display: flex;
-			justify-content: space-around;
+			justify-content: center;
 			margin-top: auto; /* Empuja las firmas al final de la media hoja */
 			padding-bottom: 10px;
 		}
 		.signature-box {
 			text-align: center;
-			width: 30%;
+			width: 45%;
 		}
 		.signature-line {
 			border-top: 1px solid #000;
@@ -135,13 +135,40 @@
 							<td th:text="${(comp.marca ?: '') + ' ' + (comp.modelo ?: '')}">Kingston</td>
 							<td th:text="${comp.serial ?: '-'}">12345</td>
 						</tr>
-						<!-- Fila especial si imprime en red -->
-						<tr th:if="${impresoraEnRed}">
-							<td>IMPRESORA</td>
-							<td colspan="3" style="font-style:italic; color:#555;">Imprime en red — sin impresora local</td>
+						<!-- Fila especial si el equipo en sí es una impresora de red -->
+						<tr th:if="${esImpresora}">
+							<td>IMPRESORA EN RED</td>
+							<td th:text="${equipo.nombre}">Nombre de Impresora</td>
+							<td th:text="${equipo.fuero}">Fuero</td>
+							<td th:text="${equipo.motherboardSerial ?: '-'}">Serial</td>
 						</tr>
-						<tr th:if="${#lists.isEmpty(componentes) and !impresoraEnRed}">
+						<!-- Fila especial si la PC imprime en red (pero no es una impresora en sí) -->
+						<tr th:if="${impresoraEnRed and !esImpresora}">
+							<td>IMPRESORA</td>
+							<td colspan="3" style="font-style:italic; color:#555;" th:text="${equipo.impresoraRedNombre != null ? 'Imprime en red — ' + equipo.impresoraRedNombre + ' (' + (equipo.impresoraRedIp ?: 'IP no registrada') + ') - ' + (equipo.impresoraRedFuero ?: 'Ubicación desconocida') : 'Imprime en red — sin impresora local (Genérica)'}">Imprime en red — sin impresora local</td>
+						</tr>
+						<tr th:if="${#lists.isEmpty(componentes) and !impresoraEnRed and !esImpresora}">
 							<td colspan="4" style="text-align: center; font-style: italic;">No hay componentes registrados para este equipo.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="info-section" th:if="${esImpresora and !#lists.isEmpty(equiposVinculados)}">
+				<h3 style="margin-top: 15px;">Equipos Informáticos Vinculados</h3>
+				<table class="components-table">
+					<thead>
+						<tr>
+							<th>Nombre del Equipo</th>
+							<th>Usuario Actual</th>
+							<th>Ubicación</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr th:each="vinculado : ${equiposVinculados}">
+							<td th:text="${vinculado.nombre}">SISTEMAS-105</td>
+							<td th:text="${vinculado.ultimoUsuario ?: 'Sin asignar'}">gmurad</td>
+							<td th:text="${vinculado.ubicacion ?: 'No registrada'}">Oficina</td>
 						</tr>
 					</tbody>
 				</table>
@@ -151,22 +178,7 @@
 				<div class="signature-box">
 					<br><br><br>
 					<div class="signature-line">
-						<strong>Firma del Técnico</strong><br>
-						Fecha: ___/___/20___
-					</div>
-				</div>
-				<div class="signature-box">
-					<br><br><br>
-					<div class="signature-line">
-						<strong>Firma del Responsable del Equipo</strong><br>
-						Fecha: ___/___/20___
-					</div>
-				</div>
-				<div class="signature-box">
-					<br><br><br>
-					<div class="signature-line">
-						<strong>Firma de Quien Recibe</strong><br>
-						Fecha: ___/___/20___
+						<strong>Firma del Responsable del Equipo</strong>
 					</div>
 				</div>
 			</div>

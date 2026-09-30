@@ -349,6 +349,17 @@ public class EquipoService {
 				textoOpcional(command.mouse()),
 				textoOpcional(command.impresora()),
 				command.activo());
+		
+		if (command.impresoraRedId() != null) {
+			Equipo imp = equipoRepository.findById(command.impresoraRedId()).orElse(null);
+			equipo.setImpresoraRedAsignada(imp);
+			equipo.setImpresoraEnRed(true);
+		} else {
+			equipo.setImpresoraRedAsignada(null);
+			// Mantenemos el estado de impresoraEnRed si lo habían activado por otro lado,
+			// pero si explicitamente quitaron la impresora, podríamos apagarlo.
+		}
+
 		Equipo guardado = equipoRepository.save(equipo);
 
 		if (auditoriaService != null) {
@@ -390,6 +401,17 @@ public class EquipoService {
 				.orElseThrow(() -> new EquipoNoEncontradoException(id));
 		equipo.setImpresoraEnRed(enRed);
 		equipoRepository.save(equipo);
+		
+		// Si se marca como red, desmarcar cualquier impresora local
+		if (enRed && componenteRepository != null) {
+			componenteRepository.findByEquipoIdOrderByTipoAscDescripcionAsc(id).stream()
+					.filter(c -> c.getTipo() == ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA)
+					.forEach(c -> {
+						c.setEsImpresoraActiva(false);
+						componenteRepository.save(c);
+					});
+		}
+
 		if (auditoriaService != null) {
 			auditoriaService.registrar("EQUIPOS", "IMPRESORA_EN_RED", "Equipo", id,
 					"Impresora en red: " + (enRed ? "activada" : "desactivada") + " para equipo " + equipo.getNombre() + ".");
@@ -471,6 +493,10 @@ public class EquipoService {
 				equipo.getMouse(),
 				equipo.getImpresora(),
 				equipo.isImpresoraEnRed(),
+				equipo.getImpresoraRedAsignada() != null ? equipo.getImpresoraRedAsignada().getId() : null,
+				equipo.getImpresoraRedAsignada() != null ? equipo.getImpresoraRedAsignada().getNombre() : null,
+				equipo.getImpresoraRedAsignada() != null ? equipo.getImpresoraRedAsignada().getIp() : null,
+				equipo.getImpresoraRedAsignada() != null ? equipo.getImpresoraRedAsignada().getFuero() : null,
 				equipo.getMonitoreo(),
 				equipo.isActivo(),
 				equipo.getUltimoReporteEn());
@@ -532,6 +558,7 @@ public class EquipoService {
 			String teclado,
 			String mouse,
 			String impresora,
+			Long impresoraRedId,
 			boolean activo) {
 	}
 
@@ -576,6 +603,10 @@ public class EquipoService {
 			String mouse,
 			String impresora,
 			boolean impresoraEnRed,
+			Long impresoraRedId,
+			String impresoraRedNombre,
+			String impresoraRedIp,
+			String impresoraRedFuero,
 			String monitoreo,
 			boolean activo,
 			LocalDateTime ultimoReporteEn) {
@@ -586,6 +617,25 @@ public class EquipoService {
 		public EquipoNoEncontradoException(Long id) {
 			super("Equipo no encontrado: " + id);
 		}
+	}
+	
+	public record EquipoVinculado(Long id, String nombre, String ultimoUsuario, String ubicacion) {}
+
+	public List<EquipoVinculado> obtenerEquiposVinculadosAImpresora(Long impresoraId) {
+		return equipoRepository.findByImpresoraRedAsignadaId(impresoraId)
+				.stream()
+				.map(e -> new EquipoVinculado(e.getId(), e.getNombre(), e.getUltimoUsuario(), e.getUbicacion()))
+				.toList();
+	}
+
+	@Transactional
+	public void desvincularImpresora(Long equipoId) {
+		var equipo = equipoRepository.findById(equipoId)
+				.orElseThrow(() -> new EquipoNoEncontradoException(equipoId));
+		equipo.setImpresoraRedAsignada(null);
+		equipo.setImpresoraEnRed(false);
+		equipo.setImpresora(null);
+		equipoRepository.save(equipo);
 	}
 
 	public static class EquipoDuplicadoException extends RuntimeException {
