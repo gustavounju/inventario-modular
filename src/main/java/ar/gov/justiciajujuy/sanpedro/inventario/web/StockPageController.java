@@ -228,6 +228,30 @@ public class StockPageController {
 					c.isActivo()
 			))
 			.forEach(componentesTotales::add);
+			
+		// Add virtual components for network printers assigned to equipments
+		equipoService.listar(null, 0, 1000).equipos().stream()
+			.filter(e -> e.impresoraRedId() != null)
+			.map(e -> new StockComponenteDetalle(
+					null, // Virtual, no physical ID
+					ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA,
+					EstadoStockComponente.ASIGNADO,
+					"Impresora de red vinculada",
+					null,
+					e.impresoraRedNombre(),
+					e.impresoraRedIp(),
+					null, null, null, null,
+					"Sistema",
+					true,
+					java.util.List.of(),
+					e.impresoraRedFuero(),
+					"Impresora de red vinculada al puesto",
+					e.id(),
+					e.nombre(),
+					e.ultimoUsuario(),
+					e.activo()
+			))
+			.forEach(componentesTotales::add);
 		
 		var componentesPendientes = componentesTotales.stream().filter(c -> !c.datosCompletos()).toList();
 		var componentesStock = componentesTotales.stream().filter(StockComponenteDetalle::datosCompletos).toList();
@@ -236,7 +260,7 @@ public class StockPageController {
 		
 		long disponiblesCount = componentesStock.stream().filter(c -> c.estado() == EstadoStockComponente.DISPONIBLE).count();
 		long reservadosCount = componentesStock.stream().filter(c -> c.estado() == EstadoStockComponente.RESERVADO).count();
-		long asignadosCount = componenteRepository.countByOrigenNot(ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.SCRIPT);
+		long asignadosCount = componentesAsignados.size();
 		long pendientesCount = componentesPendientes.size();
 
 		model.addAttribute("componentesPendientes", componentesPendientes);
