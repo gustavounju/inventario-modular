@@ -215,7 +215,7 @@
 				<li th:unless="${esImpresora}">
 					<button type="button" class="subnav-tab" id="tab-btn-gemelo" onclick="switchTab('gemelo')" role="tab" aria-selected="false" aria-controls="pane-gemelo">
 						<span th:text="${esImpresora ? '📦 Componentes / Insumos' : '🤖 Gemelo digital / Componentes'}">🤖 Gemelo digital / Componentes</span>
-						<span class="tab-badge" th:text="${#lists.size(componentes)}">0</span>
+						<span class="tab-badge" th:text="${totalComponentes}">0</span>
 					</button>
 				</li>
 				<li>

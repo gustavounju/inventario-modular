@@ -666,6 +666,7 @@ public class EquipoPageController {
 		model.addAttribute("puedeVerComponentes", puedeVerComponentes);
 		model.addAttribute("puedeEditarComponentes", authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_EDITAR));
 		model.addAttribute("componentes", componentesGestion);
+		model.addAttribute("totalComponentes", componentesGestion.size() + (equipo.impresoraRedId() != null ? 1 : 0));
 		model.addAttribute("componentesCpuMother", cpuYMother);
 		model.addAttribute("componentesRam", memoriasRam);
 		model.addAttribute("componentesDiscos", discos);
