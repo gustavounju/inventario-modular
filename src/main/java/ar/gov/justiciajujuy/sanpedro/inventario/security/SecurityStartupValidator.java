@@ -25,22 +25,30 @@ public class SecurityStartupValidator implements ApplicationRunner {
 	private final NetworkAccessProperties networkAccessProperties;
 	private final boolean localDbAuthenticationEnabled;
 	private final String dataSourceUrl;
+	private final String reportToken;
 
 	public SecurityStartupValidator(
 			ActiveDirectoryProperties activeDirectoryProperties,
 			LocalAuthenticationProperties localAuthenticationProperties,
 			NetworkAccessProperties networkAccessProperties,
 			@Value("${inventario.local-db-auth.enabled:false}") boolean localDbAuthenticationEnabled,
-			@Value("${spring.datasource.url:}") String dataSourceUrl) {
+			@Value("${spring.datasource.url:}") String dataSourceUrl,
+			@Value("${inventario.security.report-token:}") String reportToken) {
 		this.activeDirectoryProperties = activeDirectoryProperties;
 		this.localAuthenticationProperties = localAuthenticationProperties;
 		this.networkAccessProperties = networkAccessProperties;
 		this.localDbAuthenticationEnabled = localDbAuthenticationEnabled;
 		this.dataSourceUrl = dataSourceUrl;
+		this.reportToken = reportToken;
 	}
 
 	@Override
 	public void run(ApplicationArguments args) {
+		if ("inventario-lan-token-2026".equals(reportToken)) {
+			throw new IllegalStateException(
+					"inventario.security.report-token no puede utilizar el valor por defecto publico 'inventario-lan-token-2026'. Defina una clave segura en la variable INVENTARIO_REPORT_TOKEN.");
+		}
+
 		if (!activeDirectoryProperties.isEnabled()
 				&& !localAuthenticationProperties.isEnabled()
 				&& !localDbAuthenticationEnabled) {

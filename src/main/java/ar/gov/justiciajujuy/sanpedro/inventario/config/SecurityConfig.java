@@ -61,20 +61,25 @@ public class SecurityConfig {
 				.frameOptions(frame -> frame.sameOrigin())
 			)
 			.exceptionHandling(exceptions -> exceptions
-				.authenticationEntryPoint((request, response, authException) -> {
-					String path = request.getRequestURI();
-					if (path.startsWith("/api/v1/") || path.equals("/submit_inventory")) {
-						response.sendError(401, "Unauthorized");
-					} else {
-						response.sendRedirect(request.getContextPath() + (path.startsWith(request.getContextPath() + "/movil") ? "/movil/login" : "/login"));
-					}
-				})
+				.defaultAuthenticationEntryPointFor(
+					new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED),
+					request -> request.getRequestURI().startsWith("/api/") || "/submit_inventory".equals(request.getRequestURI())
+				)
+				.defaultAuthenticationEntryPointFor(
+					new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/movil/login"),
+					request -> request.getRequestURI().contains("/movil")
+				)
+				.defaultAuthenticationEntryPointFor(
+					new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/login"),
+					org.springframework.security.web.util.matcher.AnyRequestMatcher.INSTANCE
+				)
 			)
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers(
 					"/", "/login", "/setup", "/movil/login", "/logout",
 					"/css/**", "/js/**", "/images/**", "/scripts/**", "/webjars/**", "/favicon.ico"
 				).permitAll()
+				// El visor de tareas es de solo lectura y publico a proposito para monitores/pantallas en guardia o taller sin requerir inicio de sesion.
 				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor").permitAll()
 				.requestMatchers("/submit_inventory").authenticated()
 				.anyRequest().authenticated()

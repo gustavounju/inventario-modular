@@ -5,6 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -25,8 +26,20 @@ public class NetworkEnvironmentPostProcessor implements EnvironmentPostProcessor
         }
 
         // Host and port to check for the remote database
-        String remoteDbHost = "10.15.0.62";
+        String remoteDbHost = environment.getProperty("INVENTARIO_PROBE_DB_HOST");
+        if (!StringUtils.hasText(remoteDbHost)) {
+            log.info("INVENTARIO_PROBE_DB_HOST no configurado. Se omite deteccion automatica de red y se mantiene perfil por defecto.");
+            return;
+        }
+
         int remoteDbPort = 3306;
+        String remoteDbPortProp = environment.getProperty("INVENTARIO_PROBE_DB_PORT");
+        if (StringUtils.hasText(remoteDbPortProp)) {
+            try {
+                remoteDbPort = Integer.parseInt(remoteDbPortProp.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
 
         log.info("Verificando conexion a la base de datos remota (" + remoteDbHost + ":" + remoteDbPort + ") para determinar el entorno...");
 

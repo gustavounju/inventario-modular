@@ -402,14 +402,23 @@ public class EquipoService {
 		equipo.setImpresoraEnRed(enRed);
 		equipoRepository.save(equipo);
 		
-		// Si se marca como red, desmarcar cualquier impresora local
-		if (enRed && componenteRepository != null) {
-			componenteRepository.findByEquipoIdOrderByTipoAscDescripcionAsc(id).stream()
+		if (componenteRepository != null) {
+			var impresoras = componenteRepository.findByEquipoIdOrderByTipoAscDescripcionAsc(id).stream()
 					.filter(c -> c.getTipo() == ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA)
-					.forEach(c -> {
-						c.setEsImpresoraActiva(false);
-						componenteRepository.save(c);
-					});
+					.toList();
+			if (enRed) {
+				// Si se marca como red, desmarcar cualquier impresora local
+				impresoras.forEach(c -> {
+					c.setEsImpresoraActiva(false);
+					componenteRepository.save(c);
+				});
+			} else {
+				// Si vuelve a local y tiene una sola impresora registrada, se marca automáticamente activa
+				if (impresoras.size() == 1) {
+					impresoras.get(0).setEsImpresoraActiva(true);
+					componenteRepository.save(impresoras.get(0));
+				}
+			}
 		}
 
 		if (auditoriaService != null) {

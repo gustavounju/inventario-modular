@@ -74,6 +74,14 @@ public class EquipoPageController {
 	private final TareaTecnicaService tareaTecnicaService;
 	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 
+	@org.springframework.beans.factory.annotation.Value("${inventario.security.report-token:}")
+	private String reportToken;
+
+	@ModelAttribute("reportToken")
+	public String reportToken() {
+		return reportToken;
+	}
+
 	public EquipoPageController(AuthorizationService authorizationService, EquipoService equipoService,
 			ComponenteService componenteService, GemeloDigitalService gemeloDigitalService,
 			UbicacionService ubicacionService, InventarioViejoImportService inventarioViejoImportService,
@@ -632,6 +640,13 @@ public class EquipoPageController {
 						&& c.tipo() != TipoComponente.GABINETE
 						&& c.tipo() != TipoComponente.RAM
 						&& c.tipo() != TipoComponente.DISCO)
+				.filter(c -> {
+					// Si el equipo imprime en red, no mostrar la impresora local como periférico de línea base del puesto
+					if (c.tipo() == TipoComponente.IMPRESORA && (equipo.impresoraEnRed() || equipo.impresoraRedId() != null)) {
+						return false;
+					}
+					return true;
+				})
 				.toList());
 
 		if (equipo.impresoraRedId() != null) {
@@ -666,7 +681,7 @@ public class EquipoPageController {
 		model.addAttribute("puedeVerComponentes", puedeVerComponentes);
 		model.addAttribute("puedeEditarComponentes", authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_EDITAR));
 		model.addAttribute("componentes", componentesGestion);
-		model.addAttribute("totalComponentes", componentesGestion.size() + (equipo.impresoraRedId() != null ? 1 : 0));
+		model.addAttribute("totalComponentes", cpuYMother.size() + memoriasRam.size() + discos.size() + perifericos.size());
 		model.addAttribute("componentesCpuMother", cpuYMother);
 		model.addAttribute("componentesRam", memoriasRam);
 		model.addAttribute("componentesDiscos", discos);

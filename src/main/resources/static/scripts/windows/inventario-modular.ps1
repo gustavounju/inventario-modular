@@ -6,8 +6,17 @@ param(
     [string]$BackupDirectory = "$env:ProgramData\InventarioModular",
     [switch]$DetectActiveDirectoryOu,
     [switch]$SkipCertificateCheck,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$Quiet,
+    [switch]$Silent
 )
+
+function Write-Info {
+    param([string]$Message, [string]$Color = "White")
+    if (-not $Quiet -and -not $Silent) {
+        Write-Host $Message -ForegroundColor $Color
+    }
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -43,7 +52,7 @@ if (-not (Test-HasText $Token)) {
     if (Test-HasText $env:INVENTARIO_REPORT_TOKEN) {
         $Token = $env:INVENTARIO_REPORT_TOKEN
     } else {
-        $Token = "inventario-lan-token-2026"
+        $Token = "8d289c1f102c5bd1ac5de641869085f205a46b00a1f93d2eb7a19b39c4a0b13f"
     }
 }
 
@@ -323,10 +332,16 @@ function Send-InventoryJson {
     $Client = New-Object System.Net.WebClient
     $Client.Headers.Add("User-Agent", "InventarioModular-WindowsInventory/1.0")
     $Client.Headers.Add("Content-Type", "application/json; charset=utf-8")
-    $Client.Headers.Add("Authorization", "Bearer $Token")
+    if (Test-HasText $Token) {
+        $Client.Headers.Add("Authorization", "Bearer $Token")
+    }
     $Client.Encoding = [System.Text.Encoding]::UTF8
     try {
-        return $Client.UploadString($ServerUrl, "POST", $Json)
+        $Resp = $Client.UploadString($ServerUrl, "POST", $Json)
+        if ($Resp -match "^\s*<(!DOCTYPE|html)" -or $Resp -match "login") {
+            throw "El servidor rechazo la autenticacion (redirigio a la pantalla de login). Verifique el token de reporte."
+        }
+        return $Resp
     }
     finally {
         $Client.Dispose()
@@ -356,10 +371,10 @@ function Send-PendingBackups {
                 $SentPath = Join-Path $SentDirectory ("reenviado-" + (Get-Date -Format "yyyyMMdd-HHmmss") + "-" + $PendingFile.Name)
             }
             Move-Item -Path $PendingFile.FullName -Destination $SentPath
-            Write-Host "Reporte pendiente reenviado: $($PendingFile.Name)" -ForegroundColor Green
+            Write-Info "Reporte pendiente reenviado: $($PendingFile.Name)" "Green"
         }
         catch {
-            Write-Host "Queda pendiente $($PendingFile.Name): $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Info "Queda pendiente $($PendingFile.Name): $($_.Exception.Message)" "Yellow"
         }
     }
 }
@@ -386,7 +401,7 @@ if (-not (Test-HasText $Fuero) -and ($DetectActiveDirectoryOu -or $env:INVENTARI
     $AdFuero = Get-ActiveDirectoryFuero
     if (Test-HasText $AdFuero) {
         $Fuero = $AdFuero
-        Write-Host "Fuero detectado automaticamente via Active Directory (OU): $Fuero" -ForegroundColor Cyan
+        Write-Info "Fuero detectado: $Fuero" "Cyan"
     }
 }
 
@@ -416,17 +431,14 @@ if ($DryRun) {
     exit 0
 }
 
-Write-Host "Enviando inventario de $ComputerName a $ServerUrl ..."
-
 try {
     Send-PendingBackups
-    $Response = Send-InventoryJson -Json $Json
-    Write-Host "Inventario enviado correctamente." -ForegroundColor Green
-    Write-Host $Response
+    [void](Send-InventoryJson -Json $Json)
+    Write-Info "Inventario enviado: $ComputerName" "Green"
 }
 catch {
-    Write-Host "No se pudo enviar el inventario: $($_.Exception.Message)" -ForegroundColor Yellow
     $BackupPath = Save-InventoryBackup -Json $Json -ComputerName $ComputerName
-    Write-Host "Se guardo una copia local en: $BackupPath" -ForegroundColor Yellow
+    Write-Info "Error al enviar: $($_.Exception.Message). Copia local: $BackupPath" "Yellow"
     exit 1
 }
+

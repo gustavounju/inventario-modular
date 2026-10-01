@@ -41,9 +41,10 @@ class LoginControllerTests {
 			.andExpect(content().string(containsString("/scripts/windows/inventario-modular.ps1.sha256")))
 			.andExpect(content().string(containsString("New-Object Net.WebClient")))
 			.andExpect(content().string(containsString("SHA-256 invalido")))
-			.andExpect(content().string(containsString("-ExecutionPolicy RemoteSigned")))
+			.andExpect(content().string(containsString("-ExecutionPolicy Bypass")))
 			.andExpect(content().string(containsString("Remove-Item -LiteralPath $p")))
-			.andExpect(content().string(containsString("/api/v1/equipos/inventario")));
+			.andExpect(content().string(containsString("/api/v1/equipos/inventario")))
+			.andExpect(content().string(containsString("exit")));
 	}
 
 	@Test

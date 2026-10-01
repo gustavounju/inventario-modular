@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title th:text="${applicationName} + ' - Ingreso'">Inventario Modular - Ingreso</title>
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
+
 <body>
 	<header class="judicial-global-header">
 		<div class="judicial-brand">
@@ -27,7 +29,8 @@
 
 			<p class="success-message" th:if="${loggedOut}">Sesion cerrada correctamente.</p>
 			<p class="error-message" th:if="${hasError}">Usuario o clave incorrectos.</p>
-			<p class="error-message" th:if="${blocked}">Demasiados intentos fallidos. Espere unos minutos antes de volver a ingresar.</p>
+			<p class="error-message" th:if="${blocked}">Demasiados intentos fallidos. Espere unos minutos antes de
+				volver a ingresar.</p>
 
 			<form class="login-form" th:action="@{/login}" method="post">
 				<label>
@@ -44,9 +47,12 @@
 			</form>
 
 			<!-- Copia rápida del script PowerShell de inventario: se oculta visualmente el área de código para mayor limpieza estética, manteniendo intacto el botón y su funcionalidad -->
-			<section class="script-copy-panel" aria-labelledby="script-copy-title">
+			<section class="script-copy-panel" aria-labelledby="script-copy-title"
+				th:data-report-token="${reportToken}">
 				<h2 id="script-copy-title">Inventario de equipo</h2>
-				<textarea id="inventory-command" readonly style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;" aria-hidden="true"></textarea>
+				<textarea id="inventory-command" readonly
+					style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
+					aria-hidden="true"></textarea>
 				<button class="secondary-action" id="copy-inventory-command" type="button">Copiar comando</button>
 				<p class="script-copy-status" id="copy-inventory-status" role="status" aria-live="polite"></p>
 			</section>
@@ -55,11 +61,15 @@
 	<script>
 		(function () {
 			const origin = window.location.origin;
-			// El comando usa la misma IP/puerto del login y valida SHA-256 antes de ejecutar.
+			const panel = document.querySelector(".script-copy-panel");
+			const reportToken = (panel && panel.dataset.reportToken) ? panel.dataset.reportToken.trim() : "";
+			const tokenVar = reportToken ? ("$t='" + reportToken + "'; ") : "";
+			const tokenArg = reportToken ? " -Token $t" : "";
+			// El comando usa la misma IP/puerto del login, valida SHA-256 antes de ejecutar, y se cierra al terminar.
 			const command = [
 				"[Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor 3072;",
 				"$u='" + origin + "';",
-				"$p=\"$env:TEMP\\inventario-modular.ps1\";",
+				tokenVar + "$p=\"$env:TEMP\\inventario-modular.ps1\";",
 				"$wc=New-Object Net.WebClient;",
 				"$h=$wc.DownloadString(\"$u/scripts/windows/inventario-modular.ps1.sha256\").Trim();",
 				"$wc.DownloadFile(\"$u/scripts/windows/inventario-modular.ps1\",$p);",
@@ -67,8 +77,7 @@
 				"$fs=[System.IO.File]::OpenRead($p);",
 				"try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()};",
 				"if($a -ne $h){throw \"SHA-256 invalido. Script descargado no coincide con el publicado por el servidor.\"};",
-				"try{powershell -WindowStyle Hidden -ExecutionPolicy RemoteSigned -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\"}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue};",
-				"Exit;\n"
+				"try{powershell -ExecutionPolicy RemoteSigned -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\"}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue}"
 			].join(" ");
 			const commandBox = document.getElementById("inventory-command");
 			const copyButton = document.getElementById("copy-inventory-command");
@@ -91,4 +100,5 @@
 		}());
 	</script>
 </body>
+
 </html>

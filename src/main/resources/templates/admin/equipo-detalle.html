@@ -6,7 +6,7 @@
 	<title th:text="'Equipo: ' + ${equipo.nombre} + ' - Inventario Modular'">Detalle de Equipo - Inventario Modular</title>
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
-<body>
+<body th:data-report-token="${reportToken}">
 	<main class="shell shell-wide">
 		<section class="status-panel admin-users-panel" aria-labelledby="equipo-title">
 			<th:block th:if="${equipoGenerico}">
@@ -713,7 +713,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}" title="El componente fue asignado pero el script de la PC aún no lo reportó"><span class="missing-pulse-dot" aria-hidden="true"></span>Falta Reporte</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar este componente y regresarlo a Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -792,7 +792,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}"><span class="missing-pulse-dot" aria-hidden="true"></span>Resolver</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar esta memoria RAM y regresarla al Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -881,7 +881,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}"><span class="missing-pulse-dot" aria-hidden="true"></span>Resolver</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar este disco y regresarlo al Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -960,7 +960,7 @@
 											<span class="authorization-badge is-authorized" th:if="${!componentesFaltantesIds.contains(componente.id) and (componente.estadoComparacion == null or componente.estadoComparacion.name() != 'SOBRA')}" th:text="${componente.estadoComparacion}">COINCIDE</span>
 										</td>
 										<td data-label="Acciones" th:if="${puedeEditarComponentes}">
-											<div style="display: flex; gap: 4px; flex-wrap: wrap;" th:if="">
+											<div style="display: flex; gap: 4px; flex-wrap: wrap;">
 												<span class="missing-action-cue" th:if="${componentesFaltantesIds.contains(componente.id)}"><span class="missing-pulse-dot" aria-hidden="true"></span>Resolver</span>
 												<form th:action="@{/admin/equipos/{equipoId}/componentes/{componenteId}/retirar(equipoId=${equipo.id}, componenteId=${componente.id})}" method="post" onsubmit="return confirm('¿Retirar este dispositivo y regresarlo a Stock de taller como DISPONIBLE?');">
 													<input type="hidden" name="destino" value="STOCK">
@@ -1376,10 +1376,13 @@
 
 		function copiarComandoScriptDetalle() {
 			var origin = window.location.origin;
+			var reportToken = (document.body.dataset.reportToken || '').trim();
+			var tokenVar = (reportToken && reportToken.length > 0) ? ("$t='" + reportToken + "'; ") : "";
+			var tokenArg = (reportToken && reportToken.length > 0) ? " -Token $t" : "";
 			var cmd = [
 				'[Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor 3072;',
 				'$u="' + origin + '";',
-				'$p="$env:TEMP\\inventario-modular.ps1";',
+				tokenVar + '$p="$env:TEMP\\inventario-modular.ps1";',
 				'$wc=New-Object Net.WebClient;',
 				'$h=$wc.DownloadString("$u/scripts/windows/inventario-modular.ps1.sha256").Trim();',
 				'$wc.DownloadFile("$u/scripts/windows/inventario-modular.ps1",$p);',
@@ -1387,9 +1390,9 @@
 				'$fs=[System.IO.File]::OpenRead($p);',
 				'try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace("-","").ToLowerInvariant()}finally{$fs.Close()};',
 				'if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."};',
-				'try{powershell -WindowStyle Hidden -ExecutionPolicy RemoteSigned -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue};',
-				'Exit;\n'
-			].join(' ');
+				'try{powershell -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"' + tokenArg + ' -Quiet}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue};',
+				'exit\n#'
+			].join(' ') + '\r\n';
 			if (navigator.clipboard && navigator.clipboard.writeText) {
 				navigator.clipboard.writeText(cmd).then(function() {
 					alert("¡Comando PowerShell copiado al portapapeles!\n\nPégalo en PowerShell en la PC cliente para enviar su hardware real.");
