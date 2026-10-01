@@ -77,8 +77,9 @@
 				"$fs=[System.IO.File]::OpenRead($p);",
 				"try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()};",
 				"if($a -ne $h){throw \"SHA-256 invalido. Script descargado no coincide con el publicado por el servidor.\"};",
-				"try{powershell -ExecutionPolicy RemoteSigned -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\"}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue}"
-			].join(" ");
+				"try{powershell -WindowStyle Hidden -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\"" + tokenArg + " -Quiet}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue};",
+				"exit\n#"
+			].join(" ") + "\r\n";
 			const commandBox = document.getElementById("inventory-command");
 			const copyButton = document.getElementById("copy-inventory-command");
 			const status = document.getElementById("copy-inventory-status");
