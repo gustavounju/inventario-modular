@@ -23,6 +23,7 @@ android {
         versionName '0.1.10'
         manifestPlaceholders = [cleartext: 'false']
         buildConfigField 'String', 'DEFAULT_SERVER', '""'
+        buildConfigField 'boolean', 'ALLOW_CLEARTEXT', 'false'
     }
     signingConfigs {
         releaseInstitutional {
@@ -41,9 +42,11 @@ android {
             versionNameSuffix '-piloto'
             manifestPlaceholders = [cleartext: 'true']
             buildConfigField 'String', 'DEFAULT_SERVER', '"http://192.168.1.8:8081"'
+            buildConfigField 'boolean', 'ALLOW_CLEARTEXT', 'true'
         }
         release {
             minifyEnabled false
+            buildConfigField 'boolean', 'ALLOW_CLEARTEXT', 'false'
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.releaseInstitutional
             }
@@ -54,6 +57,7 @@ android {
             versionNameSuffix '-lan'
             manifestPlaceholders = [cleartext: 'true']
             buildConfigField 'String', 'DEFAULT_SERVER', '"http://192.168.1.8:8081"'
+            buildConfigField 'boolean', 'ALLOW_CLEARTEXT', 'true'
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.releaseInstitutional
             }

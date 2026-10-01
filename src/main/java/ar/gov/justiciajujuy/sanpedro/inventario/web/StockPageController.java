@@ -17,6 +17,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.Componente;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -206,7 +209,26 @@ public class StockPageController {
 		var componentesStockRaw = stockService.listarDisponiblesYActivos();
 		List<StockComponenteDetalle> componentesTotales = new java.util.ArrayList<>(componentesStockRaw);
 		
-		componenteRepository.findAllWithEquipoAndOrigenNot(ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.SCRIPT).stream()
+		List<Componente> componentesInstalados = componenteRepository.findAllWithEquipoAndOrigenNot(ar.gov.justiciajujuy.sanpedro.inventario.componentes.OrigenComponente.SCRIPT);
+		Set<Long> equiposConImpresoraActiva = componentesInstalados.stream()
+				.filter(c -> c.getTipo() == TipoComponente.IMPRESORA && c.isEsImpresoraActiva() && c.getEquipo() != null)
+				.map(c -> c.getEquipo().getId())
+				.collect(Collectors.toSet());
+
+		componentesInstalados.stream()
+			.filter(c -> {
+				if (c.getTipo() == TipoComponente.IMPRESORA) {
+					// Si el equipo imprime en red, no se lista la impresora local en el stock de componentes asignados
+					if (c.getEquipo() != null && (c.getEquipo().isImpresoraEnRed() || c.getEquipo().getImpresoraRedAsignada() != null)) {
+						return false;
+					}
+					// Si el equipo tiene configurada una impresora local activa, solo listar la activa para no duplicar virtuales
+					if (c.getEquipo() != null && equiposConImpresoraActiva.contains(c.getEquipo().getId()) && !c.isEsImpresoraActiva()) {
+						return false;
+					}
+				}
+				return true;
+			})
 			.map(c -> new StockComponenteDetalle(
 					c.getId(),
 					c.getTipo(),

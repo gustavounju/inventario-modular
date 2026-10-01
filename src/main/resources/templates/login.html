@@ -44,7 +44,7 @@
 			</form>
 
 			<!-- Copia rápida del script PowerShell de inventario: se oculta visualmente el área de código para mayor limpieza estética, manteniendo intacto el botón y su funcionalidad -->
-			<section class="script-copy-panel" aria-labelledby="script-copy-title">
+			<section class="script-copy-panel" aria-labelledby="script-copy-title" th:data-report-token="${reportToken}">
 				<h2 id="script-copy-title">Inventario de equipo</h2>
 				<textarea id="inventory-command" readonly style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;" aria-hidden="true"></textarea>
 				<button class="secondary-action" id="copy-inventory-command" type="button">Copiar comando</button>
@@ -55,11 +55,15 @@
 	<script>
 		(function () {
 			const origin = window.location.origin;
-			// El comando usa la misma IP/puerto del login y valida SHA-256 antes de ejecutar.
+			const panel = document.querySelector(".script-copy-panel");
+			const reportToken = (panel && panel.dataset.reportToken) ? panel.dataset.reportToken.trim() : "";
+			const tokenVar = reportToken ? ("$t='" + reportToken + "'; ") : "";
+			const tokenArg = reportToken ? " -Token $t" : "";
+			// El comando usa la misma IP/puerto del login, valida SHA-256 antes de ejecutar, y se cierra al terminar.
 			const command = [
 				"[Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor 3072;",
 				"$u='" + origin + "';",
-				"$p=\"$env:TEMP\\inventario-modular.ps1\";",
+				tokenVar + "$p=\"$env:TEMP\\inventario-modular.ps1\";",
 				"$wc=New-Object Net.WebClient;",
 				"$h=$wc.DownloadString(\"$u/scripts/windows/inventario-modular.ps1.sha256\").Trim();",
 				"$wc.DownloadFile(\"$u/scripts/windows/inventario-modular.ps1\",$p);",
@@ -67,8 +71,9 @@
 				"$fs=[System.IO.File]::OpenRead($p);",
 				"try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace('-','').ToLowerInvariant()}finally{$fs.Close()};",
 				"if($a -ne $h){throw \"SHA-256 invalido. Script descargado no coincide con el publicado por el servidor.\"};",
-				"try{powershell -ExecutionPolicy RemoteSigned -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\"}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue}"
-			].join(" ");
+				"try{powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl \"$u/api/v1/equipos/inventario\"" + tokenArg + " -Quiet}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue};",
+				"exit"
+			].join(" ") + "\r\n";
 			const commandBox = document.getElementById("inventory-command");
 			const copyButton = document.getElementById("copy-inventory-command");
 			const status = document.getElementById("copy-inventory-status");

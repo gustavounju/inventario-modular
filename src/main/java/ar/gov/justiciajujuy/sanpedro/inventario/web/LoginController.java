@@ -10,9 +10,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class LoginController {
 
 	private final String applicationName;
+	private final String reportToken;
 
-	public LoginController(@Value("${spring.application.name}") String applicationName) {
+	public LoginController(
+			@Value("${spring.application.name}") String applicationName,
+			@Value("${inventario.security.report-token:}") String reportToken) {
 		this.applicationName = applicationName;
+		this.reportToken = reportToken;
 	}
 
 	@GetMapping("/login")
@@ -22,6 +26,7 @@ public class LoginController {
 			@RequestParam(value = "bloqueado", required = false) String bloqueado,
 			Model model) {
 		model.addAttribute("applicationName", applicationName);
+		model.addAttribute("reportToken", reportToken);
 		model.addAttribute("hasError", error != null);
 		model.addAttribute("loggedOut", logout != null);
 		model.addAttribute("blocked", bloqueado != null);

@@ -14,8 +14,10 @@ final class LanClient {
         URI uri = URI.create(input.trim());
         if (uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null
                 || !(uri.getPath().isEmpty() || uri.getPath().equals("/"))
-                || !("https".equals(uri.getScheme()) || "http".equals(uri.getScheme()))) {
-            throw new IllegalArgumentException("Ingrese la direccion HTTP o HTTPS del servidor, sin rutas ni credenciales.");
+                || !("https".equals(uri.getScheme()) || (BuildConfig.ALLOW_CLEARTEXT && "http".equals(uri.getScheme())))) {
+            throw new IllegalArgumentException(BuildConfig.ALLOW_CLEARTEXT
+                    ? "Ingrese la direccion HTTP o HTTPS del servidor, sin rutas ni credenciales."
+                    : "Ingrese la direccion HTTPS del servidor, sin rutas ni credenciales.");
         }
         return uri.getScheme() + "://" + uri.getRawAuthority();
     }
