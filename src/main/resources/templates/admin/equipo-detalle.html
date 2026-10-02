@@ -372,7 +372,7 @@
 				</div>
 
 				<!-- Lista de impresoras detectadas con selector de activa -->
-				<div th:with="impresoras=${componentes.?[tipo.name() == 'IMPRESORA']}" th:unless="${equipo.impresoraEnRed}">
+				<div th:with="impresoras=${impresorasGestion}" th:unless="${equipo.impresoraEnRed}">
 					<p th:if="${impresoras.empty}" style="font-size:0.88rem; color:#6b7280; font-style:italic;">No hay impresoras detectadas para este equipo.</p>
 					<table th:unless="${impresoras.empty}" class="equipo-table" style="font-size:0.9rem;">
 						<thead>

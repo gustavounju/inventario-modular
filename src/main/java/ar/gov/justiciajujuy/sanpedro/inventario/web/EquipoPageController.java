@@ -726,6 +726,7 @@ public class EquipoPageController {
 		model.addAttribute("actaHabilitada", actaHabilitada);
 		model.addAttribute("motivoBloqueada", motivoBloqueada);
 		model.addAttribute("esImpresora", esImpresoraDeRed);
+		model.addAttribute("impresorasGestion", impresorasGestion);
 	}
 
 	private void prepararDetalleGenerico(Model model, UserDetails userDetails, EquipoDetalle equipo) {
