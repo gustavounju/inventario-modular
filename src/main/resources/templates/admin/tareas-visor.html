@@ -44,6 +44,7 @@
 				<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
 				<span id="visor-live-status" class="kanban-live-status" role="status"></span>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin}">Panel general</a>
+				<button type="button" class="kbtn kbtn--secondary" onclick="abrirHistorialLlamadas()">📞 Llamadas de Hoy</button>
 				<button type="button" class="kbtn kbtn--primary" onclick="document.getElementById('modal-nueva-tarea').showModal()" th:if="${puedeEditarTareas}">➕ Nueva Tarea</button>
 
 				<!-- Botón Iniciar sesión si es visitante -->
@@ -629,6 +630,33 @@
 		</form>
 	</dialog>
 
+	<!-- Modal para Historial de Llamadas (CDR) -->
+	<dialog id="modal-historial-llamadas" class="modal-dialog" style="max-width: 700px;">
+		<header class="modal-header">
+			<h3>📞 Llamadas del Día (Taller)</h3>
+			<button class="modal-close" onclick="document.getElementById('modal-historial-llamadas').close()" title="Cerrar">✕</button>
+		</header>
+		<div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+			<div id="cdr-loading" style="text-align: center; padding: 20px; display: none;">Cargando llamadas desde la central IP...</div>
+			<div id="cdr-error" style="color: #991b1b; padding: 10px; display: none;"></div>
+			<table class="table-judicial" id="cdr-table" style="width: 100%; border-collapse: collapse; display: none;">
+				<thead>
+					<tr style="border-bottom: 2px solid #ccc;">
+						<th style="padding: 8px; text-align: left;">Hora</th>
+						<th style="padding: 8px; text-align: left;">De (Número)</th>
+						<th style="padding: 8px; text-align: left;">Duración</th>
+						<th style="padding: 8px; text-align: left;">Estado</th>
+					</tr>
+				</thead>
+				<tbody id="cdr-tbody">
+				</tbody>
+			</table>
+		</div>
+		<div class="modal-footer" style="display:flex; justify-content:flex-end; padding-top:12px;">
+			<button type="button" class="kbtn kbtn--ghost" onclick="document.getElementById('modal-historial-llamadas').close()">Cerrar</button>
+		</div>
+	</dialog>
+
 	<div class="kanban-toast-container">
 		<div th:if="${error}" class="kanban-toast toast-error" th:text="${error}"></div>
 		<div th:if="${mensajeExito}" class="kanban-toast toast-success" th:text="${mensajeExito}"></div>
@@ -671,7 +699,126 @@
 					setTimeout(() => t.remove(), 500);
 				}, 4000);
 			});
+
+			// ==========================================
+			// Módulo: Integración de Telefonía en Vivo (SSE)
+			// ==========================================
+			const container = document.querySelector('.kanban-toast-container');
+			let activeCallToast = null;
+
+			if (window.EventSource) {
+				const callSource = new EventSource('/api/telefonia/stream');
+				
+				callSource.addEventListener('llamada', function(e) {
+					try {
+						const data = JSON.parse(e.data);
+						const callee = data.callee || '';
+						
+						// Opcional: Filtrar solo si llaman a tu interno (ej. '1005')
+						// if (callee !== '1005') return;
+
+						const caller = data.caller || 'Desconocido';
+						const callerName = data.callerName || '';
+						const estado = (data.status || '').toUpperCase();
+
+						// 1. Mostrar banner cuando suena
+						if (estado === 'RINGING' || estado === 'RING') {
+							if (!activeCallToast) {
+								activeCallToast = document.createElement('div');
+								activeCallToast.className = 'kanban-toast';
+								// Estilo azul distintivo para llamadas
+								activeCallToast.style.borderLeftColor = '#3b82f6';
+								activeCallToast.style.color = '#1e3a8a';
+								container.appendChild(activeCallToast);
+							}
+							activeCallToast.innerHTML = `📞 <strong>Llamada entrante al taller</strong><br>De: ${callerName} (${caller})`;
+						} 
+						// 2. Limpiar banner cuando atienden o cortan
+						else if (estado === 'ANSWERED' || estado === 'HANGUP' || estado === 'NO ANSWER') {
+							if (activeCallToast) {
+								activeCallToast.style.opacity = '0';
+								setTimeout(() => {
+									if (activeCallToast) {
+										activeCallToast.remove();
+										activeCallToast = null;
+									}
+								}, 500);
+							}
+						}
+					} catch (err) {
+						console.error("Error parseando evento telefónico:", err);
+					}
+				});
+				
+				callSource.onerror = function(err) {
+					console.warn("Se cortó la conexión SSE de telefonía. El navegador reintentará en 3s.");
+				};
+			}
 		});
+
+		// Función para cargar historial de llamadas CDR
+		function abrirHistorialLlamadas() {
+			const modal = document.getElementById('modal-historial-llamadas');
+			const tbody = document.getElementById('cdr-tbody');
+			const loading = document.getElementById('cdr-loading');
+			const errorDiv = document.getElementById('cdr-error');
+			const table = document.getElementById('cdr-table');
+
+			modal.showModal();
+			tbody.innerHTML = '';
+			errorDiv.style.display = 'none';
+			table.style.display = 'none';
+			loading.style.display = 'block';
+
+			fetch('/api/telefonia/historial-hoy')
+				.then(res => res.json())
+				.then(data => {
+					loading.style.display = 'none';
+					if (data.error) {
+						errorDiv.textContent = data.error;
+						errorDiv.style.display = 'block';
+						return;
+					}
+					
+					// Grandstream retorna las llamadas en data.response.cdr
+					const cdrs = (data.response && data.response.cdr) ? data.response.cdr : [];
+					
+					if (cdrs.length === 0) {
+						errorDiv.textContent = 'No hay llamadas registradas el día de hoy para este interno.';
+						errorDiv.style.display = 'block';
+						return;
+					}
+
+					cdrs.forEach(llamada => {
+						const tr = document.createElement('tr');
+						tr.style.borderBottom = '1px solid #eee';
+						
+						// Colores por estado (ANSWERED, NO ANSWER, etc.)
+						let estadoHtml = llamada.disposition;
+						if(llamada.disposition === 'ANSWERED') estadoHtml = '<span style="color: green; font-weight: bold;">Atendida</span>';
+						else if(llamada.disposition === 'NO ANSWER') estadoHtml = '<span style="color: red; font-weight: bold;">Perdida</span>';
+						
+						const mins = Math.floor(llamada.billsec / 60);
+						const secs = llamada.billsec % 60;
+						const duracionStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+						tr.innerHTML = `
+							<td style="padding: 8px;">${llamada.start || ''}</td>
+							<td style="padding: 8px;"><strong>${llamada.caller || llamada.src}</strong></td>
+							<td style="padding: 8px;">${duracionStr}</td>
+							<td style="padding: 8px;">${estadoHtml}</td>
+						`;
+						tbody.appendChild(tr);
+					});
+					table.style.display = 'table';
+				})
+				.catch(err => {
+					loading.style.display = 'none';
+					errorDiv.textContent = 'Error de conexión con el servidor.';
+					errorDiv.style.display = 'block';
+					console.error('Error fetching CDR:', err);
+				});
+		}
 	</script>
 </body>
 </html>
