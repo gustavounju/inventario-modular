@@ -33,7 +33,7 @@ public class UcmApiClient {
     @Value("${ucm.user:apiuser}")
     private String apiUser;
     
-    @Value("${ucm.password:apipass}")
+    @Value("${ucm.password:}")
     private String apiPassword;
     
     @Value("${ucm.interno:1005}")
@@ -67,6 +67,10 @@ public class UcmApiClient {
 
     public String obtenerHistorialCdr() {
         try {
+            if (apiPassword == null || apiPassword.isBlank()) {
+                return "{\"error\":\"Falta configurar ucm.password para consultar la central IP.\"}";
+            }
+
             // 1. Obtener Challenge
             String challenge = realizarPeticion("{\"request\":\"challenge\",\"user\":\"" + apiUser + "\"}");
             JsonNode challengeNode = objectMapper.readTree(challenge);

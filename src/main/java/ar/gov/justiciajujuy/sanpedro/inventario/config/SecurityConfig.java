@@ -53,7 +53,7 @@ public class SecurityConfig {
 			.addFilterBefore(new TokenAuthenticationFilter(reportToken), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new LoginRateLimitFilter(loginAttemptService), UsernamePasswordAuthenticationFilter.class)
 			.csrf(csrf -> csrf
-				.ignoringRequestMatchers("/api/v1/**", "/submit_inventory")
+				.ignoringRequestMatchers("/api/v1/**", "/submit_inventory", "/api/telefonia/webhook/llamada")
 			)
 			.headers(headers -> headers
 				.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
@@ -81,6 +81,8 @@ public class SecurityConfig {
 				).permitAll()
 				// El visor de tareas es de solo lectura y publico a proposito para monitores/pantallas en guardia o taller sin requerir inicio de sesion.
 				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/telefonia/stream", "/api/telefonia/historial-hoy").permitAll()
+				.requestMatchers(HttpMethod.POST, "/api/telefonia/webhook/llamada").permitAll()
 				.requestMatchers("/submit_inventory").authenticated()
 				.anyRequest().authenticated()
 			)
