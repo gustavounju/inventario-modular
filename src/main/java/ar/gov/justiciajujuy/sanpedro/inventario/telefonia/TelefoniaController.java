@@ -61,6 +61,12 @@ public class TelefoniaController {
                 payload.getCallee(), 
                 estadoDefinitivo);
 
+        ucmApiClient.registrarLlamadaEnVivo(
+                payload.getCaller(), 
+                payload.getCallerName(), 
+                payload.getCallee(), 
+                estadoDefinitivo);
+
         return ResponseEntity.ok("OK");
     }
 
@@ -77,5 +83,24 @@ public class TelefoniaController {
             .header("Cache-Control", "no-store, no-cache, must-revalidate")
             .header("Pragma", "no-cache")
             .body(ucmApiClient.obtenerHistorialCdr());
+    }
+
+    // 4. Endpoint directo para simular llamadas desde PuTTY o pruebas
+    @RequestMapping(value = "/simular", method = {RequestMethod.GET, RequestMethod.POST})
+    public ResponseEntity<String> simularLlamada(
+            @RequestParam(required = false, defaultValue = "1002") String caller,
+            @RequestParam(required = false, defaultValue = "Mesa de Entradas") String callerName,
+            @RequestParam(required = false, defaultValue = "1005") String callee,
+            @RequestParam(required = false, defaultValue = "NO ANSWER") String estado,
+            HttpServletRequest request) {
+        
+        log.info("Simulación de llamada solicitada desde {}: {} ({}) -> {} [{}]",
+                request.getRemoteAddr(), callerName, caller, callee, estado);
+
+        eventService.notificarLlamadaEntrante(caller, callerName, callee, estado);
+        ucmApiClient.registrarLlamadaEnVivo(caller, callerName, callee, estado);
+
+        return ResponseEntity.ok(String.format("Llamada simulada registrada: %s (%s) -> %s [Estado: %s]",
+                callerName, caller, callee, estado));
     }
 }

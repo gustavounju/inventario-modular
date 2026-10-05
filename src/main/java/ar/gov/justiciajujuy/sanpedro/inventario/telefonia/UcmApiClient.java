@@ -42,9 +42,76 @@ public class UcmApiClient {
     @Value("${ucm.interno:1005}")
     private String internoTaller;
 
+    // Lista en memoria de llamadas recientes recibidas vía Webhook o simulación
+    private final java.util.List<ObjectNode> llamadasEnVivo = new java.util.concurrent.CopyOnWriteArrayList<>();
+
     public UcmApiClient() {
         this.sslContext = crearSslContextInseguro();
         this.objectMapper = new ObjectMapper();
+    }
+
+    public void registrarLlamadaEnVivo(String caller, String callerName, String callee, String status) {
+        try {
+            String ahora = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            String src = (caller != null && !caller.isBlank()) ? caller : "Desconocido";
+            String dst = (callee != null && !callee.isBlank()) ? callee : internoTaller;
+            
+            boolean esSaliente = (internoTaller != null && internoTaller.equals(src));
+            String callerDisplay;
+            if (esSaliente) {
+                callerDisplay = "↗ Saliente a " + dst;
+            } else {
+                if (callerName != null && !callerName.isBlank() && !callerName.equals(src)) {
+                    callerDisplay = "↙ " + callerName + " (" + src + ")";
+                } else if (callerName != null && !callerName.isBlank()) {
+                    callerDisplay = "↙ " + callerName;
+                } else if (!src.isBlank()) {
+                    callerDisplay = "↙ " + src;
+                } else {
+                    callerDisplay = "↙ Desconocido";
+                }
+            }
+
+            String disposition;
+            String st = status != null ? status.toUpperCase() : "NO ANSWER";
+            if (st.contains("ANSWER") && !st.contains("NO")) {
+                disposition = "ANSWERED";
+            } else if (st.contains("BUSY")) {
+                disposition = "BUSY";
+            } else {
+                disposition = "NO ANSWER";
+            }
+
+            // Buscar si ya existe una llamada idéntica reciente para actualizar su estado
+            ObjectNode existente = null;
+            for (ObjectNode n : llamadasEnVivo) {
+                if (src.equals(n.path("src").asText()) && dst.equals(n.path("dst").asText())) {
+                    existente = n;
+                    break;
+                }
+            }
+
+            if (existente != null && !"RINGING".equalsIgnoreCase(status) && !"RING".equalsIgnoreCase(status)) {
+                existente.put("disposition", disposition);
+            } else {
+                ObjectNode nueva = objectMapper.createObjectNode();
+                nueva.put("start", ahora);
+                nueva.put("src", src);
+                nueva.put("dst", dst);
+                nueva.put("caller", callerDisplay);
+                nueva.put("billsec", "ANSWERED".equals(disposition) ? 15 : 0);
+                nueva.put("disposition", disposition);
+
+                llamadasEnVivo.add(0, nueva);
+
+                while (llamadasEnVivo.size() > 50) {
+                    llamadasEnVivo.remove(llamadasEnVivo.size() - 1);
+                }
+            }
+            log.info("Llamada en vivo guardada en memoria: {} -> {} ({}) - Estado: {}", src, dst, callerDisplay, disposition);
+        } catch (Exception e) {
+            log.error("Error registrando llamada en vivo en memoria", e);
+        }
     }
 
     private SSLContext crearSslContextInseguro() {
@@ -113,6 +180,9 @@ public class UcmApiClient {
             
         } catch (Exception e) {
             log.error("Error al obtener CDR de UCM", e);
+            if (!llamadasEnVivo.isEmpty()) {
+                return armarJsonRespuesta(this.llamadasEnVivo);
+            }
             return String.format("{\"error\": \"Error al conectar con la central IP: %s\"}", e.getMessage());
         }
     }
@@ -124,6 +194,10 @@ public class UcmApiClient {
             
             java.util.List<ObjectNode> todasLasLlamadas = new java.util.ArrayList<>();
             
+            // 1. Agregar llamadas recibidas en vivo (memoria)
+            todasLasLlamadas.addAll(this.llamadasEnVivo);
+            
+            // 2. Agregar llamadas del CDR oficial de Grandstream
             if (cdrRootArray.isArray()) {
                 for (JsonNode item : cdrRootArray) {
                     JsonNode dataNode = item.has("main_cdr") ? item.path("main_cdr") : item;
@@ -176,31 +250,41 @@ public class UcmApiClient {
                     }
 
                     if (coincideInterno) {
-                        ObjectNode callNode = objectMapper.createObjectNode();
-                        callNode.put("start", start);
-                        callNode.put("src", src);
-                        callNode.put("dst", dst);
-                        
-                        boolean esSaliente = (internoTaller != null && internoTaller.equals(src));
-                        String callerDisplay;
-                        if (esSaliente) {
-                            callerDisplay = "↗ Saliente a " + dst;
-                        } else {
-                            if (!callerName.isBlank() && !src.isBlank() && !callerName.equals(src)) {
-                                callerDisplay = "↙ " + callerName + " (" + src + ")";
-                            } else if (!callerName.isBlank()) {
-                                callerDisplay = "↙ " + callerName;
-                            } else if (!src.isBlank()) {
-                                callerDisplay = "↙ " + src;
-                            } else {
-                                callerDisplay = "↙ Desconocido";
+                        // Evitar duplicar si la llamada ya fue registrada en memoria
+                        boolean yaExiste = false;
+                        for (ObjectNode n : todasLasLlamadas) {
+                            if (start.equals(n.path("start").asText()) && src.equals(n.path("src").asText())) {
+                                yaExiste = true;
+                                break;
                             }
                         }
-                        callNode.put("caller", callerDisplay);
-                        callNode.put("billsec", billsec);
-                        callNode.put("disposition", disposition);
-                        
-                        todasLasLlamadas.add(callNode);
+                        if (!yaExiste) {
+                            ObjectNode callNode = objectMapper.createObjectNode();
+                            callNode.put("start", start);
+                            callNode.put("src", src);
+                            callNode.put("dst", dst);
+                            
+                            boolean esSaliente = (internoTaller != null && internoTaller.equals(src));
+                            String callerDisplay;
+                            if (esSaliente) {
+                                callerDisplay = "↗ Saliente a " + dst;
+                            } else {
+                                if (!callerName.isBlank() && !src.isBlank() && !callerName.equals(src)) {
+                                    callerDisplay = "↙ " + callerName + " (" + src + ")";
+                                } else if (!callerName.isBlank()) {
+                                    callerDisplay = "↙ " + callerName;
+                                } else if (!src.isBlank()) {
+                                    callerDisplay = "↙ " + src;
+                                } else {
+                                    callerDisplay = "↙ Desconocido";
+                                }
+                            }
+                            callNode.put("caller", callerDisplay);
+                            callNode.put("billsec", billsec);
+                            callNode.put("disposition", disposition);
+                            
+                            todasLasLlamadas.add(callNode);
+                        }
                     }
                 }
             }
@@ -214,22 +298,28 @@ public class UcmApiClient {
                 seleccionadas = seleccionadas.subList(0, 50);
             }
 
+            return armarJsonRespuesta(seleccionadas);
+            
+        } catch (Exception e) {
+            log.error("Error procesando cdr_root de Grandstream, retornando respuesta cruda", e);
+            return cdrRaw;
+        }
+    }
+
+    private String armarJsonRespuesta(java.util.List<ObjectNode> llamadas) {
+        try {
             ArrayNode cdrArray = objectMapper.createArrayNode();
-            for (ObjectNode n : seleccionadas) {
+            for (ObjectNode n : llamadas) {
                 cdrArray.add(n);
             }
-
             ObjectNode responseObj = objectMapper.createObjectNode();
             responseObj.put("status", 0);
             ObjectNode respNode = objectMapper.createObjectNode();
             respNode.set("cdr", cdrArray);
             responseObj.set("response", respNode);
-            
             return objectMapper.writeValueAsString(responseObj);
-            
         } catch (Exception e) {
-            log.error("Error procesando cdr_root de Grandstream, retornando respuesta cruda", e);
-            return cdrRaw;
+            return "{\"status\":0,\"response\":{\"cdr\":[]}}";
         }
     }
 
