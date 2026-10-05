@@ -122,8 +122,6 @@ public class UcmApiClient {
             JsonNode root = objectMapper.readTree(cdrRaw);
             JsonNode cdrRootArray = root.path("cdr_root");
             
-            String hoy = LocalDate.now().toString();
-            java.util.List<ObjectNode> llamadasHoy = new java.util.ArrayList<>();
             java.util.List<ObjectNode> todasLasLlamadas = new java.util.ArrayList<>();
             
             if (cdrRootArray.isArray()) {
@@ -182,34 +180,38 @@ public class UcmApiClient {
                         callNode.put("start", start);
                         callNode.put("src", src);
                         callNode.put("dst", dst);
+                        
+                        boolean esSaliente = (internoTaller != null && internoTaller.equals(src));
                         String callerDisplay;
-                        if (!callerName.isBlank() && !src.isBlank() && !callerName.equals(src)) {
-                            callerDisplay = callerName + " (" + src + ")";
-                        } else if (!callerName.isBlank()) {
-                            callerDisplay = callerName;
-                        } else if (!src.isBlank()) {
-                            callerDisplay = src;
+                        if (esSaliente) {
+                            callerDisplay = "↗ Saliente a " + dst;
                         } else {
-                            callerDisplay = "Desconocido";
+                            if (!callerName.isBlank() && !src.isBlank() && !callerName.equals(src)) {
+                                callerDisplay = "↙ " + callerName + " (" + src + ")";
+                            } else if (!callerName.isBlank()) {
+                                callerDisplay = "↙ " + callerName;
+                            } else if (!src.isBlank()) {
+                                callerDisplay = "↙ " + src;
+                            } else {
+                                callerDisplay = "↙ Desconocido";
+                            }
                         }
                         callNode.put("caller", callerDisplay);
                         callNode.put("billsec", billsec);
                         callNode.put("disposition", disposition);
                         
                         todasLasLlamadas.add(callNode);
-                        if (start.startsWith(hoy)) {
-                            llamadasHoy.add(callNode);
-                        }
                     }
                 }
             }
             
-            // Preferir llamadas de hoy; si hoy aún no hubo llamadas, mostrar las más recientes del interno
-            java.util.List<ObjectNode> seleccionadas = !llamadasHoy.isEmpty() ? llamadasHoy : todasLasLlamadas;
-            // Ordenar de más reciente a más antigua
-            java.util.Collections.reverse(seleccionadas);
-            if (llamadasHoy.isEmpty() && seleccionadas.size() > 30) {
-                seleccionadas = seleccionadas.subList(0, 30);
+            // Ordenar de más reciente a más antigua por fecha/hora
+            todasLasLlamadas.sort((a, b) -> b.path("start").asText("").compareTo(a.path("start").asText("")));
+            
+            // Mostrar hasta 50 llamadas recientes del interno
+            java.util.List<ObjectNode> seleccionadas = todasLasLlamadas;
+            if (seleccionadas.size() > 50) {
+                seleccionadas = seleccionadas.subList(0, 50);
             }
 
             ArrayNode cdrArray = objectMapper.createArrayNode();

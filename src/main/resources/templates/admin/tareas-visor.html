@@ -44,7 +44,7 @@
 				<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
 				<span id="visor-live-status" class="kanban-live-status" role="status"></span>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin}">Panel general</a>
-				<button type="button" class="kbtn kbtn--secondary" onclick="abrirHistorialLlamadas()">📞 Llamadas de Hoy</button>
+				<button type="button" class="kbtn kbtn--secondary" onclick="abrirHistorialLlamadas()">📞 Llamadas Recientes</button>
 				<button type="button" class="kbtn kbtn--primary" onclick="document.getElementById('modal-nueva-tarea').showModal()" th:if="${puedeEditarTareas}">➕ Nueva Tarea</button>
 
 				<!-- Botón Iniciar sesión si es visitante -->
@@ -631,9 +631,9 @@
 	</dialog>
 
 	<!-- Modal para Historial de Llamadas (CDR) -->
-	<dialog id="modal-historial-llamadas" class="modal-dialog" style="max-width: 700px;">
+	<dialog id="modal-historial-llamadas" class="modal-dialog" style="max-width: 720px;">
 		<header class="modal-header">
-			<h3>📞 Llamadas del Día (Taller)</h3>
+			<h3>📞 Llamadas Recientes (Taller)</h3>
 			<button class="modal-close" onclick="document.getElementById('modal-historial-llamadas').close()" title="Cerrar">✕</button>
 		</header>
 		<div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
@@ -643,7 +643,7 @@
 				<thead>
 					<tr style="border-bottom: 2px solid #ccc;">
 						<th style="padding: 8px; text-align: left;">Hora</th>
-						<th style="padding: 8px; text-align: left;">De (Número)</th>
+						<th style="padding: 8px; text-align: left;">Contacto / Interno</th>
 						<th style="padding: 8px; text-align: left;">Duración</th>
 						<th style="padding: 8px; text-align: left;">Estado</th>
 					</tr>
@@ -784,7 +784,7 @@
 					const cdrs = (data.response && data.response.cdr) ? data.response.cdr : [];
 					
 					if (cdrs.length === 0) {
-						errorDiv.textContent = 'No hay llamadas registradas el día de hoy para este interno.';
+						errorDiv.textContent = 'No hay llamadas registradas recientemente para este interno.';
 						errorDiv.style.display = 'block';
 						return;
 					}
@@ -795,8 +795,13 @@
 						
 						// Colores por estado (ANSWERED, NO ANSWER, etc.)
 						let estadoHtml = llamada.disposition;
-						if(llamada.disposition === 'ANSWERED') estadoHtml = '<span style="color: green; font-weight: bold;">Atendida</span>';
-						else if(llamada.disposition === 'NO ANSWER') estadoHtml = '<span style="color: red; font-weight: bold;">Perdida</span>';
+						if (llamada.disposition === 'ANSWERED') {
+							estadoHtml = '<span style="color: #166534; font-weight: bold; background: #dcfce7; padding: 2px 8px; border-radius: 4px;">Atendida</span>';
+						} else if (llamada.disposition === 'NO ANSWER') {
+							estadoHtml = '<span style="color: #991b1b; font-weight: bold; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">Perdida</span>';
+						} else if (llamada.disposition === 'BUSY') {
+							estadoHtml = '<span style="color: #9a3412; font-weight: bold; background: #ffedd5; padding: 2px 8px; border-radius: 4px;">Ocupado</span>';
+						}
 						
 						const mins = Math.floor(llamada.billsec / 60);
 						const secs = llamada.billsec % 60;
