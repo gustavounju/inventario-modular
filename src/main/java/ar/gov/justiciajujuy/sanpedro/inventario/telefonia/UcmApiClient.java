@@ -41,7 +41,7 @@ public class UcmApiClient {
 
     public UcmApiClient() {
         // Desactivar la verificación de Hostname (Subject Alternative Name) para el HttpClient de Java 11+
-        System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "Boolean.TRUE");
+        System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
         this.httpClient = crearHttpClientInseguro();
         this.objectMapper = new ObjectMapper();
     }
