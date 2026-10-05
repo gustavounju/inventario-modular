@@ -88,8 +88,8 @@ sudo chmod 600 /etc/inventario-modular/inventario-modular.env
 ```bash
 cd /opt/inventario-modular
 git fetch origin
-git checkout primeros-pasos
-git pull --ff-only origin primeros-pasos
+git checkout Develop
+git pull --ff-only origin Develop
 ```
 
 ## Validar y construir
