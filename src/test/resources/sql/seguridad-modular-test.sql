@@ -80,6 +80,8 @@ CREATE TABLE equipos (
   teclado VARCHAR(180),
   mouse VARCHAR(180),
   impresora VARCHAR(180),
+  impresora_en_red BOOLEAN NOT NULL DEFAULT FALSE,
+  impresora_red_id BIGINT,
   monitoreo VARCHAR(60) NOT NULL DEFAULT 'SIN_REPORTE',
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   ultimo_reporte_en TIMESTAMP,
@@ -103,6 +105,7 @@ CREATE TABLE componentes (
   proveedor VARCHAR(150),
   ubicacion VARCHAR(120),
   observaciones VARCHAR(500),
+  es_impresora_activa BOOLEAN NOT NULL DEFAULT FALSE,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
