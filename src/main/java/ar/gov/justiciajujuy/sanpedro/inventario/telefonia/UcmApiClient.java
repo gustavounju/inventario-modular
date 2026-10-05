@@ -7,25 +7,25 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.URL;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.time.LocalDate;
 
 @Service
 public class UcmApiClient {
 
     private static final Logger log = LoggerFactory.getLogger(UcmApiClient.class);
-    private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final SSLContext sslContext;
     
     @Value("${ucm.url:https://10.15.0.2:8089/api}")
     private String baseUrl;
@@ -40,13 +40,11 @@ public class UcmApiClient {
     private String internoTaller;
 
     public UcmApiClient() {
-        // Desactivar la verificación de Hostname (Subject Alternative Name) para el HttpClient de Java 11+
-        System.setProperty("jdk.internal.httpclient.disableHostnameVerification", "true");
-        this.httpClient = crearHttpClientInseguro();
+        this.sslContext = crearSslContextInseguro();
         this.objectMapper = new ObjectMapper();
     }
 
-    private HttpClient crearHttpClientInseguro() {
+    private SSLContext crearSslContextInseguro() {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
@@ -55,15 +53,11 @@ public class UcmApiClient {
                     public void checkServerTrusted(X509Certificate[] certs, String authType) { }
                 }
             };
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new SecureRandom());
-
-            return HttpClient.newBuilder()
-                    .sslContext(sslContext)
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .build();
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, trustAllCerts, new SecureRandom());
+            return context;
         } catch (Exception e) {
-            throw new RuntimeException("Error creando HttpClient SSL: " + e.getMessage(), e);
+            throw new RuntimeException("Error creando SSLContext: " + e.getMessage(), e);
         }
     }
 
@@ -103,12 +97,30 @@ public class UcmApiClient {
     }
 
     private String realizarPeticion(String jsonPayload) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(baseUrl))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
-                .build();
-        return httpClient.send(request, HttpResponse.BodyHandlers.ofString()).body();
+        URL url = new URL(baseUrl);
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        conn.setSSLSocketFactory(this.sslContext.getSocketFactory());
+        // Desactivar validación de Hostname
+        conn.setHostnameVerifier((hostname, session) -> true);
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(10000);
+        conn.setDoOutput(true);
+        
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = jsonPayload.getBytes("utf-8");
+            os.write(input, 0, input.length);
+        }
+        
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            return response.toString();
+        }
     }
 
     private String generarMd5(String input) throws Exception {
