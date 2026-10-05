@@ -73,6 +73,9 @@ public class TelefoniaController {
     // 3. Endpoint para historial
     @GetMapping(value = "/historial-hoy", produces = "application/json")
     public ResponseEntity<String> obtenerHistorial() {
-        return ResponseEntity.ok(ucmApiClient.obtenerHistorialCdr());
+        return ResponseEntity.ok()
+            .header("Cache-Control", "no-store, no-cache, must-revalidate")
+            .header("Pragma", "no-cache")
+            .body(ucmApiClient.obtenerHistorialCdr());
     }
 }

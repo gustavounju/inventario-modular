@@ -770,7 +770,7 @@
 			table.style.display = 'none';
 			loading.style.display = 'block';
 
-			fetch('/api/telefonia/historial-hoy')
+			fetch('/api/telefonia/historial-hoy?t=' + Date.now(), {cache: 'no-store'})
 				.then(res => res.json())
 				.then(data => {
 					loading.style.display = 'none';
