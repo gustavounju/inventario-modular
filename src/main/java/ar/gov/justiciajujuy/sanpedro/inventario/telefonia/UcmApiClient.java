@@ -70,7 +70,14 @@ public class UcmApiClient {
             // 1. Obtener Challenge
             String challenge = realizarPeticion("{\"request\":\"challenge\",\"user\":\"" + apiUser + "\"}");
             JsonNode challengeNode = objectMapper.readTree(challenge);
-            if (challengeNode.get("status").asInt() != 0) return "{\"error\":\"Fallo al obtener challenge\"}";
+            if (challengeNode.get("status") == null || challengeNode.get("status").asInt() != 0) {
+                log.warn("Fallo al obtener challenge de UCM. Respuesta: {}", challenge);
+                int status = challengeNode.path("status").asInt(-99);
+                if (status == -1) {
+                    return "{\"error\":\"La central rechazó la conexión (status: -1). Verifique que en la pestaña 'Configuración de la API (nueva)' esté activada la API y creado el usuario " + apiUser + " con la IP permitida.\"}";
+                }
+                return "{\"error\":\"Fallo al obtener challenge de la central (status: " + status + ")\"}";
+            }
             String challengeStr = challengeNode.path("response").path("challenge").asText();
 
             // 2. Generar MD5 Token (challenge + password)
@@ -79,7 +86,10 @@ public class UcmApiClient {
             // 3. Login
             String login = realizarPeticion("{\"request\":\"login\",\"user\":\"" + apiUser + "\",\"token\":\"" + token + "\"}");
             JsonNode loginNode = objectMapper.readTree(login);
-            if (loginNode.get("status").asInt() != 0) return "{\"error\":\"Fallo login en central\"}";
+            if (loginNode.get("status") == null || loginNode.get("status").asInt() != 0) {
+                log.warn("Fallo login en central UCM. Respuesta: {}", login);
+                return "{\"error\":\"Fallo de autenticación en la central. Verifique que la contraseña sea correcta.\"}";
+            }
             String cookie = loginNode.path("response").path("cookie").asText();
 
             // 4. Pedir CDR del día de hoy filtrado por interno (callee)
@@ -92,7 +102,7 @@ public class UcmApiClient {
             
         } catch (Exception e) {
             log.error("Error al obtener CDR de UCM", e);
-            return "{\"error\": \"No se pudo conectar a la central IP o error procesando datos.\"}";
+            return String.format("{\"error\": \"Error al conectar con la central IP: %s\"}", e.getMessage());
         }
     }
 
@@ -111,6 +121,19 @@ public class UcmApiClient {
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = jsonPayload.getBytes("utf-8");
             os.write(input, 0, input.length);
+        }
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode >= 400) {
+            String errorMsg = "";
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "utf-8"))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) sb.append(line.trim());
+                errorMsg = sb.toString();
+            } catch (Exception ignored) {}
+            log.error("Error HTTP {} de central UCM: {}", responseCode, errorMsg);
+            throw new RuntimeException("HTTP " + responseCode + (errorMsg.isEmpty() ? "" : " - " + errorMsg));
         }
         
         try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
