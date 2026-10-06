@@ -94,6 +94,10 @@
 					<span class="sidebar-icon">AD</span>
 					<span class="sidebar-text">Active Directory</span>
 				</a>
+				<a class="sidebar-link" th:if="${canManageSystem != null ? canManageSystem : true}" th:classappend="${activeModule == 'telefonia-config'} ? ' is-active' : ''" th:href="@{/admin/sistema/telefonia}">
+					<span class="sidebar-icon">CT</span>
+					<span class="sidebar-text">Central Telefónica</span>
+				</a>
 			</div>
 		</nav>
 

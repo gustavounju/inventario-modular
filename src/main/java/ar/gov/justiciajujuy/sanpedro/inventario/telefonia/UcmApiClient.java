@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.TelefoniaConfigurationService;
+import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.TelefoniaRuntimeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,50 +19,75 @@ import javax.net.ssl.X509TrustManager;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.time.LocalDate;
 
 @Service
 public class UcmApiClient {
 
     private static final Logger log = LoggerFactory.getLogger(UcmApiClient.class);
     private final ObjectMapper objectMapper;
-    private final SSLContext sslContext;
+    private final SSLContext sslContextInseguro;
+    private final TelefoniaConfigurationService configurationService;
     private volatile String trackId = null;
-    
+
     @Value("${ucm.url:https://10.15.0.2:8089/api}")
-    private String baseUrl;
-    
+    private String defaultBaseUrl;
+
     @Value("${ucm.user:cdrapi}")
-    private String apiUser;
-    
+    private String defaultApiUser;
+
     @Value("${ucm.password:}")
-    private String apiPassword;
-    
+    private String defaultApiPassword;
+
     @Value("${ucm.interno:1005}")
-    private String internoTaller;
-    
+    private String defaultInternoTaller;
+
     @Value("${ucm.ssl.strict:false}")
-    private boolean sslStrict;
+    private boolean defaultSslStrict;
 
     // Lista en memoria de llamadas recientes recibidas vía Webhook o simulación
     private final java.util.List<ObjectNode> llamadasEnVivo = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    public UcmApiClient() {
-        this.sslContext = crearSslContextInseguro();
+    public UcmApiClient(@Autowired(required = false) TelefoniaConfigurationService configurationService) {
+        this.configurationService = configurationService;
+        this.sslContextInseguro = crearSslContextInseguro();
         this.objectMapper = new ObjectMapper();
+    }
+
+    public UcmApiClient() {
+        this(null);
+    }
+
+    public TelefoniaRuntimeConfig currentConfig() {
+        if (configurationService != null) {
+            return configurationService.current();
+        }
+        return new TelefoniaRuntimeConfig(
+                true,
+                defaultBaseUrl,
+                defaultApiUser,
+                defaultApiPassword,
+                defaultInternoTaller,
+                "10.15.0.2,127.0.0.1,0:0:0:0:0:0:0:1",
+                defaultSslStrict,
+                false);
     }
 
     public void registrarLlamadaEnVivo(String caller, String callerName, String callee, String status) {
         try {
+            TelefoniaRuntimeConfig config = currentConfig();
+            String interno = (config.interno() != null && !config.interno().isBlank()) ? config.interno() : defaultInternoTaller;
+
             String ahora = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             String src = (caller != null && !caller.isBlank()) ? caller : "Desconocido";
-            String dst = (callee != null && !callee.isBlank()) ? callee : internoTaller;
-            
-            boolean esSaliente = (internoTaller != null && internoTaller.equals(src));
+            String dst = (callee != null && !callee.isBlank()) ? callee : interno;
+
+            boolean esSaliente = (interno != null && interno.equals(src));
             String callerDisplay;
             if (esSaliente) {
                 callerDisplay = "↗ Saliente a " + dst;
@@ -119,9 +147,6 @@ public class UcmApiClient {
 
     private SSLContext crearSslContextInseguro() {
         try {
-            if (sslStrict) {
-                return SSLContext.getDefault();
-            }
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     public X509Certificate[] getAcceptedIssuers() { return null; }
@@ -139,9 +164,22 @@ public class UcmApiClient {
 
     public String obtenerHistorialCdr() {
         try {
-            if (apiPassword == null || apiPassword.isBlank()) {
-                return "{\"error\":\"Falta configurar ucm.password para consultar la central IP.\"}";
+            TelefoniaRuntimeConfig config = currentConfig();
+
+            if (!config.enabled()) {
+                log.debug("Consulta de historial CDR omitida: central telefónica deshabilitada.");
+                return armarJsonRespuesta(this.llamadasEnVivo);
             }
+
+            if (config.password() == null || config.password().isBlank()) {
+                return "{\"error\":\"Falta configurar la contraseña de la central IP en Administración -> Central Telefónica.\"}";
+            }
+
+            String url = (config.url() != null && !config.url().isBlank()) ? config.url() : defaultBaseUrl;
+            String user = (config.user() != null && !config.user().isBlank()) ? config.user() : defaultApiUser;
+            String password = config.password();
+            boolean isSslStrict = config.sslStrict();
+            String interno = (config.interno() != null && !config.interno().isBlank()) ? config.interno() : defaultInternoTaller;
 
             // Iniciar sesión limpia
             this.trackId = null;
@@ -149,41 +187,41 @@ public class UcmApiClient {
             // 1. Obtener Challenge (Estructura oficial Grandstream: request -> action)
             ObjectNode challengeReq = objectMapper.createObjectNode();
             challengeReq.put("action", "challenge");
-            challengeReq.put("user", apiUser);
+            challengeReq.put("user", user);
             challengeReq.put("version", "1.0");
             ObjectNode challengePayloadObj = objectMapper.createObjectNode();
             challengePayloadObj.set("request", challengeReq);
             String challengePayload = objectMapper.writeValueAsString(challengePayloadObj);
-            String challengeRes = realizarPeticion(challengePayload);
+            String challengeRes = realizarPeticion(url, challengePayload, isSslStrict);
             JsonNode challengeNode = objectMapper.readTree(challengeRes);
             if (challengeNode.get("status") == null || challengeNode.get("status").asInt() != 0) {
                 log.warn("Fallo al obtener challenge de UCM. Respuesta: {}", challengeRes);
                 int status = challengeNode.path("status").asInt(-99);
                 if (status == -1) {
-                    return "{\"error\":\"La central rechazó la conexión (status: -1). Verifique que en la pestaña 'Configuración de la API (nueva)' esté activada la API y creado el usuario " + apiUser + " con la IP permitida.\"}";
+                    return "{\"error\":\"La central rechazó la conexión (status: -1). Verifique que en la pestaña 'Configuración de la API (nueva)' esté activada la API y creado el usuario " + user + " con la IP permitida.\"}";
                 }
                 return "{\"error\":\"Fallo al obtener challenge de la central (status: " + status + ")\"}";
             }
             String challengeStr = challengeNode.path("response").path("challenge").asText();
 
             // 2. Generar MD5 Token (challenge + password)
-            String token = generarMd5(challengeStr + apiPassword);
+            String token = generarMd5(challengeStr + password);
 
             // 3. Login
             ObjectNode loginReq = objectMapper.createObjectNode();
             loginReq.put("action", "login");
-            loginReq.put("user", apiUser);
+            loginReq.put("user", user);
             loginReq.put("token", token);
             loginReq.put("version", "1.0");
             ObjectNode loginPayloadObj = objectMapper.createObjectNode();
             loginPayloadObj.set("request", loginReq);
             String loginPayload = objectMapper.writeValueAsString(loginPayloadObj);
-            String loginRes = realizarPeticion(loginPayload);
+            String loginRes = realizarPeticion(url, loginPayload, isSslStrict);
             JsonNode loginNode = objectMapper.readTree(loginRes);
             if (loginNode.get("status") == null || loginNode.get("status").asInt() != 0) {
                 log.warn("Fallo login en central UCM. Respuesta: {}", loginRes);
                 int status = loginNode.path("status").asInt(-99);
-                return "{\"error\":\"Fallo de autenticación en la central (status: " + status + "). Verifique que la contraseña de " + apiUser + " sea correcta.\"}";
+                return "{\"error\":\"Fallo de autenticación en la central (status: " + status + "). Verifique que la contraseña de " + user + " sea correcta.\"}";
             }
             String sessionCookie = loginNode.path("response").path("cookie").asText();
 
@@ -195,11 +233,11 @@ public class UcmApiClient {
             ObjectNode cdrPayloadObj = objectMapper.createObjectNode();
             cdrPayloadObj.set("request", cdrReq);
             String cdrPayload = objectMapper.writeValueAsString(cdrPayloadObj);
-            String cdrRaw = realizarPeticion(cdrPayload);
-            
+            String cdrRaw = realizarPeticion(url, cdrPayload, isSslStrict);
+
             // 5. Procesar y estandarizar cdr_root para el visor frontend
-            return procesarCdrRoot(cdrRaw);
-            
+            return procesarCdrRoot(cdrRaw, interno);
+
         } catch (Exception e) {
             log.error("Error al obtener CDR de UCM", e);
             if (!llamadasEnVivo.isEmpty()) {
@@ -209,28 +247,92 @@ public class UcmApiClient {
         }
     }
 
-    private String procesarCdrRoot(String cdrRaw) {
+    public TestResult probarConexion(TelefoniaRuntimeConfig config) {
+        if (!config.enabled()) {
+            return new TestResult(false, "La central telefónica está deshabilitada en el formulario.");
+        }
+        if (config.url() == null || config.url().isBlank()) {
+            return new TestResult(false, "Debe ingresar una URL para la API de la central telefónica.");
+        }
+        if (config.user() == null || config.user().isBlank()) {
+            return new TestResult(false, "Debe ingresar un usuario de API.");
+        }
+        if (config.password() == null || config.password().isBlank()) {
+            return new TestResult(false, "Debe ingresar una contraseña de API para probar la conexión.");
+        }
+
+        try {
+            // 1. Petición de challenge
+            ObjectNode challengeReq = objectMapper.createObjectNode();
+            challengeReq.put("action", "challenge");
+            challengeReq.put("user", config.user().trim());
+            challengeReq.put("version", "1.0");
+            ObjectNode challengePayloadObj = objectMapper.createObjectNode();
+            challengePayloadObj.set("request", challengeReq);
+            String challengePayload = objectMapper.writeValueAsString(challengePayloadObj);
+
+            String challengeRes = realizarPeticion(config.url().trim(), challengePayload, config.sslStrict());
+            JsonNode challengeNode = objectMapper.readTree(challengeRes);
+            int chalStatus = challengeNode.path("status").asInt(-99);
+            if (chalStatus != 0) {
+                if (chalStatus == -1) {
+                    return new TestResult(false, "La central rechazó la conexión (status: -1). Verifique que en la central UCM esté activada la API y permitida la IP de este servidor.");
+                }
+                return new TestResult(false, "Fallo al solicitar challenge a la central (status: " + chalStatus + ").");
+            }
+            String challengeStr = challengeNode.path("response").path("challenge").asText("");
+            if (challengeStr.isBlank()) {
+                return new TestResult(false, "La central respondió al challenge pero no devolvió token de desafío.");
+            }
+
+            // 2. MD5 Token
+            String token = generarMd5(challengeStr + config.password());
+
+            // 3. Login
+            ObjectNode loginReq = objectMapper.createObjectNode();
+            loginReq.put("action", "login");
+            loginReq.put("user", config.user().trim());
+            loginReq.put("token", token);
+            loginReq.put("version", "1.0");
+            ObjectNode loginPayloadObj = objectMapper.createObjectNode();
+            loginPayloadObj.set("request", loginReq);
+            String loginPayload = objectMapper.writeValueAsString(loginPayloadObj);
+
+            String loginRes = realizarPeticion(config.url().trim(), loginPayload, config.sslStrict());
+            JsonNode loginNode = objectMapper.readTree(loginRes);
+            int loginStatus = loginNode.path("status").asInt(-99);
+            if (loginStatus != 0) {
+                return new TestResult(false, "Fallo de autenticación en la central (status: " + loginStatus + "). Verifique usuario y contraseña.");
+            }
+            return new TestResult(true, "Conexión y autenticación con la central UCM exitosa. Sesión establecida correctamente.");
+        } catch (Exception e) {
+            log.warn("Fallo de prueba de conexión a central telefónica: {}", e.getMessage());
+            return new TestResult(false, "No se pudo conectar a la central telefónica: " + e.getMessage());
+        }
+    }
+
+    private String procesarCdrRoot(String cdrRaw, String internoTaller) {
         try {
             JsonNode root = objectMapper.readTree(cdrRaw);
             JsonNode cdrRootArray = root.path("cdr_root");
-            
+
             java.util.List<ObjectNode> todasLasLlamadas = new java.util.ArrayList<>();
-            
+
             // 1. Agregar llamadas recibidas en vivo (memoria)
             todasLasLlamadas.addAll(this.llamadasEnVivo);
-            
+
             // 2. Agregar llamadas del CDR oficial de Grandstream
             if (cdrRootArray.isArray()) {
                 for (JsonNode item : cdrRootArray) {
                     JsonNode dataNode = item.has("main_cdr") ? item.path("main_cdr") : item;
-                    
+
                     String src = dataNode.path("src").asText("");
                     String dst = dataNode.path("dst").asText("");
                     String callerName = dataNode.path("caller_name").asText("");
                     String start = dataNode.path("start").asText("");
                     int billsec = dataNode.path("billsec").asInt(0);
                     String disposition = dataNode.path("disposition").asText("");
-                    
+
                     // Si el main_cdr no tiene disposition, buscar en sub_cdr_1, sub_cdr_2...
                     if (disposition.isBlank()) {
                         for (int i = 1; i <= 5; i++) {
@@ -285,7 +387,7 @@ public class UcmApiClient {
                             callNode.put("start", start);
                             callNode.put("src", src);
                             callNode.put("dst", dst);
-                            
+
                             boolean esSaliente = (internoTaller != null && internoTaller.equals(src));
                             String callerDisplay;
                             if (esSaliente) {
@@ -304,16 +406,16 @@ public class UcmApiClient {
                             callNode.put("caller", callerDisplay);
                             callNode.put("billsec", billsec);
                             callNode.put("disposition", disposition);
-                            
+
                             todasLasLlamadas.add(callNode);
                         }
                     }
                 }
             }
-            
+
             // Ordenar de más reciente a más antigua por fecha/hora
             todasLasLlamadas.sort((a, b) -> b.path("start").asText("").compareTo(a.path("start").asText("")));
-            
+
             // Mostrar hasta 50 llamadas recientes del interno
             java.util.List<ObjectNode> seleccionadas = todasLasLlamadas;
             if (seleccionadas.size() > 50) {
@@ -321,7 +423,7 @@ public class UcmApiClient {
             }
 
             return armarJsonRespuesta(seleccionadas);
-            
+
         } catch (Exception e) {
             log.error("Error procesando cdr_root de Grandstream, retornando respuesta cruda", e);
             return cdrRaw;
@@ -345,14 +447,18 @@ public class UcmApiClient {
         }
     }
 
-    private String realizarPeticion(String jsonPayload) throws Exception {
-        URL url = new URL(baseUrl);
-        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-        conn.setSSLSocketFactory(this.sslContext.getSocketFactory());
-        // Desactivar validación estricta de Hostname SSL si no está en modo estricto
-        if (!sslStrict) {
-            conn.setHostnameVerifier((hostname, session) -> true);
+    private String realizarPeticion(String urlStr, String jsonPayload, boolean isSslStrict) throws Exception {
+        URL url = new URL(urlStr);
+        URLConnection rawConn = url.openConnection();
+        if (rawConn instanceof HttpsURLConnection httpsConn) {
+            if (isSslStrict) {
+                httpsConn.setSSLSocketFactory(SSLContext.getDefault().getSocketFactory());
+            } else {
+                httpsConn.setSSLSocketFactory(this.sslContextInseguro.getSocketFactory());
+                httpsConn.setHostnameVerifier((hostname, session) -> true);
+            }
         }
+        HttpURLConnection conn = (HttpURLConnection) rawConn;
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
 
@@ -361,10 +467,10 @@ public class UcmApiClient {
             conn.setRequestProperty("Cookie", this.trackId + "; CookieName=CookieValue");
         }
 
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
+        conn.setConnectTimeout(8000);
+        conn.setReadTimeout(8000);
         conn.setDoOutput(true);
-        
+
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = jsonPayload.getBytes("utf-8");
             os.write(input, 0, input.length);
@@ -394,7 +500,7 @@ public class UcmApiClient {
             log.error("Error HTTP {} de central UCM: {}", responseCode, errorMsg);
             throw new RuntimeException("HTTP " + responseCode + (errorMsg.isEmpty() ? "" : " - " + errorMsg));
         }
-        
+
         try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
             StringBuilder response = new StringBuilder();
             String responseLine;
@@ -415,5 +521,8 @@ public class UcmApiClient {
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    public record TestResult(boolean ok, String message) {
     }
 }

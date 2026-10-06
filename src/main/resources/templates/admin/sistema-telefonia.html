@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Central Telefónica - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="shell-wide">
+	<section class="status-panel admin-users-panel">
+		<header th:replace="~{admin/nav :: topbar('Configuracion tecnica', 'Central Telefonica', 'telefonia-config')}"></header>
+
+		<div class="success-message" th:if="${success != null}" th:text="${success}">Guardado.</div>
+		<div class="error-message" th:if="${error != null}" th:text="${error}">Error.</div>
+
+		<section class="modules-section system-config-console" aria-labelledby="telefonia-config-title">
+			<div class="section-header">
+				<div>
+					<h2 id="telefonia-config-title">Conexión a Central Telefónica IP (Grandstream UCM)</h2>
+					<p class="section-note">Esta configuración se almacena en la base de datos MySQL. La contraseña de la API se guarda cifrada y no se muestra luego de guardarse.</p>
+				</div>
+				<span class="authorization-badge"
+					  th:classappend="${telefoniaActual.enabled} ? ' is-authorized' : ' is-pending'"
+					  th:text="${telefoniaActual.enabled} ? 'Telefonía Habilitada' : 'Telefonía Deshabilitada'">Telefonía Habilitada</span>
+			</div>
+
+			<div class="runtime-grid">
+				<div>
+					<dt>Origen</dt>
+					<dd th:text="${telefoniaActual.persisted} ? 'Base de datos MySQL' : 'Propiedades de arranque'">MySQL</dd>
+				</div>
+				<div>
+					<dt>URL Servidor UCM</dt>
+					<dd th:text="${telefoniaActual.url}">https://10.15.0.2:8089/api</dd>
+				</div>
+				<div>
+					<dt>Usuario API</dt>
+					<dd th:text="${telefoniaActual.user} ?: 'Sin configurar'">cdrapi</dd>
+				</div>
+				<div>
+					<dt>Contraseña</dt>
+					<dd th:text="${hasSavedPassword} ? 'Guardada cifrada' : 'Sin guardar'">Guardada cifrada</dd>
+				</div>
+				<div>
+					<dt>Interno Monitoreado</dt>
+					<dd th:text="${telefoniaActual.interno} ?: '1005'">1005</dd>
+				</div>
+			</div>
+
+			<form class="user-form system-config-form" th:action="@{/admin/sistema/telefonia}" th:object="${form}" method="post">
+				<label class="toggle-row">
+					<input type="checkbox" th:field="*{enabled}">
+					<span>Habilitar integración con la central telefónica (consultas CDR y llamadas en vivo)</span>
+				</label>
+
+				<div class="form-grid">
+					<label class="wide-field">
+						<span>URL de la API (UCM)</span>
+						<input type="text" th:field="*{url}" placeholder="https://10.15.0.2:8089/api" required>
+					</label>
+					<label>
+						<span>Usuario API</span>
+						<input type="text" th:field="*{user}" placeholder="cdrapi" autocomplete="username" required>
+					</label>
+					<label>
+						<span>Contraseña API</span>
+						<input type="password" id="password" name="password" th:value="*{password}" autocomplete="new-password"
+							   th:placeholder="${hasSavedPassword} ? 'Dejar vacío para conservar la contraseña guardada' : 'Contraseña del usuario API'">
+					</label>
+					<label>
+						<span>Interno del Taller / Guardia</span>
+						<input type="text" th:field="*{interno}" placeholder="1005" required>
+					</label>
+					<label class="wide-field">
+						<span>IPs autorizadas para Webhook (separadas por coma)</span>
+						<input type="text" th:field="*{webhookIps}" placeholder="10.15.0.2, 127.0.0.1, 0:0:0:0:0:0:0:1">
+					</label>
+					<label class="toggle-row wide-field" style="margin-top: 6px;">
+						<input type="checkbox" th:field="*{sslStrict}">
+						<span>Validación estricta SSL (mantener desmarcado si la central usa certificado autofirmado en la intranet)</span>
+					</label>
+				</div>
+
+				<div class="decision-actions">
+					<button class="secondary-action" type="submit" th:formaction="@{/admin/sistema/telefonia/probar}">Probar conexión</button>
+					<button class="primary-action" type="submit" th:formaction="@{/admin/sistema/telefonia}">Guardar configuración</button>
+				</div>
+			</form>
+		</section>
+	</section>
+</body>
+</html>
