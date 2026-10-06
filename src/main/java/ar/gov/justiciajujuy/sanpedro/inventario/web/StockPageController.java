@@ -276,7 +276,7 @@ public class StockPageController {
 					true, // datosCompletos
 					java.util.List.of(), // camposFaltantes
 					impresora.getFuero(), // ubicacion
-					"Conectada a " + conexiones + " equipos", // observaciones
+					(impresora.getFuero() != null ? impresora.getFuero() : "Ubicación desconocida") + " | Conectada a " + conexiones + " equipos", // observaciones
 					impresora.getId(),
 					impresora.getNombre(),
 					impresora.getUltimoUsuario(),
