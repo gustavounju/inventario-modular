@@ -90,6 +90,7 @@ public class MainActivity extends Activity {
         settings.setOnClickListener(v -> settings());
         alerts.setOnCheckedChangeListener((button, checked) -> {
             if (updatingSwitch) return;
+            getSharedPreferences("LanApp", MODE_PRIVATE).edit().putBoolean("avisos_enabled", checked).apply();
             if (checked) enableAlerts(); else stopService(new Intent(this, AvisosService.class));
         });
         web = new WebView(this);
@@ -128,6 +129,7 @@ public class MainActivity extends Activity {
                 if ("/movil/login".equals(path) || "/login".equals(path) || "/".equals(path)
                         || (path != null && path.startsWith("/admin"))) {
                     stopService(new Intent(MainActivity.this, AvisosService.class));
+                    getSharedPreferences("LanApp", MODE_PRIVATE).edit().putBoolean("avisos_enabled", false).apply();
                     setAlerts(false);
                     if ("/".equals(path) || "/login".equals(path)) web.loadUrl(base + "/movil/login");
                     else if (path.startsWith("/admin")) web.loadUrl(base + "/movil/tareas");
@@ -148,7 +150,14 @@ public class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
-        if (alerts != null) setAlerts(AvisosService.running);
+        if (alerts != null) {
+            boolean enabled = getSharedPreferences("LanApp", MODE_PRIVATE).getBoolean("avisos_enabled", false);
+            if (enabled && !AvisosService.running) {
+                enableAlerts();
+            } else {
+                setAlerts(AvisosService.running);
+            }
+        }
     }
 
     private void setAlerts(boolean enabled) {
