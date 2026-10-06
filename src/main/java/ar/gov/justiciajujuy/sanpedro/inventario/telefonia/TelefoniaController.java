@@ -16,6 +16,9 @@ public class TelefoniaController {
     private final TelefoniaEventService eventService;
     private final UcmApiClient ucmApiClient;
 
+    @org.springframework.beans.factory.annotation.Value("${ucm.webhook.ips:10.15.0.2,127.0.0.1,0:0:0:0:0:0:0:1}")
+    private java.util.List<String> allowedIps;
+
     public TelefoniaController(TelefoniaEventService eventService, UcmApiClient ucmApiClient) {
         this.eventService = eventService;
         this.ucmApiClient = ucmApiClient;
@@ -34,8 +37,8 @@ public class TelefoniaController {
         
         String clientIp = request.getRemoteAddr();
         
-        // Validación de IP permitida
-        if (!"10.15.0.2".equals(clientIp) && !"127.0.0.1".equals(clientIp) && !"0:0:0:0:0:0:0:1".equals(clientIp)) {
+        // Validación de IP permitida desde configuración
+        if (allowedIps != null && !allowedIps.contains(clientIp)) {
             log.warn("Intento de webhook desde IP no autorizada: {}", clientIp);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("IP no autorizada");
         }
@@ -85,8 +88,8 @@ public class TelefoniaController {
             .body(ucmApiClient.obtenerHistorialCdr());
     }
 
-    // 4. Endpoint directo para simular llamadas desde PuTTY o pruebas
-    @RequestMapping(value = "/simular", method = {RequestMethod.GET, RequestMethod.POST})
+    // 4. Endpoint directo para simular llamadas desde PuTTY o pruebas (Cambiado a POST por seguridad)
+    @PostMapping(value = "/simular")
     public ResponseEntity<String> simularLlamada(
             @RequestParam(required = false, defaultValue = "1002") String caller,
             @RequestParam(required = false, defaultValue = "Mesa de Entradas") String callerName,

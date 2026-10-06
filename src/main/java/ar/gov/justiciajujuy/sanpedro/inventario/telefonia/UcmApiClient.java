@@ -41,6 +41,9 @@ public class UcmApiClient {
     
     @Value("${ucm.interno:1005}")
     private String internoTaller;
+    
+    @Value("${ucm.ssl.strict:false}")
+    private boolean sslStrict;
 
     // Lista en memoria de llamadas recientes recibidas vía Webhook o simulación
     private final java.util.List<ObjectNode> llamadasEnVivo = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -116,6 +119,9 @@ public class UcmApiClient {
 
     private SSLContext crearSslContextInseguro() {
         try {
+            if (sslStrict) {
+                return SSLContext.getDefault();
+            }
             TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     public X509Certificate[] getAcceptedIssuers() { return null; }
@@ -141,7 +147,13 @@ public class UcmApiClient {
             this.trackId = null;
 
             // 1. Obtener Challenge (Estructura oficial Grandstream: request -> action)
-            String challengePayload = String.format("{\"request\":{\"action\":\"challenge\",\"user\":\"%s\",\"version\":\"1.0\"}}", apiUser);
+            ObjectNode challengeReq = objectMapper.createObjectNode();
+            challengeReq.put("action", "challenge");
+            challengeReq.put("user", apiUser);
+            challengeReq.put("version", "1.0");
+            ObjectNode challengePayloadObj = objectMapper.createObjectNode();
+            challengePayloadObj.set("request", challengeReq);
+            String challengePayload = objectMapper.writeValueAsString(challengePayloadObj);
             String challengeRes = realizarPeticion(challengePayload);
             JsonNode challengeNode = objectMapper.readTree(challengeRes);
             if (challengeNode.get("status") == null || challengeNode.get("status").asInt() != 0) {
@@ -158,7 +170,14 @@ public class UcmApiClient {
             String token = generarMd5(challengeStr + apiPassword);
 
             // 3. Login
-            String loginPayload = String.format("{\"request\":{\"action\":\"login\",\"user\":\"%s\",\"token\":\"%s\",\"version\":\"1.0\"}}", apiUser, token);
+            ObjectNode loginReq = objectMapper.createObjectNode();
+            loginReq.put("action", "login");
+            loginReq.put("user", apiUser);
+            loginReq.put("token", token);
+            loginReq.put("version", "1.0");
+            ObjectNode loginPayloadObj = objectMapper.createObjectNode();
+            loginPayloadObj.set("request", loginReq);
+            String loginPayload = objectMapper.writeValueAsString(loginPayloadObj);
             String loginRes = realizarPeticion(loginPayload);
             JsonNode loginNode = objectMapper.readTree(loginRes);
             if (loginNode.get("status") == null || loginNode.get("status").asInt() != 0) {
@@ -169,10 +188,13 @@ public class UcmApiClient {
             String sessionCookie = loginNode.path("response").path("cookie").asText();
 
             // 4. Pedir CDR (action cdrapi oficial)
-            String cdrPayload = String.format(
-                "{\"request\":{\"action\":\"cdrapi\",\"cookie\":\"%s\",\"format\":\"json\"}}",
-                sessionCookie
-            );
+            ObjectNode cdrReq = objectMapper.createObjectNode();
+            cdrReq.put("action", "cdrapi");
+            cdrReq.put("cookie", sessionCookie);
+            cdrReq.put("format", "json");
+            ObjectNode cdrPayloadObj = objectMapper.createObjectNode();
+            cdrPayloadObj.set("request", cdrReq);
+            String cdrPayload = objectMapper.writeValueAsString(cdrPayloadObj);
             String cdrRaw = realizarPeticion(cdrPayload);
             
             // 5. Procesar y estandarizar cdr_root para el visor frontend
@@ -327,8 +349,10 @@ public class UcmApiClient {
         URL url = new URL(baseUrl);
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setSSLSocketFactory(this.sslContext.getSocketFactory());
-        // Desactivar validación estricta de Hostname SSL
-        conn.setHostnameVerifier((hostname, session) -> true);
+        // Desactivar validación estricta de Hostname SSL si no está en modo estricto
+        if (!sslStrict) {
+            conn.setHostnameVerifier((hostname, session) -> true);
+        }
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
 
