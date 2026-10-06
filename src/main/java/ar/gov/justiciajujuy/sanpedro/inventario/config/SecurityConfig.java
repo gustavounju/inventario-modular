@@ -105,6 +105,11 @@ public class SecurityConfig {
 				})
 				.permitAll()
 			)
+			.rememberMe(remember -> remember
+				.key("InventarioModularSecretKey123!")
+				.alwaysRemember(true)
+				.tokenValiditySeconds(86400 * 30) // 30 dias de persistencia
+			)
 			.logout(logout -> logout
 				.logoutSuccessUrl("/")
 				.permitAll()
