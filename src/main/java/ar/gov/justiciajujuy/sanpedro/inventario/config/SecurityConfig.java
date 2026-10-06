@@ -77,7 +77,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers(
 					"/", "/login", "/setup", "/movil/login", "/logout",
-					"/css/**", "/js/**", "/images/**", "/scripts/**", "/webjars/**", "/favicon.ico"
+					"/css/**", "/js/**", "/images/**", "/scripts/**", "/webjars/**", "/favicon.ico", "/app/**"
 				).permitAll()
 				// El visor de tareas es de solo lectura y publico a proposito para monitores/pantallas en guardia o taller sin requerir inicio de sesion.
 				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor").permitAll()

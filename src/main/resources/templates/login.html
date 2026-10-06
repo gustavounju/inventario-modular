@@ -46,6 +46,12 @@
 				<button class="primary-action" type="submit">Ingresar</button>
 			</form>
 
+			<div style="margin-top: 1rem; text-align: center;">
+				<a th:href="@{/app/inventario-modular.apk}" class="secondary-action" style="display: block; text-decoration: none; text-align: center;" download>
+					Descargar APK Android
+				</a>
+			</div>
+
 			<!-- Copia rápida del script PowerShell de inventario: se oculta visualmente el área de código para mayor limpieza estética, manteniendo intacto el botón y su funcionalidad -->
 			<section class="script-copy-panel" aria-labelledby="script-copy-title"
 				th:data-report-token="${reportToken}">
