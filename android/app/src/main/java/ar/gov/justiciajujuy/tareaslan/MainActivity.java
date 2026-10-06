@@ -129,10 +129,13 @@ public class MainActivity extends Activity {
                 if ("/movil/login".equals(path) || "/login".equals(path) || "/".equals(path)
                         || (path != null && path.startsWith("/admin"))) {
                     stopService(new Intent(MainActivity.this, AvisosService.class));
-                    getSharedPreferences("LanApp", MODE_PRIVATE).edit().putBoolean("avisos_enabled", false).apply();
                     setAlerts(false);
                     if ("/".equals(path) || "/login".equals(path)) web.loadUrl(base + "/movil/login");
                     else if (path.startsWith("/admin")) web.loadUrl(base + "/movil/tareas");
+                } else if ("/movil/tareas".equals(path)) {
+                    if (getSharedPreferences("LanApp", MODE_PRIVATE).getBoolean("avisos_enabled", false) && !AvisosService.running) {
+                        enableAlerts();
+                    }
                 }
             }
         });
