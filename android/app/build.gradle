@@ -60,6 +60,8 @@ android {
             buildConfigField 'boolean', 'ALLOW_CLEARTEXT', 'true'
             if (hasReleaseSigning) {
                 signingConfig signingConfigs.releaseInstitutional
+            } else {
+                signingConfig signingConfigs.debug
             }
         }
     }
