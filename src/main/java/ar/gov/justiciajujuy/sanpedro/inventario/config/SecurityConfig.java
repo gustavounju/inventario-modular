@@ -132,4 +132,21 @@ public class SecurityConfig {
 		return new LdapTemplate(contextSource);
 	}
 
+	@Bean
+	org.springframework.security.core.userdetails.UserDetailsService userDetailsService(
+			ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioSistemaRepository usuarioRepository) {
+		return username -> {
+			ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioSistema usuario = usuarioRepository.findByUsernameIgnoreCase(username)
+					.orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("Usuario no encontrado"));
+			return new ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails(
+					usuario.getUsername(),
+					"{noop}", 
+					java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER")),
+					usuario.getNombreVisible(),
+					usuario.getFuero(),
+					java.util.Map.of("modo", java.util.List.of("PERSISTENT_COOKIE"))
+			);
+		};
+	}
+
 }
