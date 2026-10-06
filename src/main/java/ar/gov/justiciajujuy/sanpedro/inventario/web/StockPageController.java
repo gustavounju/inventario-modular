@@ -253,28 +253,36 @@ public class StockPageController {
 			))
 			.forEach(componentesTotales::add);
 			
-		// Add virtual components for network printers assigned to equipments
-		equipoRepository.findAll().stream()
-			.filter(e -> e.getImpresoraRedAsignada() != null)
-			.map(e -> new StockComponenteDetalle(
+		var todosLosEquipos = equipoRepository.findAll();
+		
+		// Add virtual components for network printers (one entry per printer, showing connection count)
+		todosLosEquipos.stream()
+			.filter(e -> "Impresora de Red".equals(e.getSistemaOperativo()))
+			.map(impresora -> {
+				long conexiones = todosLosEquipos.stream()
+					.filter(e -> e.getImpresoraRedAsignada() != null && e.getImpresoraRedAsignada().getId().equals(impresora.getId()))
+					.count();
+					
+				return new StockComponenteDetalle(
 					null, // Virtual, no physical ID
 					ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente.IMPRESORA,
-					EstadoStockComponente.ASIGNADO,
-					"Impresora de red vinculada",
+					conexiones > 0 ? EstadoStockComponente.ASIGNADO : EstadoStockComponente.DISPONIBLE,
+					"🖨️ Impresora en Red",
 					null,
-					e.getImpresoraRedAsignada().getNombre(),
-					e.getImpresoraRedAsignada().getIp(),
+					impresora.getNombre(),
+					impresora.getIp() != null ? "IP: " + impresora.getIp() : null,
 					null, null, null, null,
-					"Sistema",
-					true,
-					java.util.List.of(),
-					e.getImpresoraRedAsignada().getFuero(),
-					"Impresora de red vinculada al puesto",
-					e.getId(),
-					e.getNombre(),
-					e.getUltimoUsuario(),
-					e.isActivo()
-			))
+					"Sistema", // ingresadoPor
+					true, // datosCompletos
+					java.util.List.of(), // camposFaltantes
+					impresora.getFuero(), // ubicacion
+					"Conectada a " + conexiones + " equipos", // observaciones
+					impresora.getId(),
+					impresora.getNombre(),
+					impresora.getUltimoUsuario(),
+					impresora.isActivo()
+				);
+			})
 			.forEach(componentesTotales::add);
 		
 		var componentesPendientes = componentesTotales.stream().filter(c -> !c.datosCompletos()).toList();
