@@ -99,6 +99,14 @@ public class UsuarioSistema {
 		this.activo = activo;
 	}
 
+	public void setFuero(String fuero) {
+		this.fuero = fuero;
+	}
+
+	public void setNombreVisible(String nombreVisible) {
+		this.nombreVisible = nombreVisible;
+	}
+
 	public void agregarRol(Rol rol) {
 		roles.add(rol);
 	}

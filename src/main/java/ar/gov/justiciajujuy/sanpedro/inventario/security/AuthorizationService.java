@@ -113,11 +113,20 @@ public class AuthorizationService {
 	}
 
 	private String fuero(UserDetails userDetails, UsuarioSistema usuarioSistema) {
-		if (usuarioSistema != null) {
+		if (userDetails instanceof ActiveDirectoryUserDetails activeDirectoryUser
+				&& org.springframework.util.StringUtils.hasText(activeDirectoryUser.getFuero())
+				&& !"Sin fuero informado".equalsIgnoreCase(activeDirectoryUser.getFuero())) {
+			return activeDirectoryUser.getFuero();
+		}
+		if (usuarioSistema != null && org.springframework.util.StringUtils.hasText(usuarioSistema.getFuero())
+				&& !"Sin fuero informado".equalsIgnoreCase(usuarioSistema.getFuero())) {
 			return usuarioSistema.getFuero();
 		}
 		if (userDetails instanceof ActiveDirectoryUserDetails activeDirectoryUser) {
 			return activeDirectoryUser.getFuero();
+		}
+		if (usuarioSistema != null) {
+			return usuarioSistema.getFuero();
 		}
 		return "Sin fuero informado";
 	}

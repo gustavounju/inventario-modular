@@ -213,8 +213,77 @@ class ActiveDirectoryDomainServiceTests {
 		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(new ActiveDirectoryProperties(), (LdapOperations) null);
 
 		String dn = "CN=PC-01,OU=EQUIPOS,OU=PODJUDSP,DC=podjudsp,DC=local";
-		String fuero = service.parsearFueroDesdeDn(dn);
+		String fuero = ActiveDirectoryDomainService.parsearFueroDesdeDn(dn);
 
 		assertThat(fuero).isNull();
 	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void mapeaUsuariosDeduciendoFueroDesdeDistinguishedNameCuandoDepartmentEstaVacio() throws Exception {
+		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
+		properties.setEnabled(true);
+		properties.setUserSearchBase("OU=USUARIOS,OU=PODJUDSP");
+		properties.setUserSearchFilter("(objectClass=user)");
+		LdapOperations ldapOperations = mock(LdapOperations.class);
+		BasicAttributes attributes = new BasicAttributes();
+		attributes.put(new BasicAttribute("sAMAccountName", "iconde"));
+		attributes.put(new BasicAttribute("displayName", "Ines Conde"));
+		attributes.put(new BasicAttribute("distinguishedName",
+				"CN=Ines Conde,OU=Vocalia 7,OU=Sala III,OU=Tribunal de Familias,OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"));
+
+		when(ldapOperations.search(
+				eq("OU=USUARIOS,OU=PODJUDSP"),
+				any(String.class),
+				any(SearchControls.class),
+				any(AttributesMapper.class)))
+			.thenAnswer(invocation -> List.of(
+					((AttributesMapper<ActiveDirectoryDomainService.UsuarioDominio>) invocation.getArgument(3))
+							.mapFromAttributes(attributes)));
+
+		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
+
+		ActiveDirectoryDomainService.DominioUsuarios resultado = service.buscarUsuarios("conde");
+
+		assertThat(resultado.disponible()).isTrue();
+		assertThat(resultado.usuarios()).containsExactly(
+				new ActiveDirectoryDomainService.UsuarioDominio("iconde", "Ines Conde",
+						"Tribunal de Familias - Sala III - Vocalia 7"));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void obtieneFueroDeUsuarioYLoCachea() throws Exception {
+		ActiveDirectoryProperties properties = new ActiveDirectoryProperties();
+		properties.setEnabled(true);
+		properties.setUserSearchBase("OU=USUARIOS,OU=PODJUDSP");
+		properties.setUserSearchFilter("(objectClass=user)");
+		LdapOperations ldapOperations = mock(LdapOperations.class);
+		BasicAttributes attributes = new BasicAttributes();
+		attributes.put(new BasicAttribute("sAMAccountName", "gmurad"));
+		attributes.put(new BasicAttribute("displayName", "Gustavo Murad"));
+		attributes.put(new BasicAttribute("distinguishedName",
+				"CN=Gustavo Murad,OU=Sistemas,OU=USUARIOS,OU=PODJUDSP,DC=podjudsp,DC=local"));
+
+		when(ldapOperations.search(
+				eq("OU=USUARIOS,OU=PODJUDSP"),
+				any(String.class),
+				any(SearchControls.class),
+				any(AttributesMapper.class)))
+			.thenAnswer(invocation -> List.of(
+					((AttributesMapper<ActiveDirectoryDomainService.UsuarioDominio>) invocation.getArgument(3))
+							.mapFromAttributes(attributes)));
+
+		ActiveDirectoryDomainService service = new ActiveDirectoryDomainService(properties, ldapOperations);
+
+		String fuero = service.obtenerFueroDeUsuario("gmurad");
+		assertThat(fuero).isEqualTo("Sistemas");
+
+		// Segunda llamada debe salir de cache sin consultar de nuevo LDAP
+		String fueroCacheado = service.obtenerFueroDeUsuario("gmurad");
+		assertThat(fueroCacheado).isEqualTo("Sistemas");
+		verify(ldapOperations, org.mockito.Mockito.times(1)).search(any(String.class), any(String.class),
+				any(SearchControls.class), any(AttributesMapper.class));
+	}
 }
+

@@ -137,6 +137,12 @@ public class UsuarioManagementService {
 						StringUtils.hasText(fuero) ? fuero.trim() : "Sin fuero informado",
 						OrigenIdentidad.AD));
 		usuario.setActivo(true);
+		if (StringUtils.hasText(fuero) && !"Sin fuero informado".equalsIgnoreCase(fuero)) {
+			usuario.setFuero(fuero.trim());
+		}
+		if (StringUtils.hasText(nombreVisible)) {
+			usuario.setNombreVisible(nombreVisible.trim());
+		}
 		usuario.reemplazarRoles(rolAdministrador);
 		return toResumen(usuarioSistemaRepository.save(usuario));
 	}

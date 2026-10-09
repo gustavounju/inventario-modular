@@ -46,8 +46,29 @@ public class ActiveDirectoryUserDetailsContextMapper implements UserDetailsConte
 				String username,
 				Collection<? extends GrantedAuthority> authorities) {
 		String displayName = firstText(ctx, properties.getDisplayNameAttribute(), username);
-		String fuero = firstText(ctx, properties.getFueroAttribute(), "Sin fuero informado");
+		String fuero = resolverFuero(ctx);
 		return new ActiveDirectoryUserDetails(username, "", authorities, displayName, fuero, readableAttributes(ctx));
+	}
+
+	private String resolverFuero(DirContextOperations ctx) {
+		String fuero = firstText(ctx, properties.getFueroAttribute(), null);
+		if (StringUtils.hasText(fuero)) {
+			return fuero;
+		}
+		String dn = ctx.getNameInNamespace();
+		String fueroDn = ActiveDirectoryDomainService.parsearFueroDesdeDn(dn);
+		if (StringUtils.hasText(fueroDn)) {
+			return fueroDn;
+		}
+		String office = firstText(ctx, "physicalDeliveryOfficeName", null);
+		if (StringUtils.hasText(office)) {
+			return office;
+		}
+		String desc = firstText(ctx, "description", null);
+		if (StringUtils.hasText(desc)) {
+			return desc;
+		}
+		return "Sin fuero informado";
 	}
 
 	@Override

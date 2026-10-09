@@ -98,7 +98,10 @@ public class ActiveDirectoryDomainService {
 					"sAMAccountName",
 					"userPrincipalName",
 					displayNameAttribute,
-					config.fueroAttribute()
+					config.fueroAttribute(),
+					"distinguishedName",
+					"description",
+					"physicalDeliveryOfficeName"
 			});
 
 			List<UsuarioDominio> usuarios = operations.search(
@@ -147,7 +150,10 @@ public class ActiveDirectoryDomainService {
 					"sAMAccountName",
 					"userPrincipalName",
 					displayNameAttribute,
-					config.fueroAttribute()
+					config.fueroAttribute(),
+					"distinguishedName",
+					"description",
+					"physicalDeliveryOfficeName"
 			});
 
 			List<UsuarioDominio> usuarios = operations.search(
@@ -202,6 +208,68 @@ public class ActiveDirectoryDomainService {
 	private static final java.util.Set<String> OUS_IGNORADAS = java.util.Set.of(
 			"EQUIPOS", "USUARIOS", "PODJUDSP", "COMPUTERS", "DOMAIN CONTROLLERS", "SYSTEM", "BUILTIN"
 	);
+
+	private final java.util.concurrent.ConcurrentMap<String, String> fueroUsuarioCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+	public String obtenerFueroDeUsuario(String username) {
+		if (!StringUtils.hasText(username)) {
+			return null;
+		}
+		String clean = username.trim().toLowerCase();
+		int slash = clean.indexOf('\\');
+		if (slash >= 0 && slash + 1 < clean.length()) {
+			clean = clean.substring(slash + 1);
+		}
+		int at = clean.indexOf('@');
+		if (at > 0) {
+			clean = clean.substring(0, at);
+		}
+		if (fueroUsuarioCache.containsKey(clean)) {
+			return fueroUsuarioCache.get(clean);
+		}
+
+		LdapRuntimeConfig config = currentConfig();
+		LdapOperations operations = currentOperations(config);
+		if (!config.enabled() || operations == null) {
+			return null;
+		}
+		if (StringUtils.hasText(config.readOnlyUserDn())
+				&& !StringUtils.hasText(config.readOnlyPassword())) {
+			return null;
+		}
+		try {
+			String displayNameAttribute = safeAttributeName(config.displayNameAttribute(), "displayName");
+			SearchControls controls = new SearchControls();
+			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+			controls.setCountLimit(1);
+			controls.setReturningAttributes(new String[] {
+					"sAMAccountName",
+					"userPrincipalName",
+					displayNameAttribute,
+					config.fueroAttribute(),
+					"distinguishedName",
+					"description",
+					"physicalDeliveryOfficeName"
+			});
+			List<UsuarioDominio> results = operations.search(
+					config.userSearchBase(),
+					buildExactUserFilter(clean, config),
+					controls,
+					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config));
+			if (results.isEmpty()) {
+				return null;
+			}
+			String fuero = results.get(0).fuero();
+			if (StringUtils.hasText(fuero) && !"Sin fuero informado".equalsIgnoreCase(fuero)) {
+				fueroUsuarioCache.put(clean, fuero);
+				return fuero;
+			}
+			return null;
+		} catch (RuntimeException exception) {
+			LOGGER.warn("No se pudo consultar fuero de usuario {} en Active Directory: {}", username, exception.getMessage());
+			return null;
+		}
+	}
 
 	/**
 	 * Obtiene todas las Unidades Organizativas (OUs) de Active Directory que representan fueros, juzgados y áreas.
@@ -273,7 +341,7 @@ public class ActiveDirectoryDomainService {
 	/**
 	 * Extrae las OUs de un distinguishedName en orden jerárquico general -> específico, ignorando contenedores genéricos.
 	 */
-	public String parsearFueroDesdeDn(String dn) {
+	public static String parsearFueroDesdeDn(String dn) {
 		if (!StringUtils.hasText(dn)) {
 			return null;
 		}
@@ -358,8 +426,31 @@ public class ActiveDirectoryDomainService {
 			username = firstText(attributes, "userPrincipalName", "");
 		}
 		String nombreVisible = firstText(attributes, config.displayNameAttribute(), username);
-		String fuero = firstText(attributes, config.fueroAttribute(), "Sin fuero informado");
+		String fuero = resolverFuero(attributes, config);
 		return new UsuarioDominio(username, nombreVisible, fuero);
+	}
+
+	private String resolverFuero(Attributes attributes, LdapRuntimeConfig config) throws NamingException {
+		String fueroConfigurado = firstText(attributes, config.fueroAttribute(), null);
+		if (StringUtils.hasText(fueroConfigurado)) {
+			return fueroConfigurado;
+		}
+		String dn = firstText(attributes, "distinguishedName", null);
+		if (StringUtils.hasText(dn)) {
+			String fueroDn = parsearFueroDesdeDn(dn);
+			if (StringUtils.hasText(fueroDn)) {
+				return fueroDn;
+			}
+		}
+		String office = firstText(attributes, "physicalDeliveryOfficeName", null);
+		if (StringUtils.hasText(office)) {
+			return office;
+		}
+		String desc = firstText(attributes, "description", null);
+		if (StringUtils.hasText(desc)) {
+			return desc;
+		}
+		return "Sin fuero informado";
 	}
 
 	private LdapRuntimeConfig currentConfig() {

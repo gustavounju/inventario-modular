@@ -134,7 +134,7 @@
     function applicantLabel(user) {
         const name = user.nombreVisible || user.username || '';
         const username = user.username ? ' (' + user.username + ')' : '';
-        const fuero = user.fuero ? ' - ' + user.fuero : '';
+        const fuero = user.fuero && user.fuero !== 'Sin fuero informado' ? ' - ' + user.fuero : '';
         return name + username + fuero;
     }
     function rememberApplicant(user) {
@@ -152,7 +152,10 @@
         const form = $('task-form');
         form.elements.solicitanteUsername.value = (user.username || label || '').trim().slice(0, 120);
         form.elements.solicitanteNombre.value = (user.nombreVisible || label || user.username || '').trim().slice(0, 180);
-        form.elements.solicitanteFuero.value = (user.fuero || session.usuario.fuero || 'Sin fuero informado').trim().slice(0, 120);
+        const fueroVal = (user.fuero && user.fuero !== 'Sin fuero informado')
+            ? user.fuero
+            : (session.usuario.fuero && session.usuario.fuero !== 'Sin fuero informado' ? session.usuario.fuero : 'Sin fuero informado');
+        form.elements.solicitanteFuero.value = fueroVal.trim().slice(0, 120);
         $('solicitante-search').value = label || applicantLabel(user);
         hideApplicantDropdown();
     }
@@ -236,7 +239,7 @@
 
                     const metaSpan = document.createElement('span');
                     metaSpan.className = 'autocomplete-item-meta';
-                    const fueroText = user.fuero ? ' · ' + user.fuero : '';
+                    const fueroText = user.fuero && user.fuero !== 'Sin fuero informado' ? ' · ' + user.fuero : '';
                     metaSpan.textContent = (user.username || '') + fueroText;
 
                     item.append(nameSpan, metaSpan);

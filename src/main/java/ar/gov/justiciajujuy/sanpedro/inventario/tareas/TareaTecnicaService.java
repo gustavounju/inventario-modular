@@ -113,6 +113,13 @@ public class TareaTecnicaService {
 	public TareaTecnicaDetalle crear(GuardarTareaTecnicaCommand command) {
 		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
 		validarSolicitanteEnAd(solicitanteUsername);
+		String solicitanteFuero = command.solicitanteFuero();
+		if (!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero)) {
+			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(solicitanteUsername);
+			if (StringUtils.hasText(fueroAd)) {
+				solicitanteFuero = fueroAd;
+			}
+		}
 		TareaTecnica tarea = new TareaTecnica(textoRequerido(command.titulo(), "titulo"));
 		tarea.actualizarDatos(
 				buscarEquipoParaTarea(command.equipoId()),
@@ -120,7 +127,7 @@ public class TareaTecnicaService {
 				textoOpcional(command.descripcion()),
 				solicitanteUsername,
 				textoRequerido(command.solicitanteNombre(), "solicitanteNombre"),
-				textoRequerido(command.solicitanteFuero(), "solicitanteFuero"),
+				textoRequerido(solicitanteFuero, "solicitanteFuero"),
 				command.prioridad() == null ? PrioridadTareaTecnica.MEDIA : command.prioridad(),
 				textoOpcional(command.responsable()));
 		tarea.marcarCreadoPor(textoOpcional(command.creadoPor()));
@@ -334,6 +341,14 @@ public class TareaTecnicaService {
 
 	private TareaTecnicaDetalle toDetalle(TareaTecnica tarea) {
 		Equipo equipo = tarea.getEquipo();
+		String solicitanteFuero = tarea.getSolicitanteFuero();
+		if ((!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero))
+				&& StringUtils.hasText(tarea.getSolicitanteUsername())) {
+			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(tarea.getSolicitanteUsername());
+			if (StringUtils.hasText(fueroAd)) {
+				solicitanteFuero = fueroAd;
+			}
+		}
 		return new TareaTecnicaDetalle(
 				tarea.getId(),
 				equipo == null ? null : equipo.getId(),
@@ -342,7 +357,7 @@ public class TareaTecnicaService {
 				tarea.getDescripcion(),
 				tarea.getSolicitanteUsername(),
 				tarea.getSolicitanteNombre(),
-				tarea.getSolicitanteFuero(),
+				solicitanteFuero,
 				tarea.getEstado(),
 				tarea.getPrioridad(),
 				tarea.getResponsable(),
