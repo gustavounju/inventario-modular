@@ -116,8 +116,36 @@ dt { color: #526a78; } dd { margin: 0; overflow-wrap: anywhere; }
     .apk-install-panel { align-items: stretch; flex-direction: column; }
     .apk-install-link { width: 100%; }
     .filters button { padding-inline: 10px; font-size: 12px; }
-    .task-row { padding-block: 11px; }
     .two-columns { grid-template-columns: 1fr; }
     .quick-actions { grid-template-columns: 1fr; }
     .quick-scan-header { align-items: stretch; flex-direction: column; }
 }
+
+.autocomplete-wrapper { position: relative; width: 100%; }
+.autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    right: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #006f99;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 71, 96, 0.2);
+    z-index: 1000;
+}
+.autocomplete-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eef7fb;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #fff;
+    text-align: left;
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover, .autocomplete-item:active { background: #e5f1fa; }
+.autocomplete-item-name { font-weight: 700; font-size: 13px; color: #014760; }
+.autocomplete-item-meta { font-size: 11px; color: #526a78; }

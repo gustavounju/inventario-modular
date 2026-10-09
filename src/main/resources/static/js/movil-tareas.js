@@ -49,7 +49,8 @@
         if (!response.ok) {
             const errors = { 403: 'No tiene permiso para esta operacion o la sesion cambio. Vuelva a ingresar.',
                 404: 'La tarea ya no existe.', 409: 'La tarea ya fue tomada o esta finalizada. Actualice la lista.',
-                400: 'Revise los campos obligatorios y su longitud.' };
+                400: 'Revise los campos obligatorios y su longitud.',
+                422: 'El usuario solicitante no existe en Active Directory. Seleccione un usuario de la lista de sugerencias.' };
             let detail = '';
             try {
                 const body = await response.json();
@@ -143,12 +144,17 @@
         if (user.nombreVisible) applicantOptions.set(user.nombreVisible.toLocaleLowerCase(), user);
         return label;
     }
+    function hideApplicantDropdown() {
+        const dd = $('solicitante-dropdown');
+        if (dd) dd.hidden = true;
+    }
     function setApplicant(user, label) {
         const form = $('task-form');
         form.elements.solicitanteUsername.value = (user.username || label || '').trim().slice(0, 120);
         form.elements.solicitanteNombre.value = (user.nombreVisible || label || user.username || '').trim().slice(0, 180);
         form.elements.solicitanteFuero.value = (user.fuero || session.usuario.fuero || 'Sin fuero informado').trim().slice(0, 120);
         $('solicitante-search').value = label || applicantLabel(user);
+        hideApplicantDropdown();
     }
     function assigneeLabel(user) {
         const name = user.nombreVisible || user.username || '';
@@ -189,40 +195,69 @@
     }
     function syncApplicantFromInput() {
         const input = $('solicitante-search').value.trim();
+        if (!input) return false;
         const match = applicantOptions.get(input.toLocaleLowerCase());
         if (match) {
             setApplicant(match, applicantLabel(match));
-            $('solicitante-help').textContent = 'Solicitante seleccionado desde Active Directory.';
+            $('solicitante-help').textContent = 'Solicitante: ' + (match.nombreVisible || match.username);
             return true;
         }
-        if (!input) return false;
+        const form = $('task-form');
+        if (form.elements.solicitanteUsername.value && form.elements.solicitanteNombre.value) {
+            return true;
+        }
         setApplicant({ username: input, nombreVisible: input, fuero: session.usuario.fuero || 'Sin fuero informado' }, input);
         $('solicitante-help').textContent = 'Solicitante cargado manualmente.';
         return true;
     }
     async function searchApplicants(query) {
-        const options = $('solicitante-options');
+        const dropdown = $('solicitante-dropdown');
+        if (!dropdown) return;
         if (query.length < 2) {
-            options.replaceChildren();
-            $('solicitante-help').textContent = 'Escriba al menos 2 letras para buscar en AD, o cargue el nombre manualmente.';
+            dropdown.replaceChildren();
+            dropdown.hidden = true;
+            $('solicitante-help').textContent = 'Escriba al menos 2 letras para buscar en Active Directory.';
             return;
         }
         try {
             const result = await request('api/v1/movil/usuarios-dominio?q=' + encodeURIComponent(query));
-            options.replaceChildren();
+            dropdown.replaceChildren();
             applicantOptions.clear();
-            for (const user of result.usuarios || []) {
-                const option = document.createElement('option');
-                option.value = rememberApplicant(user);
-                options.append(option);
-            }
-            if (result.disponible && result.usuarios?.length) {
-                $('solicitante-help').textContent = result.usuarios.length + ' coincidencias de AD. Elija una o continue manualmente.';
+            const list = result.usuarios || [];
+            if (list.length) {
+                for (const user of list) {
+                    rememberApplicant(user);
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'autocomplete-item-name';
+                    nameSpan.textContent = user.nombreVisible || user.username;
+
+                    const metaSpan = document.createElement('span');
+                    metaSpan.className = 'autocomplete-item-meta';
+                    const fueroText = user.fuero ? ' · ' + user.fuero : '';
+                    metaSpan.textContent = (user.username || '') + fueroText;
+
+                    item.append(nameSpan, metaSpan);
+                    item.addEventListener('pointerdown', e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setApplicant(user, applicantLabel(user));
+                        $('solicitante-help').textContent = 'Solicitante: ' + (user.nombreVisible || user.username);
+                        hideApplicantDropdown();
+                    });
+                    dropdown.append(item);
+                }
+                dropdown.hidden = false;
+                $('solicitante-help').textContent = list.length + ' usuario(s) encontrado(s). Toque para seleccionar.';
             } else {
-                $('solicitante-help').textContent = result.mensaje || 'Sin coincidencias de AD; puede cargar el solicitante manualmente.';
+                dropdown.hidden = true;
+                $('solicitante-help').textContent = result.mensaje || 'Sin coincidencias en Active Directory.';
             }
         } catch {
-            $('solicitante-help').textContent = 'No se pudo consultar AD; puede cargar el solicitante manualmente.';
+            dropdown.hidden = true;
+            $('solicitante-help').textContent = 'No se pudo consultar Active Directory.';
         }
     }
     async function searchAssignees(query) {
@@ -352,20 +387,29 @@
         editing = task;
         const form = $('task-form');
         form.reset();
+        hideApplicantDropdown();
         $('form-title').textContent = task ? 'Editar tarea #' + task.id : 'Nueva tarea';
-        const defaults = task || { solicitanteUsername: session.usuario.username, solicitanteNombre: session.usuario.nombreVisible, solicitanteFuero: session.usuario.fuero, prioridad: 'MEDIA' };
+        const defaults = task || {
+            solicitanteUsername: '',
+            solicitanteNombre: '',
+            solicitanteFuero: session.usuario.fuero || 'Sin fuero informado',
+            prioridad: 'MEDIA',
+            responsable: session.usuario.username
+        };
         for (const control of form.elements) if (control.name && defaults[control.name] != null) control.value = defaults[control.name];
-        setApplicant({
-            username: defaults.solicitanteUsername,
-            nombreVisible: defaults.solicitanteNombre,
-            fuero: defaults.solicitanteFuero
-        }, defaults.solicitanteNombre || defaults.solicitanteUsername || '');
-        $('responsable-field').hidden = !session.puedeAsignarResponsable;
-        $('responsable-search').value = defaults.responsable || '';
-        $('responsable-help').textContent = defaults.responsable
-            ? 'Responsable asignado. Puede cambiarlo antes de guardar.'
-            : 'Si lo deja vacío, sonará en todos los celulares de técnicos y administradores.';
-        if (session.puedeAsignarResponsable) searchAssignees(defaults.responsable || '');
+        if (task) {
+            setApplicant({
+                username: defaults.solicitanteUsername,
+                nombreVisible: defaults.solicitanteNombre,
+                fuero: defaults.solicitanteFuero
+            }, defaults.solicitanteNombre || defaults.solicitanteUsername || '');
+        } else {
+            $('solicitante-search').value = '';
+            $('solicitante-help').textContent = 'Escriba al menos 2 letras para buscar en Active Directory.';
+        }
+        // En creacion de tarea, la tarea pertenece al tecnico creador (autoasignada)
+        $('responsable-field').hidden = true;
+        form.elements.responsable.value = task ? (task.responsable || session.usuario.username) : session.usuario.username;
         const puedeDictar = task ? mayEdit(task) : session.puedeCrear;
         $('voice-problem').hidden = !native || !puedeDictar;
         message('', false, 'form-message');
@@ -394,14 +438,15 @@
             const data = Object.fromEntries(new FormData(event.target));
             data.descripcion = data.descripcion?.trim() || '';
             if (!syncApplicantFromInput()) throw new Error('Indique quien solicito la ayuda.');
-            data.solicitanteUsername = data.solicitanteUsername?.trim();
-            data.solicitanteNombre = data.solicitanteNombre?.trim();
-            data.solicitanteFuero = data.solicitanteFuero?.trim() || 'Sin fuero informado';
+            data.solicitanteUsername = event.target.elements.solicitanteUsername.value?.trim();
+            data.solicitanteNombre = event.target.elements.solicitanteNombre.value?.trim();
+            data.solicitanteFuero = event.target.elements.solicitanteFuero.value?.trim() || 'Sin fuero informado';
+            if (!data.solicitanteUsername) throw new Error('Seleccione el usuario solicitante de Active Directory.');
             // En movil el tecnico carga el problema; el titulo queda derivado para cumplir el contrato API.
             data.titulo = titleFromProblem(data.descripcion);
             data.equipoId = editing?.equipoId || null;
-            syncAssigneeFromInput();
-            data.responsable = event.target.elements.responsable.value?.trim() || null;
+            // La tarea pertenece al tecnico que la crea
+            data.responsable = editing ? (editing.responsable || session.usuario.username) : session.usuario.username;
             const saved = await request(api + (editing ? '/' + editing.id : ''), editing ? 'PUT' : 'POST', data);
             $('task-dialog').close();
             commentPreviewCache.delete(saved.id);
@@ -463,6 +508,15 @@
         clearTimeout(applicantSearchTimer);
         const value = event.target.value.trim();
         applicantSearchTimer = setTimeout(() => searchApplicants(value), 300);
+    });
+    $('solicitante-search').addEventListener('focus', () => {
+        const value = $('solicitante-search').value.trim();
+        if (value.length >= 2) searchApplicants(value);
+    });
+    document.addEventListener('pointerdown', event => {
+        if (!event.target.closest('.autocomplete-wrapper')) {
+            hideApplicantDropdown();
+        }
     });
     $('solicitante-search').addEventListener('change', syncApplicantFromInput);
     $('responsable-search').addEventListener('input', event => {

@@ -117,10 +117,10 @@ public class TareaMovilController {
                 puedeCrearTareas,
                 puedeGestionarTareas,
                 puedeOperarPropias,
-                true,
-                !puedeOperarPropias,
-                !puedeOperarPropias,
                 false,
+                !puedeOperarPropias,
+                !puedeOperarPropias,
+                authorization.puedeAdministrarUsuarios(user),
                 authorization.tienePermiso(user, "STOCK", "VER"),
                 authorization.tienePermiso(user, "STOCK", "EDITAR"));
     }
