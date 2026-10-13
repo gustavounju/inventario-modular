@@ -23,6 +23,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.Regis
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaComentarioDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaStockUsoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkPresenciaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -54,6 +55,7 @@ public class TareaTecnicaPageController {
 	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 	private final UsuarioManagementService usuarioManagementService;
 	private final FueroService fueroService;
+	private final ApkPresenciaService apkPresenciaService;
 
 	public TareaTecnicaPageController(
 			AuthorizationService authorizationService,
@@ -61,13 +63,15 @@ public class TareaTecnicaPageController {
 			EquipoRepository equipoRepository,
 			ActiveDirectoryDomainService activeDirectoryDomainService,
 			UsuarioManagementService usuarioManagementService,
-			FueroService fueroService) {
+			FueroService fueroService,
+			ApkPresenciaService apkPresenciaService) {
 		this.authorizationService = authorizationService;
 		this.tareaTecnicaService = tareaTecnicaService;
 		this.equipoRepository = equipoRepository;
 		this.activeDirectoryDomainService = activeDirectoryDomainService;
 		this.usuarioManagementService = usuarioManagementService;
 		this.fueroService = fueroService;
+		this.apkPresenciaService = apkPresenciaService;
 	}
 
 	@GetMapping("/admin/tareas")
@@ -309,6 +313,7 @@ public class TareaTecnicaPageController {
 		model.addAttribute("fuerosDisponibles", fuerosParaTareas(solicitantes));
 		model.addAttribute("tecnicosAsignables", usuarioManagementService.listarTecnicosAsignables());
 		model.addAttribute("usuariosFrecuentes", usuarioManagementService.listarTecnicosAsignables());
+		model.addAttribute("tecnicosConectados", apkPresenciaService.obtenerConectados());
 	}
 
 	private String vistaTareas(String origen) {

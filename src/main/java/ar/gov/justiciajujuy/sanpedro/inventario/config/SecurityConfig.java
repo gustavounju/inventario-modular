@@ -81,6 +81,7 @@ public class SecurityConfig {
 				).permitAll()
 				// El visor de tareas es de solo lectura y publico a proposito para monitores/pantallas en guardia o taller sin requerir inicio de sesion.
 				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor").permitAll()
+				.requestMatchers(HttpMethod.GET, "/api/v1/movil/tecnicos-conectados").permitAll()
 				.requestMatchers("/api/telefonia/**").permitAll()
 				.requestMatchers("/submit_inventory").authenticated()
 				.anyRequest().authenticated()

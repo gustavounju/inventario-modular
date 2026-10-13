@@ -40,6 +40,26 @@
 				<span class="kanban-total-num" th:text="${resumenTareas.total}">0</span>
 				<span class="kanban-total-lbl">tareas</span>
 			</a>
+
+			<!-- Cuadraditos minimalistas de técnicos conectados en APK -->
+			<div class="apk-presencia-container" id="apk-presencia-container" aria-label="Técnicos conectados en APK">
+				<span class="apk-presencia-title" title="Dispositivos APK activos en el taller">📱 APK</span>
+				<div class="apk-chips-list" id="apk-chips-list">
+					<div th:if="${#lists.isEmpty(tecnicosConectados)}" class="apk-chip apk-chip--empty" title="Ningún técnico conectado a la APK actualmente">
+						<span class="apk-dot apk-dot--idle"></span>
+						<span class="apk-chip-text">Sin conexión</span>
+					</div>
+					<div th:each="tec : ${tecnicosConectados}"
+					     class="apk-chip"
+					     th:classappend="${tec.esApk ? 'apk-chip--apk' : 'apk-chip--web'}"
+					     th:attr="data-username=${tec.username}, data-nombre=${tec.nombreVisible}"
+					     th:title="${tec.nombreVisible + ' (@' + tec.username + ')' + (tec.fuero != null and !tec.fuero.isEmpty() ? ' · ' + tec.fuero : '') + (tec.esApk ? ' · APK Android' : ' · Móvil Web')}">
+						<span class="apk-dot apk-dot--active"></span>
+						<span class="apk-chip-initials" th:text="${tec.iniciales}">TK</span>
+					</div>
+				</div>
+			</div>
+
 			<div class="kanban-topbar-actions">
 				<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
 				<span id="visor-live-status" class="kanban-live-status" role="status"></span>

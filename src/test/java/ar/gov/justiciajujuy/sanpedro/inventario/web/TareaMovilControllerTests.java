@@ -2,6 +2,7 @@ package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -407,6 +408,21 @@ class TareaMovilControllerTests {
     @Test void tareaFinalizadaNoPuedeVolverATomarse() throws Exception {
         tareas.cambiarEstado(1L, new TareaTecnicaService.CambiarEstadoTareaCommand(ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.CERRADA, "Resuelta"));
         mvc.perform(post("/api/v1/tareas-tecnicas/1/tomar").with(user("admin.local")).with(csrf())).andExpect(status().isConflict());
+    }
+
+    @Test void rastreaTecnicosConectadosEnApk() throws Exception {
+        mvc.perform(get("/api/v1/movil/sesion")
+                .header("User-Agent", "Mozilla/5.0 InventarioLAN/1 InventarioLANVersion/0.1.11")
+                .with(user("admin.local")))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/v1/movil/tecnicos-conectados"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].username").value("admin.local"))
+                .andExpect(jsonPath("$[0].esApk").value(true))
+                .andExpect(jsonPath("$[0].version").value("0.1.11"))
+                .andExpect(jsonPath("$[0].iniciales").value("AL"));
     }
 
     private int tomarAlMismoTiempo(CountDownLatch inicio, Long id, String username) throws Exception {

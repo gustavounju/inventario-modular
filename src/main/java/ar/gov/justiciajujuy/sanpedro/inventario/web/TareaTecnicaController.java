@@ -223,11 +223,14 @@ public class TareaTecnicaController {
 	}
 
 	private void exigirPuedeEliminar(UserDetails userDetails, Long tareaId) {
-		if (authorizationService.puedeAdministrarUsuarios(userDetails)) {
+		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
+		if (authorizationService.puedeAdministrarUsuarios(userDetails)
+				|| puedeGestionarComoTecnico(userDetails, tarea)
+				|| puedeOperarTareaPropiaNoTomada(userDetails, tarea)) {
 			return;
 		}
 		throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-				"Solo los administradores pueden eliminar tareas técnicas.");
+				"Solo los administradores o el creador de una tarea sin tomar pueden eliminarla.");
 	}
 
 	private void exigirTareaPropiaOAdministrador(UserDetails userDetails, Long tareaId) {

@@ -32,6 +32,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkPresenciaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkPresenciaService.UsuarioConectadoDto;
+
 @Controller
 public class TareaMovilController {
     private final AuthorizationService authorization;
@@ -39,17 +42,20 @@ public class TareaMovilController {
     private final UsuarioManagementService usuarioManagementService;
     private final TareaAvisoService avisos;
     private final ApkDistributionService apkDistributionService;
+    private final ApkPresenciaService apkPresenciaService;
 
     public TareaMovilController(AuthorizationService authorization,
             ActiveDirectoryDomainService activeDirectoryDomainService,
             UsuarioManagementService usuarioManagementService,
             TareaAvisoService avisos,
-            ApkDistributionService apkDistributionService) {
+            ApkDistributionService apkDistributionService,
+            ApkPresenciaService apkPresenciaService) {
         this.authorization = authorization;
         this.activeDirectoryDomainService = activeDirectoryDomainService;
         this.usuarioManagementService = usuarioManagementService;
         this.avisos = avisos;
         this.apkDistributionService = apkDistributionService;
+        this.apkPresenciaService = apkPresenciaService;
     }
 
     @GetMapping("/movil/login")
@@ -62,6 +68,7 @@ public class TareaMovilController {
             @RequestHeader(value = "User-Agent", required = false) String userAgent,
             Model model) {
         exigirPermiso(user);
+        apkPresenciaService.registrarActividad(user, userAgent);
         boolean appInstalada = userAgent != null && userAgent.contains("InventarioLAN/1");
         model.addAttribute("appInstalada", appInstalada);
         model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
@@ -75,6 +82,7 @@ public class TareaMovilController {
             @RequestHeader(value = "User-Agent", required = false) String userAgent,
             Model model) {
         exigirPermisoStock(user, "VER");
+        apkPresenciaService.registrarActividad(user, userAgent);
         boolean appInstalada = userAgent != null && userAgent.contains("InventarioLAN/1");
         model.addAttribute("appInstalada", appInstalada);
         model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
@@ -105,8 +113,11 @@ public class TareaMovilController {
 
     @GetMapping("/api/v1/movil/sesion")
     @ResponseBody
-    public SesionMovil sesion(@AuthenticationPrincipal UserDetails user, HttpServletResponse response) {
+    public SesionMovil sesion(@AuthenticationPrincipal UserDetails user,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            HttpServletResponse response) {
         exigirPermiso(user);
+        apkPresenciaService.registrarActividad(user, userAgent);
         response.setHeader("Cache-Control", "no-store");
         boolean puedeGestionarTareas = authorization.tienePermiso(user, "TAREAS", "EDITAR");
         boolean puedeCrearTareas = puedeGestionarTareas || authorization.tienePermiso(user, "TAREAS", "CREAR");
@@ -127,8 +138,11 @@ public class TareaMovilController {
 
     @GetMapping("/api/v1/movil/stock/sesion")
     @ResponseBody
-    public SesionStockMovil sesionStock(@AuthenticationPrincipal UserDetails user, HttpServletResponse response) {
+    public SesionStockMovil sesionStock(@AuthenticationPrincipal UserDetails user,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            HttpServletResponse response) {
         exigirPermisoStock(user, "VER");
+        apkPresenciaService.registrarActividad(user, userAgent);
         response.setHeader("Cache-Control", "no-store");
         return new SesionStockMovil(authorization.obtenerUsuarioActual(user),
                 authorization.tienePermiso(user, "STOCK", "EDITAR"));
@@ -137,8 +151,10 @@ public class TareaMovilController {
     @GetMapping("/api/v1/movil/avisos")
     @ResponseBody
     public TareaAvisoService.LoteAvisos avisos(@AuthenticationPrincipal UserDetails user,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
             @RequestParam(required = false) Long despuesDe, HttpServletResponse response) {
         exigirPermiso(user);
+        apkPresenciaService.registrarActividad(user, userAgent);
         if (despuesDe != null && despuesDe < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cursor invalido.");
         }
@@ -146,6 +162,12 @@ public class TareaMovilController {
         boolean recibeAvisosGenerales = authorization.tienePermiso(user, "TAREAS", "EDITAR")
                 || authorization.puedeAdministrarUsuarios(user);
         return avisos.consultar(despuesDe, user.getUsername(), recibeAvisosGenerales);
+    }
+
+    @GetMapping("/api/v1/movil/tecnicos-conectados")
+    @ResponseBody
+    public List<UsuarioConectadoDto> tecnicosConectados() {
+        return apkPresenciaService.obtenerConectados();
     }
 
     @GetMapping("/api/v1/movil/usuarios-dominio")
