@@ -126,10 +126,7 @@ public class TareaTecnicaController {
 			@PathVariable Long id,
 			@Valid @RequestBody CambiarEstadoTareaRequest request) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
-		if (!authorizationService.puedeAdministrarUsuarios(userDetails)) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-					"Solo los administradores pueden cambiar el estado de las tareas.");
-		}
+		exigirTareaPropiaOAdministrador(userDetails, id);
 		return tareaTecnicaService.cambiarEstado(id, request.toCommand(), userDetails.getUsername());
 	}
 

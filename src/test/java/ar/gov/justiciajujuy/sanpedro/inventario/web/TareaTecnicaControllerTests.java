@@ -221,6 +221,64 @@ class TareaTecnicaControllerTests {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(comentario))
 			.andExpect(status().isForbidden());
+
+		String cambioEstado = """
+				{
+				  "estado": "CERRADA",
+				  "observacionesCierre": "Intento cerrar tarea ajena."
+				}
+				""";
+		mockMvc.perform(patch("/api/v1/tareas-tecnicas/1/estado")
+				.with(user(tecnicoLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cambioEstado))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@Sql(statements = {
+			"INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (3, 'tecnico.local', 'Tecnico Local', 'Informatica', 'AD', TRUE)",
+			"INSERT INTO roles (id, codigo, nombre, descripcion, activo) VALUES (2, 'TECNICO', 'Tecnico', 'Acceso operativo a tareas tecnicas.', TRUE)",
+			"INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (3, 2)",
+			"INSERT INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) VALUES (2, 9, 1), (2, 9, 3)"
+	})
+	void tecnicoPuedeCambiarEstadoDeTareaPropia() throws Exception {
+		String tareaPropia = """
+				{
+				  "equipoId": null,
+				  "titulo": "Resolver cable de red",
+				  "descripcion": "Problema reportado.",
+				  "solicitanteUsername": "mesa.entrada",
+				  "solicitanteNombre": "Mesa de Entrada",
+				  "solicitanteFuero": "Mesa de ayuda",
+				  "prioridad": "MEDIA",
+				  "responsable": "tecnico.local"
+				}
+				""";
+		String creada = mockMvc.perform(post("/api/v1/tareas-tecnicas")
+				.with(user(tecnicoLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(tareaPropia))
+			.andExpect(status().isCreated())
+			.andReturn().getResponse().getContentAsString();
+		Number tareaId = JsonPath.read(creada, "$.id");
+
+		String cierre = """
+				{
+				  "estado": "CERRADA",
+				  "observacionesCierre": "Se cambio el cable y se verifico enlace."
+				}
+				""";
+		mockMvc.perform(patch("/api/v1/tareas-tecnicas/" + tareaId + "/estado")
+				.with(user(tecnicoLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cierre))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.estado").value("CERRADA"))
+			.andExpect(jsonPath("$.observacionesCierre").value("Se cambio el cable y se verifico enlace."));
 	}
 
 	@Test
