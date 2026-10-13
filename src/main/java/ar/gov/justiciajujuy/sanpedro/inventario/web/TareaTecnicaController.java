@@ -25,6 +25,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.Tarea
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaNoEncontradaException;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaYaAsignadaException;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkPresenciaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -57,19 +59,26 @@ public class TareaTecnicaController {
 
 	private final AuthorizationService authorizationService;
 	private final TareaTecnicaService tareaTecnicaService;
+	private final ApkPresenciaService apkPresenciaService;
 
-	public TareaTecnicaController(AuthorizationService authorizationService, TareaTecnicaService tareaTecnicaService) {
+	public TareaTecnicaController(
+			AuthorizationService authorizationService,
+			TareaTecnicaService tareaTecnicaService,
+			ApkPresenciaService apkPresenciaService) {
 		this.authorizationService = authorizationService;
 		this.tareaTecnicaService = tareaTecnicaService;
+		this.apkPresenciaService = apkPresenciaService;
 	}
 
 	@GetMapping
 	public List<TareaTecnicaDetalle> listar(
 			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestHeader(value = "User-Agent", required = false) String userAgent,
 			@RequestParam(required = false) EstadoTareaTecnica estado,
 			@RequestParam(required = false) Long equipoId,
 			@RequestParam(required = false) String responsable) {
 		exigirPermiso(userDetails, PERMISO_VER);
+		apkPresenciaService.registrarActividad(userDetails, userAgent);
 		List<TareaTecnicaDetalle> tareas = tareaTecnicaService.buscar(estado, equipoId, responsable);
 		if (esTelefonistaSinGestionTecnica(userDetails)) {
 			return tareas.stream()
@@ -106,8 +115,10 @@ public class TareaTecnicaController {
 	@PostMapping("/{id}/tomar")
 	public TareaTecnicaDetalle tomar(
 			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestHeader(value = "User-Agent", required = false) String userAgent,
 			@PathVariable Long id) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
+		apkPresenciaService.registrarActividad(userDetails, userAgent);
 		return tareaTecnicaService.tomar(id, userDetails.getUsername());
 	}
 
@@ -123,10 +134,12 @@ public class TareaTecnicaController {
 	@PatchMapping("/{id}/estado")
 	public TareaTecnicaDetalle cambiarEstado(
 			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestHeader(value = "User-Agent", required = false) String userAgent,
 			@PathVariable Long id,
 			@Valid @RequestBody CambiarEstadoTareaRequest request) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		exigirTareaPropiaOAdministrador(userDetails, id);
+		apkPresenciaService.registrarActividad(userDetails, userAgent);
 		return tareaTecnicaService.cambiarEstado(id, request.toCommand(), userDetails.getUsername());
 	}
 
@@ -151,9 +164,11 @@ public class TareaTecnicaController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public TareaComentarioDetalle comentar(
 			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestHeader(value = "User-Agent", required = false) String userAgent,
 			@PathVariable Long id,
 			@Valid @RequestBody AgregarComentarioTareaRequest request) {
 		exigirPuedeComentar(userDetails, id);
+		apkPresenciaService.registrarActividad(userDetails, userAgent);
 		return tareaTecnicaService.comentar(id, request.toCommand(userDetails.getUsername()));
 	}
 

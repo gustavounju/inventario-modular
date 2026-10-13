@@ -411,6 +411,17 @@ class TareaMovilControllerTests {
     }
 
     @Test void rastreaTecnicosConectadosEnApk() throws Exception {
+        // Peticion desde PC de escritorio (Windows): NO debe registrarse
+        mvc.perform(get("/api/v1/movil/sesion")
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .with(user("admin.local")))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/v1/movil/tecnicos-conectados"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        // Peticion desde la APK instalada: SI debe registrarse
         mvc.perform(get("/api/v1/movil/sesion")
                 .header("User-Agent", "Mozilla/5.0 InventarioLAN/1 InventarioLANVersion/0.1.11")
                 .with(user("admin.local")))

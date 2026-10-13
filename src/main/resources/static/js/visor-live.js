@@ -56,7 +56,10 @@
             const activeHighlighted = document.querySelector('.apk-chip.is-highlighted')?.dataset?.username?.toLowerCase();
 
             container.innerHTML = list.map(tec => {
-                const title = `${escapeHtml(tec.nombreVisible || tec.username)} (@${escapeHtml(tec.username)})${tec.fuero ? ' · ' + escapeHtml(tec.fuero) : ''}${tec.esApk ? ' · APK Android' : ' · Móvil Web'}${tec.version ? ' v' + escapeHtml(tec.version) : ''} · activo hace ${tec.segundosInactivo}s`;
+                const tiempoTexto = !tec.segundosInactivo || tec.segundosInactivo < 60
+                    ? `${tec.segundosInactivo || 0}s`
+                    : `${Math.floor(tec.segundosInactivo / 60)}m`;
+                const title = `${escapeHtml(tec.nombreVisible || tec.username)} (@${escapeHtml(tec.username)})${tec.fuero ? ' · ' + escapeHtml(tec.fuero) : ''}${tec.esApk ? ' · APK Android' : ' · Móvil Web'}${tec.version ? ' v' + escapeHtml(tec.version) : ''} · activo hace ${tiempoTexto}`;
                 const chipClass = tec.esApk ? 'apk-chip--apk' : 'apk-chip--web';
                 const isHl = activeHighlighted && activeHighlighted === tec.username?.toLowerCase() ? ' is-highlighted' : '';
                 return `<div class="apk-chip ${chipClass}${isHl}" data-username="${escapeHtml(tec.username)}" title="${title}">

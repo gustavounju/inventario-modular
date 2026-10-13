@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ApkPresenciaService {
 
-	private static final Duration TIMEOUT = Duration.ofSeconds(35);
+	private static final Duration TIMEOUT = Duration.ofMinutes(5);
 	private static final Pattern VERSION_PATTERN = Pattern.compile("InventarioLANVersion/([^ ]+)");
 
 	private final Map<String, PresenciaInterna> presencias = new ConcurrentHashMap<>();
@@ -27,12 +27,36 @@ public class ApkPresenciaService {
 		this.authorizationService = authorizationService;
 	}
 
+	public static boolean esDispositivoMovilOApk(String userAgent) {
+		if (userAgent == null || userAgent.isBlank()) {
+			return false;
+		}
+		String uaLower = userAgent.toLowerCase();
+		// APK nativa Android oficial (InventarioLAN o Dalvik del worker de avisos)
+		if (userAgent.contains("InventarioLAN") || userAgent.contains("Dalvik")) {
+			return true;
+		}
+		// Descartar computadoras de escritorio (Windows, Macintosh, Linux de escritorio)
+		boolean esEscritorio = (uaLower.contains("windows nt") || uaLower.contains("macintosh") || uaLower.contains("x11; linux"))
+				&& !uaLower.contains("mobile") && !uaLower.contains("android");
+		if (esEscritorio) {
+			return false;
+		}
+		// Navegadores moviles o tablets (Chrome Mobile, Safari iOS, etc.)
+		return uaLower.contains("mobile") || uaLower.contains("android") || uaLower.contains("iphone") || uaLower.contains("ipad");
+	}
+
 	public void registrarActividad(UserDetails userDetails, String userAgent) {
 		if (userDetails == null || userDetails.getUsername() == null || userDetails.getUsername().isBlank()) {
 			return;
 		}
+		// Permitir tecnicos y administradores, pero exclusivamente si estan en un dispositivo movil o APK (no en PC de escritorio)
+		if (!esDispositivoMovilOApk(userAgent)) {
+			return;
+		}
+
 		String username = userDetails.getUsername().trim().toLowerCase();
-		boolean esApk = userAgent != null && userAgent.contains("InventarioLAN");
+		boolean esApk = userAgent != null && (userAgent.contains("InventarioLAN") || userAgent.contains("Dalvik"));
 
 		String version = null;
 		if (userAgent != null) {
