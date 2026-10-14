@@ -6,6 +6,11 @@
     <meta name="theme-color" content="#006f99">
     <meta name="csrf-token" th:content="${_csrf.token}">
     <meta name="csrf-header" th:content="${_csrf.headerName}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Tareas LAN">
+    <link rel="apple-touch-icon" th:href="@{/icons/apple-touch-icon.png}">
+    <link rel="manifest" th:href="@{/manifest.json}">
     <title>Tareas | Centro Judicial San Pedro</title>
     <link rel="stylesheet" th:href="@{/css/movil.css(v=2)}">
     <script defer th:src="@{/js/lucide.min.js}"></script>
@@ -28,12 +33,18 @@
             <div id="mine-metric"><strong id="mine-count">0</strong><span>A mi cargo</span></div>
             <div id="done-metric"><strong id="done-count">0</strong><span>Realizadas hoy</span></div>
         </section>
-        <section class="apk-install-panel" th:if="${apkDisponible}" aria-label="Instalacion de la app">
+        <section id="apk-panel" class="apk-install-panel" th:if="${apkDisponible}" aria-label="Instalacion de la app">
             <div>
                 <strong>App Tareas LAN</strong>
                 <span th:text="'Version publicada ' + ${apkInfo.version} + '. APK lista para instalar o actualizar este telefono.'">APK lista para instalar o actualizar este telefono.</span>
             </div>
             <a class="primary apk-install-link" th:href="@{/api/v1/movil/apk}"><i data-lucide="download"></i><span>Descargar APK</span></a>
+        </section>
+        <section id="ios-pwa-panel" class="apk-install-panel" style="display:none; background:#eff6ff; border-left-color:#2563eb;" aria-label="Instalacion en iPhone">
+            <div>
+                <strong style="color:#1d4ed8;">📱 Acceso rápido en iPhone</strong>
+                <span style="color:#1e40af;">Para usarlo como App: toca <strong>Compartir</strong> (📤 en Safari) y selecciona <strong>"Agregar a pantalla de inicio"</strong>.</span>
+            </div>
         </section>
         <div class="list-tools">
             <label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="Buscar tarea, equipo o usuario" aria-label="Buscar tarea, equipo o usuario"></label>

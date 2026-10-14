@@ -555,6 +555,13 @@
     }
     $('sound').hidden = native;
     if (native && $('download-apk')) $('download-apk').hidden = true;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    if (isIOS) {
+        if ($('download-apk')) $('download-apk').hidden = true;
+        if ($('apk-panel')) $('apk-panel').hidden = true;
+        if ($('ios-pwa-panel') && !isStandalone) $('ios-pwa-panel').style.display = 'flex';
+    }
     $('sound').onclick = async () => {
         try {
             if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();

@@ -209,6 +209,7 @@
         const code = String(event.detail || '').trim();
         applyScan(code);
     });
-    if (native && $('download-apk')) $('download-apk').hidden = true;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if ((native || isIOS) && $('download-apk')) $('download-apk').hidden = true;
     icons(); start();
 })();
