@@ -5,6 +5,24 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Tareas técnicas - Inventario Modular</title>
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
+	<style>
+		.solicitante-autocomplete-box { position: relative; width: 100%; }
+		.solicitante-dropdown {
+			position: absolute; top: 100%; left: 0; right: 0;
+			background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;
+			box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+			max-height: 220px; overflow-y: auto; z-index: 1060; margin-top: 4px;
+		}
+		.solicitante-dropdown-item {
+			padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;
+			display: flex; flex-direction: column; gap: 2px; transition: background 0.15s ease; text-align: left;
+		}
+		.solicitante-dropdown-item:last-child { border-bottom: none; }
+		.solicitante-dropdown-item:hover, .solicitante-dropdown-item.is-selected { background: #eff6ff; }
+		.solicitante-dropdown-item-title { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+		.solicitante-dropdown-item-sub { font-size: 0.75rem; color: #64748b; }
+		.solicitante-dropdown-status { padding: 10px 12px; font-size: 0.8rem; color: #64748b; text-align: center; }
+	</style>
 </head>
 <body>
 	<main class="shell shell-wide">
@@ -266,21 +284,24 @@
 							<p class="section-note" style="grid-column: 1 / -1; margin: 0;">
 								Si no se conoce el equipo, deje el campo sin seleccionar y la tarea quedará asociada a PC genérica.
 							</p>
-							<label>
-								<span>Quién solicita *</span>
-								<select id="solicitante-select" required>
-									<option value="">Seleccione solicitante</option>
-									<option th:each="solicitante : ${solicitantes}"
-											th:value="${solicitante.username}"
-											th:text="${solicitante.username + ' - ' + solicitante.nombreVisible}"
-											th:attr="data-nombre=${solicitante.nombreVisible},data-fuero=${solicitante.fuero}">
-										jperez - Juan Pérez
-									</option>
-								</select>
-								<input type="hidden" th:field="*{solicitanteUsername}" id="solicitante-username">
-								<input type="hidden" th:field="*{solicitanteNombre}" id="solicitante-nombre">
+							<div style="display:flex; flex-direction:column; gap:4px; position:relative;">
+								<span style="font-weight:600; font-size:0.85rem;">Quién solicita *</span>
+								<div class="solicitante-autocomplete-box">
+									<input type="text"
+									       id="solicitante-input"
+									       class="form-control"
+									       placeholder="Escriba 3 letras para buscar apellido, nombre o usuario en AD..."
+									       autocomplete="off"
+									       required>
+									<input type="hidden" th:field="*{solicitanteUsername}" id="solicitante-username">
+									<input type="hidden" th:field="*{solicitanteNombre}" id="solicitante-nombre">
+									<div id="solicitante-dropdown" class="solicitante-dropdown" style="display:none;"></div>
+								</div>
+								<small id="solicitante-help" style="font-size:0.75rem; color:#64748b;">
+									Ingrese al menos 3 letras para buscar en Active Directory (AD).
+								</small>
 								<small class="field-error" th:if="${#fields.hasErrors('solicitanteUsername')}" th:errors="*{solicitanteUsername}">Error</small>
-							</label>
+							</div>
 							<label>
 								<span>Fuero / Unidad organizativa *</span>
 								<select th:field="*{solicitanteFuero}" id="solicitante-fuero" required>
@@ -330,21 +351,120 @@
 		</section>
 	</main>
 
-	<!-- Script de Pestañas Interactivas -->
+	<!-- Script de Pestañas Interactivas y Autocompletado AD -->
 	<script>
-		function syncSolicitante() {
-			const select = document.getElementById('solicitante-select');
-			if (!select) return;
-			const option = select.options[select.selectedIndex];
-			document.getElementById('solicitante-username').value = option ? option.value : '';
-			document.getElementById('solicitante-nombre').value = option ? (option.getAttribute('data-nombre') || '') : '';
+		let solicitanteTimer = null;
+
+		function initSolicitanteAutocomplete() {
+			const input = document.getElementById('solicitante-input');
+			const dropdown = document.getElementById('solicitante-dropdown');
+			const usernameField = document.getElementById('solicitante-username');
+			const nombreField = document.getElementById('solicitante-nombre');
+			const helpText = document.getElementById('solicitante-help');
 			const fueroSelect = document.getElementById('solicitante-fuero');
-			if (fueroSelect && option) {
-				const fuero = option.getAttribute('data-fuero') || '';
-				fueroSelect.value = Array.from(fueroSelect.options).some(opt => opt.value === fuero) ? fuero : '';
-			} else if (fueroSelect) {
-				fueroSelect.value = '';
-			}
+
+			if (!input || !dropdown) return;
+
+			input.addEventListener('input', function() {
+				clearTimeout(solicitanteTimer);
+				const query = this.value.trim();
+				usernameField.value = '';
+				nombreField.value = '';
+
+				if (query.length < 3) {
+					dropdown.style.display = 'none';
+					dropdown.innerHTML = '';
+					if (helpText) {
+						helpText.textContent = 'Ingrese al menos 3 letras para buscar en Active Directory (AD).';
+						helpText.style.color = '#64748b';
+					}
+					return;
+				}
+
+				if (helpText) {
+					helpText.textContent = 'Buscando coincidencias en Active Directory...';
+					helpText.style.color = '#0284c7';
+				}
+
+				solicitanteTimer = setTimeout(async () => {
+					dropdown.innerHTML = '<div class="solicitante-dropdown-status">🔍 Buscando en Active Directory...</div>';
+					dropdown.style.display = 'block';
+
+					try {
+						const resp = await fetch('/api/v1/tareas/solicitantes?q=' + encodeURIComponent(query));
+						if (!resp.ok) throw new Error('Error al consultar servidor');
+						const data = await resp.json();
+						const usuarios = data.usuarios || [];
+
+						dropdown.innerHTML = '';
+						if (usuarios.length === 0) {
+							dropdown.innerHTML = `<div class="solicitante-dropdown-status">${data.mensaje || 'Sin coincidencias en Active Directory.'}</div>`;
+							if (helpText) {
+								helpText.textContent = 'No se encontró en AD. Puede continuar si es un solicitante manual.';
+								helpText.style.color = '#64748b';
+							}
+							return;
+						}
+
+						usuarios.forEach(u => {
+							const item = document.createElement('div');
+							item.className = 'solicitante-dropdown-item';
+							const displayName = u.nombreVisible || u.username;
+							const fueroText = (u.fuero && u.fuero !== 'Sin fuero informado') ? ' · 🏢 ' + u.fuero : '';
+							item.innerHTML = `
+								<span class="solicitante-dropdown-item-title">${displayName}</span>
+								<span class="solicitante-dropdown-item-sub">👤 ${u.username}${fueroText}</span>
+							`;
+							item.addEventListener('click', () => {
+								usernameField.value = u.username;
+								nombreField.value = displayName;
+								input.value = `${displayName} (${u.username})`;
+								dropdown.style.display = 'none';
+								dropdown.innerHTML = '';
+
+								if (helpText) {
+									helpText.textContent = `✔ Seleccionado: ${displayName} (@${u.username})`;
+									helpText.style.color = '#166534';
+								}
+
+								if (fueroSelect && u.fuero) {
+									const optMatch = Array.from(fueroSelect.options).find(opt => 
+										opt.value.trim().toLowerCase() === u.fuero.trim().toLowerCase()
+									);
+									if (optMatch) {
+										fueroSelect.value = optMatch.value;
+									}
+								}
+							});
+							dropdown.appendChild(item);
+						});
+
+						if (helpText) {
+							helpText.textContent = `${usuarios.length} usuario(s) de AD encontrado(s). Haga clic para elegir.`;
+							helpText.style.color = '#1d4ed8';
+						}
+					} catch (err) {
+						dropdown.innerHTML = '<div class="solicitante-dropdown-status" style="color:#b91c1c;">Error al consultar Active Directory.</div>';
+					}
+				}, 260);
+			});
+
+			document.addEventListener('pointerdown', function(e) {
+				if (!e.target.closest('.solicitante-autocomplete-box')) {
+					dropdown.style.display = 'none';
+				}
+			});
+
+			input.addEventListener('blur', function() {
+				setTimeout(() => {
+					const val = input.value.trim();
+					if (val && !usernameField.value) {
+						usernameField.value = val;
+						nombreField.value = val;
+					}
+					dropdown.style.display = 'none';
+				}, 250);
+			});
 		}
 
 		function switchTab(tabId) {
@@ -369,13 +489,10 @@
 			}
 		}
 
-		// Leer hash inicial al cargar
+		// Leer hash inicial al cargar e inicializar autocompletado
 		window.addEventListener('DOMContentLoaded', function() {
-			const solicitanteSelect = document.getElementById('solicitante-select');
-			if (solicitanteSelect) {
-				solicitanteSelect.addEventListener('change', syncSolicitante);
-				syncSolicitante();
-			}
+			initSolicitanteAutocomplete();
+
 			const hash = window.location.hash;
 			if (hash === '#tab-nuevo') {
 				switchTab('nuevo');

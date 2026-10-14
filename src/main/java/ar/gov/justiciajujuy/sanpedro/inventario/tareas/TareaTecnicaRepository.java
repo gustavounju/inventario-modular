@@ -81,6 +81,38 @@ public interface TareaTecnicaRepository extends JpaRepository<TareaTecnica, Long
 			SELECT t
 			FROM TareaTecnica t
 			LEFT JOIN FETCH t.equipo e
+			WHERE ((t.creadoEn >= :desde AND t.creadoEn < :hasta)
+			    OR (t.cerradoEn >= :desde AND t.cerradoEn < :hasta)
+			    OR (t.actualizadoEn >= :desde AND t.actualizadoEn < :hasta))
+			  AND (:estado IS NULL OR t.estado = :estado)
+			  AND (:equipoId IS NULL OR e.id = :equipoId)
+			  AND (:responsable IS NULL
+			    OR LOWER(t.titulo) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    OR LOWER(COALESCE(t.descripcion, '')) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    OR LOWER(COALESCE(t.solicitanteUsername, '')) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    OR LOWER(COALESCE(t.solicitanteNombre, '')) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    OR LOWER(COALESCE(t.solicitanteFuero, '')) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    OR LOWER(COALESCE(t.responsable, '')) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    OR LOWER(COALESCE(e.nombre, '')) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    OR EXISTS (
+			      SELECT 1
+			      FROM TareaTecnicaComentario c
+			      WHERE c.tarea = t
+			        AND LOWER(c.comentario) LIKE LOWER(CONCAT('%', :responsable, '%'))
+			    ))
+			ORDER BY t.id DESC
+			""")
+	List<TareaTecnica> buscarPorFecha(
+			@Param("desde") java.time.LocalDateTime desde,
+			@Param("hasta") java.time.LocalDateTime hasta,
+			@Param("estado") EstadoTareaTecnica estado,
+			@Param("equipoId") Long equipoId,
+			@Param("responsable") String responsable);
+
+	@Query("""
+			SELECT t
+			FROM TareaTecnica t
+			LEFT JOIN FETCH t.equipo e
 			WHERE LOWER(COALESCE(t.solicitanteUsername, '')) = LOWER(:solicitanteUsername)
 			  AND t.estado IN :estados
 			  AND (e IS NULL OR UPPER(e.nombre) = 'PC-GENERICA')

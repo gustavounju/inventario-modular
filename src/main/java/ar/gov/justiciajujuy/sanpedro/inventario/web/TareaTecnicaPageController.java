@@ -1,11 +1,14 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService;
@@ -85,7 +88,7 @@ public class TareaTecnicaPageController {
 			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String creado) {
 		exigirPermiso(userDetails, PERMISO_VER);
-		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, false);
+		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, false, null, true);
 		model.addAttribute("creado", "1".equals(creado));
 		return "admin/tareas";
 	}
@@ -94,13 +97,24 @@ public class TareaTecnicaPageController {
 	public String visorTareas(
 			Model model,
 			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+			@RequestParam(required = false, defaultValue = "false") boolean todas,
 			@RequestParam(required = false) EstadoTareaTecnica estado,
 			@RequestParam(required = false) Long equipoId,
 			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String creado) {
-		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, true);
+		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, true, fecha, todas);
 		model.addAttribute("creado", "1".equals(creado));
 		return "admin/tareas-visor";
+	}
+
+	@GetMapping("/api/v1/tareas/solicitantes")
+	@ResponseBody
+	public DominioUsuarios buscarSolicitantes(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(name = "q", required = false) String query) {
+		exigirPermiso(userDetails, PERMISO_VER);
+		return activeDirectoryDomainService.buscarUsuarios(query);
 	}
 
 
@@ -283,11 +297,22 @@ public class TareaTecnicaPageController {
 	}
 
 	private void prepararModelo(Model model, UserDetails userDetails, TareaForm tareaForm,
-			EstadoTareaTecnica estado, Long equipoId, String responsable, boolean esVisor) {
+			EstadoTareaTecnica estado, Long equipoId, String responsable, boolean esVisor,
+			LocalDate fecha, boolean todas) {
 		boolean tieneFiltro = estado != null || equipoId != null || StringUtils.hasText(responsable);
-		List<TareaTecnicaDetalle> tareas = (esVisor && !tieneFiltro)
-				? tareaTecnicaService.buscarParaVisor()
-				: tareaTecnicaService.buscar(estado, equipoId, responsable);
+		LocalDate hoy = LocalDate.now();
+		LocalDate fechaFiltro = (fecha != null) ? fecha : (todas ? null : hoy);
+
+		List<TareaTecnicaDetalle> tareas;
+		if (esVisor) {
+			if (todas) {
+				tareas = tieneFiltro ? tareaTecnicaService.buscar(estado, equipoId, responsable) : tareaTecnicaService.buscarParaVisor();
+			} else {
+				tareas = tareaTecnicaService.buscarPorFecha(fechaFiltro, estado, equipoId, responsable);
+			}
+		} else {
+			tareas = tareaTecnicaService.buscar(estado, equipoId, responsable);
+		}
 
 		Set<Long> tareaIds = tareas.stream().map(TareaTecnicaDetalle::id).collect(Collectors.toSet());
 		Map<Long, List<TareaComentarioDetalle>> comentariosPorTarea = tareaTecnicaService.comentariosPorTareas(tareaIds);
@@ -310,6 +335,9 @@ public class TareaTecnicaPageController {
 		model.addAttribute("filtroEstado", estado);
 		model.addAttribute("filtroEquipoId", equipoId);
 		model.addAttribute("filtroResponsable", responsable);
+		model.addAttribute("filtroFecha", fechaFiltro);
+		model.addAttribute("esModoTodas", todas);
+		model.addAttribute("fechaHoy", hoy);
 		boolean puedeEditarTareas = puedeAdministrarTareas(userDetails);
 		boolean puedeAsignarResponsable = puedeEditarTareas;
 		List<UsuarioDominio> solicitantes = solicitantesParaTareas();
@@ -345,10 +373,6 @@ public class TareaTecnicaPageController {
 	}
 
 	private List<UsuarioDominio> solicitantesParaTareas() {
-		DominioUsuarios usuariosDominio = activeDirectoryDomainService.listarUsuariosParaTareas();
-		if (usuariosDominio.disponible()) {
-			return usuariosDominio.usuarios();
-		}
 		return usuarioManagementService.listarUsuariosActivosNoAdministrativos().stream()
 				.map(usuario -> new UsuarioDominio(usuario.username(), usuario.nombreVisible(), usuario.fuero()))
 				.toList();

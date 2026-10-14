@@ -11,6 +11,25 @@
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 	<link rel="stylesheet" th:href="@{/css/visor-kanban.css}">
+	<style>
+		.solicitante-autocomplete-box { position: relative; width: 100%; }
+		.solicitante-dropdown {
+			position: absolute; top: 100%; left: 0; right: 0;
+			background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;
+			box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+			max-height: 220px; overflow-y: auto; z-index: 1060; margin-top: 4px;
+		}
+		.solicitante-dropdown-item {
+			padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9;
+			display: flex; flex-direction: column; gap: 2px; transition: background 0.15s ease; text-align: left;
+		}
+		.solicitante-dropdown-item:last-child { border-bottom: none; }
+		.solicitante-dropdown-item:hover, .solicitante-dropdown-item.is-selected { background: #eff6ff; }
+		.solicitante-dropdown-item-title { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+		.solicitante-dropdown-item-sub { font-size: 0.75rem; color: #64748b; }
+		.solicitante-dropdown-status { padding: 10px 12px; font-size: 0.8rem; color: #64748b; text-align: center; }
+		.kbtn--active { background: #0284c7 !important; color: #fff !important; font-weight: 600; }
+	</style>
 	<script defer th:src="@{/js/visor-live.js}"></script>
 	<script defer th:src="@{/js/visor-dnd.js}"></script>
 </head>
@@ -100,8 +119,37 @@
 			</div>
 		</div>
 
-		<!-- Filtros -->
-		<form class="kanban-filters" th:action="@{/admin/tareas/visor}" method="get" role="search">
+		<!-- Filtros y Selector de Fecha (Tareas Diarias) -->
+		<form class="kanban-filters" th:action="@{/admin/tareas/visor}" method="get" role="search" id="form-kanban-filters">
+			<label class="kfilter-label" style="min-width: 170px;">
+				<span style="display:flex; align-items:center; gap:4px;">
+					📅 <strong>Fecha tareas</strong>
+				</span>
+				<input type="date" name="fecha" id="kfilter-fecha"
+				       th:value="${filtroFecha != null ? #temporals.format(filtroFecha, 'yyyy-MM-dd') : ''}"
+				       class="kfilter-input"
+				       th:disabled="${esModoTodas}"
+				       onchange="this.form.submit()">
+			</label>
+
+			<!-- Controles rápidos de navegación de fecha -->
+			<div class="kfilter-date-nav" style="display: flex; align-items: flex-end; gap: 4px; padding-bottom: 2px;">
+				<a class="kbtn kbtn--secondary kbtn--sm"
+				   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.minusDays(1) : fechaHoy.minusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+				   title="Día anterior">◀</a>
+				<a class="kbtn kbtn--sm"
+				   th:href="@{/admin/tareas/visor(fecha=${fechaHoy}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+				   th:classappend="${filtroFecha != null and filtroFecha.equals(fechaHoy) and !esModoTodas ? 'kbtn--primary' : 'kbtn--secondary'}"
+				   title="Ir a tareas de hoy">Hoy</a>
+				<a class="kbtn kbtn--secondary kbtn--sm"
+				   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.plusDays(1) : fechaHoy.plusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+				   title="Día siguiente">▶</a>
+				<a class="kbtn kbtn--sm"
+				   th:href="@{/admin/tareas/visor(todas=true, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+				   th:classappend="${esModoTodas ? 'kbtn--primary' : 'kbtn--ghost'}"
+				   title="Ver todas las tareas activas acumuladas (backlog)">📋 Todas activas</a>
+			</div>
+
 			<label class="kfilter-label">
 				<span>Estado</span>
 				<select name="estado" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
@@ -126,10 +174,35 @@
 					   th:placeholder="${puedeEditarTareas ? 'Tarea, usuario, equipo o comentario…' : 'Búsqueda disponible sólo para administradores'}">
 			</label>
 			<div class="kfilter-actions">
-				<button class="kbtn kbtn--primary" type="submit" th:disabled="${!puedeEditarTareas}" th:title="${!puedeEditarTareas ? 'Modo sólo lectura' : ''}">Buscar</button>
+				<button class="kbtn kbtn--primary" type="submit" th:disabled="${!puedeEditarTareas}" th:title="${!puedeEditarTareas ? 'Modo sólo lectura' : ''}">Filtrar</button>
 				<a class="kbtn kbtn--ghost" th:href="@{/admin/tareas/visor}" th:if="${puedeEditarTareas}">Limpiar</a>
 			</div>
 		</form>
+
+		<!-- Banner indicador del modo actual de visualización -->
+		<div style="margin: 8px 0 14px 0; padding: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #475569;">
+			<div style="display:flex; align-items:center; gap: 8px;">
+				<span th:if="${!esModoTodas}">
+					📅 <strong>Tareas del día:</strong>
+					<span th:text="${#temporals.format(filtroFecha, 'dd/MM/yyyy')}">14/10/2026</span>
+					<span th:if="${filtroFecha != null and filtroFecha.equals(fechaHoy)}" style="color: #0284c7; font-weight: 600;">(Hoy)</span>
+					· <strong th:text="${#lists.size(tareas)}">0</strong> tareas en pantalla
+				</span>
+				<span th:if="${esModoTodas}">
+					📋 <strong>Mostrando todas las tareas activas acumuladas (Backlog completo)</strong>
+					· <strong th:text="${#lists.size(tareas)}">0</strong> tareas cargadas
+				</span>
+			</div>
+			<div>
+				<span th:if="${!esModoTodas and resumenTareas != null and resumenTareas.pendientes > 0}">
+					⚠️ Hay <strong th:text="${resumenTareas.pendientes}">0</strong> pendientes en total
+					<a th:href="@{/admin/tareas/visor(todas=true)}" style="margin-left: 6px; color: #2563eb; text-decoration: underline; font-weight: 600;">Ver backlog completo</a>
+				</span>
+				<span th:if="${esModoTodas}">
+					<a th:href="@{/admin/tareas/visor(fecha=${fechaHoy})}" style="color: #2563eb; text-decoration: underline; font-weight: 600;">Volver a tareas de Hoy</a>
+				</span>
+			</div>
+		</div>
 
 		<!-- Mensaje removido del flujo principal para convertirlo en toast -->
 
@@ -141,7 +214,7 @@
 				<header class="kanban-col-header">
 					<span class="kanban-col-dot kanban-col-dot--new"></span>
 					<h3 class="kanban-col-title" id="col-new-title">Nuevas <span style="font-size:0.75rem; font-weight:normal; opacity:0.8;">(Pendientes)</span></h3>
-					<span class="kanban-col-count" th:text="${resumenTareas.pendientes}">0</span>
+					<span class="kanban-col-count" th:text="${#lists.size(tareas.?[estado.name() == 'PENDIENTE' and responsable == null])}">0</span>
 				</header>
 				<div class="kanban-col-content">
 					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'PENDIENTE' and responsable == null])}">Sin tareas nuevas.</p>
@@ -196,7 +269,7 @@
 				<header class="kanban-col-header">
 					<span class="kanban-col-dot kanban-col-dot--progress"></span>
 					<h3 class="kanban-col-title" id="col-progress-title">En proceso</h3>
-					<span class="kanban-col-count" th:text="${resumenTareas.enProceso}">0</span>
+					<span class="kanban-col-count" th:text="${#lists.size(tareas.?[estado.name() == 'EN_PROCESO' or (estado.name() == 'PENDIENTE' and responsable != null)])}">0</span>
 				</header>
 				<div class="kanban-col-content">
 					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'EN_PROCESO' or (estado.name() == 'PENDIENTE' and responsable != null)])}">Sin tareas en proceso.</p>
@@ -267,7 +340,7 @@
 				<header class="kanban-col-header">
 					<span class="kanban-col-dot kanban-col-dot--done"></span>
 					<h3 class="kanban-col-title" id="col-done-title">Terminadas <span style="font-size:0.75rem; font-weight:normal; opacity:0.8;">(Realizadas hoy)</span></h3>
-					<span class="kanban-col-count" th:text="${resumenTareas.realizadasHoy}">0</span>
+					<span class="kanban-col-count" th:text="${#lists.size(tareas.?[estado.name() == 'CERRADA'])}">0</span>
 				</header>
 				<div class="kanban-col-content">
 					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'CERRADA'])}">Sin tareas cerradas en el filtro actual.</p>
@@ -464,29 +537,143 @@
 	</th:block>
 
 	<script>
-		// Sync solicitante
-		function syncVisorSolicitante() {
-			const select = document.getElementById('visor-solicitante-select');
-			if (!select) return;
-			const option = select.options[select.selectedIndex];
-			document.getElementById('visor-solicitante-username').value = option ? option.value : '';
-			document.getElementById('visor-solicitante-nombre').value = option ? (option.getAttribute('data-nombre') || '') : '';
+		// Autocompletado predictivo para Quién solicita (Active Directory)
+		let solicitanteTimer = null;
+
+		function initVisorSolicitanteAutocomplete() {
+			const input = document.getElementById('visor-solicitante-input');
+			const dropdown = document.getElementById('visor-solicitante-dropdown');
+			const usernameField = document.getElementById('visor-solicitante-username');
+			const nombreField = document.getElementById('visor-solicitante-nombre');
+			const helpText = document.getElementById('visor-solicitante-help');
 			const fueroSelect = document.getElementById('visor-solicitante-fuero');
-			if (fueroSelect && option) {
-				const fuero = option.getAttribute('data-fuero') || '';
-				fueroSelect.value = Array.from(fueroSelect.options).some(opt => opt.value === fuero) ? fuero : '';
-			} else if (fueroSelect) {
-				fueroSelect.value = '';
+
+			if (!input || !dropdown) return;
+
+			input.addEventListener('input', function() {
+				clearTimeout(solicitanteTimer);
+				const query = this.value.trim();
+				// Reset hidden fields if user clears or modifies text
+				usernameField.value = '';
+				nombreField.value = '';
+
+				if (query.length < 3) {
+					dropdown.style.display = 'none';
+					dropdown.innerHTML = '';
+					if (helpText) {
+						helpText.textContent = 'Ingrese al menos 3 letras para buscar en Active Directory (AD).';
+						helpText.style.color = '#64748b';
+					}
+					return;
+				}
+
+				if (helpText) {
+					helpText.textContent = 'Buscando coincidencias en Active Directory...';
+					helpText.style.color = '#0284c7';
+				}
+
+				solicitanteTimer = setTimeout(async () => {
+					dropdown.innerHTML = '<div class="solicitante-dropdown-status">🔍 Buscando en Active Directory...</div>';
+					dropdown.style.display = 'block';
+
+					try {
+						const resp = await fetch('/api/v1/tareas/solicitantes?q=' + encodeURIComponent(query));
+						if (!resp.ok) throw new Error('Error al consultar servidor');
+						const data = await resp.json();
+						const usuarios = data.usuarios || [];
+
+						dropdown.innerHTML = '';
+						if (usuarios.length === 0) {
+							dropdown.innerHTML = `<div class="solicitante-dropdown-status">${data.mensaje || 'Sin coincidencias en Active Directory.'}</div>`;
+							if (helpText) {
+								helpText.textContent = 'No se encontró en AD. Puede continuar si es un solicitante manual.';
+								helpText.style.color = '#64748b';
+							}
+							return;
+						}
+
+						usuarios.forEach(u => {
+							const item = document.createElement('div');
+							item.className = 'solicitante-dropdown-item';
+							const displayName = u.nombreVisible || u.username;
+							const fueroText = (u.fuero && u.fuero !== 'Sin fuero informado') ? ' · 🏢 ' + u.fuero : '';
+							item.innerHTML = `
+								<span class="solicitante-dropdown-item-title">${displayName}</span>
+								<span class="solicitante-dropdown-item-sub">👤 ${u.username}${fueroText}</span>
+							`;
+							item.addEventListener('click', () => {
+								usernameField.value = u.username;
+								nombreField.value = displayName;
+								input.value = `${displayName} (${u.username})`;
+								dropdown.style.display = 'none';
+								dropdown.innerHTML = '';
+
+								if (helpText) {
+									helpText.textContent = `✔ Seleccionado: ${displayName} (@${u.username})`;
+									helpText.style.color = '#166534';
+								}
+
+								// Sincronizar fuero si coincide con la lista
+								if (fueroSelect && u.fuero) {
+									const optMatch = Array.from(fueroSelect.options).find(opt => 
+										opt.value.trim().toLowerCase() === u.fuero.trim().toLowerCase()
+									);
+									if (optMatch) {
+										fueroSelect.value = optMatch.value;
+									}
+								}
+							});
+							dropdown.appendChild(item);
+						});
+
+						if (helpText) {
+							helpText.textContent = `${usuarios.length} usuario(s) de AD encontrado(s). Haga clic para elegir.`;
+							helpText.style.color = '#1d4ed8';
+						}
+					} catch (err) {
+						dropdown.innerHTML = '<div class="solicitante-dropdown-status" style="color:#b91c1c;">Error al consultar Active Directory.</div>';
+						if (helpText) {
+							helpText.textContent = 'Error de conexión con AD. Ingrese el usuario manualmente.';
+							helpText.style.color = '#b91c1c';
+						}
+					}
+				}, 260);
+			});
+
+			// Ocultar dropdown al hacer clic afuera
+			document.addEventListener('pointerdown', function(e) {
+				if (!e.target.closest('.solicitante-autocomplete-box')) {
+					dropdown.style.display = 'none';
+				}
+			});
+
+			input.addEventListener('blur', function() {
+				setTimeout(() => {
+					const val = input.value.trim();
+					if (val && !usernameField.value) {
+						usernameField.value = val;
+						nombreField.value = val;
+					}
+					dropdown.style.display = 'none';
+				}, 250);
+			});
+		}
+
+		function syncVisorSolicitante() {
+			const input = document.getElementById('visor-solicitante-input');
+			const usernameField = document.getElementById('visor-solicitante-username');
+			const nombreField = document.getElementById('visor-solicitante-nombre');
+			if (input && (!usernameField.value || usernameField.value.trim() === '')) {
+				const val = input.value.trim();
+				usernameField.value = val;
+				nombreField.value = val;
 			}
 		}
 
 		// Cerrar modal al hacer clic en el backdrop
 		document.addEventListener('DOMContentLoaded', function () {
-			const solicitanteSelect = document.getElementById('visor-solicitante-select');
-			if (solicitanteSelect) {
-				solicitanteSelect.addEventListener('change', syncVisorSolicitante);
-				syncVisorSolicitante();
-			}
+			initVisorSolicitanteAutocomplete();
+
 			document.querySelectorAll('.kmodal').forEach(function (dialog) {
 				dialog.addEventListener('click', function (e) {
 					const rect = dialog.getBoundingClientRect();
@@ -513,20 +700,24 @@
 			<form class="equipment-form" th:action="@{/admin/tareas}" th:object="${tareaForm}" method="post" onsubmit="syncVisorSolicitante()">
 				<input type="hidden" name="origen" value="visor">
 				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-					<label style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px;">
+					<div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px; position:relative;">
 						<span style="font-size:0.8rem; font-weight:600;">Quién solicita *</span>
-						<select id="visor-solicitante-select" required class="kfilter-select" style="width:100%;">
-							<option value="">-- Seleccione un solicitante --</option>
-							<option th:each="solicitante : ${solicitantes}"
-									th:value="${solicitante.username}"
-									th:text="${solicitante.username + ' - ' + solicitante.nombreVisible}"
-									th:attr="data-nombre=${solicitante.nombreVisible},data-fuero=${solicitante.fuero}">
-								mesa.entrada - Mesa de Entrada
-							</option>
-						</select>
-						<input type="hidden" th:field="*{solicitanteUsername}" id="visor-solicitante-username">
-						<input type="hidden" th:field="*{solicitanteNombre}" id="visor-solicitante-nombre">
-					</label>
+						<div class="solicitante-autocomplete-box">
+							<input type="text"
+							       id="visor-solicitante-input"
+							       class="kfilter-input"
+							       style="width:100%; box-sizing:border-box; padding:8px 10px;"
+							       placeholder="Escriba 3 letras para buscar apellido, nombre o usuario en AD..."
+							       autocomplete="off"
+							       required>
+							<input type="hidden" th:field="*{solicitanteUsername}" id="visor-solicitante-username">
+							<input type="hidden" th:field="*{solicitanteNombre}" id="visor-solicitante-nombre">
+							<div id="visor-solicitante-dropdown" class="solicitante-dropdown" style="display:none;"></div>
+						</div>
+						<small id="visor-solicitante-help" style="font-size:0.75rem; color:#64748b;">
+							Ingrese al menos 3 letras para buscar en Active Directory (AD).
+						</small>
+					</div>
 
 					<label style="display:flex; flex-direction:column; gap:4px;">
 						<span style="font-size:0.8rem; font-weight:600;">Fuero / Dependencia *</span>

@@ -79,6 +79,18 @@ public class TareaTecnicaService {
 	}
 
 	@Transactional(readOnly = true)
+	public List<TareaTecnicaDetalle> buscarPorFecha(LocalDate fecha, EstadoTareaTecnica estado, Long equipoId, String responsable) {
+		LocalDate targetFecha = (fecha != null) ? fecha : LocalDate.now();
+		LocalDateTime desde = targetFecha.atStartOfDay();
+		LocalDateTime hasta = targetFecha.plusDays(1).atStartOfDay();
+		String filtroResponsable = StringUtils.hasText(responsable) ? responsable.trim() : null;
+		return tareaTecnicaRepository.buscarPorFecha(desde, hasta, estado, equipoId, filtroResponsable)
+				.stream()
+				.map(this::toDetalle)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
 	public TareaTecnicaDetalle obtener(Long id) {
 		return tareaTecnicaRepository.findById(id)
 				.map(this::toDetalle)

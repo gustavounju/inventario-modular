@@ -242,6 +242,32 @@ class TareaTecnicaPageControllerTests {
 	}
 
 	@Test
+	void buscarSolicitantesDesdeApiTareas() throws Exception {
+		mockMvc.perform(get("/api/v1/tareas/solicitantes")
+				.param("q", "gmu")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk());
+	}
+
+	@Test
+	void visorSoportaFiltroPorFechaYModoTodas() throws Exception {
+		mockMvc.perform(get("/admin/tareas/visor")
+				.param("fecha", "2026-10-14")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(view().name("admin/tareas-visor"))
+			.andExpect(content().string(containsString("Tareas del día:")))
+			.andExpect(content().string(containsString("14/10/2026")));
+
+		mockMvc.perform(get("/admin/tareas/visor")
+				.param("todas", "true")
+				.with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(view().name("admin/tareas-visor"))
+			.andExpect(content().string(containsString("Backlog completo")));
+	}
+
+	@Test
 	void bloqueaPantallaSinPermiso() throws Exception {
 		mockMvc.perform(get("/admin/tareas").with(user(usuarioSinPermisos())))
 			.andExpect(status().isForbidden());
