@@ -74,7 +74,33 @@
 			     PESTAÑA 1: Seguimiento de Tareas y Filtros
 			     ========================================================== -->
 			<div class="tab-pane is-active" id="pane-seguimiento" role="tabpanel" aria-labelledby="tab-btn-seguimiento">
-				<form class="search-form dashboard-filter-form" th:action="@{/admin/tareas}" method="get" role="search">
+				<form class="search-form dashboard-filter-form" th:action="@{/admin/tareas}" method="get" role="search" style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+					<label style="min-width: 160px;">
+						<span>📅 Fecha</span>
+						<input type="date" name="fecha"
+						       th:value="${filtroFecha != null ? #temporals.format(filtroFecha, 'yyyy-MM-dd') : ''}"
+						       th:disabled="${esModoTodas}"
+						       onchange="this.form.submit()">
+					</label>
+
+					<!-- Controles de navegación rápida de fecha -->
+					<div style="display: flex; gap: 4px; padding-bottom: 2px;">
+						<a class="secondary-action"
+						   th:href="@{/admin/tareas(fecha=${filtroFecha != null ? filtroFecha.minusDays(1) : fechaHoy.minusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   title="Día anterior" style="padding: 7px 11px;">◀</a>
+						<a class="secondary-action"
+						   th:href="@{/admin/tareas(fecha=${fechaHoy}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   th:style="${filtroFecha != null and filtroFecha.equals(fechaHoy) and !esModoTodas ? 'background:#0284c7; color:#fff; font-weight:600;' : ''}"
+						   title="Ver tareas de hoy" style="padding: 7px 12px;">Hoy</a>
+						<a class="secondary-action"
+						   th:href="@{/admin/tareas(fecha=${filtroFecha != null ? filtroFecha.plusDays(1) : fechaHoy.plusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   title="Día siguiente" style="padding: 7px 11px;">▶</a>
+						<a class="secondary-action"
+						   th:href="@{/admin/tareas(todas=true, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   th:style="${esModoTodas ? 'background:#0284c7; color:#fff; font-weight:600;' : ''}"
+						   title="Ver todas las tareas registradas (historial completo)" style="padding: 7px 12px;">📋 Ver todas</a>
+					</div>
+
 					<label>
 						<span>Estado</span>
 						<select name="estado">
@@ -95,10 +121,36 @@
 						<span>Texto</span>
 						<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120" placeholder="Buscar por responsable o título...">
 					</label>
-					<div class="form-actions">
+					<div class="form-actions" style="display:flex; gap:6px;">
 						<button class="primary-action" type="submit">🔍 Filtrar</button>
+						<a class="secondary-action" th:href="@{/admin/tareas}">Limpiar</a>
 					</div>
 				</form>
+
+				<!-- Banner de estado de fecha -->
+				<div style="margin: 10px 0 16px 0; padding: 10px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; color: #475569;">
+					<div style="display:flex; align-items:center; gap: 8px;">
+						<span th:if="${!esModoTodas and filtroFecha != null}">
+							📅 <strong>Tareas del día:</strong>
+							<span th:text="${#temporals.format(filtroFecha, 'dd/MM/yyyy')}">14/10/2026</span>
+							<span th:if="${filtroFecha.equals(fechaHoy)}" style="color: #0284c7; font-weight: 600;">(Hoy)</span>
+							· <strong th:text="${#lists.size(tareas)}">0</strong> tareas encontradas
+						</span>
+						<span th:if="${esModoTodas or filtroFecha == null}">
+							📋 <strong>Mostrando historial completo de tareas</strong>
+							· <strong th:text="${#lists.size(tareas)}">0</strong> tareas cargadas
+						</span>
+					</div>
+					<div>
+						<span th:if="${!esModoTodas and resumenTareas != null and resumenTareas.pendientes > 0}">
+							⚠️ Hay <strong th:text="${resumenTareas.pendientes}">0</strong> pendientes en total
+							<a th:href="@{/admin/tareas(todas=true)}" style="margin-left: 6px; color: #2563eb; text-decoration: underline; font-weight: 600;">Ver todas</a>
+						</span>
+						<span th:if="${esModoTodas}">
+							<a th:href="@{/admin/tareas(fecha=${fechaHoy})}" style="color: #2563eb; text-decoration: underline; font-weight: 600;">Volver a tareas de Hoy</a>
+						</span>
+					</div>
+				</div>
 
 				<section class="modules-section" aria-labelledby="tareas-list-title">
 					<div class="section-header">

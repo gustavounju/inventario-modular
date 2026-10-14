@@ -83,12 +83,14 @@ public class TareaTecnicaPageController {
 	public String tareas(
 			Model model,
 			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+			@RequestParam(required = false, defaultValue = "false") boolean todas,
 			@RequestParam(required = false) EstadoTareaTecnica estado,
 			@RequestParam(required = false) Long equipoId,
 			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String creado) {
 		exigirPermiso(userDetails, PERMISO_VER);
-		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, false, null, true);
+		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, false, fecha, todas);
 		model.addAttribute("creado", "1".equals(creado));
 		return "admin/tareas";
 	}
@@ -300,18 +302,17 @@ public class TareaTecnicaPageController {
 			EstadoTareaTecnica estado, Long equipoId, String responsable, boolean esVisor,
 			LocalDate fecha, boolean todas) {
 		boolean tieneFiltro = estado != null || equipoId != null || StringUtils.hasText(responsable);
+		boolean esModoTodas = todas || (tieneFiltro && fecha == null);
 		LocalDate hoy = LocalDate.now();
-		LocalDate fechaFiltro = (fecha != null) ? fecha : (todas ? null : hoy);
+		LocalDate fechaFiltro = (fecha != null) ? fecha : (esModoTodas ? null : hoy);
 
 		List<TareaTecnicaDetalle> tareas;
-		if (esVisor) {
-			if (todas) {
-				tareas = tieneFiltro ? tareaTecnicaService.buscar(estado, equipoId, responsable) : tareaTecnicaService.buscarParaVisor();
-			} else {
-				tareas = tareaTecnicaService.buscarPorFecha(fechaFiltro, estado, equipoId, responsable);
-			}
+		if (esModoTodas) {
+			tareas = tieneFiltro
+					? tareaTecnicaService.buscar(estado, equipoId, responsable)
+					: (esVisor ? tareaTecnicaService.buscarParaVisor() : tareaTecnicaService.buscar(null, null, null));
 		} else {
-			tareas = tareaTecnicaService.buscar(estado, equipoId, responsable);
+			tareas = tareaTecnicaService.buscarPorFecha(fechaFiltro, estado, equipoId, responsable);
 		}
 
 		Set<Long> tareaIds = tareas.stream().map(TareaTecnicaDetalle::id).collect(Collectors.toSet());
