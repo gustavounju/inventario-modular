@@ -41,7 +41,7 @@
 		</div>
 		<nav class="judicial-main-nav" aria-label="Navegación principal">
 			<a th:href="@{/admin/tareas/visor}" class="is-active">Tareas</a>
-			<a th:href="@{/admin}">Panel general</a>
+			<a th:href="@{/admin}" th:if="${!esSoloMovil}">Panel general</a>
 			<a th:href="@{/movil/tareas}">Vista móvil</a>
 			<a th:if="${currentUser == null and (username == null or username.isEmpty())}" th:href="@{/login(redirect='/admin/tareas/visor')}" class="judicial-nav-login" style="font-weight:700; color:#fff; background:rgba(255,255,255,0.18); padding:5px 12px; border-radius:6px; text-decoration:none;">🔑 Iniciar sesión</a>
 			<form th:if="${currentUser != null or (username != null and !username.isEmpty())}" class="judicial-logout-form" th:action="@{/logout}" method="post" style="display:inline; margin:0;">
@@ -83,7 +83,7 @@
 			<div class="kanban-topbar-actions">
 				<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
 				<span id="visor-live-status" class="kanban-live-status" role="status"></span>
-				<a class="kbtn kbtn--secondary" th:href="@{/admin}">Panel general</a>
+				<a class="kbtn kbtn--secondary" th:href="@{/admin}" th:if="${!esSoloMovil}">Panel general</a>
 				<button type="button" class="kbtn kbtn--secondary" onclick="abrirHistorialLlamadas()">📞 Llamadas Recientes</button>
 				<button type="button" class="kbtn kbtn--primary" onclick="document.getElementById('modal-nueva-tarea').showModal()" th:if="${puedeEditarTareas}">➕ Nueva Tarea</button>
 

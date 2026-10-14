@@ -90,6 +90,9 @@ public class TareaTecnicaPageController {
 			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String creado) {
 		exigirPermiso(userDetails, PERMISO_VER);
+		if (authorizationService.esSoloMovil(userDetails)) {
+			return "redirect:/movil/tareas";
+		}
 		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, false, fecha, todas);
 		model.addAttribute("creado", "1".equals(creado));
 		return "admin/tareas";
@@ -351,6 +354,8 @@ public class TareaTecnicaPageController {
 		model.addAttribute("usuariosFrecuentes", usuarioManagementService.listarTecnicosAsignables());
 		model.addAttribute("tecnicosConectados", apkPresenciaService.obtenerConectados());
 		model.addAttribute("esFiltroActivo", tieneFiltro);
+		model.addAttribute("esSoloMovil", authorizationService.esSoloMovil(userDetails));
+		model.addAttribute("esAdministrador", authorizationService.esAdministrador(userDetails));
 	}
 
 

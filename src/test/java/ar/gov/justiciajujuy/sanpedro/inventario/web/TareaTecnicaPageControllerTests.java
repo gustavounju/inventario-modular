@@ -273,6 +273,19 @@ class TareaTecnicaPageControllerTests {
 			.andExpect(status().isForbidden());
 	}
 
+	@Test
+	@Sql(statements = {
+			"INSERT INTO roles (id, codigo, nombre, descripcion, activo) VALUES (20, 'TECNICO', 'Tecnico', 'Tecnico', TRUE)",
+			"INSERT INTO usuarios (id, username, nombre_visible, fuero, origen, activo) VALUES (20, 'tecnico.tareas', 'Tecnico Tareas', 'Informatica', 'AD', TRUE)",
+			"INSERT INTO usuario_roles (usuario_id, rol_id) VALUES (20, 20)",
+			"INSERT INTO rol_modulo_permisos (rol_id, modulo_id, permiso_id) VALUES (20, 9, 1), (20, 9, 3)"
+	})
+	void tecnicoEsRedirigidoAMovilTareas() throws Exception {
+		mockMvc.perform(get("/admin/tareas").with(user(tecnicoTareas())))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrl("/movil/tareas"));
+	}
+
 	private ActiveDirectoryUserDetails adminLocal() {
 		return new ActiveDirectoryUserDetails(
 				"admin.local",

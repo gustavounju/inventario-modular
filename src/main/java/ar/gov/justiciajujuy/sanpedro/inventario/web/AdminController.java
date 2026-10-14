@@ -70,12 +70,18 @@ public class AdminController {
 	}
 
 	@GetMapping("/")
-	public String index() {
+	public String index(@AuthenticationPrincipal UserDetails userDetails) {
+		if (authorizationService.esSoloMovil(userDetails)) {
+			return "redirect:/movil/tareas";
+		}
 		return "redirect:/admin";
 	}
 
 	@GetMapping("/admin")
 	public String admin(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+		if (authorizationService.esSoloMovil(userDetails)) {
+			return "redirect:/movil/tareas";
+		}
 		UsuarioActual usuarioActual = authorizationService.obtenerUsuarioActual(userDetails);
 		model.addAttribute("applicationName", applicationName);
 		model.addAttribute("version", version);

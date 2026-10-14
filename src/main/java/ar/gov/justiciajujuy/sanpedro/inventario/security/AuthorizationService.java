@@ -64,6 +64,39 @@ public class AuthorizationService {
 		return tienePermiso(userDetails, "USUARIOS", "ADMINISTRAR");
 	}
 
+	@Transactional(readOnly = true)
+	public boolean esAdministrador(UserDetails userDetails) {
+		if (userDetails == null) {
+			return false;
+		}
+		String username = userDetails.getUsername();
+		List<String> roles = usuarioSistemaRepository.findRoleCodesByUsername(username);
+		if (roles.contains("ADMINISTRADOR")) {
+			return true;
+		}
+		return tienePermiso(userDetails, "USUARIOS", "ADMINISTRAR");
+	}
+
+	@Transactional(readOnly = true)
+	public boolean esSoloMovil(UserDetails userDetails) {
+		if (userDetails == null) {
+			return false;
+		}
+		if (esAdministrador(userDetails)) {
+			return false;
+		}
+		String username = userDetails.getUsername();
+		List<String> roles = usuarioSistemaRepository.findRoleCodesByUsername(username);
+		if (roles.contains("TECNICO") || roles.contains("TELEFONISTA")) {
+			return true;
+		}
+		boolean tieneTareas = tienePermiso(userDetails, "TAREAS", "VER");
+		boolean tieneAdminModulos = tienePermiso(userDetails, "USUARIOS", "ADMINISTRAR")
+				|| tienePermiso(userDetails, "PATRIMONIO", "VER")
+				|| tienePermiso(userDetails, "EQUIPOS", "ADMINISTRAR");
+		return tieneTareas && !tieneAdminModulos;
+	}
+
 	private List<ModuloAutorizado> obtenerModulos(String username) {
 		/*
 		 * Agrupamos la consulta plana de SQL en objetos por modulo. Asi la API queda

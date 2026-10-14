@@ -28,4 +28,7 @@ public interface UsuarioSistemaRepository extends JpaRepository<UsuarioSistema, 
 	 */
 	@Query("SELECT COUNT(u) FROM UsuarioSistema u JOIN u.roles r WHERE r.codigo = 'ADMINISTRADOR' AND u.activo = true")
 	long countAdministradores();
+
+	@Query("SELECT r.codigo FROM UsuarioSistema u JOIN u.roles r WHERE LOWER(u.username) = LOWER(:username) AND u.activo = true AND r.activo = true")
+	java.util.List<String> findRoleCodesByUsername(@org.springframework.data.repository.query.Param("username") String username);
 }

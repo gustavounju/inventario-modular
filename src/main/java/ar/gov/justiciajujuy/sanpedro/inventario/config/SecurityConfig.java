@@ -1,5 +1,6 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.config;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LanOnlyAccessFilter;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginAttemptService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.LoginRateLimitFilter;
@@ -44,6 +45,7 @@ public class SecurityConfig {
 			NetworkAccessProperties networkAccessProperties,
 			ObjectProvider<AuthenticationProvider> authenticationProviders,
 			LoginAttemptService loginAttemptService,
+			AuthorizationService authorizationService,
 			SetupFilter setupFilter) throws Exception {
 		authenticationProviders.orderedStream().forEach(http::authenticationProvider);
 
@@ -92,7 +94,11 @@ public class SecurityConfig {
 				.successHandler((request, response, authentication) -> {
 					// Destinos internos cerrados: el parametro del formulario nunca se usa como URL arbitraria.
 					loginAttemptService.loginSucceeded(request.getParameter("username"), request.getRemoteAddr());
-					String destino = "movil".equals(request.getParameter("destino")) ? "/movil/tareas" : "/admin";
+					boolean esSoloMovil = false;
+					if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+						esSoloMovil = authorizationService.esSoloMovil(userDetails);
+					}
+					String destino = ("movil".equals(request.getParameter("destino")) || esSoloMovil) ? "/movil/tareas" : "/admin";
 					new org.springframework.security.web.savedrequest.HttpSessionRequestCache().removeRequest(request, response);
 					response.sendRedirect(request.getContextPath() + destino);
 				})
