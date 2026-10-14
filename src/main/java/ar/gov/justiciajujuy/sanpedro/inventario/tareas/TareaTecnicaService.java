@@ -2,8 +2,13 @@ package ar.gov.justiciajujuy.sanpedro.inventario.tareas;
 
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService;
@@ -61,6 +66,19 @@ public class TareaTecnicaService {
 	}
 
 	@Transactional(readOnly = true)
+	public List<TareaTecnicaDetalle> buscarParaVisor() {
+		List<TareaTecnica> activas = tareaTecnicaRepository.buscarActivasParaVisor();
+		List<TareaTecnica> cerradas = tareaTecnicaRepository.buscarCerradasRecientes(PageRequest.of(0, 30));
+		List<TareaTecnica> canceladas = tareaTecnicaRepository.buscarCanceladasRecientes(PageRequest.of(0, 15));
+
+		List<TareaTecnicaDetalle> resultado = new ArrayList<>(activas.size() + cerradas.size() + canceladas.size());
+		activas.stream().map(this::toDetalle).forEach(resultado::add);
+		cerradas.stream().map(this::toDetalle).forEach(resultado::add);
+		canceladas.stream().map(this::toDetalle).forEach(resultado::add);
+		return resultado;
+	}
+
+	@Transactional(readOnly = true)
 	public TareaTecnicaDetalle obtener(Long id) {
 		return tareaTecnicaRepository.findById(id)
 				.map(this::toDetalle)
@@ -92,6 +110,16 @@ public class TareaTecnicaService {
 	}
 
 	@Transactional(readOnly = true)
+	public Map<Long, List<TareaComentarioDetalle>> comentariosPorTareas(Collection<Long> tareaIds) {
+		if (tareaIds == null || tareaIds.isEmpty()) {
+			return Map.of();
+		}
+		return comentarioRepository.buscarPorTareas(tareaIds).stream()
+				.map(this::toComentarioDetalle)
+				.collect(Collectors.groupingBy(TareaComentarioDetalle::tareaId));
+	}
+
+	@Transactional(readOnly = true)
 	public List<StockDisponibleDetalle> stockDisponibleParaTareas() {
 		return stockComponenteRepository.findByActivoTrueOrderByTipoAscDescripcionAsc().stream()
 				.filter(componente -> componente.getEstado() == EstadoStockComponente.DISPONIBLE)
@@ -108,6 +136,25 @@ public class TareaTecnicaService {
 						.thenComparing(TareaStockUsoDetalle::creadoEn, Comparator.nullsLast(Comparator.reverseOrder())))
 				.toList();
 	}
+
+	@Transactional(readOnly = true)
+	public Map<Long, List<TareaStockUsoDetalle>> stockUsadoPorTareas(Collection<Long> tareaIds) {
+		if (tareaIds == null || tareaIds.isEmpty()) {
+			return Map.of();
+		}
+		return stockUsoRepository.buscarPorTareas(tareaIds).stream()
+				.collect(Collectors.groupingBy(
+						uso -> uso.getTarea().getId(),
+						Collectors.mapping(
+								this::toStockUsoDetalle,
+								Collectors.collectingAndThen(
+										Collectors.toList(),
+										list -> list.stream()
+												.sorted(Comparator.comparingInt(TareaStockUsoDetalle::ordenVisual)
+														.thenComparing(TareaStockUsoDetalle::creadoEn, Comparator.nullsLast(Comparator.reverseOrder())))
+												.toList()))));
+	}
+
 
 	@Transactional
 	public TareaTecnicaDetalle crear(GuardarTareaTecnicaCommand command) {

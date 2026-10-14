@@ -18,6 +18,7 @@
 	<header class="judicial-global-header">
 		<div class="judicial-brand">
 			<h1>Poder Judicial de la Provincia de Jujuy</h1>
+			<p class="judicial-brand-sub" style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin:0;">Seguimiento completo del trabajo diario</p>
 		</div>
 		<nav class="judicial-main-nav" aria-label="Navegación principal">
 			<a th:href="@{/admin/tareas/visor}" class="is-active">Tareas</a>
@@ -139,7 +140,7 @@
 			<section class="kanban-col kanban-col--new" aria-labelledby="col-new-title" data-status="PENDIENTE">
 				<header class="kanban-col-header">
 					<span class="kanban-col-dot kanban-col-dot--new"></span>
-					<h3 class="kanban-col-title" id="col-new-title">Nuevas</h3>
+					<h3 class="kanban-col-title" id="col-new-title">Nuevas <span style="font-size:0.75rem; font-weight:normal; opacity:0.8;">(Pendientes)</span></h3>
 					<span class="kanban-col-count" th:text="${resumenTareas.pendientes}">0</span>
 				</header>
 				<div class="kanban-col-content">
@@ -265,7 +266,7 @@
 			<section class="kanban-col kanban-col--done" aria-labelledby="col-done-title" data-status="CERRADA">
 				<header class="kanban-col-header">
 					<span class="kanban-col-dot kanban-col-dot--done"></span>
-					<h3 class="kanban-col-title" id="col-done-title">Terminadas</h3>
+					<h3 class="kanban-col-title" id="col-done-title">Terminadas <span style="font-size:0.75rem; font-weight:normal; opacity:0.8;">(Realizadas hoy)</span></h3>
 					<span class="kanban-col-count" th:text="${resumenTareas.realizadasHoy}">0</span>
 				</header>
 				<div class="kanban-col-content">
@@ -300,6 +301,10 @@
 							</div>
 						</article>
 					</th:block>
+					<div class="kanban-col-footer" th:if="${!esFiltroActivo and !#lists.isEmpty(tareas.?[estado.name() == 'CERRADA'])}" style="text-align: center; padding: 10px 4px; font-size: 0.78rem; color: var(--text-muted, #94a3b8); border-top: 1px dashed rgba(255,255,255,0.1); margin-top: 8px;">
+						<span>Mostrando recientes (últimas 30). </span>
+						<a th:href="@{/admin/tareas(estado='CERRADA')}" style="color: #60a5fa; text-decoration: underline;">Ver todas en listado</a>
+					</div>
 				</div>
 			</section>
 
@@ -339,8 +344,13 @@
 							</div>
 						</article>
 					</th:block>
+					<div class="kanban-col-footer" th:if="${!esFiltroActivo and !#lists.isEmpty(tareas.?[estado.name() == 'CANCELADA'])}" style="text-align: center; padding: 10px 4px; font-size: 0.78rem; color: var(--text-muted, #94a3b8); border-top: 1px dashed rgba(255,255,255,0.1); margin-top: 8px;">
+						<span>Mostrando recientes (últimas 15). </span>
+						<a th:href="@{/admin/tareas(estado='CANCELADA')}" style="color: #60a5fa; text-decoration: underline;">Ver todas en listado</a>
+					</div>
 				</div>
 			</section>
+
 
 		</div><!-- /kanban-board -->
 
@@ -368,7 +378,7 @@
 						</div>
 						<p class="kcomment-text" th:text="${comentario.comentario}">Texto del comentario.</p>
 					</div>
-					<!-- Agregar comentario desde el modal (solo si puede editar) -->
+					<!--/* Formulario de comentario en modal (solo si puede editar) */-->
 					<form class="kcomment-form" th:if="${puedeEditarTareas}"
 						  th:action="@{/admin/tareas/{id}/comentarios(id=${tarea.id})}" method="post">
 						<input type="hidden" name="origen" value="visor">

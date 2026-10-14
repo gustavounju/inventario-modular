@@ -53,6 +53,34 @@ public interface TareaTecnicaRepository extends JpaRepository<TareaTecnica, Long
 			SELECT t
 			FROM TareaTecnica t
 			LEFT JOIN FETCH t.equipo e
+			WHERE t.estado IN (ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.PENDIENTE,
+			                   ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.EN_PROCESO)
+			ORDER BY t.id DESC
+			""")
+	List<TareaTecnica> buscarActivasParaVisor();
+
+	@Query("""
+			SELECT t
+			FROM TareaTecnica t
+			LEFT JOIN FETCH t.equipo e
+			WHERE t.estado = ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.CERRADA
+			ORDER BY COALESCE(t.cerradoEn, t.creadoEn) DESC, t.id DESC
+			""")
+	List<TareaTecnica> buscarCerradasRecientes(org.springframework.data.domain.Pageable pageable);
+
+	@Query("""
+			SELECT t
+			FROM TareaTecnica t
+			LEFT JOIN FETCH t.equipo e
+			WHERE t.estado = ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.CANCELADA
+			ORDER BY COALESCE(t.cerradoEn, t.creadoEn) DESC, t.id DESC
+			""")
+	List<TareaTecnica> buscarCanceladasRecientes(org.springframework.data.domain.Pageable pageable);
+
+	@Query("""
+			SELECT t
+			FROM TareaTecnica t
+			LEFT JOIN FETCH t.equipo e
 			WHERE LOWER(COALESCE(t.solicitanteUsername, '')) = LOWER(:solicitanteUsername)
 			  AND t.estado IN :estados
 			  AND (e IS NULL OR UPPER(e.nombre) = 'PC-GENERICA')
@@ -61,3 +89,4 @@ public interface TareaTecnicaRepository extends JpaRepository<TareaTecnica, Long
 			@Param("solicitanteUsername") String solicitanteUsername,
 			@Param("estados") Collection<EstadoTareaTecnica> estados);
 }
+

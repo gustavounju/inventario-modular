@@ -2,8 +2,10 @@ package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.springframework.util.StringUtils;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService;
@@ -83,7 +85,7 @@ public class TareaTecnicaPageController {
 			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String creado) {
 		exigirPermiso(userDetails, PERMISO_VER);
-		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable);
+		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, false);
 		model.addAttribute("creado", "1".equals(creado));
 		return "admin/tareas";
 	}
@@ -96,10 +98,11 @@ public class TareaTecnicaPageController {
 			@RequestParam(required = false) Long equipoId,
 			@RequestParam(required = false) String responsable,
 			@RequestParam(required = false) String creado) {
-		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable);
+		prepararModelo(model, userDetails, new TareaForm(), estado, equipoId, responsable, true);
 		model.addAttribute("creado", "1".equals(creado));
 		return "admin/tareas-visor";
 	}
+
 
 	@PostMapping("/admin/tareas")
 	public String crear(
@@ -280,12 +283,16 @@ public class TareaTecnicaPageController {
 	}
 
 	private void prepararModelo(Model model, UserDetails userDetails, TareaForm tareaForm,
-			EstadoTareaTecnica estado, Long equipoId, String responsable) {
-		List<TareaTecnicaDetalle> tareas = tareaTecnicaService.buscar(estado, equipoId, responsable);
-		Map<Long, List<TareaComentarioDetalle>> comentariosPorTarea = tareas.stream()
-				.collect(Collectors.toMap(TareaTecnicaDetalle::id, tarea -> tareaTecnicaService.comentarios(tarea.id())));
-		Map<Long, List<TareaStockUsoDetalle>> stockPorTarea = tareas.stream()
-				.collect(Collectors.toMap(TareaTecnicaDetalle::id, tarea -> tareaTecnicaService.stockUsado(tarea.id())));
+			EstadoTareaTecnica estado, Long equipoId, String responsable, boolean esVisor) {
+		boolean tieneFiltro = estado != null || equipoId != null || StringUtils.hasText(responsable);
+		List<TareaTecnicaDetalle> tareas = (esVisor && !tieneFiltro)
+				? tareaTecnicaService.buscarParaVisor()
+				: tareaTecnicaService.buscar(estado, equipoId, responsable);
+
+		Set<Long> tareaIds = tareas.stream().map(TareaTecnicaDetalle::id).collect(Collectors.toSet());
+		Map<Long, List<TareaComentarioDetalle>> comentariosPorTarea = tareaTecnicaService.comentariosPorTareas(tareaIds);
+		Map<Long, List<TareaStockUsoDetalle>> stockPorTarea = tareaTecnicaService.stockUsadoPorTareas(tareaIds);
+
 		model.addAttribute("tareas", tareas);
 		model.addAttribute("comentariosPorTarea", comentariosPorTarea);
 		model.addAttribute("stockPorTarea", stockPorTarea);
@@ -314,7 +321,9 @@ public class TareaTecnicaPageController {
 		model.addAttribute("tecnicosAsignables", usuarioManagementService.listarTecnicosAsignables());
 		model.addAttribute("usuariosFrecuentes", usuarioManagementService.listarTecnicosAsignables());
 		model.addAttribute("tecnicosConectados", apkPresenciaService.obtenerConectados());
+		model.addAttribute("esFiltroActivo", tieneFiltro);
 	}
+
 
 	private String vistaTareas(String origen) {
 		return "visor".equalsIgnoreCase(origen) ? "admin/tareas-visor" : "admin/tareas";
