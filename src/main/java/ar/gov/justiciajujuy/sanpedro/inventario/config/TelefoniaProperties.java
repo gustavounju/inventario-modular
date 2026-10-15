@@ -9,7 +9,7 @@ public class TelefoniaProperties {
 	private String url = "https://10.15.0.2:8089/api";
 	private String user = "cdrapi";
 	private String password = "";
-	private String interno = "1005";
+	private String interno = "2005";
 	private boolean sslStrict = false;
 	private String webhookIps = "10.15.0.2,127.0.0.1,0:0:0:0:0:0:0:1";
 

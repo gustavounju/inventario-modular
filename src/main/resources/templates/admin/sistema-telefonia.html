@@ -43,7 +43,7 @@
 				</div>
 				<div>
 					<dt>Interno Monitoreado</dt>
-					<dd th:text="${telefoniaActual.interno} ?: '1005'">1005</dd>
+					<dd th:text="${telefoniaActual.interno} ?: '2005'">2005</dd>
 				</div>
 			</div>
 
@@ -69,7 +69,7 @@
 					</label>
 					<label>
 						<span>Interno del Taller / Guardia</span>
-						<input type="text" th:field="*{interno}" placeholder="1005" required>
+						<input type="text" th:field="*{interno}" placeholder="2005" required>
 					</label>
 					<label class="wide-field">
 						<span>IPs autorizadas para Webhook (separadas por coma)</span>

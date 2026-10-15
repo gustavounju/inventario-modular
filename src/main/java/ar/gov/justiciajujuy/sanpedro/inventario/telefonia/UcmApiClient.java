@@ -46,7 +46,7 @@ public class UcmApiClient {
     @Value("${ucm.password:}")
     private String defaultApiPassword;
 
-    @Value("${ucm.interno:1005}")
+    @Value("${ucm.interno:2005}")
     private String defaultInternoTaller;
 
     @Value("${ucm.ssl.strict:false}")

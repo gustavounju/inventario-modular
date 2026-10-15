@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS directorio_telefonico (
 
 -- 2. Carga inicial de internos conocidos del Centro Judicial San Pedro
 INSERT INTO directorio_telefonico (numero, nombre, departamento, origen) VALUES
-('2005', 'MesaDeEntradasInformatica', 'Mesa de Entradas Informática', 'SISTEMA'),
+('2005', 'Taller Informatica', 'Taller de Informática', 'SISTEMA'),
 ('2000', 'Mesa de Entradas General', 'Mesa de Entradas', 'SISTEMA'),
-('1005', 'Taller Informatica', 'Taller de Informática', 'SISTEMA')
+('1005', 'MesaDeEntradasInformatica', 'Mesa de Entradas Informática', 'SISTEMA')
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), departamento = VALUES(departamento);
 
 -- 3. Liberar cualquier tarea técnica abierta que haya quedado asignada erróneamente a un usuario telefonista
