@@ -80,4 +80,12 @@ class LoginControllerTests {
 
 		assertThat(hashPublicado).isEqualTo(hashReal);
 	}
+
+	@Test
+	void descargaAccesoDirectoWindows() throws Exception {
+		mockMvc.perform(get("/app/inventario-modular.url"))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("[InternetShortcut]")))
+			.andExpect(content().string(containsString("URL=")));
+	}
 }

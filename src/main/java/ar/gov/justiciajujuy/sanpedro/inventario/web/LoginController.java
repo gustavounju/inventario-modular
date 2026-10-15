@@ -33,7 +33,7 @@ public class LoginController {
 		return "login";
 	}
 
-	@GetMapping(value = "/app/inventario-modular.url", produces = "application/internet-shortcut")
+	@GetMapping(value = "/app/inventario-modular.url", produces = "application/octet-stream")
 	@org.springframework.web.bind.annotation.ResponseBody
 	public org.springframework.http.ResponseEntity<byte[]> descargarAccesoDirecto(jakarta.servlet.http.HttpServletRequest request) {
 		String scheme = request.getScheme();
@@ -46,8 +46,8 @@ public class LoginController {
 		String shortcutContent = "[InternetShortcut]\r\nURL=" + baseUrl + "\r\nIconIndex=0\r\n";
 		byte[] bytes = shortcutContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 		return org.springframework.http.ResponseEntity.ok()
-				.header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Inventario Modular.url\"")
-				.header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/internet-shortcut")
+				.header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Inventario-Modular.url\"")
+				.header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/octet-stream")
 				.body(bytes);
 	}
 }
