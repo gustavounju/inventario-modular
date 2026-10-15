@@ -435,11 +435,9 @@ public class TareaTecnicaPageController {
 		@Size(max = 120)
 		private String solicitanteUsername;
 
-		@NotBlank
 		@Size(max = 180)
 		private String solicitanteNombre;
 
-		@NotBlank
 		@Size(max = 120)
 		private String solicitanteFuero;
 
@@ -454,13 +452,19 @@ public class TareaTecnicaPageController {
 		}
 
 		GuardarTareaTecnicaCommand toCommand(String creadoPor) {
+			String nombre = org.springframework.util.StringUtils.hasText(solicitanteNombre)
+					? solicitanteNombre.trim()
+					: (org.springframework.util.StringUtils.hasText(solicitanteUsername) ? solicitanteUsername.trim() : "Sin solicitante");
+			String fuero = org.springframework.util.StringUtils.hasText(solicitanteFuero)
+					? solicitanteFuero.trim()
+					: "Sin fuero informado";
 			return new GuardarTareaTecnicaCommand(
 					equipoId,
 					titulo,
 					descripcion,
 					solicitanteUsername,
-					solicitanteNombre,
-					solicitanteFuero,
+					nombre,
+					fuero,
 					prioridad,
 					responsable,
 					creadoPor);

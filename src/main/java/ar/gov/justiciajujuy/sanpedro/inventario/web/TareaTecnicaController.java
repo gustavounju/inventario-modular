@@ -321,8 +321,8 @@ public class TareaTecnicaController {
 			@NotBlank @Size(max = 180) String titulo,
 			@Size(max = 1000) String descripcion,
 			@NotBlank @Size(max = 120) String solicitanteUsername,
-			@NotBlank @Size(max = 180) String solicitanteNombre,
-			@NotBlank @Size(max = 120) String solicitanteFuero,
+			@Size(max = 180) String solicitanteNombre,
+			@Size(max = 120) String solicitanteFuero,
 			PrioridadTareaTecnica prioridad,
 			@Size(max = 120) String responsable) {
 
@@ -332,13 +332,19 @@ public class TareaTecnicaController {
 			if (esTelefonista && responsableFinal != null && responsableFinal.equalsIgnoreCase(userDetails.getUsername())) {
 				responsableFinal = null;
 			}
+			String nombreFinal = (solicitanteNombre != null && !solicitanteNombre.isBlank())
+					? solicitanteNombre.trim()
+					: (solicitanteUsername != null ? solicitanteUsername.trim() : "Sin solicitante");
+			String fueroFinal = (solicitanteFuero != null && !solicitanteFuero.isBlank())
+					? solicitanteFuero.trim()
+					: "Sin fuero informado";
 			return new GuardarTareaTecnicaCommand(
 					equipoId,
 					titulo,
 					descripcion,
 					solicitanteUsername,
-					solicitanteNombre,
-					solicitanteFuero,
+					nombreFinal,
+					fueroFinal,
 					prioridad,
 					responsableFinal,
 					userDetails.getUsername());

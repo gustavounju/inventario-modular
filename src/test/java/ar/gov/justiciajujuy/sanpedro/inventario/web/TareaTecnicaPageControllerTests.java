@@ -151,6 +151,23 @@ class TareaTecnicaPageControllerTests {
 	}
 
 	@Test
+	void administradorPuedeCrearTareaDesdeVisorSinEspecificarFuero() throws Exception {
+		mockMvc.perform(post("/admin/tareas")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("titulo", "Falla de conectividad")
+				.param("descripcion", "No tiene red en la oficina")
+				.param("solicitanteUsername", "mesa.entrada")
+				.param("origen", "visor"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrlPattern("/admin/tareas/visor?creado=*"));
+
+		mockMvc.perform(get("/admin/tareas/visor").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Falla de conectividad")));
+	}
+
+	@Test
 	void accionesDesdeVisorRequierenSesion() throws Exception {
 		mockMvc.perform(post("/admin/tareas/1/comentarios")
 				.with(csrf())

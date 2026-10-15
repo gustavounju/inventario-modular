@@ -355,9 +355,9 @@
 								<small class="field-error" th:if="${#fields.hasErrors('solicitanteUsername')}" th:errors="*{solicitanteUsername}">Error</small>
 							</div>
 							<label>
-								<span>Fuero / Unidad organizativa *</span>
-								<select th:field="*{solicitanteFuero}" id="solicitante-fuero" required>
-									<option value="">Seleccione fuero</option>
+								<span>Fuero / Unidad organizativa (opcional)</span>
+								<select th:field="*{solicitanteFuero}" id="solicitante-fuero">
+									<option value="">Sin especificar / Automático</option>
 									<option th:each="fuero : ${fuerosDisponibles}" th:value="${fuero}" th:text="${fuero}">Informatica</option>
 								</select>
 								<small class="field-error" th:if="${#fields.hasErrors('solicitanteFuero')}" th:errors="*{solicitanteFuero}">Error</small>

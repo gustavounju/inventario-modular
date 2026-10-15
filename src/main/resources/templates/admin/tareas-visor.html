@@ -728,9 +728,9 @@
 					</div>
 
 					<label style="display:flex; flex-direction:column; gap:4px;">
-						<span style="font-size:0.8rem; font-weight:600;">Fuero / Dependencia *</span>
-						<select th:field="*{solicitanteFuero}" id="visor-solicitante-fuero" required class="kfilter-select" style="width:100%;">
-							<option value="">Seleccione fuero</option>
+						<span style="font-size:0.8rem; font-weight:600;">Fuero / Dependencia (opcional)</span>
+						<select th:field="*{solicitanteFuero}" id="visor-solicitante-fuero" class="kfilter-select" style="width:100%;">
+							<option value="">Sin especificar / Automático</option>
 							<option th:each="fuero : ${fuerosDisponibles}" th:value="${fuero}" th:text="${fuero}">Informatica</option>
 						</select>
 					</label>

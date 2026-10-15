@@ -172,21 +172,32 @@ public class TareaTecnicaService {
 	public TareaTecnicaDetalle crear(GuardarTareaTecnicaCommand command) {
 		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
 		validarSolicitanteEnAd(solicitanteUsername);
-		String solicitanteFuero = command.solicitanteFuero();
+		String solicitanteFuero = StringUtils.hasText(command.solicitanteFuero()) ? command.solicitanteFuero().trim() : null;
 		if (!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero)) {
 			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(solicitanteUsername);
 			if (StringUtils.hasText(fueroAd)) {
 				solicitanteFuero = fueroAd;
 			}
 		}
+		Equipo equipo = buscarEquipoParaTarea(command.equipoId());
+		if ((!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero))
+				&& equipo != null && StringUtils.hasText(equipo.getFuero())) {
+			solicitanteFuero = equipo.getFuero();
+		}
+		if (!StringUtils.hasText(solicitanteFuero)) {
+			solicitanteFuero = "Sin fuero informado";
+		}
+		String solicitanteNombre = StringUtils.hasText(command.solicitanteNombre())
+				? command.solicitanteNombre().trim()
+				: solicitanteUsername;
 		TareaTecnica tarea = new TareaTecnica(textoRequerido(command.titulo(), "titulo"));
 		tarea.actualizarDatos(
-				buscarEquipoParaTarea(command.equipoId()),
+				equipo,
 				textoRequerido(command.titulo(), "titulo"),
 				textoOpcional(command.descripcion()),
 				solicitanteUsername,
-				textoRequerido(command.solicitanteNombre(), "solicitanteNombre"),
-				textoRequerido(solicitanteFuero, "solicitanteFuero"),
+				solicitanteNombre,
+				solicitanteFuero,
 				command.prioridad() == null ? PrioridadTareaTecnica.MEDIA : command.prioridad(),
 				textoOpcional(command.responsable()));
 		tarea.marcarCreadoPor(textoOpcional(command.creadoPor()));
@@ -204,13 +215,33 @@ public class TareaTecnicaService {
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
 		String responsableAnterior = textoOpcional(tarea.getResponsable());
+		String solicitanteFuero = StringUtils.hasText(command.solicitanteFuero()) ? command.solicitanteFuero().trim() : null;
+		if (!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero)) {
+			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(solicitanteUsername);
+			if (StringUtils.hasText(fueroAd)) {
+				solicitanteFuero = fueroAd;
+			} else if (StringUtils.hasText(tarea.getSolicitanteFuero())) {
+				solicitanteFuero = tarea.getSolicitanteFuero();
+			}
+		}
+		Equipo equipo = buscarEquipoParaTarea(command.equipoId());
+		if ((!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero))
+				&& equipo != null && StringUtils.hasText(equipo.getFuero())) {
+			solicitanteFuero = equipo.getFuero();
+		}
+		if (!StringUtils.hasText(solicitanteFuero)) {
+			solicitanteFuero = "Sin fuero informado";
+		}
+		String solicitanteNombre = StringUtils.hasText(command.solicitanteNombre())
+				? command.solicitanteNombre().trim()
+				: solicitanteUsername;
 		tarea.actualizarDatos(
-				buscarEquipoParaTarea(command.equipoId()),
+				equipo,
 				textoRequerido(command.titulo(), "titulo"),
 				textoOpcional(command.descripcion()),
 				solicitanteUsername,
-				textoRequerido(command.solicitanteNombre(), "solicitanteNombre"),
-				textoRequerido(command.solicitanteFuero(), "solicitanteFuero"),
+				solicitanteNombre,
+				solicitanteFuero,
 				command.prioridad() == null ? PrioridadTareaTecnica.MEDIA : command.prioridad(),
 				textoOpcional(command.responsable()));
 		auditoriaService.registrar("TAREAS", "ACTUALIZAR", "TareaTecnica", tarea.getId(),
