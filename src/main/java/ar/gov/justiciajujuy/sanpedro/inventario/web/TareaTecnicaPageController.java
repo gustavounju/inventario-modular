@@ -133,12 +133,12 @@ public class TareaTecnicaPageController {
 			RedirectAttributes redirectAttributes) {
 		try {
 			exigirAdministradorTareas(userDetails);
-			tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
+			tareaForm.aplicarReglaResponsable(userDetails.getUsername(), puedeAdministrarTareas(userDetails));
 			if (bindingResult.hasErrors()) {
 				redirectAttributes.addFlashAttribute("error", "Por favor complete todos los campos obligatorios para guardar la tarea.");
 				return redireccionTareas(origen);
 			}
-			tareaTecnicaService.crear(tareaForm.toCommand());
+			tareaTecnicaService.crear(tareaForm.toCommand(userDetails != null ? userDetails.getUsername() : null));
 			redirectAttributes.addAttribute("creado", "1");
 			redirectAttributes.addFlashAttribute("mensajeExito", "Tarea técnica creada exitosamente.");
 		} catch (Exception e) {
@@ -159,12 +159,12 @@ public class TareaTecnicaPageController {
 		try {
 			exigirAdministradorTareas(userDetails);
 			exigirTareaPropiaOAdministrador(userDetails, id);
-			tareaForm.aplicarReglaResponsable(userDetails.getUsername(), authorizationService.puedeAdministrarUsuarios(userDetails));
+			tareaForm.aplicarReglaResponsable(userDetails.getUsername(), puedeAdministrarTareas(userDetails));
 			if (bindingResult.hasErrors()) {
 				redirectAttributes.addFlashAttribute("error", "Por favor revise los campos de la tarea.");
 				return redireccionTareas(origen);
 			}
-			tareaTecnicaService.actualizar(id, tareaForm.toCommand());
+			tareaTecnicaService.actualizar(id, tareaForm.toCommand(userDetails != null ? userDetails.getUsername() : null));
 			redirectAttributes.addAttribute("creado", "1");
 			redirectAttributes.addFlashAttribute("mensajeExito", "Tarea técnica actualizada.");
 		} catch (Exception e) {
@@ -385,6 +385,9 @@ public class TareaTecnicaPageController {
 	}
 
 	private void exigirPermiso(UserDetails userDetails, String permiso) {
+		if (authorizationService.esAdministrador(userDetails)) {
+			return;
+		}
 		if (!authorizationService.tienePermiso(userDetails, MODULO_TAREAS, permiso)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para operar tareas tecnicas.");
 		}
@@ -397,11 +400,15 @@ public class TareaTecnicaPageController {
 	}
 
 	private boolean puedeAdministrarTareas(UserDetails userDetails) {
-		return userDetails != null && authorizationService.puedeAdministrarUsuarios(userDetails);
+		return userDetails != null && (
+				authorizationService.esAdministrador(userDetails)
+				|| authorizationService.puedeAdministrarUsuarios(userDetails)
+				|| authorizationService.tienePermiso(userDetails, MODULO_TAREAS, "ADMINISTRAR")
+		);
 	}
 
 	private void exigirTareaPropiaOAdministrador(UserDetails userDetails, Long tareaId) {
-		if (authorizationService.puedeAdministrarUsuarios(userDetails)) {
+		if (puedeAdministrarTareas(userDetails)) {
 			return;
 		}
 		TareaTecnicaDetalle tarea = tareaTecnicaService.obtener(tareaId);
@@ -443,6 +450,10 @@ public class TareaTecnicaPageController {
 		private String responsable;
 
 		GuardarTareaTecnicaCommand toCommand() {
+			return toCommand(null);
+		}
+
+		GuardarTareaTecnicaCommand toCommand(String creadoPor) {
 			return new GuardarTareaTecnicaCommand(
 					equipoId,
 					titulo,
@@ -452,7 +463,7 @@ public class TareaTecnicaPageController {
 					solicitanteFuero,
 					prioridad,
 					responsable,
-					null);
+					creadoPor);
 		}
 
 		void aplicarReglaResponsable(String usernameActual, boolean puedeAsignarResponsable) {

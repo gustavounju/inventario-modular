@@ -48,6 +48,9 @@ public class AuthorizationService {
 
 	@Transactional(readOnly = true)
 	public boolean tienePermiso(UserDetails userDetails, String moduloCodigo, String permisoCodigo) {
+		if (tieneRolAdministrador(userDetails)) {
+			return true;
+		}
 		return obtenerUsuarioActual(userDetails).modulos().stream()
 				.filter(modulo -> modulo.codigo().equalsIgnoreCase(moduloCodigo))
 				.anyMatch(modulo -> modulo.permisos().stream()
@@ -61,6 +64,9 @@ public class AuthorizationService {
 
 	@Transactional(readOnly = true)
 	public boolean puedeAdministrarUsuarios(UserDetails userDetails) {
+		if (tieneRolAdministrador(userDetails)) {
+			return true;
+		}
 		return tienePermiso(userDetails, "USUARIOS", "ADMINISTRAR");
 	}
 
@@ -69,12 +75,28 @@ public class AuthorizationService {
 		if (userDetails == null) {
 			return false;
 		}
-		String username = userDetails.getUsername();
-		List<String> roles = usuarioSistemaRepository.findRoleCodesByUsername(username);
-		if (roles.contains("ADMINISTRADOR")) {
+		if (tieneRolAdministrador(userDetails)) {
 			return true;
 		}
 		return tienePermiso(userDetails, "USUARIOS", "ADMINISTRAR");
+	}
+
+	private boolean tieneRolAdministrador(UserDetails userDetails) {
+		if (userDetails == null) {
+			return false;
+		}
+		if (userDetails.getAuthorities() != null && userDetails.getAuthorities().stream()
+				.anyMatch(a -> "ROLE_ADMIN".equalsIgnoreCase(a.getAuthority())
+						|| "ADMINISTRADOR".equalsIgnoreCase(a.getAuthority())
+						|| "ROLE_ADMINISTRADOR".equalsIgnoreCase(a.getAuthority()))) {
+			return true;
+		}
+		String username = userDetails.getUsername();
+		if (username == null || username.isBlank()) {
+			return false;
+		}
+		List<String> roles = usuarioSistemaRepository.findRoleCodesByUsername(username);
+		return roles.stream().anyMatch(r -> "ADMINISTRADOR".equalsIgnoreCase(r != null ? r.trim() : ""));
 	}
 
 	@Transactional(readOnly = true)

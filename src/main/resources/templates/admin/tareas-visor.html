@@ -52,7 +52,15 @@
 
 	<main class="kanban-shell">
 
-		<!-- Notificaciones removidas del flujo principal para convertirlas en toasts -->
+		<!-- Feedback de operaciones (error / exito) -->
+		<div th:if="${error}" class="alert alert-danger" style="margin: 0 0 16px 0; padding: 12px 16px; background: #fee2e2; border: 1px solid #f87171; border-radius: 8px; color: #991b1b; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+			<span th:text="${error}">Error al crear la tarea.</span>
+			<button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #991b1b;">✕</button>
+		</div>
+		<div th:if="${mensajeExito}" class="alert alert-success" style="margin: 0 0 16px 0; padding: 12px 16px; background: #dcfce7; border: 1px solid #4ade80; border-radius: 8px; color: #166534; font-weight: 600; display: flex; align-items: center; justify-content: space-between;">
+			<span th:text="${mensajeExito}">Tarea creada exitosamente.</span>
+			<button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #166534;">✕</button>
+		</div>
 
 		<!-- Barra compacta -->
 		<div class="kanban-topbar">
@@ -689,7 +697,7 @@
 	<!-- Modal para Crear Nueva Tarea -->
 	<!-- ============================================== -->
 	<dialog id="modal-nueva-tarea" class="kmodal modal-dialog" style="max-width: 640px;" th:if="${puedeEditarTareas}">
-		<div class="kmodal-content" style="padding: 20px;">
+		<div class="kmodal-content" style="padding: 20px; max-height: 85vh; overflow-y: auto;">
 			<header class="kmodal-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
 				<div class="kmodal-header-text">
 					<h3 style="margin:0; font-size:1.15rem; font-weight:700; color:var(--text-primary);">➕ Crear Nueva Tarea Técnica</h3>
@@ -697,7 +705,7 @@
 				</div>
 				<button type="button" class="modal-close" onclick="document.getElementById('modal-nueva-tarea').close()" title="Cerrar">✕</button>
 			</header>
-			<form class="equipment-form" th:action="@{/admin/tareas}" th:object="${tareaForm}" method="post" onsubmit="syncVisorSolicitante()">
+			<form class="equipment-form" th:action="@{/admin/tareas}" th:object="${tareaForm}" method="post" onsubmit="syncVisorSolicitante(); return true;">
 				<input type="hidden" name="origen" value="visor">
 				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
 					<div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px; position:relative;">

@@ -124,6 +124,33 @@ class TareaTecnicaPageControllerTests {
 	}
 
 	@Test
+	void administradorPuedeCrearTareaDesdeVisor() throws Exception {
+		mockMvc.perform(get("/admin/tareas/visor").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Nueva Tarea")))
+			.andExpect(content().string(containsString("modal-nueva-tarea")));
+
+		mockMvc.perform(post("/admin/tareas")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("equipoId", "1")
+				.param("titulo", "Tarea creada desde visor")
+				.param("descripcion", "Prueba de creacion directa")
+				.param("solicitanteUsername", "mesa.entrada")
+				.param("solicitanteNombre", "Mesa de Entrada")
+				.param("solicitanteFuero", "Mesa de ayuda")
+				.param("prioridad", "ALTA")
+				.param("responsable", "usuario.tecnico")
+				.param("origen", "visor"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrlPattern("/admin/tareas/visor?creado=*"));
+
+		mockMvc.perform(get("/admin/tareas/visor").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("Tarea creada desde visor")));
+	}
+
+	@Test
 	void accionesDesdeVisorRequierenSesion() throws Exception {
 		mockMvc.perform(post("/admin/tareas/1/comentarios")
 				.with(csrf())
