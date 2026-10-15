@@ -871,9 +871,9 @@
 				<thead>
 					<tr style="border-bottom: 2px solid #b8cdd7; background: #f0f7fa; color: #014760;">
 						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Hora</th>
-						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Contacto / Interno</th>
+						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Acción y Contacto</th>
 						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Duración</th>
-						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Estado</th>
+						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Resultado / Estado</th>
 					</tr>
 				</thead>
 				<tbody id="cdr-tbody">
@@ -1010,18 +1010,22 @@
 
 				const esSaliente = llamada.esSaliente || (llamada.caller && llamada.caller.startsWith('↗'));
 				
-				// Estado
+				// Estado y Resultado detallado
 				let estadoHtml = llamada.disposition || '';
 				if (llamada.disposition === 'ANSWERED') {
-					estadoHtml = '<span style="color: #166534; font-weight: 700; background: #dcfce7; padding: 3px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-block;">Atendida</span>';
+					if (esSaliente) {
+						estadoHtml = '<span style="color: #166534; font-weight: 700; background: #dcfce7; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✓ Atendió</span>';
+					} else {
+						estadoHtml = '<span style="color: #166534; font-weight: 700; background: #dcfce7; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✓ Atendida</span>';
+					}
 				} else if (llamada.disposition === 'NO ANSWER') {
 					if (esSaliente) {
-						estadoHtml = '<span style="color: #334155; font-weight: 700; background: #f1f5f9; padding: 3px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-block;">No contestó</span>';
+						estadoHtml = '<span style="color: #334155; font-weight: 700; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✕ No respondió</span>';
 					} else {
-						estadoHtml = '<span style="color: #991b1b; font-weight: 700; background: #fee2e2; padding: 3px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-block;">Perdida</span>';
+						estadoHtml = '<span style="color: #991b1b; font-weight: 700; background: #fee2e2; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">⚠️ No se atendió (Perdida)</span>';
 					}
 				} else if (llamada.disposition === 'BUSY') {
-					estadoHtml = '<span style="color: #9a3412; font-weight: 700; background: #ffedd5; padding: 3px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-block;">Ocupado</span>';
+					estadoHtml = '<span style="color: #9a3412; font-weight: 700; background: #ffedd5; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">⏳ Ocupado</span>';
 				}
 
 				// Duración
@@ -1030,21 +1034,29 @@
 				const secs = billsec % 60;
 				const duracionStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-				// Contacto / Interno con resolución clara
-				const dirIcon = esSaliente 
-					? '<span style="color: #0284c7; font-weight: 700; margin-right: 6px; font-size: 0.85rem;">↗ Saliente a</span>' 
-					: '<span style="color: #15803d; font-weight: 700; margin-right: 6px; font-size: 0.85rem;">↙</span>';
+				// Acción y Contacto descriptivos con flechas
+				let dirBadge = '';
+				if (esSaliente) {
+					dirBadge = '<span style="color: #0284c7; font-weight: 700; margin-right: 6px; font-size: 0.86rem; display: inline-flex; align-items: center; gap: 2px;">↗ Se llamó a:</span>';
+				} else {
+					if (llamada.disposition === 'ANSWERED') {
+						dirBadge = '<span style="color: #15803d; font-weight: 700; margin-right: 6px; font-size: 0.86rem; display: inline-flex; align-items: center; gap: 2px;">↙ Llamó:</span>';
+					} else {
+						dirBadge = '<span style="color: #b91c1c; font-weight: 700; margin-right: 6px; font-size: 0.86rem; display: inline-flex; align-items: center; gap: 2px;">↙ Llamó:</span>';
+					}
+				}
 				
 				const num = llamada.numeroRemoto || (esSaliente ? llamada.dst : llamada.src) || '';
 				const nom = llamada.nombreRemoto || '';
 				
 				let detalleContacto = '';
 				if (nom && nom !== num) {
-					detalleContacto = `${dirIcon}<strong style="font-size: 0.95rem; color: #0f172a;">${num}</strong> <span style="color: #0369a1; font-weight: 600; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 4px; margin-left: 6px; font-size: 0.85rem;">${nom}</span>`;
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.95rem; color: #0f172a;">${num}</strong> <span style="color: #0369a1; font-weight: 600; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 4px; margin-left: 6px; font-size: 0.85rem;">${nom}</span>`;
 				} else if (llamada.caller) {
-					detalleContacto = `<span style="font-size: 0.92rem; color: #0f172a; font-weight: 600;">${llamada.caller}</span>`;
+					const cleanCaller = llamada.caller.replace(/^[↗↙]\s*(Saliente a\s*|Se llamó a\s*|Llamó\s*)?/, '');
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.95rem; color: #0f172a;">${cleanCaller}</strong>`;
 				} else {
-					detalleContacto = `${dirIcon}<strong style="font-size: 0.95rem; color: #0f172a;">${num}</strong>`;
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.95rem; color: #0f172a;">${num}</strong>`;
 				}
 
 				tr.innerHTML = `

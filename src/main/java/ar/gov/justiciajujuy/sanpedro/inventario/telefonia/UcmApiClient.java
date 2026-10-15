@@ -100,9 +100,9 @@ public class UcmApiClient {
 
             String callerDisplay;
             if (esSaliente) {
-                callerDisplay = "↗ Saliente a " + identificadorConNombre;
+                callerDisplay = "↗ Se llamó a " + identificadorConNombre;
             } else {
-                callerDisplay = "↙ " + identificadorConNombre;
+                callerDisplay = "↙ Llamó " + identificadorConNombre;
             }
 
             String disposition;
@@ -413,9 +413,9 @@ public class UcmApiClient {
 
                             String callerDisplay;
                             if (esSaliente) {
-                                callerDisplay = "↗ Saliente a " + identificadorConNombre;
+                                callerDisplay = "↗ Se llamó a " + identificadorConNombre;
                             } else {
-                                callerDisplay = "↙ " + identificadorConNombre;
+                                callerDisplay = "↙ Llamó " + identificadorConNombre;
                             }
                             callNode.put("esSaliente", esSaliente);
                             callNode.put("numeroRemoto", numeroRemoto);
