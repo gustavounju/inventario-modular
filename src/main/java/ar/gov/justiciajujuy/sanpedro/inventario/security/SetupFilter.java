@@ -32,11 +32,13 @@ public class SetupFilter extends OncePerRequestFilter {
 
 		String path = request.getRequestURI();
 		
-		// Bypass static resources and the setup page itself
+		// Bypass static resources, public scripts, downloads and the setup page itself
 		if (path.startsWith(request.getContextPath() + "/css/") ||
 			path.startsWith(request.getContextPath() + "/js/") ||
 			path.startsWith(request.getContextPath() + "/images/") ||
 			path.startsWith(request.getContextPath() + "/webjars/") ||
+			path.startsWith(request.getContextPath() + "/scripts/") ||
+			path.startsWith(request.getContextPath() + "/app/") ||
 			path.equals(request.getContextPath() + "/favicon.ico") ||
 			path.equals(request.getContextPath() + "/setup")) {
 			
@@ -45,9 +47,13 @@ public class SetupFilter extends OncePerRequestFilter {
 		}
 
 		// If there are zero admins in the system, intercept and redirect to /setup
-		if (usuarioRepository.countAdministradores() == 0) {
-			response.sendRedirect(request.getContextPath() + "/setup");
-			return;
+		try {
+			if (usuarioRepository.countAdministradores() == 0) {
+				response.sendRedirect(request.getContextPath() + "/setup");
+				return;
+			}
+		} catch (Exception ignored) {
+			// Si la base no contiene la tabla o se encuentra en inicialización, continuar la cadena
 		}
 
 		filterChain.doFilter(request, response);

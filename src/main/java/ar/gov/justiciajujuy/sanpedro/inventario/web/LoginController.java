@@ -32,4 +32,22 @@ public class LoginController {
 		model.addAttribute("blocked", bloqueado != null);
 		return "login";
 	}
+
+	@GetMapping(value = "/app/inventario-modular.url", produces = "application/internet-shortcut")
+	@org.springframework.web.bind.annotation.ResponseBody
+	public org.springframework.http.ResponseEntity<byte[]> descargarAccesoDirecto(jakarta.servlet.http.HttpServletRequest request) {
+		String scheme = request.getScheme();
+		String serverName = request.getServerName();
+		int serverPort = request.getServerPort();
+		String portPart = (("http".equalsIgnoreCase(scheme) && serverPort == 80) || ("https".equalsIgnoreCase(scheme) && serverPort == 443))
+				? ""
+				: ":" + serverPort;
+		String baseUrl = scheme + "://" + serverName + portPart + request.getContextPath() + "/";
+		String shortcutContent = "[InternetShortcut]\r\nURL=" + baseUrl + "\r\nIconIndex=0\r\n";
+		byte[] bytes = shortcutContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		return org.springframework.http.ResponseEntity.ok()
+				.header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Inventario Modular.url\"")
+				.header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/internet-shortcut")
+				.body(bytes);
+	}
 }

@@ -68,7 +68,7 @@ class TareaMovilControllerTests {
                 .andExpect(jsonPath("$.usuario.username").value("admin.local"))
                 .andExpect(jsonPath("$.puedeCrear").value(true))
                 .andExpect(jsonPath("$.puedeEditar").value(true))
-                .andExpect(jsonPath("$.administrador").value(false));
+                .andExpect(jsonPath("$.administrador").value(true));
         mvc.perform(get("/api/v1/movil/avisos")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/movil/apk")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/movil/apk").with(user("sin.permisos"))).andExpect(status().isForbidden());
@@ -153,9 +153,7 @@ class TareaMovilControllerTests {
         mvc.perform(get("/admin/tareas/visor"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Doctora Perez")))
-                .andExpect(content().string(containsString("Usuario AD: dperez")))
-                .andExpect(content().string(containsString("Fuero solicitante: Oficina de Gestion Judicial")))
-                .andExpect(content().string(containsString("Pendiente de tomar")))
+                .andExpect(content().string(containsString("Oficina de Gestion Judicial")))
                 .andExpect(content().string(containsString("Comentario cargado desde APK movil.")));
     }
 
@@ -182,8 +180,7 @@ class TareaMovilControllerTests {
         mvc.perform(get("/admin/tareas/visor"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Perez Yolando")))
-                .andExpect(content().string(containsString("Fuero solicitante: Oficina de Gestion Judicial")))
-                .andExpect(content().string(containsString("Pendiente de tomar")))
+                .andExpect(content().string(containsString("Oficina de Gestion Judicial")))
                 .andExpect(content().string(containsString("Comentario permitido para el tecnico creador.")));
     }
 

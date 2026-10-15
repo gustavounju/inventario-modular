@@ -35,6 +35,8 @@ public class UcmApiClient {
     private final TelefoniaConfigurationService configurationService;
     private volatile String trackId = null;
 
+    private final DirectorioTelefonicoService directorioTelefonicoService;
+
     @Value("${ucm.url:https://10.15.0.2:8089/api}")
     private String defaultBaseUrl;
 
@@ -53,14 +55,18 @@ public class UcmApiClient {
     // Lista en memoria de llamadas recientes recibidas vía Webhook o simulación
     private final java.util.List<ObjectNode> llamadasEnVivo = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    public UcmApiClient(@Autowired(required = false) TelefoniaConfigurationService configurationService) {
+    @Autowired
+    public UcmApiClient(
+            @Autowired(required = false) TelefoniaConfigurationService configurationService,
+            @Autowired(required = false) DirectorioTelefonicoService directorioTelefonicoService) {
         this.configurationService = configurationService;
+        this.directorioTelefonicoService = directorioTelefonicoService != null ? directorioTelefonicoService : new DirectorioTelefonicoService();
         this.sslContextInseguro = crearSslContextInseguro();
         this.objectMapper = new ObjectMapper();
     }
 
     public UcmApiClient() {
-        this(null);
+        this(null, null);
     }
 
     public TelefoniaRuntimeConfig currentConfig() {
@@ -88,19 +94,15 @@ public class UcmApiClient {
             String dst = (callee != null && !callee.isBlank()) ? callee : interno;
 
             boolean esSaliente = (interno != null && interno.equals(src));
+            String numeroRemoto = esSaliente ? dst : src;
+            String nombreRemoto = directorioTelefonicoService.resolverNombre(numeroRemoto);
+            String identificadorConNombre = directorioTelefonicoService.formatearNumeroYNombre(numeroRemoto, callerName);
+
             String callerDisplay;
             if (esSaliente) {
-                callerDisplay = "↗ Saliente a " + dst;
+                callerDisplay = "↗ Saliente a " + identificadorConNombre;
             } else {
-                if (callerName != null && !callerName.isBlank() && !callerName.equals(src)) {
-                    callerDisplay = "↙ " + callerName + " (" + src + ")";
-                } else if (callerName != null && !callerName.isBlank()) {
-                    callerDisplay = "↙ " + callerName;
-                } else if (!src.isBlank()) {
-                    callerDisplay = "↙ " + src;
-                } else {
-                    callerDisplay = "↙ Desconocido";
-                }
+                callerDisplay = "↙ " + identificadorConNombre;
             }
 
             String disposition;
@@ -129,6 +131,9 @@ public class UcmApiClient {
                 nueva.put("start", ahora);
                 nueva.put("src", src);
                 nueva.put("dst", dst);
+                nueva.put("esSaliente", esSaliente);
+                nueva.put("numeroRemoto", numeroRemoto);
+                nueva.put("nombreRemoto", nombreRemoto);
                 nueva.put("caller", callerDisplay);
                 nueva.put("billsec", "ANSWERED".equals(disposition) ? 15 : 0);
                 nueva.put("disposition", disposition);
@@ -224,6 +229,19 @@ public class UcmApiClient {
                 return "{\"error\":\"Fallo de autenticación en la central (status: " + status + "). Verifique que la contraseña de " + user + " sea correcta.\"}";
             }
             String sessionCookie = loginNode.path("response").path("cookie").asText();
+
+            // Sincronizar directorio de cuentas / internos si la central lo permite
+            try {
+                ObjectNode accReq = objectMapper.createObjectNode();
+                accReq.put("action", "listAccount");
+                accReq.put("cookie", sessionCookie);
+                ObjectNode accPayloadObj = objectMapper.createObjectNode();
+                accPayloadObj.set("request", accReq);
+                String accRes = realizarPeticion(url, objectMapper.writeValueAsString(accPayloadObj), isSslStrict);
+                actualizarDirectorioDesdeUcm(accRes);
+            } catch (Exception ex) {
+                log.debug("Consulta de listAccount en UCM no completada: {}", ex.getMessage());
+            }
 
             // 4. Pedir CDR (action cdrapi oficial)
             ObjectNode cdrReq = objectMapper.createObjectNode();
@@ -389,20 +407,19 @@ public class UcmApiClient {
                             callNode.put("dst", dst);
 
                             boolean esSaliente = (internoTaller != null && internoTaller.equals(src));
+                            String numeroRemoto = esSaliente ? dst : src;
+                            String nombreRemoto = directorioTelefonicoService.resolverNombre(numeroRemoto);
+                            String identificadorConNombre = directorioTelefonicoService.formatearNumeroYNombre(numeroRemoto, callerName);
+
                             String callerDisplay;
                             if (esSaliente) {
-                                callerDisplay = "↗ Saliente a " + dst;
+                                callerDisplay = "↗ Saliente a " + identificadorConNombre;
                             } else {
-                                if (!callerName.isBlank() && !src.isBlank() && !callerName.equals(src)) {
-                                    callerDisplay = "↙ " + callerName + " (" + src + ")";
-                                } else if (!callerName.isBlank()) {
-                                    callerDisplay = "↙ " + callerName;
-                                } else if (!src.isBlank()) {
-                                    callerDisplay = "↙ " + src;
-                                } else {
-                                    callerDisplay = "↙ Desconocido";
-                                }
+                                callerDisplay = "↙ " + identificadorConNombre;
                             }
+                            callNode.put("esSaliente", esSaliente);
+                            callNode.put("numeroRemoto", numeroRemoto);
+                            callNode.put("nombreRemoto", nombreRemoto);
                             callNode.put("caller", callerDisplay);
                             callNode.put("billsec", billsec);
                             callNode.put("disposition", disposition);
@@ -521,6 +538,28 @@ public class UcmApiClient {
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    private void actualizarDirectorioDesdeUcm(String jsonResponse) {
+        if (jsonResponse == null || jsonResponse.isBlank() || directorioTelefonicoService == null) {
+            return;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            JsonNode accounts = root.path("response").path("account");
+            if (accounts.isArray()) {
+                for (JsonNode acc : accounts) {
+                    String ext = acc.path("extension").asText("");
+                    String callerid = acc.path("callerid").asText("");
+                    String fullname = acc.path("fullname").asText("");
+                    String display = !fullname.isBlank() ? fullname : callerid;
+                    if (!ext.isBlank() && !display.isBlank() && !ext.equals(display)) {
+                        directorioTelefonicoService.guardarOActualizar(ext, display, "Central UCM", "UCM");
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     public record TestResult(boolean ok, String message) {

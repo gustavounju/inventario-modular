@@ -19,17 +19,28 @@ public class TelefoniaController {
     private final TelefoniaEventService eventService;
     private final UcmApiClient ucmApiClient;
     private final TelefoniaConfigurationService configurationService;
+    private final DirectorioTelefonicoService directorioTelefonicoService;
 
     @org.springframework.beans.factory.annotation.Value("${ucm.webhook.ips:10.15.0.2,127.0.0.1,0:0:0:0:0:0:0:1}")
     private java.util.List<String> defaultAllowedIps;
 
+    @Autowired
     public TelefoniaController(
             TelefoniaEventService eventService,
             UcmApiClient ucmApiClient,
-            @Autowired(required = false) TelefoniaConfigurationService configurationService) {
+            @Autowired(required = false) TelefoniaConfigurationService configurationService,
+            @Autowired(required = false) DirectorioTelefonicoService directorioTelefonicoService) {
         this.eventService = eventService;
         this.ucmApiClient = ucmApiClient;
         this.configurationService = configurationService;
+        this.directorioTelefonicoService = directorioTelefonicoService != null ? directorioTelefonicoService : new DirectorioTelefonicoService();
+    }
+
+    public TelefoniaController(
+            TelefoniaEventService eventService,
+            UcmApiClient ucmApiClient,
+            TelefoniaConfigurationService configurationService) {
+        this(eventService, ucmApiClient, configurationService, null);
     }
 
     // 1. Endpoint Receptor de Webhook (UCM6304A)
@@ -83,17 +94,27 @@ public class TelefoniaController {
         log.info("Llamada en vivo: IP={}, caller={}, callee={}, event={}",
                 remoteIp, payload.getCaller(), payload.getCallee(), payload.getEvent());
 
+        String callerVal = payload.getCaller();
+        String callerNameVal = payload.getCallerName();
+        if ((callerNameVal == null || callerNameVal.isBlank() || callerNameVal.equals(callerVal)) && callerVal != null) {
+            String resName = directorioTelefonicoService.resolverNombre(callerVal);
+            if (!resName.isBlank()) {
+                callerNameVal = resName;
+                payload.setCallerName(resName);
+            }
+        }
+
         String estadoDefinitivo = payload.getStatus() != null ? payload.getStatus() : payload.getEvent();
 
         eventService.notificarLlamadaEntrante(
                 payload.getCaller(),
-                payload.getCallerName(),
+                callerNameVal,
                 payload.getCallee(),
                 estadoDefinitivo);
 
         ucmApiClient.registrarLlamadaEnVivo(
                 payload.getCaller(),
-                payload.getCallerName(),
+                callerNameVal,
                 payload.getCallee(),
                 estadoDefinitivo);
 
@@ -115,22 +136,54 @@ public class TelefoniaController {
             .body(ucmApiClient.obtenerHistorialCdr());
     }
 
-    // 4. Endpoint directo para simular llamadas desde PuTTY o pruebas
+    // 4. Directorio de internos telefónicos
+    @GetMapping(value = "/directorio", produces = "application/json")
+    public java.util.List<DirectorioTelefonico> listarDirectorio() {
+        return directorioTelefonicoService.listarTodos();
+    }
+
+    @PostMapping(value = "/directorio")
+    public ResponseEntity<?> guardarDirectorio(
+            @RequestParam String numero,
+            @RequestParam String nombre,
+            @RequestParam(required = false) String departamento) {
+        try {
+            DirectorioTelefonico guardado = directorioTelefonicoService.guardarOActualizar(numero, nombre, departamento, "MANUAL");
+            return ResponseEntity.ok(guardado);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping(value = "/directorio/{id}")
+    public ResponseEntity<Void> eliminarDirectorio(@PathVariable Long id) {
+        directorioTelefonicoService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 5. Endpoint directo para simular llamadas desde PuTTY o pruebas
     @PostMapping(value = "/simular")
     public ResponseEntity<String> simularLlamada(
-            @RequestParam(required = false, defaultValue = "1002") String caller,
-            @RequestParam(required = false, defaultValue = "Mesa de Entradas") String callerName,
+            @RequestParam(required = false, defaultValue = "2005") String caller,
+            @RequestParam(required = false) String callerName,
             @RequestParam(required = false, defaultValue = "1005") String callee,
             @RequestParam(required = false, defaultValue = "NO ANSWER") String estado,
             HttpServletRequest request) {
 
-        log.info("Simulación de llamada solicitada desde {}: {} ({}) -> {} [{}]",
-                request.getRemoteAddr(), callerName, caller, callee, estado);
+        String resolvedName = (callerName != null && !callerName.isBlank() && !callerName.equals(caller))
+                ? callerName
+                : directorioTelefonicoService.resolverNombre(caller);
+        if (resolvedName.isBlank()) {
+            resolvedName = caller;
+        }
 
-        eventService.notificarLlamadaEntrante(caller, callerName, callee, estado);
-        ucmApiClient.registrarLlamadaEnVivo(caller, callerName, callee, estado);
+        log.info("Simulación de llamada solicitada desde {}: {} ({}) -> {} [{}]",
+                request.getRemoteAddr(), resolvedName, caller, callee, estado);
+
+        eventService.notificarLlamadaEntrante(caller, resolvedName, callee, estado);
+        ucmApiClient.registrarLlamadaEnVivo(caller, resolvedName, callee, estado);
 
         return ResponseEntity.ok(String.format("Llamada simulada registrada: %s (%s) -> %s [Estado: %s]",
-                callerName, caller, callee, estado));
+                resolvedName, caller, callee, estado));
     }
 }

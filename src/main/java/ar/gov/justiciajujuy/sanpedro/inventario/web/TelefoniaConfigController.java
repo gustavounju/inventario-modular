@@ -26,14 +26,17 @@ public class TelefoniaConfigController {
 	private final AuthorizationService authorizationService;
 	private final TelefoniaConfigurationService telefoniaConfigurationService;
 	private final UcmApiClient ucmApiClient;
+	private final ar.gov.justiciajujuy.sanpedro.inventario.telefonia.DirectorioTelefonicoService directorioTelefonicoService;
 
 	public TelefoniaConfigController(
 			AuthorizationService authorizationService,
 			TelefoniaConfigurationService telefoniaConfigurationService,
-			UcmApiClient ucmApiClient) {
+			UcmApiClient ucmApiClient,
+			ar.gov.justiciajujuy.sanpedro.inventario.telefonia.DirectorioTelefonicoService directorioTelefonicoService) {
 		this.authorizationService = authorizationService;
 		this.telefoniaConfigurationService = telefoniaConfigurationService;
 		this.ucmApiClient = ucmApiClient;
+		this.directorioTelefonicoService = directorioTelefonicoService;
 	}
 
 	@GetMapping("/admin/sistema/telefonia")
@@ -83,11 +86,44 @@ public class TelefoniaConfigController {
 		return "admin/sistema-telefonia";
 	}
 
+	@PostMapping("/admin/sistema/telefonia/directorio")
+	public String agregarOEditarInterno(
+			@org.springframework.web.bind.annotation.RequestParam String numero,
+			@org.springframework.web.bind.annotation.RequestParam String nombre,
+			@org.springframework.web.bind.annotation.RequestParam(required = false) String departamento,
+			Model model,
+			@AuthenticationPrincipal UserDetails userDetails) {
+		requireAdmin(userDetails);
+		try {
+			directorioTelefonicoService.guardarOActualizar(numero, nombre, departamento, "MANUAL");
+			addModel(model, Form.from(telefoniaConfigurationService.current()), "Interno " + numero + " guardado correctamente.", null);
+		} catch (Exception e) {
+			addModel(model, Form.from(telefoniaConfigurationService.current()), null, "Error al guardar interno: " + e.getMessage());
+		}
+		return "admin/sistema-telefonia";
+	}
+
+	@PostMapping("/admin/sistema/telefonia/directorio/{id}/eliminar")
+	public String eliminarInterno(
+			@org.springframework.web.bind.annotation.PathVariable Long id,
+			Model model,
+			@AuthenticationPrincipal UserDetails userDetails) {
+		requireAdmin(userDetails);
+		try {
+			directorioTelefonicoService.eliminar(id);
+			addModel(model, Form.from(telefoniaConfigurationService.current()), "Interno eliminado del directorio.", null);
+		} catch (Exception e) {
+			addModel(model, Form.from(telefoniaConfigurationService.current()), null, "Error al eliminar interno: " + e.getMessage());
+		}
+		return "admin/sistema-telefonia";
+	}
+
 	private void addModel(Model model, Form form, String success, String error) {
 		TelefoniaRuntimeConfig current = telefoniaConfigurationService.current();
 		model.addAttribute("form", form);
 		model.addAttribute("telefoniaActual", current);
 		model.addAttribute("hasSavedPassword", StringUtils.hasText(current.password()));
+		model.addAttribute("directorio", directorioTelefonicoService.listarTodos());
 		model.addAttribute("success", success);
 		model.addAttribute("error", error);
 	}

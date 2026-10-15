@@ -18,6 +18,7 @@
     const isOpen = task => ['PENDIENTE', 'EN_PROCESO'].includes(task.estado);
     const owns = task => task.responsable?.toLowerCase() === session.usuario.username.toLowerCase();
     const createdByMe = task => task.creadoPor?.toLowerCase() === session.usuario.username.toLowerCase();
+    const isTelefonista = () => Boolean(session && (session.puedeOperarPropias || !session.puedeEditar));
     const mayEdit = task => session.administrador || createdByMe(task);
     const mayDelete = task => session.administrador;
     const mayStock = task => session.administrador || owns(task);
@@ -392,12 +393,13 @@
         form.reset();
         hideApplicantDropdown();
         $('form-title').textContent = task ? 'Editar tarea #' + task.id : 'Nueva tarea';
+        const telefonista = isTelefonista();
         const defaults = task || {
             solicitanteUsername: '',
             solicitanteNombre: '',
             solicitanteFuero: session.usuario.fuero || 'Sin fuero informado',
             prioridad: 'MEDIA',
-            responsable: session.usuario.username
+            responsable: telefonista ? '' : session.usuario.username
         };
         for (const control of form.elements) if (control.name && defaults[control.name] != null) control.value = defaults[control.name];
         if (task) {
@@ -410,9 +412,10 @@
             $('solicitante-search').value = '';
             $('solicitante-help').textContent = 'Escriba al menos 2 letras para buscar en Active Directory.';
         }
-        // En creacion de tarea, la tarea pertenece al tecnico creador (autoasignada)
+        // En creacion de tarea: si es telefonista queda libre para que la tome un tecnico.
+        // Si es tecnico, pertenece al tecnico creador (autoasignada).
         $('responsable-field').hidden = true;
-        form.elements.responsable.value = task ? (task.responsable || session.usuario.username) : session.usuario.username;
+        form.elements.responsable.value = task ? (task.responsable || '') : (telefonista ? '' : session.usuario.username);
         const puedeDictar = task ? mayEdit(task) : session.puedeCrear;
         $('voice-problem').hidden = !native || !puedeDictar;
         message('', false, 'form-message');
@@ -445,11 +448,13 @@
             data.solicitanteNombre = event.target.elements.solicitanteNombre.value?.trim();
             data.solicitanteFuero = event.target.elements.solicitanteFuero.value?.trim() || 'Sin fuero informado';
             if (!data.solicitanteUsername) throw new Error('Seleccione el usuario solicitante de Active Directory.');
-            // En movil el tecnico carga el problema; el titulo queda derivado para cumplir el contrato API.
+            // En movil el tecnico o telefonista carga el problema; el titulo queda derivado para cumplir el contrato API.
             data.titulo = titleFromProblem(data.descripcion);
             data.equipoId = editing?.equipoId || null;
-            // La tarea pertenece al tecnico que la crea
-            data.responsable = editing ? (editing.responsable || session.usuario.username) : session.usuario.username;
+            // Las telefonistas crean tareas libres para que los tecnicos las tomen
+            const telefonista = isTelefonista();
+            const responsableDefault = telefonista ? null : session.usuario.username;
+            data.responsable = editing ? (editing.responsable || null) : responsableDefault;
             const saved = await request(api + (editing ? '/' + editing.id : ''), editing ? 'PUT' : 'POST', data);
             $('task-dialog').close();
             commentPreviewCache.delete(saved.id);

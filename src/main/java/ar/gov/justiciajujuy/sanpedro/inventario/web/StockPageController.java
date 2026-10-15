@@ -66,6 +66,9 @@ public class StockPageController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestParam(required = false) String creado) {
 		exigirPermiso(userDetails, PERMISO_VER);
+		if (authorizationService.esSoloMovil(userDetails)) {
+			return "redirect:/movil/stock";
+		}
 		prepararModelo(model, userDetails, new StockForm());
 		model.addAttribute("creado", "1".equals(creado));
 		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());

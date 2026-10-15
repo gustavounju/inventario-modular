@@ -100,7 +100,8 @@ public class TareaTecnicaController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody GuardarTareaTecnicaRequest request) {
 		exigirPermisoCrear(userDetails);
-		return tareaTecnicaService.crear(request.toCommand(userDetails, true, false));
+		boolean telefonista = esTelefonistaSinGestionTecnica(userDetails);
+		return tareaTecnicaService.crear(request.toCommand(userDetails, telefonista));
 	}
 
 	@PutMapping("/{id}")
@@ -109,7 +110,8 @@ public class TareaTecnicaController {
 			@PathVariable Long id,
 			@Valid @RequestBody GuardarTareaTecnicaRequest request) {
 		exigirPuedeActualizar(userDetails, id);
-		return tareaTecnicaService.actualizar(id, request.toCommand(userDetails, true, false));
+		boolean telefonista = esTelefonistaSinGestionTecnica(userDetails);
+		return tareaTecnicaService.actualizar(id, request.toCommand(userDetails, telefonista));
 	}
 
 	@PostMapping("/{id}/tomar")
@@ -324,9 +326,12 @@ public class TareaTecnicaController {
 			PrioridadTareaTecnica prioridad,
 			@Size(max = 120) String responsable) {
 
-		private GuardarTareaTecnicaCommand toCommand(UserDetails userDetails, boolean puedeAsignarResponsable,
-				boolean autoAsignarCreador) {
-			String responsableFinal = puedeAsignarResponsable ? responsable : (autoAsignarCreador ? userDetails.getUsername() : null);
+		private GuardarTareaTecnicaCommand toCommand(UserDetails userDetails, boolean esTelefonista) {
+			String responsableFinal = (responsable != null && !responsable.isBlank()) ? responsable.trim() : null;
+			// Las telefonistas nunca se asignan tareas a ellas mismas. Si viene con su propio usuario, queda libre.
+			if (esTelefonista && responsableFinal != null && responsableFinal.equalsIgnoreCase(userDetails.getUsername())) {
+				responsableFinal = null;
+			}
 			return new GuardarTareaTecnicaCommand(
 					equipoId,
 					titulo,

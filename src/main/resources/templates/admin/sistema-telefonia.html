@@ -87,6 +87,64 @@
 				</div>
 			</form>
 		</section>
+
+		<!-- Directorio de Internos Telefónicos (Nombres asociados a números) -->
+		<section class="modules-section system-config-console" style="margin-top: 24px;">
+			<div class="section-header">
+				<div>
+					<h2>📖 Directorio de Internos Telefónicos</h2>
+					<p class="section-note">Asocie los números de internos telefónicos a sus nombres y dependencias (ej. 2005 ➔ MesaDeEntradasInformatica). Estos nombres se muestran automáticamente en el historial de llamadas del visor y notificaciones en vivo.</p>
+				</div>
+			</div>
+
+			<form class="user-form" th:action="@{/admin/sistema/telefonia/directorio}" method="post" style="margin-bottom: 20px; background: #f8fcfe; padding: 14px; border: 1px solid #b8cdd7;">
+				<div class="form-grid" style="grid-template-columns: 120px 1fr 1fr auto; align-items: flex-end; gap: 10px;">
+					<label>
+						<span>Número</span>
+						<input type="text" name="numero" placeholder="Ej. 2005" required maxlength="30">
+					</label>
+					<label>
+						<span>Nombre del Teléfono</span>
+						<input type="text" name="nombre" placeholder="Ej. MesaDeEntradasInformatica" required maxlength="120">
+					</label>
+					<label>
+						<span>Oficina / Dependencia</span>
+						<input type="text" name="departamento" placeholder="Ej. Mesa de Entradas Informática" maxlength="120">
+					</label>
+					<button class="primary-action" type="submit" style="height: 44px;">Guardar Interno</button>
+				</div>
+			</form>
+
+			<table class="table-judicial" style="width: 100%;">
+				<thead>
+					<tr>
+						<th style="width: 120px;">Interno</th>
+						<th>Nombre Identificador</th>
+						<th>Dependencia / Oficina</th>
+						<th style="width: 100px;">Origen</th>
+						<th style="width: 80px; text-align: center;">Acción</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:if="${#lists.isEmpty(directorio)}">
+						<td colspan="5" style="text-align: center; color: #64748b; padding: 16px;">No hay internos cargados en el directorio. Puede registrar uno arriba o la central los descubrirá automáticamente.</td>
+					</tr>
+					<tr th:each="item : ${directorio}">
+						<td><strong style="color: #006f99;" th:text="${item.numero}">2005</strong></td>
+						<td><strong th:text="${item.nombre}">MesaDeEntradasInformatica</strong></td>
+						<td th:text="${item.departamento ?: '—'}">Mesa de Entradas</td>
+						<td>
+							<span class="step-chip" style="font-size: 0.75rem;" th:text="${item.origen}">SISTEMA</span>
+						</td>
+						<td style="text-align: center;">
+							<form th:action="@{/admin/sistema/telefonia/directorio/{id}/eliminar(id=${item.id})}" method="post" onsubmit="return confirm('¿Eliminar este interno del directorio?')">
+								<button type="submit" class="logout-pill-btn" style="color: #c5142d; border-color: #fca5a5; padding: 4px 8px; font-size: 0.75rem;">Eliminar</button>
+							</form>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</section>
 	</section>
 </body>
 </html>
