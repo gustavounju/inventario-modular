@@ -863,25 +863,25 @@
 	<dialog id="modal-historial-llamadas" class="modal-dialog" style="max-width: 820px; width: 92%; padding: 24px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 12px 30px rgba(0,0,0,0.25);">
 		<header class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px;">
 			<div>
-				<h3 style="margin: 0; font-size: 1.25rem; color: #006f99; font-weight: 700;">📞 Llamadas Recientes (Taller)</h3>
-				<p style="margin: 3px 0 0; font-size: 0.82rem; color: #64748b;">Registro de llamadas atendidas, salientes y perdidas con identificación de internos y dependencias.</p>
+				<h3 style="margin: 0; font-size: 1.25rem; color: #006f99; font-weight: 700;">📞 Llamadas del Taller</h3>
+				<p style="margin: 3px 0 0; font-size: 0.84rem; color: #64748b;">Historial reciente de llamadas entrantes, salientes y perdidas.</p>
 			</div>
 			<button type="button" class="modal-close" onclick="document.getElementById('modal-historial-llamadas').close()" title="Cerrar" style="background: none; border: none; font-size: 1.35rem; cursor: pointer; color: #64748b; line-height: 1; padding: 4px 8px; border-radius: 6px;">✕</button>
 		</header>
 		<div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
 			<div style="display: flex; gap: 10px; margin-bottom: 14px; align-items: center;">
-				<input type="search" id="cdr-search" placeholder="🔍 Filtrar llamadas por número, nombre o estado..." style="flex: 1; padding: 9px 12px; border: 1px solid #b8cdd7; border-radius: 6px; font-size: 0.88rem;" oninput="filtrarLlamadasCdr(this.value)">
+				<input type="search" id="cdr-search" placeholder="🔍 Buscar por nombre, interno o estado..." style="flex: 1; padding: 9px 12px; border: 1px solid #b8cdd7; border-radius: 6px; font-size: 0.88rem;" oninput="filtrarLlamadasCdr(this.value)">
 				<button type="button" class="kbtn kbtn--secondary kbtn--sm" onclick="abrirHistorialLlamadas()" title="Recargar registro">🔄 Actualizar</button>
 			</div>
-			<div id="cdr-loading" style="text-align: center; padding: 24px; color: #0284c7; font-weight: 600;">Cargando llamadas desde la central IP...</div>
+			<div id="cdr-loading" style="text-align: center; padding: 24px; color: #0284c7; font-weight: 600;">Consultando llamadas recientes...</div>
 			<div id="cdr-error" style="color: #991b1b; background: #fee2e2; border-left: 4px solid #ef4444; padding: 12px; border-radius: 4px; display: none; margin-bottom: 12px;"></div>
 			<table class="table-judicial" id="cdr-table" style="width: 100%; border-collapse: collapse; display: none; font-size: 0.88rem;">
 				<thead>
 					<tr style="border-bottom: 2px solid #b8cdd7; background: #f0f7fa; color: #014760;">
-						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Hora</th>
-						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Acción y Contacto</th>
+						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Fecha y hora</th>
+						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Llamada y contacto</th>
 						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Duración</th>
-						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Resultado / Estado</th>
+						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Estado</th>
 					</tr>
 				</thead>
 				<tbody id="cdr-tbody">
@@ -996,6 +996,38 @@
 		// Función para cargar historial de llamadas CDR
 		let _ultimasLlamadasCdr = [];
 
+		function formatearFechaAmigable(fechaStr) {
+			if (!fechaStr) return '';
+			try {
+				const partes = fechaStr.trim().split(' ');
+				if (partes.length < 2) return fechaStr;
+				const fechaParte = partes[0]; // "YYYY-MM-DD"
+				const horaParte = partes[1].substring(0, 5); // "HH:mm"
+				
+				const hoy = new Date();
+				const pad = n => String(n).padStart(2, '0');
+				const strHoy = `${hoy.getFullYear()}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
+				
+				const ayer = new Date();
+				ayer.setDate(ayer.getDate() - 1);
+				const strAyer = `${ayer.getFullYear()}-${pad(ayer.getMonth() + 1)}-${pad(ayer.getDate())}`;
+				
+				if (fechaParte === strHoy) {
+					return `<span style="font-weight: 600; color: #0f172a;">Hoy</span> <span style="color: #64748b; font-size: 0.82rem; margin-left: 2px;">${horaParte}</span>`;
+				} else if (fechaParte === strAyer) {
+					return `<span style="font-weight: 600; color: #475569;">Ayer</span> <span style="color: #64748b; font-size: 0.82rem; margin-left: 2px;">${horaParte}</span>`;
+				} else {
+					const pedazos = fechaParte.split('-');
+					if (pedazos.length === 3) {
+						return `<span style="font-weight: 600; color: #334155;">${pedazos[2]}/${pedazos[1]}</span> <span style="color: #64748b; font-size: 0.82rem; margin-left: 2px;">${horaParte}</span>`;
+					}
+					return fechaStr;
+				}
+			} catch (e) {
+				return fechaStr;
+			}
+		}
+
 		function renderizarTablaLlamadas(cdrs) {
 			const tbody = document.getElementById('cdr-tbody');
 			const countSpan = document.getElementById('cdr-count');
@@ -1003,55 +1035,60 @@
 			tbody.innerHTML = '';
 
 			if (!cdrs || cdrs.length === 0) {
-				tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #64748b; font-style: italic;">No se encontraron llamadas registradas o coincidentes.</td></tr>';
-				if (countSpan) countSpan.textContent = '0 llamadas';
+				tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: #64748b; font-style: italic;">No hay llamadas para mostrar.</td></tr>';
+				if (countSpan) countSpan.textContent = 'Sin llamadas';
 				return;
 			}
 
 			if (countSpan) {
-				countSpan.textContent = `Mostrando ${cdrs.length} de ${_ultimasLlamadasCdr.length} llamadas recientes`;
+				if (cdrs.length === _ultimasLlamadasCdr.length) {
+					countSpan.textContent = `${cdrs.length} llamadas recientes`;
+				} else {
+					countSpan.textContent = `Mostrando ${cdrs.length} de ${_ultimasLlamadasCdr.length} llamadas`;
+				}
 			}
 
 			cdrs.forEach(llamada => {
 				const tr = document.createElement('tr');
 				tr.style.borderBottom = '1px solid #e2e8f0';
 
-				const esSaliente = llamada.esSaliente || (llamada.caller && llamada.caller.startsWith('↗'));
+				const esSaliente = Boolean(llamada.esSaliente || (llamada.caller && (llamada.caller.startsWith('↗') || llamada.caller.toLowerCase().includes('saliente'))));
 				
-				// Estado y Resultado detallado
+				// Estado y Resultado natural y humano
 				let estadoHtml = llamada.disposition || '';
 				if (llamada.disposition === 'ANSWERED') {
-					if (esSaliente) {
-						estadoHtml = '<span style="color: #166534; font-weight: 700; background: #dcfce7; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✓ Atendió</span>';
-					} else {
-						estadoHtml = '<span style="color: #166534; font-weight: 700; background: #dcfce7; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✓ Atendida</span>';
-					}
+					estadoHtml = '<span style="color: #166534; font-weight: 600; background: #dcfce7; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✓ Atendida</span>';
 				} else if (llamada.disposition === 'NO ANSWER') {
 					if (esSaliente) {
-						estadoHtml = '<span style="color: #334155; font-weight: 700; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✕ No respondió</span>';
+						estadoHtml = '<span style="color: #475569; font-weight: 600; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✕ No contestó</span>';
 					} else {
-						estadoHtml = '<span style="color: #991b1b; font-weight: 700; background: #fee2e2; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">⚠️ No se atendió (Perdida)</span>';
+						estadoHtml = '<span style="color: #991b1b; font-weight: 600; background: #fee2e2; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">⚠️ Perdida</span>';
 					}
 				} else if (llamada.disposition === 'BUSY') {
-					estadoHtml = '<span style="color: #9a3412; font-weight: 700; background: #ffedd5; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">⏳ Ocupado</span>';
+					estadoHtml = '<span style="color: #9a3412; font-weight: 600; background: #ffedd5; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">⏳ Ocupado</span>';
 				}
 
-				// Duración
+				// Duración limpia: guión si no hubo conversación, minutos/segundos si atendió
 				const billsec = parseInt(llamada.billsec || 0, 10);
-				const mins = Math.floor(billsec / 60);
-				const secs = billsec % 60;
-				const duracionStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+				let duracionStr = '';
+				if (billsec <= 0) {
+					duracionStr = '<span style="color: #94a3b8; font-size: 0.95rem;">—</span>';
+				} else {
+					const mins = Math.floor(billsec / 60);
+					const secs = billsec % 60;
+					if (mins > 0) {
+						duracionStr = `${mins} min ${secs} seg`;
+					} else {
+						duracionStr = `${secs} seg`;
+					}
+				}
 
-				// Acción y Contacto descriptivos con flechas
+				// Dirección y contacto legible
 				let dirBadge = '';
 				if (esSaliente) {
-					dirBadge = '<span style="color: #0284c7; font-weight: 700; margin-right: 6px; font-size: 0.86rem; display: inline-flex; align-items: center; gap: 2px;">↗ Se llamó a:</span>';
+					dirBadge = '<span style="color: #0284c7; font-weight: 600; margin-right: 6px; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 2px;">↗ Saliente a:</span>';
 				} else {
-					if (llamada.disposition === 'ANSWERED') {
-						dirBadge = '<span style="color: #15803d; font-weight: 700; margin-right: 6px; font-size: 0.86rem; display: inline-flex; align-items: center; gap: 2px;">↙ Llamó:</span>';
-					} else {
-						dirBadge = '<span style="color: #b91c1c; font-weight: 700; margin-right: 6px; font-size: 0.86rem; display: inline-flex; align-items: center; gap: 2px;">↙ Llamó:</span>';
-					}
+					dirBadge = '<span style="color: #475569; font-weight: 600; margin-right: 6px; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 2px;">↙ Entrante de:</span>';
 				}
 				
 				const num = llamada.numeroRemoto || (esSaliente ? llamada.dst : llamada.src) || '';
@@ -1059,16 +1096,18 @@
 				
 				let detalleContacto = '';
 				if (nom && nom !== num) {
-					detalleContacto = `${dirBadge}<strong style="font-size: 0.95rem; color: #0f172a;">${num}</strong> <span style="color: #0369a1; font-weight: 600; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 4px; margin-left: 6px; font-size: 0.85rem;">${nom}</span>`;
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${num}</strong> <span style="color: #0369a1; font-weight: 600; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px; margin-left: 6px; font-size: 0.82rem; display: inline-block; white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;" title="${nom}">${nom}</span>`;
 				} else if (llamada.caller) {
-					const cleanCaller = llamada.caller.replace(/^[↗↙]\s*(Saliente a\s*|Se llamó a\s*|Llamó\s*)?/, '');
-					detalleContacto = `${dirBadge}<strong style="font-size: 0.95rem; color: #0f172a;">${cleanCaller}</strong>`;
+					const cleanCaller = llamada.caller.replace(/^[↗↙]\s*(Saliente a\s*|Se llamó a\s*|Llamó\s*|De\s*|Entrante de\s*)?:?\s*/i, '');
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${cleanCaller}</strong>`;
 				} else {
-					detalleContacto = `${dirBadge}<strong style="font-size: 0.95rem; color: #0f172a;">${num}</strong>`;
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${num}</strong>`;
 				}
 
+				const fechaFormateada = formatearFechaAmigable(llamada.start);
+
 				tr.innerHTML = `
-					<td style="padding: 10px 8px; white-space: nowrap; color: #475569; font-variant-numeric: tabular-nums;">${llamada.start || ''}</td>
+					<td style="padding: 10px 8px; white-space: nowrap; font-variant-numeric: tabular-nums;" title="${llamada.start || ''}">${fechaFormateada}</td>
 					<td style="padding: 10px 8px;">${detalleContacto}</td>
 					<td style="padding: 10px 8px; color: #475569; font-variant-numeric: tabular-nums;">${duracionStr}</td>
 					<td style="padding: 10px 8px;">${estadoHtml}</td>
@@ -1084,6 +1123,7 @@
 				return;
 			}
 			const filtradas = _ultimasLlamadasCdr.filter(l => {
+				const esSaliente = Boolean(l.esSaliente || (l.caller && (l.caller.startsWith('↗') || l.caller.toLowerCase().includes('saliente'))));
 				const texto = [
 					l.caller,
 					l.numeroRemoto,
@@ -1091,7 +1131,11 @@
 					l.src,
 					l.dst,
 					l.start,
-					l.disposition
+					l.disposition,
+					(l.disposition === 'NO ANSWER' ? 'perdida no atendio no contesto sin respuesta' : ''),
+					(l.disposition === 'ANSWERED' ? 'atendida contestada respondida' : ''),
+					(l.disposition === 'BUSY' ? 'ocupado' : ''),
+					(esSaliente ? 'saliente' : 'entrante')
 				].filter(Boolean).join(' ').toLowerCase();
 				return texto.includes(q);
 			});
@@ -1128,7 +1172,7 @@
 					_ultimasLlamadasCdr = cdrs;
 					
 					if (cdrs.length === 0) {
-						errorDiv.textContent = 'No hay llamadas registradas recientemente para este interno.';
+						errorDiv.textContent = 'No hay llamadas registradas recientemente.';
 						errorDiv.style.display = 'block';
 						return;
 					}
@@ -1138,7 +1182,7 @@
 				})
 				.catch(err => {
 					loading.style.display = 'none';
-					errorDiv.textContent = 'Error de conexión con el servidor.';
+					errorDiv.textContent = 'No se pudo conectar con la central telefónica.';
 					errorDiv.style.display = 'block';
 					console.error('Error fetching CDR:', err);
 				});
