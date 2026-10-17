@@ -1,7 +1,10 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.security;
 
+import java.util.Map;
+
 import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.LdapConfigurationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.LdapRuntimeConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,16 +21,26 @@ public class DatabaseActiveDirectoryAuthenticationProvider implements Authentica
 
 	private final LdapConfigurationService ldapConfigurationService;
 	private final ActiveDirectoryUserDetailsContextMapper userDetailsContextMapper;
+	private final CredencialLocalRepository credencialLocalRepository;
 
 	public DatabaseActiveDirectoryAuthenticationProvider(
 			LdapConfigurationService ldapConfigurationService,
-			ActiveDirectoryUserDetailsContextMapper userDetailsContextMapper) {
+			ActiveDirectoryUserDetailsContextMapper userDetailsContextMapper,
+			@Autowired(required = false) CredencialLocalRepository credencialLocalRepository) {
 		this.ldapConfigurationService = ldapConfigurationService;
 		this.userDetailsContextMapper = userDetailsContextMapper;
+		this.credencialLocalRepository = credencialLocalRepository;
 	}
 
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+		String username = String.valueOf(authentication.getPrincipal());
+		// Si el usuario existe como LOCAL con credencial propia en MySQL, saltar AD directamente
+		if (credencialLocalRepository != null && StringUtils.hasText(username)
+				&& credencialLocalRepository.existsByUsuarioUsernameIgnoreCase(username)) {
+			throw new BadCredentialsException("Usuario local con credenciales propias en base de datos.");
+		}
+
 		LdapRuntimeConfig config = ldapConfigurationService.current();
 		if (!config.enabled()) {
 			throw new BadCredentialsException("Active Directory no esta configurado.");
@@ -41,6 +54,9 @@ public class DatabaseActiveDirectoryAuthenticationProvider implements Authentica
 				new ActiveDirectoryLdapAuthenticationProvider(config.domain(), config.url(), config.baseDn());
 		provider.setConvertSubErrorCodesToExceptions(true);
 		provider.setUserDetailsContextMapper(userDetailsContextMapper);
+		provider.setContextEnvironmentProperties(Map.of(
+				"com.sun.jndi.ldap.connect.timeout", "3000",
+				"com.sun.jndi.ldap.read.timeout", "4000"));
 		try {
 			return provider.authenticate(authentication);
 		} catch (org.springframework.security.authentication.AuthenticationServiceException e) {
@@ -57,3 +73,4 @@ public class DatabaseActiveDirectoryAuthenticationProvider implements Authentica
 		return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
 	}
 }
+

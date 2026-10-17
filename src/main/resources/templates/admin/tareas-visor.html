@@ -1161,8 +1161,19 @@
 				.then(res => res.json())
 				.then(data => {
 					loading.style.display = 'none';
+					if (data.deshabilitado) {
+						errorDiv.innerHTML = '<div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px 16px; color:#334155; font-size:0.92rem; line-height:1.45; text-align:left;">' +
+							'<strong style="display:flex; align-items:center; gap:6px; color:#0f172a; margin-bottom:4px;">ℹ️ Central telefónica no disponible en este entorno</strong>' +
+							(data.mensaje || 'En este entorno local (casa) no se dispone de conexión directa a la central Grandstream de la LAN judicial.') +
+							'</div>';
+						errorDiv.style.display = 'block';
+						return;
+					}
 					if (data.error) {
-						errorDiv.textContent = data.error;
+						errorDiv.innerHTML = '<div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:14px 16px; color:#991b1b; font-size:0.92rem; line-height:1.45; text-align:left;">' +
+							'<strong style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">⚠️ Aviso de conexión con central</strong>' +
+							data.error +
+							'</div>';
 						errorDiv.style.display = 'block';
 						return;
 					}

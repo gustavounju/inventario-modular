@@ -173,6 +173,9 @@ public class UcmApiClient {
 
             if (!config.enabled()) {
                 log.debug("Consulta de historial CDR omitida: central telefónica deshabilitada.");
+                if (this.llamadasEnVivo.isEmpty()) {
+                    return "{\"status\":0,\"deshabilitado\":true,\"mensaje\":\"La central telefónica está deshabilitada para este entorno local/casa (sin LAN judicial).\",\"response\":{\"cdr\":[]}}";
+                }
                 return armarJsonRespuesta(this.llamadasEnVivo);
             }
 
@@ -257,11 +260,11 @@ public class UcmApiClient {
             return procesarCdrRoot(cdrRaw, interno);
 
         } catch (Exception e) {
-            log.error("Error al obtener CDR de UCM", e);
+            log.warn("Central UCM no accesible: {}", e.getMessage());
             if (!llamadasEnVivo.isEmpty()) {
                 return armarJsonRespuesta(this.llamadasEnVivo);
             }
-            return String.format("{\"error\": \"Error al conectar con la central IP: %s\"}", e.getMessage());
+            return "{\"status\":0,\"deshabilitado\":true,\"mensaje\":\"No se pudo conectar con la central telefónica (10.15.0.2). En entorno local o sin red LAN judicial, este servicio queda inactivo.\",\"response\":{\"cdr\":[]}}";
         }
     }
 
@@ -484,8 +487,8 @@ public class UcmApiClient {
             conn.setRequestProperty("Cookie", this.trackId + "; CookieName=CookieValue");
         }
 
-        conn.setConnectTimeout(8000);
-        conn.setReadTimeout(8000);
+        conn.setConnectTimeout(2500);
+        conn.setReadTimeout(3000);
         conn.setDoOutput(true);
 
         try (OutputStream os = conn.getOutputStream()) {
