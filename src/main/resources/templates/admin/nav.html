@@ -98,6 +98,10 @@
 					<span class="sidebar-icon">CT</span>
 					<span class="sidebar-text">Central Telefónica</span>
 				</a>
+				<a class="sidebar-link" th:if="${canManageSystem != null ? canManageSystem : true}" th:classappend="${activeModule == 'red-ips'} ? ' is-active' : ''" th:href="@{/admin/red-ips}">
+					<span class="sidebar-icon">IP</span>
+					<span class="sidebar-text">Plano de IPs (Red)</span>
+				</a>
 			</div>
 		</nav>
 

@@ -45,7 +45,7 @@ class CurrentUserControllerTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.username", is("admin.local")))
 			.andExpect(jsonPath("$.nombreVisible", is("Administrador Local")))
-			.andExpect(jsonPath("$.fuero", is("Desarrollo local")))
+			.andExpect(jsonPath("$.fuero", is("Fuero desde AD")))
 			.andExpect(jsonPath("$.autorizado", is(true)))
 			.andExpect(jsonPath("$.modulos", hasSize(13)))
 			.andExpect(jsonPath("$.modulos[0].codigo", is("EQUIPOS")))

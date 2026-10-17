@@ -83,6 +83,7 @@
 							<button type="button" class="secondary-action" th:if="${canViewEquipos != null ? canViewEquipos : true}" onclick="abrirModalTaller()">Armar PC en taller</button>
 							<a class="secondary-action" th:if="${canViewReportes != null ? canViewReportes : true}" th:href="@{/admin/reportes}">Reportes</a>
 							<a class="secondary-action" th:if="${canViewAuditoria != null ? canViewAuditoria : true}" th:href="@{/admin/auditoria}">Auditoría</a>
+							<a class="secondary-action" th:if="${canManageSystem != null ? canManageSystem : true}" th:href="@{/admin/red-ips}" style="border-color: #0284c7; color: #0369a1; font-weight: 600;">🌐 Plano de IPs</a>
 						</div>
 					</section>
 

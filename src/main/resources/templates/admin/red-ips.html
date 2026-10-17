@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title th:text="${'Plano de IPs - ' + applicationName}">Plano de IPs - Inventario Modular</title>
+	<link rel="stylesheet" th:href="@{/css/admin.css}">
+	<style>
+		.ipam-container {
+			max-width: 1300px;
+			margin: 0 auto;
+		}
+		.ipam-stats-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 14px;
+			margin-bottom: 20px;
+		}
+		.ipam-stat-card {
+			background: var(--bg-surface, #ffffff);
+			border: 1px solid var(--border-color, #e2e8f0);
+			border-radius: 10px;
+			padding: 14px 18px;
+			display: flex;
+			flex-direction: column;
+			box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+		}
+		.ipam-stat-card span {
+			font-size: 0.8rem;
+			color: #64748b;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 600;
+		}
+		.ipam-stat-card strong {
+			font-size: 1.7rem;
+			color: #0f172a;
+			margin: 4px 0 2px;
+		}
+		.ipam-stat-card small {
+			font-size: 0.8rem;
+			color: #475569;
+		}
+		.ipam-stat-card.ocupada strong { color: #dc2626; }
+		.ipam-stat-card.libre strong { color: #16a34a; }
+		.ipam-stat-card.reservada strong { color: #d97706; }
+
+		.ipam-toolbar {
+			background: #f8fafc;
+			border: 1px solid #e2e8f0;
+			border-radius: 10px;
+			padding: 14px 18px;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 12px;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 20px;
+		}
+		.ipam-search-box {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			flex: 1;
+			min-width: 260px;
+		}
+		.ipam-search-input {
+			width: 100%;
+			padding: 8px 12px;
+			border: 1px solid #cbd5e1;
+			border-radius: 6px;
+			font-size: 0.9rem;
+			background: #ffffff;
+		}
+		.ipam-filter-group {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			flex-wrap: wrap;
+		}
+		.ipam-filter-btn {
+			padding: 6px 12px;
+			font-size: 0.82rem;
+			border: 1px solid #cbd5e1;
+			border-radius: 6px;
+			background: #ffffff;
+			cursor: pointer;
+			color: #475569;
+			font-weight: 500;
+			transition: all 0.15s ease;
+		}
+		.ipam-filter-btn:hover {
+			background: #f1f5f9;
+			color: #0f172a;
+		}
+		.ipam-filter-btn.active {
+			background: #0284c7;
+			color: #ffffff;
+			border-color: #0284c7;
+		}
+
+		/* Grid Mapa de Red */
+		.ipam-map-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+			gap: 10px;
+			margin-bottom: 30px;
+		}
+		.ipam-cell {
+			background: #ffffff;
+			border: 1px solid #e2e8f0;
+			border-radius: 8px;
+			padding: 10px;
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			cursor: pointer;
+			transition: all 0.15s ease;
+			position: relative;
+			overflow: hidden;
+			text-align: left;
+		}
+		.ipam-cell:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+			border-color: #94a3b8;
+		}
+		.ipam-cell-ip {
+			font-size: 0.95rem;
+			font-weight: 700;
+			color: #0f172a;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+		.ipam-cell-octeto {
+			font-size: 0.72rem;
+			background: #e2e8f0;
+			padding: 1px 5px;
+			border-radius: 4px;
+			color: #475569;
+		}
+		.ipam-cell-equipo {
+			font-size: 0.82rem;
+			font-weight: 600;
+			color: #1e293b;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.ipam-cell-detalle {
+			font-size: 0.73rem;
+			color: #64748b;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.ipam-cell.is-ocupada {
+			border-left: 4px solid #ef4444;
+			background: #ffffff;
+		}
+		.ipam-cell.is-libre {
+			border-left: 4px solid #22c55e;
+			background: #fcfdfc;
+		}
+		.ipam-cell.is-reservada {
+			border-left: 4px solid #f59e0b;
+			background: #fffdfa;
+		}
+
+		/* Badge de categoría */
+		.ip-badge {
+			display: inline-block;
+			padding: 2px 7px;
+			border-radius: 4px;
+			font-size: 0.72rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.3px;
+		}
+		.ip-badge.ROUTER { background: #fee2e2; color: #991b1b; }
+		.ip-badge.SWITCH { background: #e0e7ff; color: #3730a3; }
+		.ip-badge.ACCESS_POINT { background: #fef3c7; color: #92400e; }
+		.ip-badge.SERVIDOR { background: #dbeafe; color: #1e40af; }
+		.ip-badge.RELOJ_BIOMETRICO { background: #f3e8ff; color: #6b21a8; }
+		.ip-badge.TERMINAL { background: #ccfbf1; color: #115e59; }
+		.ip-badge.OTRO { background: #f1f5f9; color: #475569; }
+
+		.ip-status-badge {
+			display: inline-block;
+			padding: 2px 8px;
+			border-radius: 9999px;
+			font-size: 0.73rem;
+			font-weight: 700;
+		}
+		.ip-status-badge.OCUPADA { background: #fecaca; color: #991b1b; }
+		.ip-status-badge.LIBRE { background: #dcfce7; color: #166534; }
+		.ip-status-badge.RESERVADA { background: #fef08a; color: #854d0e; }
+
+		/* Alerta de duplicación */
+		.duplicate-warning {
+			background: #fff1f2;
+			border: 1px solid #fecdd3;
+			border-radius: 6px;
+			padding: 10px 14px;
+			margin-top: 8px;
+			display: none;
+			color: #9f1239;
+			font-size: 0.85rem;
+			line-height: 1.4;
+		}
+		.duplicate-warning.visible {
+			display: block;
+			animation: fadeIn 0.2s ease-in-out;
+		}
+		@keyframes fadeIn {
+			from { opacity: 0; transform: translateY(-4px); }
+			to { opacity: 1; transform: translateY(0); }
+		}
+
+		.tab-toggle-group {
+			display: flex;
+			background: #e2e8f0;
+			padding: 3px;
+			border-radius: 6px;
+			gap: 3px;
+		}
+		.tab-toggle-btn {
+			border: none;
+			background: none;
+			padding: 5px 12px;
+			font-size: 0.82rem;
+			border-radius: 4px;
+			cursor: pointer;
+			color: #475569;
+			font-weight: 600;
+		}
+		.tab-toggle-btn.active {
+			background: #ffffff;
+			color: #0f172a;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+		}
+	</style>
+</head>
+<body>
+	<main class="shell shell-wide">
+		<section class="status-panel ipam-container" aria-labelledby="ipam-title">
+			<header th:replace="~{admin/nav :: topbar('Infraestructura de Red', 'Plano y Asignación de IPs', 'red-ips')}"></header>
+
+			<!-- Alertas Flash -->
+			<div th:if="${mensajeExito}" style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-weight: 500;">
+				<span th:text="${mensajeExito}">Operación exitosa</span>
+			</div>
+			<div th:if="${mensajeError}" style="background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-weight: 500;">
+				<span th:text="${mensajeError}">Error en la operación</span>
+			</div>
+
+			<!-- Tarjetas de Estadísticas -->
+			<div class="ipam-stats-grid">
+				<div class="ipam-stat-card">
+					<span>Subred LAN Monitoreada</span>
+					<strong>10.15.0.0/24</strong>
+					<small th:text="${metricas.total()} + ' direcciones registradas'">140 direcciones</small>
+				</div>
+				<div class="ipam-stat-card ocupada">
+					<span>IPs Asignadas / Ocupadas</span>
+					<strong th:text="${metricas.ocupadas()}">0</strong>
+					<small th:text="${metricas.porcentajeUso()} + '% de utilización del rango'">0%</small>
+				</div>
+				<div class="ipam-stat-card libre">
+					<span>IPs Libres Disponibles</span>
+					<strong th:text="${metricas.libres()}">0</strong>
+					<small>Listas para asignar sin duplicación</small>
+				</div>
+				<div class="ipam-stat-card reservada">
+					<span>IPs Reservadas / Off-line</span>
+					<strong th:text="${metricas.reservadas()}">0</strong>
+					<small>Servicios reservados o provisorios</small>
+				</div>
+			</div>
+
+			<!-- Barra de Herramientas y Filtros -->
+			<div class="ipam-toolbar">
+				<div class="ipam-search-box">
+					<input type="text" id="ipam-search-input" class="ipam-search-input" placeholder="🔍 Buscar por IP (ej: .25 o 10.15.0), equipo, rol o switch..." oninput="filtrarIps()">
+				</div>
+
+				<div class="ipam-filter-group">
+					<button type="button" class="ipam-filter-btn active" data-filter="TODOS" onclick="aplicarFiltroEstado('TODOS', this)">Todas</button>
+					<button type="button" class="ipam-filter-btn" data-filter="LIBRE" onclick="aplicarFiltroEstado('LIBRE', this)">🟢 Libres</button>
+					<button type="button" class="ipam-filter-btn" data-filter="OCUPADA" onclick="aplicarFiltroEstado('OCUPADA', this)">🔴 Ocupadas</button>
+					<button type="button" class="ipam-filter-btn" data-filter="RESERVADA" onclick="aplicarFiltroEstado('RESERVADA', this)">🟡 Reservadas</button>
+				</div>
+
+				<div style="display: flex; gap: 8px; align-items: center;">
+					<div class="tab-toggle-group">
+						<button type="button" class="tab-toggle-btn active" id="btn-view-grid" onclick="cambiarVista('grid')" title="Vista Mapa Cuadrícula">🔲 Mapa</button>
+						<button type="button" class="tab-toggle-btn" id="btn-view-table" onclick="cambiarVista('table')" title="Vista Lista Detallada">📋 Lista</button>
+					</div>
+
+					<button type="button" class="secondary-action" onclick="siguienteIpLibre()" style="display: flex; align-items: center; gap: 6px; font-weight: 600;" title="Obtener la primera IP vacía para asignar">
+						⚡ Siguiente Libre
+					</button>
+					<button type="button" class="primary-action" onclick="abrirModalAsignacion('', '', '', '', 'OTRO', 'OCUPADA', null)" style="display: flex; align-items: center; gap: 6px;">
+						➕ Asignar IP
+					</button>
+				</div>
+			</div>
+
+			<!-- Vista 1: Mapa Visual de IPs (Grid) -->
+			<div id="ipam-view-grid" class="ipam-map-grid">
+				<div th:each="ipItem : ${ips}"
+					 th:class="'ipam-cell is-' + ${#strings.toLowerCase(ipItem.estado)}"
+					 th:data-ip="${ipItem.ip}"
+					 th:data-numero="${ipItem.ipNumero}"
+					 th:data-estado="${ipItem.estado}"
+					 th:data-equipo="${ipItem.equipo != null ? ipItem.equipo : ''}"
+					 th:data-detalle="${ipItem.detalle != null ? ipItem.detalle : ''}"
+					 th:data-observaciones="${ipItem.observaciones != null ? ipItem.observaciones : ''}"
+					 th:data-categoria="${ipItem.categoria}"
+					 th:data-id="${ipItem.id}"
+					 onclick="abrirModalDesdeElemento(this)">
+					<div class="ipam-cell-ip">
+						<span th:text="${ipItem.ip}">10.15.0.1</span>
+						<span class="ipam-cell-octeto" th:text="'.' + ${ipItem.ipNumero}">.1</span>
+					</div>
+					<div class="ipam-cell-equipo" th:text="${ipItem.equipo != null and !ipItem.equipo.isEmpty() ? ipItem.equipo : '(Disponible)'}">Equipo</div>
+					<div class="ipam-cell-detalle" th:text="${ipItem.detalle != null and !ipItem.detalle.isEmpty() ? ipItem.detalle : 'Libre para asignar'}">Detalle</div>
+					<div style="margin-top: 4px; display: flex; justify-content: space-between; align-items: center;">
+						<span th:if="${ipItem.equipo != null and !ipItem.equipo.isEmpty()}"
+							  th:class="'ip-badge ' + ${ipItem.categoria}"
+							  th:text="${ipItem.categoria}">CATEGORIA</span>
+						<span th:class="'ip-status-badge ' + ${ipItem.estado}"
+							  th:text="${ipItem.estado}">LIBRE</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Vista 2: Tabla Detallada -->
+			<div id="ipam-view-table" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow-x: auto; margin-bottom: 30px;">
+				<table class="data-table" style="width: 100%; border-collapse: collapse;">
+					<thead>
+						<tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
+							<th style="padding: 10px 14px;">IP</th>
+							<th style="padding: 10px 14px;">Estado</th>
+							<th style="padding: 10px 14px;">Categoría</th>
+							<th style="padding: 10px 14px;">Equipo</th>
+							<th style="padding: 10px 14px;">Detalle / Función</th>
+							<th style="padding: 10px 14px;">Ubicación / Observaciones</th>
+							<th style="padding: 10px 14px; text-align: right;">Acciones</th>
+						</tr>
+					</thead>
+					<tbody id="ipam-table-body">
+						<tr th:each="ipItem : ${ips}"
+							th:data-ip="${ipItem.ip}"
+							th:data-estado="${ipItem.estado}"
+							th:data-equipo="${ipItem.equipo != null ? ipItem.equipo : ''}"
+							th:data-detalle="${ipItem.detalle != null ? ipItem.detalle : ''}"
+							th:data-observaciones="${ipItem.observaciones != null ? ipItem.observaciones : ''}"
+							style="border-bottom: 1px solid #f1f5f9;">
+							<td style="padding: 10px 14px; font-weight: 700;" th:text="${ipItem.ip}">10.15.0.1</td>
+							<td style="padding: 10px 14px;">
+								<span th:class="'ip-status-badge ' + ${ipItem.estado}" th:text="${ipItem.estado}">LIBRE</span>
+							</td>
+							<td style="padding: 10px 14px;">
+								<span th:class="'ip-badge ' + ${ipItem.categoria}" th:text="${ipItem.categoria}">OTRO</span>
+							</td>
+							<td style="padding: 10px 14px; font-weight: 600;" th:text="${ipItem.equipo != null and !ipItem.equipo.isEmpty() ? ipItem.equipo : '-'}">-</td>
+							<td style="padding: 10px 14px; color: #475569;" th:text="${ipItem.detalle != null and !ipItem.detalle.isEmpty() ? ipItem.detalle : '-'}">-</td>
+							<td style="padding: 10px 14px; font-size: 0.85rem; color: #64748b;" th:text="${ipItem.observaciones != null and !ipItem.observaciones.isEmpty() ? ipItem.observaciones : '-'}">-</td>
+							<td style="padding: 10px 14px; text-align: right; white-space: nowrap;">
+								<button type="button" class="kbtn kbtn--sm kbtn--secondary"
+										th:data-ip="${ipItem.ip}"
+										th:data-equipo="${ipItem.equipo != null ? ipItem.equipo : ''}"
+										th:data-detalle="${ipItem.detalle != null ? ipItem.detalle : ''}"
+										th:data-observaciones="${ipItem.observaciones != null ? ipItem.observaciones : ''}"
+										th:data-categoria="${ipItem.categoria}"
+										th:data-estado="${ipItem.estado}"
+										th:data-id="${ipItem.id}"
+										onclick="abrirModalDesdeElemento(this)">
+									Editar
+								</button>
+								<form th:if="${ipItem.estado != T(ar.gov.justiciajujuy.sanpedro.inventario.red.EstadoIp).LIBRE}"
+									  th:action="@{'/admin/red-ips/' + ${ipItem.id} + '/liberar'}"
+									  method="post" style="display: inline;" onsubmit="return confirm('¿Seguro que desea liberar la IP ' + [[${ipItem.ip}]] + '?');">
+									<button type="submit" class="kbtn kbtn--sm kbtn--ghost" style="color: #dc2626;" title="Liberar IP">Liberar</button>
+								</form>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<!-- Modal de Asignación / Edición con Prevención de Duplicados en Vivo -->
+		<dialog id="modal-ipam" class="modal-dialog" style="max-width: 580px; width: 92%; padding: 24px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 12px 30px rgba(0,0,0,0.25);">
+			<form th:action="@{/admin/red-ips/guardar}" method="post" id="form-ipam">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+					<h3 id="modal-ipam-titulo" style="margin: 0; font-size: 1.25rem; color: #0f172a;">Asignar Dirección IP</h3>
+					<button type="button" onclick="document.getElementById('modal-ipam').close()" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #64748b;">✕</button>
+				</div>
+
+				<input type="hidden" id="ipam-modal-id" name="id">
+
+				<!-- Campo Dirección IP con validación en vivo -->
+				<div style="margin-bottom: 14px;">
+					<label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; color: #334155;">
+						Dirección IP <span style="color: #ef4444;">*</span>
+					</label>
+					<div style="display: flex; gap: 8px;">
+						<input type="text" id="ipam-input-ip" name="ip" required placeholder="Ej: 10.15.0.25"
+							   style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; font-weight: 600;"
+							   oninput="validarIpEnVivo()">
+						<button type="button" class="secondary-action" onclick="siguienteIpLibre()" style="font-size: 0.82rem; padding: 6px 10px;">
+							Siguiente Libre
+						</button>
+					</div>
+
+					<!-- Alerta de Duplicación en Vivo -->
+					<div id="duplicate-warning" class="duplicate-warning">
+						<strong style="display: block; margin-bottom: 2px;">⚠️ ALERTA DE DUPLICACIÓN DE IP</strong>
+						<span id="duplicate-warning-text">Esta IP ya se encuentra asignada a otro equipo.</span>
+					</div>
+					<div id="available-notice" style="display: none; color: #16a34a; font-size: 0.82rem; font-weight: 600; margin-top: 5px;">
+						✓ IP disponible y sin conflicto
+					</div>
+				</div>
+
+				<!-- Categoría y Estado -->
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+					<div>
+						<label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; color: #334155;">
+							Categoría / Tipo
+						</label>
+						<select id="ipam-select-categoria" name="categoria" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
+							<option th:each="cat : ${categorias}" th:value="${cat}" th:text="${cat.descripcion}">ROUTER</option>
+						</select>
+					</div>
+					<div>
+						<label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; color: #334155;">
+							Estado de la IP
+						</label>
+						<select id="ipam-select-estado" name="estado" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
+							<option th:each="est : ${estados}" th:value="${est}" th:text="${est}">OCUPADA</option>
+						</select>
+					</div>
+				</div>
+
+				<!-- Nombre del Equipo -->
+				<div style="margin-bottom: 14px;">
+					<label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; color: #334155;">
+						Nombre del Equipo / Hostname
+					</label>
+					<input type="text" id="ipam-input-equipo" name="equipo" placeholder="Ej: USW Pro 48 PoE, Dell R750, AC-LR..."
+						   style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+				</div>
+
+				<!-- Detalle / Función -->
+				<div style="margin-bottom: 14px;">
+					<label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; color: #334155;">
+						Detalle / Rol del Dispositivo
+					</label>
+					<input type="text" id="ipam-input-detalle" name="detalle" placeholder="Ej: Switch de Core, Proxmox PVE, Servidor Jitsi Meet..."
+						   style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+				</div>
+
+				<!-- Ubicación / Observaciones -->
+				<div style="margin-bottom: 20px;">
+					<label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; color: #334155;">
+						Ubicación en Rack / Observaciones
+					</label>
+					<textarea id="ipam-input-observaciones" name="observaciones" rows="2" placeholder="Ej: Rack Sala de Audiencias Laboral, Switch 1 Primer Piso..."
+							  style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem; resize: vertical;"></textarea>
+				</div>
+
+				<!-- Botones -->
+				<div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+					<button type="button" class="secondary-action" onclick="document.getElementById('modal-ipam').close()">
+						Cancelar
+					</button>
+					<div style="display: flex; gap: 8px;">
+						<button type="submit" class="primary-action">
+							Guardar Asignación
+						</button>
+					</div>
+				</div>
+			</form>
+		</dialog>
+	</main>
+
+	<script>
+		let _timerValidacion = null;
+		let _estadoActualFiltro = 'TODOS';
+
+		function cambiarVista(vista) {
+			const grid = document.getElementById('ipam-view-grid');
+			const table = document.getElementById('ipam-view-table');
+			const btnGrid = document.getElementById('btn-view-grid');
+			const btnTable = document.getElementById('btn-view-table');
+
+			if (vista === 'grid') {
+				grid.style.display = 'grid';
+				table.style.display = 'none';
+				btnGrid.classList.add('active');
+				btnTable.classList.remove('active');
+			} else {
+				grid.style.display = 'none';
+				table.style.display = 'block';
+				btnGrid.classList.remove('active');
+				btnTable.classList.add('active');
+			}
+		}
+
+		function aplicarFiltroEstado(estado, btn) {
+			_estadoActualFiltro = estado;
+			document.querySelectorAll('.ipam-filter-btn').forEach(b => b.classList.remove('active'));
+			if (btn) btn.classList.add('active');
+			filtrarIps();
+		}
+
+		function filtrarIps() {
+			const query = (document.getElementById('ipam-search-input').value || '').toLowerCase().trim();
+
+			// Filtrar tarjetas grid
+			const cells = document.querySelectorAll('.ipam-cell');
+			cells.forEach(cell => {
+				const ip = (cell.dataset.ip || '').toLowerCase();
+				const equipo = (cell.dataset.equipo || '').toLowerCase();
+				const detalle = (cell.dataset.detalle || '').toLowerCase();
+				const obs = (cell.dataset.observaciones || '').toLowerCase();
+				const estado = (cell.dataset.estado || 'LIBRE').toUpperCase();
+
+				const coincideTexto = !query || ip.includes(query) || equipo.includes(query) || detalle.includes(query) || obs.includes(query);
+				const coincideEstado = _estadoActualFiltro === 'TODOS' || estado === _estadoActualFiltro;
+
+				cell.style.display = (coincideTexto && coincideEstado) ? 'flex' : 'none';
+			});
+
+			// Filtrar filas tabla
+			const rows = document.querySelectorAll('#ipam-table-body tr');
+			rows.forEach(row => {
+				const ip = (row.dataset.ip || '').toLowerCase();
+				const equipo = (row.dataset.equipo || '').toLowerCase();
+				const detalle = (row.dataset.detalle || '').toLowerCase();
+				const obs = (row.dataset.observaciones || '').toLowerCase();
+				const estado = (row.dataset.estado || 'LIBRE').toUpperCase();
+
+				const coincideTexto = !query || ip.includes(query) || equipo.includes(query) || detalle.includes(query) || obs.includes(query);
+				const coincideEstado = _estadoActualFiltro === 'TODOS' || estado === _estadoActualFiltro;
+
+				row.style.display = (coincideTexto && coincideEstado) ? '' : 'none';
+			});
+		}
+
+		function abrirModalDesdeElemento(elem) {
+			abrirModalAsignacion(
+				elem.dataset.ip || '',
+				elem.dataset.equipo || '',
+				elem.dataset.detalle || '',
+				elem.dataset.observaciones || '',
+				elem.dataset.categoria || 'OTRO',
+				elem.dataset.estado || 'OCUPADA',
+				elem.dataset.id || null
+			);
+		}
+
+		function abrirModalAsignacion(ip, equipo, detalle, observaciones, categoria, estado, id) {
+			const modal = document.getElementById('modal-ipam');
+			const titulo = document.getElementById('modal-ipam-titulo');
+
+			document.getElementById('ipam-modal-id').value = id || '';
+			document.getElementById('ipam-input-ip').value = ip || '';
+			document.getElementById('ipam-input-equipo').value = equipo || '';
+			document.getElementById('ipam-input-detalle').value = detalle || '';
+			document.getElementById('ipam-input-observaciones').value = observaciones || '';
+
+			if (categoria) {
+				document.getElementById('ipam-select-categoria').value = categoria;
+			}
+			if (estado) {
+				document.getElementById('ipam-select-estado').value = estado;
+			}
+
+			titulo.textContent = ip ? ('Editar Asignación IP: ' + ip) : 'Asignar Nueva Dirección IP';
+
+			// Limpiar advertencias
+			document.getElementById('duplicate-warning').classList.remove('visible');
+			document.getElementById('available-notice').style.display = 'none';
+
+			modal.showModal();
+
+			if (ip && !id) {
+				validarIpEnVivo();
+			}
+		}
+
+		function validarIpEnVivo() {
+			clearTimeout(_timerValidacion);
+			const ip = (document.getElementById('ipam-input-ip').value || '').trim();
+			const id = document.getElementById('ipam-modal-id').value;
+			const warning = document.getElementById('duplicate-warning');
+			const warningText = document.getElementById('duplicate-warning-text');
+			const notice = document.getElementById('available-notice');
+
+			if (!ip || ip.length < 7) {
+				warning.classList.remove('visible');
+				notice.style.display = 'none';
+				return;
+			}
+
+			_timerValidacion = setTimeout(() => {
+				fetch('/admin/red-ips/api/validar?ip=' + encodeURIComponent(ip) + (id ? '&excluirId=' + id : ''))
+					.then(res => res.json())
+					.then(data => {
+						if (data.ocupada) {
+							warningText.innerHTML = 'La IP <strong>' + ip + '</strong> ya está asignada a: <strong>' + (data.equipo || 'Equipo sin nombre') + '</strong>' +
+								(data.detalle ? ' (' + data.detalle + ')' : '') + '.<br>Si guarda con esta IP, se modificará el equipo actual para evitar duplicaciones.';
+							warning.classList.add('visible');
+							notice.style.display = 'none';
+						} else {
+							warning.classList.remove('visible');
+							notice.style.display = 'block';
+						}
+					})
+					.catch(() => {});
+			}, 250);
+		}
+
+		function siguienteIpLibre() {
+			fetch('/admin/red-ips/api/siguiente-libre')
+				.then(res => res.json())
+				.then(data => {
+					if (data.ip) {
+						document.getElementById('ipam-input-ip').value = data.ip;
+						validarIpEnVivo();
+					} else {
+						alert('No se encontraron IPs libres disponibles en el rango monitoreado.');
+					}
+				})
+				.catch(err => console.error(err));
+		}
+	</script>
+</body>
+</html>
