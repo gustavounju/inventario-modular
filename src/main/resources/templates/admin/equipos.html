@@ -276,6 +276,13 @@
 	</main>
 	
 	<script>
+		function escapeHtml(str) {
+			if (str == null) return '';
+			return String(str).replace(/[&<>"']/g, function(m) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+			});
+		}
+
 		function abrirModalEditarImpresora(id, nombre, fuero, ubicacion, ip, sn) {
 			document.getElementById('edit-impresora-id').value = id;
 			document.getElementById('edit-impresora-nombre').value = nombre || '';
@@ -316,10 +323,10 @@
 						
 						li.innerHTML = `
 							<div>
-								<strong style="display:block; color:var(--text-main); font-size:0.95rem;">${v.nombre}</strong>
-								<span style="font-size:0.8rem; color:var(--text-muted);">${v.ubicacion || 'Sin ubicación'} - ${v.ultimoUsuario || 'Sin usuario'}</span>
+								<strong style="display:block; color:var(--text-main); font-size:0.95rem;">${escapeHtml(v.nombre)}</strong>
+								<span style="font-size:0.8rem; color:var(--text-muted);">${escapeHtml(v.ubicacion || 'Sin ubicación')} - ${escapeHtml(v.ultimoUsuario || 'Sin usuario')}</span>
 							</div>
-							<button class="secondary-action button-danger-subtle" onclick="desvincularImpresora(${v.id}, this)" style="font-size:0.8rem; padding: 4px 8px;">Desvincular</button>
+							<button class="secondary-action button-danger-subtle" onclick="desvincularImpresora(${Number(v.id)}, this)" style="font-size:0.8rem; padding: 4px 8px;">Desvincular</button>
 						`;
 						lista.appendChild(li);
 					});

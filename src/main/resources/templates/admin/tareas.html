@@ -405,6 +405,13 @@
 
 	<!-- Script de Pestañas Interactivas y Autocompletado AD -->
 	<script>
+		function escapeHtml(str) {
+			if (str == null) return '';
+			return String(str).replace(/[&<>"']/g, function(m) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+			});
+		}
+
 		let solicitanteTimer = null;
 
 		function initSolicitanteAutocomplete() {
@@ -450,7 +457,7 @@
 
 						dropdown.innerHTML = '';
 						if (usuarios.length === 0) {
-							dropdown.innerHTML = `<div class="solicitante-dropdown-status">${data.mensaje || 'Sin coincidencias en Active Directory.'}</div>`;
+							dropdown.innerHTML = `<div class="solicitante-dropdown-status">${escapeHtml(data.mensaje || 'Sin coincidencias en Active Directory.')}</div>`;
 							if (helpText) {
 								helpText.textContent = 'No se encontró en AD. Puede continuar si es un solicitante manual.';
 								helpText.style.color = '#64748b';
@@ -464,8 +471,8 @@
 							const displayName = u.nombreVisible || u.username;
 							const fueroText = (u.fuero && u.fuero !== 'Sin fuero informado') ? ' · 🏢 ' + u.fuero : '';
 							item.innerHTML = `
-								<span class="solicitante-dropdown-item-title">${displayName}</span>
-								<span class="solicitante-dropdown-item-sub">👤 ${u.username}${fueroText}</span>
+								<span class="solicitante-dropdown-item-title">${escapeHtml(displayName)}</span>
+								<span class="solicitante-dropdown-item-sub">👤 ${escapeHtml(u.username)}${escapeHtml(fueroText)}</span>
 							`;
 							item.addEventListener('click', () => {
 								usernameField.value = u.username;

@@ -104,6 +104,7 @@
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[m]));
     }
+    window.escapeHtml = escapeHtml;
 
     setTimeout(update, 30000);
     setTimeout(updateApkPresencia, 10000);

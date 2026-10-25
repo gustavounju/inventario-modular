@@ -545,6 +545,13 @@
 	</th:block>
 
 	<script>
+		function escapeHtml(str) {
+			if (str == null) return '';
+			return String(str).replace(/[&<>"']/g, function(m) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+			});
+		}
+
 		// Autocompletado predictivo para Quién solicita (Active Directory)
 		let solicitanteTimer = null;
 
@@ -592,7 +599,7 @@
 
 						dropdown.innerHTML = '';
 						if (usuarios.length === 0) {
-							dropdown.innerHTML = `<div class="solicitante-dropdown-status">${data.mensaje || 'Sin coincidencias en Active Directory.'}</div>`;
+							dropdown.innerHTML = `<div class="solicitante-dropdown-status">${escapeHtml(data.mensaje || 'Sin coincidencias en Active Directory.')}</div>`;
 							if (helpText) {
 								helpText.textContent = 'No se encontró en AD. Puede continuar si es un solicitante manual.';
 								helpText.style.color = '#64748b';
@@ -606,8 +613,8 @@
 							const displayName = u.nombreVisible || u.username;
 							const fueroText = (u.fuero && u.fuero !== 'Sin fuero informado') ? ' · 🏢 ' + u.fuero : '';
 							item.innerHTML = `
-								<span class="solicitante-dropdown-item-title">${displayName}</span>
-								<span class="solicitante-dropdown-item-sub">👤 ${u.username}${fueroText}</span>
+								<span class="solicitante-dropdown-item-title">${escapeHtml(displayName)}</span>
+								<span class="solicitante-dropdown-item-sub">👤 ${escapeHtml(u.username)}${escapeHtml(fueroText)}</span>
 							`;
 							item.addEventListener('click', () => {
 								usernameField.value = u.username;
@@ -968,7 +975,7 @@
 								activeCallToast.style.color = '#1e3a8a';
 								container.appendChild(activeCallToast);
 							}
-							activeCallToast.innerHTML = `📞 <strong>Llamada entrante al taller</strong><br>De: ${callerName} (${caller})`;
+							activeCallToast.innerHTML = `📞 <strong>Llamada entrante al taller</strong><br>De: ${escapeHtml(callerName)} (${escapeHtml(caller)})`;
 						} 
 						// 2. Limpiar banner cuando atienden o cortan
 						else if (estado === 'ANSWERED' || estado === 'HANGUP' || estado === 'NO ANSWER') {
@@ -1096,18 +1103,18 @@
 				
 				let detalleContacto = '';
 				if (nom && nom !== num) {
-					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${num}</strong> <span style="color: #0369a1; font-weight: 600; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px; margin-left: 6px; font-size: 0.82rem; display: inline-block; white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;" title="${nom}">${nom}</span>`;
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${escapeHtml(num)}</strong> <span style="color: #0369a1; font-weight: 600; background: #e0f2fe; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px; margin-left: 6px; font-size: 0.82rem; display: inline-block; white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis; vertical-align: middle;" title="${escapeHtml(nom)}">${escapeHtml(nom)}</span>`;
 				} else if (llamada.caller) {
 					const cleanCaller = llamada.caller.replace(/^[↗↙]\s*(Saliente a\s*|Se llamó a\s*|Llamó\s*|De\s*|Entrante de\s*)?:?\s*/i, '');
-					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${cleanCaller}</strong>`;
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${escapeHtml(cleanCaller)}</strong>`;
 				} else {
-					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${num}</strong>`;
+					detalleContacto = `${dirBadge}<strong style="font-size: 0.94rem; color: #0f172a;">${escapeHtml(num)}</strong>`;
 				}
 
 				const fechaFormateada = formatearFechaAmigable(llamada.start);
 
 				tr.innerHTML = `
-					<td style="padding: 10px 8px; white-space: nowrap; font-variant-numeric: tabular-nums;" title="${llamada.start || ''}">${fechaFormateada}</td>
+					<td style="padding: 10px 8px; white-space: nowrap; font-variant-numeric: tabular-nums;" title="${escapeHtml(llamada.start || '')}">${fechaFormateada}</td>
 					<td style="padding: 10px 8px;">${detalleContacto}</td>
 					<td style="padding: 10px 8px; color: #475569; font-variant-numeric: tabular-nums;">${duracionStr}</td>
 					<td style="padding: 10px 8px;">${estadoHtml}</td>
@@ -1164,7 +1171,7 @@
 					if (data.deshabilitado) {
 						errorDiv.innerHTML = '<div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px 16px; color:#334155; font-size:0.92rem; line-height:1.45; text-align:left;">' +
 							'<strong style="display:flex; align-items:center; gap:6px; color:#0f172a; margin-bottom:4px;">ℹ️ Central telefónica no disponible en este entorno</strong>' +
-							(data.mensaje || 'En este entorno local (casa) no se dispone de conexión directa a la central Grandstream de la LAN judicial.') +
+							escapeHtml(data.mensaje || 'En este entorno local (casa) no se dispone de conexión directa a la central Grandstream de la LAN judicial.') +
 							'</div>';
 						errorDiv.style.display = 'block';
 						return;
@@ -1172,7 +1179,7 @@
 					if (data.error) {
 						errorDiv.innerHTML = '<div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:14px 16px; color:#991b1b; font-size:0.92rem; line-height:1.45; text-align:left;">' +
 							'<strong style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">⚠️ Aviso de conexión con central</strong>' +
-							data.error +
+							escapeHtml(data.error) +
 							'</div>';
 						errorDiv.style.display = 'block';
 						return;

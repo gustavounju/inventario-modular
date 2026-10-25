@@ -489,6 +489,13 @@
 	</main>
 
 	<script>
+		function escapeHtml(str) {
+			if (str == null) return '';
+			return String(str).replace(/[&<>"']/g, function(m) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+			});
+		}
+
 		let _timerValidacion = null;
 		let _estadoActualFiltro = 'TODOS';
 
@@ -613,8 +620,8 @@
 					.then(res => res.json())
 					.then(data => {
 						if (data.ocupada) {
-							warningText.innerHTML = 'La IP <strong>' + ip + '</strong> ya está asignada a: <strong>' + (data.equipo || 'Equipo sin nombre') + '</strong>' +
-								(data.detalle ? ' (' + data.detalle + ')' : '') + '.<br>Si guarda con esta IP, se modificará el equipo actual para evitar duplicaciones.';
+							warningText.innerHTML = 'La IP <strong>' + escapeHtml(ip) + '</strong> ya está asignada a: <strong>' + escapeHtml(data.equipo || 'Equipo sin nombre') + '</strong>' +
+								(data.detalle ? ' (' + escapeHtml(data.detalle) + ')' : '') + '.<br>Si guarda con esta IP, se modificará el equipo actual para evitar duplicaciones.';
 							warning.classList.add('visible');
 							notice.style.display = 'none';
 						} else {
