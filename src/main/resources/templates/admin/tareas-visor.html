@@ -951,52 +951,69 @@
 			let activeCallToast = null;
 
 			if (window.EventSource) {
-				const callSource = new EventSource('/api/telefonia/stream');
-				
-				callSource.addEventListener('llamada', function(e) {
-					try {
-						const data = JSON.parse(e.data);
-						const callee = data.callee || '';
-						
-						// Opcional: Filtrar solo si llaman a tu interno (ej. '1005')
-						// if (callee !== '1005') return;
+				let callSource = null;
+				let reconnectTimeout = null;
 
-						const caller = data.caller || 'Desconocido';
-						const callerName = data.callerName || '';
-						const estado = (data.status || '').toUpperCase();
-
-						// 1. Mostrar banner cuando suena
-						if (estado === 'RINGING' || estado === 'RING') {
-							if (!activeCallToast) {
-								activeCallToast = document.createElement('div');
-								activeCallToast.className = 'kanban-toast';
-								// Estilo azul distintivo para llamadas
-								activeCallToast.style.borderLeftColor = '#3b82f6';
-								activeCallToast.style.color = '#1e3a8a';
-								container.appendChild(activeCallToast);
-							}
-							activeCallToast.innerHTML = `📞 <strong>Llamada entrante al taller</strong><br>De: ${escapeHtml(callerName)} (${escapeHtml(caller)})`;
-						} 
-						// 2. Limpiar banner cuando atienden o cortan
-						else if (estado === 'ANSWERED' || estado === 'HANGUP' || estado === 'NO ANSWER') {
-							if (activeCallToast) {
-								activeCallToast.style.opacity = '0';
-								setTimeout(() => {
-									if (activeCallToast) {
-										activeCallToast.remove();
-										activeCallToast = null;
-									}
-								}, 500);
-							}
-						}
-					} catch (err) {
-						console.error("Error parseando evento telefónico:", err);
+				function connectCallStream() {
+					if (callSource) {
+						try { callSource.close(); } catch (_) {}
 					}
-				});
-				
-				callSource.onerror = function(err) {
-					console.warn("Se cortó la conexión SSE de telefonía. El navegador reintentará en 3s.");
-				};
+
+					callSource = new EventSource('/api/telefonia/stream');
+
+					callSource.addEventListener('llamada', function(e) {
+						try {
+							const data = JSON.parse(e.data);
+							const callee = data.callee || '';
+
+							const caller = data.caller || 'Desconocido';
+							const callerName = data.callerName || '';
+							const estado = (data.status || '').toUpperCase();
+
+							// 1. Mostrar banner cuando suena
+							if (estado === 'RINGING' || estado === 'RING') {
+								if (!activeCallToast) {
+									activeCallToast = document.createElement('div');
+									activeCallToast.className = 'kanban-toast';
+									// Estilo azul distintivo para llamadas
+									activeCallToast.style.borderLeftColor = '#3b82f6';
+									activeCallToast.style.color = '#1e3a8a';
+									container.appendChild(activeCallToast);
+								}
+								activeCallToast.innerHTML = `📞 <strong>Llamada entrante al taller</strong><br>De: ${escapeHtml(callerName)} (${escapeHtml(caller)})`;
+							} 
+							// 2. Limpiar banner cuando atienden o cortan
+							else if (estado === 'ANSWERED' || estado === 'HANGUP' || estado === 'NO ANSWER') {
+								if (activeCallToast) {
+									activeCallToast.style.opacity = '0';
+									setTimeout(() => {
+										if (activeCallToast) {
+											activeCallToast.remove();
+											activeCallToast = null;
+										}
+									}, 500);
+								}
+							}
+						} catch (err) {
+							console.error("Error parseando evento telefónico:", err);
+						}
+					});
+
+					callSource.onerror = function(err) {
+						// Si el navegador cierra la conexión (ej. HTTP 429 o fallo de red), readyState pasa a CLOSED (2).
+						// El navegador NO reconecta por sí mismo en ese estado, por lo que forzamos reintento programado.
+						if (callSource.readyState === EventSource.CLOSED) {
+							console.warn("Conexión SSE de telefonía cerrada. Reintentando en 5s...");
+							callSource.close();
+							clearTimeout(reconnectTimeout);
+							reconnectTimeout = setTimeout(connectCallStream, 5000);
+						} else {
+							console.warn("Interrupción temporal en stream SSE de telefonía. El navegador intentará reconectar.");
+						}
+					};
+				}
+
+				connectCallStream();
 			}
 		});
 
