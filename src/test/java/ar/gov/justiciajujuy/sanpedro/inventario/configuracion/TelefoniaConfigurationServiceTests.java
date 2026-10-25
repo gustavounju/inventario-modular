@@ -37,7 +37,7 @@ class TelefoniaConfigurationServiceTests {
 		properties.setPassword("defaultSecret");
 		properties.setInterno("1005");
 		properties.setWebhookIps("10.15.0.2,127.0.0.1");
-		properties.setSslStrict(false);
+		properties.setSslStrict(true);
 
 		service = new TelefoniaConfigurationService(repository, properties, secretProtector);
 	}
@@ -50,7 +50,7 @@ class TelefoniaConfigurationServiceTests {
 		assertThat(current.url()).isEqualTo("https://10.15.0.2:8089/api");
 		assertThat(current.user()).isEqualTo("cdrapi");
 		assertThat(current.interno()).isEqualTo("1005");
-		assertThat(current.sslStrict()).isFalse();
+		assertThat(current.sslStrict()).isTrue();
 		assertThat(current.isIpAllowed("10.15.0.2")).isTrue();
 		assertThat(current.isIpAllowed("192.168.1.100")).isFalse();
 	}

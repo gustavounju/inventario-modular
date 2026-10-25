@@ -365,6 +365,32 @@ Documentos principales:
 - [Incidente login local repetido](docs/inventario-modular/incidente-login-local-repetido.md)
 - [ADR-009: Metodologia ITAM/CMDB de taller](docs/decisions/ADR-009-metodologia-itam-cmdb-de-taller.md)
 
+## Seguridad TLS e integración con Central Telefónica (Grandstream UCM)
+
+Por defecto, la aplicación valida estrictamente los certificados TLS y nombres de host de la central telefónica (`ucm.ssl.strict=true`).
+
+Si la central Grandstream utiliza un certificado autofirmado o emitido por una CA interna privada, **no desactive la validación TLS**. En su lugar, importe el certificado de la central en el truststore de Java del servidor:
+
+1. Obtener el certificado público de la central telefónica (por ejemplo, exportándolo desde el navegador o con `openssl`):
+   ```bash
+   openssl s_client -connect 10.15.0.2:8089 -showcerts </dev/null 2>/dev/null | openssl x509 -outform PEM > /etc/ssl/certs/ucm-grandstream.crt
+   ```
+
+2. Importar el certificado en el almacén de confianza (`cacerts`) de la JVM (Java 21):
+   ```bash
+   sudo keytool -importcert -alias ucm-grandstream \
+     -keystore /usr/lib/jvm/java-21-openjdk-amd64/lib/security/cacerts \
+     -storepass changeit -noprompt \
+     -file /etc/ssl/certs/ucm-grandstream.crt
+   ```
+
+3. Reiniciar el servicio de Inventario Modular:
+   ```bash
+   sudo systemctl restart inventario-modular
+   ```
+
+> **Aviso de Seguridad:** Si excepcionalmente se desactiva la validación TLS con `ucm.ssl.strict=false`, la aplicación emitirá una advertencia (`WARN`) en el registro en cada conexión saliente hacia la central.
+
 ## Repositorios
 
 - GitLab: `https://gitlab.com/gustavoeliasm/inventario-modular`

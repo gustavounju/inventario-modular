@@ -49,7 +49,7 @@ public class UcmApiClient {
     @Value("${ucm.interno:2005}")
     private String defaultInternoTaller;
 
-    @Value("${ucm.ssl.strict:false}")
+    @Value("${ucm.ssl.strict:true}")
     private boolean defaultSslStrict;
 
     // Lista en memoria de llamadas recientes recibidas vía Webhook o simulación
@@ -474,6 +474,7 @@ public class UcmApiClient {
             if (isSslStrict) {
                 httpsConn.setSSLSocketFactory(SSLContext.getDefault().getSocketFactory());
             } else {
+                log.warn("ADVERTENCIA DE SEGURIDAD: La validación TLS hacia la central telefónica está DESACTIVADA (ucm.ssl.strict=false). Se omite la comprobación del certificado y del nombre de host de la UCM.");
                 httpsConn.setSSLSocketFactory(this.sslContextInseguro.getSocketFactory());
                 httpsConn.setHostnameVerifier((hostname, session) -> true);
             }

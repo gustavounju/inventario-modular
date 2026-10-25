@@ -10,7 +10,7 @@ public class TelefoniaProperties {
 	private String user = "cdrapi";
 	private String password = "";
 	private String interno = "2005";
-	private boolean sslStrict = false;
+	private boolean sslStrict = true;
 	private String webhookIps = "10.15.0.2,127.0.0.1,0:0:0:0:0:0:0:1";
 
 	public boolean isEnabled() {
