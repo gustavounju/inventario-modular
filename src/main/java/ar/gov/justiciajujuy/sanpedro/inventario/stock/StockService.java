@@ -210,6 +210,40 @@ public class StockService {
 				"Componente de stock eliminado: " + componente.getDescripcion() + ".");
 	}
 
+	@Transactional
+	public int eliminarEnLote(List<Long> idsRaw) {
+		if (idsRaw == null || idsRaw.isEmpty()) {
+			throw new LoteStockSinSeleccionException();
+		}
+		Set<Long> ids = idsRaw.stream()
+				.filter(id -> id != null && id > 0)
+				.collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+		if (ids.isEmpty()) {
+			throw new LoteStockSinSeleccionException();
+		}
+		List<StockComponente> componentes = stockComponenteRepository.findAllById(ids);
+		if (componentes.isEmpty()) {
+			throw new LoteStockSinSeleccionException();
+		}
+		int eliminados = 0;
+		int omitidosAsignados = 0;
+		for (StockComponente componente : componentes) {
+			boolean esPendiente = !camposFaltantesParaStock(componente).isEmpty();
+			if (componente.getEstado() == EstadoStockComponente.ASIGNADO && !esPendiente) {
+				omitidosAsignados++;
+				continue;
+			}
+			stockComponenteRepository.delete(componente);
+			auditoriaService.registrar("STOCK", "ELIMINAR", "StockComponente", componente.getId(),
+					"Componente de stock eliminado en lote: " + componente.getDescripcion() + ".");
+			eliminados++;
+		}
+		if (eliminados == 0 && omitidosAsignados > 0) {
+			throw new IllegalStateException("No se pudo eliminar: todos los componentes seleccionados están ASIGNADOS a equipos.");
+		}
+		return eliminados;
+	}
+
 	private void aplicarCampos(StockComponente componente, GuardarStockComponenteCommand command) {
 		componente.actualizar(
 				command.tipo(),

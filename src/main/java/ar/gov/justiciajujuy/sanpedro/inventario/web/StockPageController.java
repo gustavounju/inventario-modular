@@ -208,6 +208,23 @@ public class StockPageController {
 		return "redirect:/admin/stock#tab-disponibles";
 	}
 
+	@PostMapping("/admin/stock/componentes/lote/eliminar")
+	public String eliminarLote(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) java.util.List<Long> componentesIds,
+			RedirectAttributes redirectAttributes) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		try {
+			int eliminados = stockService.eliminarEnLote(componentesIds);
+			redirectAttributes.addAttribute("loteEliminado", eliminados);
+		} catch (StockService.LoteStockSinSeleccionException exception) {
+			redirectAttributes.addAttribute("errorLote", "seleccion");
+		} catch (IllegalStateException exception) {
+			redirectAttributes.addFlashAttribute("error", exception.getMessage());
+		}
+		return "redirect:/admin/stock#tab-disponibles";
+	}
+
 	private void prepararModelo(Model model, UserDetails userDetails, StockForm stockForm) {
 		var componentesStockRaw = stockService.listarDisponiblesYActivos();
 		List<StockComponenteDetalle> componentesTotales = new java.util.ArrayList<>(componentesStockRaw);

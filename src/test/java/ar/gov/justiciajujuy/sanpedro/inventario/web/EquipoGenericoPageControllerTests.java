@@ -110,6 +110,46 @@ class EquipoGenericoPageControllerTests {
 			.andExpect(content().string(not(containsString("Reclamo sin PC identificada"))));
 	}
 
+	@Test
+	@Sql(statements = {
+			"INSERT INTO equipos (id, nombre, ultimo_usuario, fuero, ubicacion, sistema_operativo, monitoreo, activo) VALUES (10, 'IMP-RED-PISO1', 'Sin asignar', 'Civil y Comercial', 'Pasillo 1', 'Impresora de Red', 'MONITOREADO', TRUE)"
+	})
+	void asignaYDesasignaImpresoraRedAEquipo() throws Exception {
+		mockMvc.perform(post("/admin/equipos/1/asignar-impresora-red")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("impresoraRedId", "10"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrlPattern("/admin/equipos/1*"));
+
+		mockMvc.perform(get("/admin/equipos/1").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("IMP-RED-PISO1")));
+
+		mockMvc.perform(post("/admin/equipos/1/asignar-impresora-red")
+				.with(user(adminLocal()))
+				.with(csrf()))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrlPattern("/admin/equipos/1*"));
+	}
+
+	@Test
+	void creaYAsignaNuevaImpresoraRed() throws Exception {
+		mockMvc.perform(post("/admin/equipos/1/crear-impresora-red")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("nombre", "BROTHER-RED-01")
+				.param("fuero", "Civil y Comercial")
+				.param("ubicacion", "Oficina Central")
+				.param("ip", "192.168.1.99"))
+			.andExpect(status().is3xxRedirection())
+			.andExpect(redirectedUrlPattern("/admin/equipos/1*"));
+
+		mockMvc.perform(get("/admin/equipos/1").with(user(adminLocal())))
+			.andExpect(status().isOk())
+			.andExpect(content().string(containsString("BROTHER-RED-01")));
+	}
+
 	private ActiveDirectoryUserDetails adminLocal() {
 		return new ActiveDirectoryUserDetails(
 				"admin.local",

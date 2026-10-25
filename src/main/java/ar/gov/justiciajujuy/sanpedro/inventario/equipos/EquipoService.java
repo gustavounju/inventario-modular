@@ -427,6 +427,27 @@ public class EquipoService {
 		}
 	}
 
+	@Transactional
+	public void asignarImpresoraRed(Long equipoId, Long impresoraRedId) {
+		Equipo equipo = equipoRepository.findById(equipoId)
+				.orElseThrow(() -> new EquipoNoEncontradoException(equipoId));
+		if (impresoraRedId != null) {
+			Equipo impresora = equipoRepository.findById(impresoraRedId)
+					.orElseThrow(() -> new EquipoNoEncontradoException(impresoraRedId));
+			equipo.setImpresoraRedAsignada(impresora);
+			equipo.setImpresoraEnRed(true);
+		} else {
+			equipo.setImpresoraRedAsignada(null);
+		}
+		equipoRepository.save(equipo);
+		if (auditoriaService != null) {
+			auditoriaService.registrar("EQUIPOS", "ASIGNAR_IMPRESORA_RED", "Equipo", equipoId,
+					impresoraRedId != null
+							? "Impresora de red '" + equipo.getImpresoraRedAsignada().getNombre() + "' asignada al equipo " + equipo.getNombre() + "."
+							: "Equipo " + equipo.getNombre() + " configurado con impresora de red genérica.");
+		}
+	}
+
 	/**
 	 * Crea de forma ágil una estación en el Taller de Informática para iniciar su ensamblado.
 	 * Si no se indica un código manual, genera correlativamente un nombre secuencial libre

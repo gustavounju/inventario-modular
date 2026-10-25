@@ -301,6 +301,44 @@ public class EquipoPageController {
 		return "redirect:/admin/equipos/" + id;
 	}
 
+	@PostMapping("/admin/equipos/{id:\\d+}/asignar-impresora-red")
+	public String asignarImpresoraRed(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam(required = false) Long impresoraRedId,
+			RedirectAttributes redirectAttributes) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para editar equipos.");
+		}
+		equipoService.asignarImpresoraRed(id, impresoraRedId);
+		redirectAttributes.addFlashAttribute("mensajeImpresora", impresoraRedId != null
+				? "Impresora de red asignada correctamente al equipo."
+				: "Equipo configurado para usar impresora de red genérica.");
+		return "redirect:/admin/equipos/" + id;
+	}
+
+	@PostMapping("/admin/equipos/{id:\\d+}/crear-impresora-red")
+	public String crearYAsignarImpresoraRed(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@PathVariable Long id,
+			@RequestParam String nombre,
+			@RequestParam String fuero,
+			@RequestParam String ubicacion,
+			@RequestParam(required = false) String ip,
+			RedirectAttributes redirectAttributes) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
+		}
+		try {
+			EquipoDetalle nuevaImp = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, "Impresora de Red", null);
+			equipoService.asignarImpresoraRed(id, nuevaImp.id());
+			redirectAttributes.addFlashAttribute("mensajeImpresora", "Impresora de red '" + nombre + "' creada y vinculada correctamente al puesto.");
+		} catch (EquipoDuplicadoException e) {
+			redirectAttributes.addFlashAttribute("error", "Ya existe una impresora con ese nombre: " + nombre);
+		}
+		return "redirect:/admin/equipos/" + id;
+	}
+
 	private boolean esEquipoGenerico(String nombre) {
 		return nombre != null && TareaTecnicaService.EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(nombre);
 	}

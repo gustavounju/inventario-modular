@@ -61,6 +61,19 @@
 					<strong th:text="${loteActualizado} + ' componentes actualizados en lote.'">Componentes actualizados en lote.</strong>
 				</div>
 			</div>
+			<div class="workflow-banner" th:if="${loteEliminado != null}">
+				<div class="workflow-banner-content">
+					<strong th:text="${loteEliminado} + ' componentes eliminados del stock correctamente.'">Componentes eliminados en lote.</strong>
+				</div>
+			</div>
+			<div class="workflow-banner" th:if="${eliminado}">
+				<div class="workflow-banner-content">
+					<strong>Pieza eliminada del stock correctamente.</strong>
+				</div>
+			</div>
+			<div class="message error" th:if="${error != null}" style="margin-bottom: 16px;">
+				<span th:text="${error}">Error al procesar componentes.</span>
+			</div>
 			<div class="message error" th:if="${errorLote != null}" style="margin-bottom: 16px;">
 				<span th:if="${errorLote == 'seleccion'}">Seleccione al menos un componente.</span>
 				<span th:if="${errorLote == 'datos'}">Ingrese al menos un dato tecnico o administrativo antes de aplicar.</span>
@@ -131,9 +144,9 @@
 						<div class="stock-function-bar" th:if="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}">
 							<span class="count-badge" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
 							<button type="button" class="primary-action" onclick="document.getElementById('stock-pending-bulk-modal').showModal()">Completar seleccionados</button>
+							<button type="button" class="secondary-action button-danger-subtle" onclick="eliminarLoteStock('stock-pending-bulk-form')">🗑️ Eliminar seleccionados</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-pending-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
-
 						</div>
 						<span class="count-badge" th:unless="${puedeEditarStock and !#lists.isEmpty(componentesPendientes)}" th:text="${#lists.size(componentesPendientes)} + ' pendientes'">0 pendientes</span>
 					</div>
@@ -196,9 +209,12 @@
 									<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
 								</label>
 							</div>
-							<div class="form-actions stock-action-strip">
-								<button class="primary-action" type="submit">Guardar lote seleccionado</button>
-								<button class="secondary-action" type="button" onclick="document.getElementById('stock-pending-bulk-modal').close()">Cancelar</button>
+							<div class="form-actions stock-action-strip" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+								<div style="display: flex; gap: 8px;">
+									<button class="primary-action" type="submit">Guardar lote seleccionado</button>
+									<button class="secondary-action" type="button" onclick="document.getElementById('stock-pending-bulk-modal').close()">Cancelar</button>
+								</div>
+								<button class="secondary-action button-danger-subtle" type="button" onclick="document.getElementById('stock-pending-bulk-modal').close(); eliminarLoteStock('stock-pending-bulk-form');">🗑️ Eliminar todos los seleccionados</button>
 							</div>
 						</form>
 					</dialog>
@@ -278,9 +294,9 @@
 						<div class="stock-function-bar" th:if="${puedeEditarStock and !#lists.isEmpty(componentesLibres)}">
 							<span class="count-badge" th:text="${#lists.size(componentesLibres)} + ' piezas'">0 piezas</span>
 							<button type="button" class="primary-action" onclick="document.getElementById('stock-bulk-modal').showModal()">Modificar seleccionados</button>
+							<button type="button" class="secondary-action button-danger-subtle" onclick="eliminarLoteStock('stock-bulk-form')">🗑️ Eliminar seleccionados</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = true; });">Seleccionar todos</button>
 							<button class="secondary-action" type="button" onclick="document.querySelectorAll('[data-stock-check]').forEach(function(input){ input.checked = false; });">Limpiar selección</button>
-
 						</div>
 						<span class="count-badge" th:unless="${puedeEditarStock and !#lists.isEmpty(componentesLibres)}" th:text="${#lists.size(componentesLibres)} + ' piezas'">0 piezas</span>
 					</div>
@@ -347,9 +363,12 @@
 									<textarea name="observaciones" placeholder="Dato común para el lote seleccionado" maxlength="500" rows="2"></textarea>
 								</label>
 							</div>
-							<div class="form-actions stock-action-strip">
-								<button class="primary-action" type="submit">Aplicar a seleccionados</button>
-								<button class="secondary-action" type="button" onclick="document.getElementById('stock-bulk-modal').close()">Cancelar</button>
+							<div class="form-actions stock-action-strip" style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+								<div style="display: flex; gap: 8px;">
+									<button class="primary-action" type="submit">Aplicar a seleccionados</button>
+									<button class="secondary-action" type="button" onclick="document.getElementById('stock-bulk-modal').close()">Cancelar</button>
+								</div>
+								<button class="secondary-action button-danger-subtle" type="button" onclick="document.getElementById('stock-bulk-modal').close(); eliminarLoteStock('stock-bulk-form');">🗑️ Eliminar todos los seleccionados</button>
 							</div>
 						</form>
 					</dialog>
@@ -791,6 +810,38 @@
 				switchTab('asignados');
 			}
 		});
+
+		function eliminarLoteStock(formId) {
+			const inputs = document.querySelectorAll('input[name="componentesIds"][form="' + formId + '"]:checked');
+			if (inputs.length === 0) {
+				alert('Seleccione al menos un componente en la tabla para eliminar.');
+				return;
+			}
+			const count = inputs.length;
+			if (!confirm('¿Está seguro de eliminar permanentemente los ' + count + ' componentes seleccionados del stock?\nEsta acción no se puede deshacer.')) {
+				return;
+			}
+			const form = document.getElementById(formId);
+			const deleteForm = document.createElement('form');
+			deleteForm.method = 'POST';
+			deleteForm.action = '/admin/stock/componentes/lote/eliminar';
+
+			const csrfInput = form ? form.querySelector('input[name="_csrf"]') : document.querySelector('input[name="_csrf"]');
+			if (csrfInput) {
+				deleteForm.appendChild(csrfInput.cloneNode(true));
+			}
+
+			inputs.forEach(function(input) {
+				const hidden = document.createElement('input');
+				hidden.type = 'hidden';
+				hidden.name = 'componentesIds';
+				hidden.value = input.value;
+				deleteForm.appendChild(hidden);
+			});
+
+			document.body.appendChild(deleteForm);
+			deleteForm.submit();
+		}
 	</script>
 </body>
 </html>

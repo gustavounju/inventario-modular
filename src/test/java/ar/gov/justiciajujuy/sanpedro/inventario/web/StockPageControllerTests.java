@@ -179,6 +179,20 @@ class StockPageControllerTests {
 				.andExpect(redirectedUrl("/admin/stock?errorLote=datos#tab-disponibles"));
 	}
 
+	@Test
+	void eliminaComponentesEnLote() throws Exception {
+		mockMvc.perform(post("/admin/stock/componentes/lote/eliminar")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.param("componentesIds", "1"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/admin/stock?loteEliminado=1#tab-disponibles"));
+
+		Integer count = jdbcTemplate.queryForObject(
+				"SELECT COUNT(*) FROM stock_componentes WHERE id = 1", Integer.class);
+		org.assertj.core.api.Assertions.assertThat(count).isZero();
+	}
+
 	private ActiveDirectoryUserDetails adminLocal() {
 		return new ActiveDirectoryUserDetails(
 				"admin.local",
