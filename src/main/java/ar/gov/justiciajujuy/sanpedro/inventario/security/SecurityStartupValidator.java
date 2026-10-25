@@ -1,6 +1,11 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.security;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,6 +24,14 @@ import org.springframework.util.StringUtils;
 public class SecurityStartupValidator implements ApplicationRunner {
 
 	private static final Pattern JDBC_MYSQL = Pattern.compile("jdbc:mysql://([^:/?]+)(?::\\d+)?/.*");
+
+	/**
+	 * SHA-256 de tokens de reporte que fueron publicados (repositorio, script .ps1 o valores por defecto historicos).
+	 * Se guardan como hash para no volver a publicar el valor en el codigo fuente.
+	 */
+	static final Set<String> LEAKED_REPORT_TOKEN_SHA256 = Set.of(
+			"8391a161f34c4489eef7300cc14f6f2f89f80744540208602d01836028e76f04",
+			"705a0c82686b98d860f7bd2334cee5784f5fe76b603a3429839fa939f3119a44");
 
 	private final ActiveDirectoryProperties activeDirectoryProperties;
 	private final LocalAuthenticationProperties localAuthenticationProperties;
@@ -44,9 +57,10 @@ public class SecurityStartupValidator implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) {
-		if ("inventario-lan-token-2026".equals(reportToken)) {
+		// Token vacio = token de maquina deshabilitado (permitido).
+		if (StringUtils.hasText(reportToken) && isLeakedReportToken(reportToken)) {
 			throw new IllegalStateException(
-					"inventario.security.report-token no puede utilizar el valor por defecto publico 'inventario-lan-token-2026'. Defina una clave segura en la variable INVENTARIO_REPORT_TOKEN.");
+					"inventario.security.report-token utiliza un valor que fue publicado y debe considerarse comprometido. Genere un token nuevo y definalo en la variable INVENTARIO_REPORT_TOKEN.");
 		}
 
 		if (!activeDirectoryProperties.isEnabled()
@@ -67,6 +81,15 @@ public class SecurityStartupValidator implements ApplicationRunner {
 			if (activeDirectoryProperties.isEnabled()) {
 				requireLanHost(extractUriHost(activeDirectoryProperties.getUrl()), "inventario.ldap.url", addressPolicy);
 			}
+		}
+	}
+
+	static boolean isLeakedReportToken(String token) {
+		try {
+			byte[] digest = MessageDigest.getInstance("SHA-256").digest(token.trim().getBytes(StandardCharsets.UTF_8));
+			return LEAKED_REPORT_TOKEN_SHA256.contains(HexFormat.of().formatHex(digest));
+		} catch (NoSuchAlgorithmException ex) {
+			throw new IllegalStateException("SHA-256 no disponible en la JVM", ex);
 		}
 	}
 

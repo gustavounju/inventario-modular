@@ -52,7 +52,9 @@ if (-not (Test-HasText $Token)) {
     if (Test-HasText $env:INVENTARIO_REPORT_TOKEN) {
         $Token = $env:INVENTARIO_REPORT_TOKEN
     } else {
-        $Token = "8d289c1f102c5bd1ac5de641869085f205a46b00a1f93d2eb7a19b39c4a0b13f"
+        # Sin token por defecto: nunca se publica una clave en el script servido sin login.
+        Write-Host "ERROR: falta el token de reporte. Pase -Token <valor> o defina la variable de entorno INVENTARIO_REPORT_TOKEN." -ForegroundColor Red
+        exit 1
     }
 }
 

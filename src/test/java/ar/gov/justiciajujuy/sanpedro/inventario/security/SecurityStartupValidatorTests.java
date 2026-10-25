@@ -1,0 +1,46 @@
+package ar.gov.justiciajujuy.sanpedro.inventario.security;
+
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import ar.gov.justiciajujuy.sanpedro.inventario.config.ActiveDirectoryProperties;
+import ar.gov.justiciajujuy.sanpedro.inventario.config.LocalAuthenticationProperties;
+import ar.gov.justiciajujuy.sanpedro.inventario.config.NetworkAccessProperties;
+import org.junit.jupiter.api.Test;
+
+class SecurityStartupValidatorTests {
+
+	private SecurityStartupValidator validator(String reportToken) {
+		ActiveDirectoryProperties ad = new ActiveDirectoryProperties();
+		ad.setEnabled(false);
+		NetworkAccessProperties network = new NetworkAccessProperties();
+		network.setLanOnly(false);
+		return new SecurityStartupValidator(ad, new LocalAuthenticationProperties(), network,
+				true, "", reportToken);
+	}
+
+	@Test
+	void rechazaTokenPorDefectoHistorico() {
+		assertThatThrownBy(() -> validator("inventario-lan-token-2026").run(null))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("report-token");
+	}
+
+	@Test
+	void incluyeElHashDelTokenPublicadoEnElRepositorio() {
+		// El token hexadecimal publicado no se repite en el codigo fuente: se verifica por su SHA-256.
+		org.assertj.core.api.Assertions.assertThat(SecurityStartupValidator.LEAKED_REPORT_TOKEN_SHA256)
+				.contains("8391a161f34c4489eef7300cc14f6f2f89f80744540208602d01836028e76f04");
+	}
+
+	@Test
+	void permiteTokenVacioComoDeshabilitado() {
+		assertThatCode(() -> validator("").run(null)).doesNotThrowAnyException();
+	}
+
+	@Test
+	void permiteTokenNuevo() {
+		assertThatCode(() -> validator("token-nuevo-generado-aleatoriamente-0123456789").run(null))
+				.doesNotThrowAnyException();
+	}
+}
