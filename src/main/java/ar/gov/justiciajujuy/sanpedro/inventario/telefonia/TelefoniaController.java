@@ -2,14 +2,21 @@ package ar.gov.justiciajujuy.sanpedro.inventario.telefonia;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.TelefoniaConfigurationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.TelefoniaRuntimeConfig;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @RestController
 @RequestMapping("/api/telefonia")
@@ -20,27 +27,33 @@ public class TelefoniaController {
     private final UcmApiClient ucmApiClient;
     private final TelefoniaConfigurationService configurationService;
     private final DirectorioTelefonicoService directorioTelefonicoService;
+    private final AuthorizationService authorizationService;
 
-    @org.springframework.beans.factory.annotation.Value("${ucm.webhook.ips:10.15.0.2,127.0.0.1,0:0:0:0:0:0:0:1}")
+    @Value("${ucm.webhook.ips:10.15.0.2,127.0.0.1,0:0:0:0:0:0:0:1}")
     private java.util.List<String> defaultAllowedIps;
+
+    @Value("${ucm.simulacion.enabled:false}")
+    private boolean simulacionEnabled;
 
     @Autowired
     public TelefoniaController(
             TelefoniaEventService eventService,
             UcmApiClient ucmApiClient,
             @Autowired(required = false) TelefoniaConfigurationService configurationService,
-            @Autowired(required = false) DirectorioTelefonicoService directorioTelefonicoService) {
+            @Autowired(required = false) DirectorioTelefonicoService directorioTelefonicoService,
+            @Autowired(required = false) AuthorizationService authorizationService) {
         this.eventService = eventService;
         this.ucmApiClient = ucmApiClient;
         this.configurationService = configurationService;
         this.directorioTelefonicoService = directorioTelefonicoService != null ? directorioTelefonicoService : new DirectorioTelefonicoService();
+        this.authorizationService = authorizationService;
     }
 
     public TelefoniaController(
             TelefoniaEventService eventService,
             UcmApiClient ucmApiClient,
             TelefoniaConfigurationService configurationService) {
-        this(eventService, ucmApiClient, configurationService, null);
+        this(eventService, ucmApiClient, configurationService, null, null);
     }
 
     // 1. Endpoint Receptor de Webhook (UCM6304A)
@@ -63,21 +76,18 @@ public class TelefoniaController {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("Telefonía deshabilitada");
         }
 
-        String remoteIp = request.getRemoteAddr();
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        String proxyIp = (forwardedFor != null && !forwardedFor.isBlank())
-                ? (forwardedFor.contains(",") ? forwardedFor.split(",")[0].trim() : forwardedFor.trim())
-                : null;
+        String clientIp = resolveClientIp(request);
 
         boolean ipPermitida;
         if (config != null) {
-            ipPermitida = config.isIpAllowed(remoteIp) || (proxyIp != null && config.isIpAllowed(proxyIp));
+            ipPermitida = config.isIpAllowed(clientIp);
         } else {
-            ipPermitida = defaultAllowedIps != null && (defaultAllowedIps.contains(remoteIp) || (proxyIp != null && defaultAllowedIps.contains(proxyIp)));
+            ipPermitida = defaultAllowedIps != null && defaultAllowedIps.contains(clientIp);
         }
 
         if (!ipPermitida) {
-            log.warn("Intento de webhook desde IP no autorizada: {} (X-Forwarded-For: {})", remoteIp, proxyIp);
+            log.warn("Intento de webhook desde IP no autorizada: {} (remoteAddr: {}, X-Forwarded-For: {})",
+                    clientIp, request.getRemoteAddr(), request.getHeader("X-Forwarded-For"));
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("IP no autorizada");
         }
 
@@ -92,7 +102,7 @@ public class TelefoniaController {
         }
 
         log.info("Llamada en vivo: IP={}, caller={}, callee={}, event={}",
-                remoteIp, payload.getCaller(), payload.getCallee(), payload.getEvent());
+                clientIp, payload.getCaller(), payload.getCallee(), payload.getEvent());
 
         String callerVal = payload.getCaller();
         String callerNameVal = payload.getCallerName();
@@ -136,39 +146,32 @@ public class TelefoniaController {
             .body(ucmApiClient.obtenerHistorialCdr());
     }
 
-    // 4. Directorio de internos telefónicos
+    // 4. Directorio de internos telefónicos (solo lectura pública para visor)
     @GetMapping(value = "/directorio", produces = "application/json")
     public java.util.List<DirectorioTelefonico> listarDirectorio() {
         return directorioTelefonicoService.listarTodos();
     }
 
-    @PostMapping(value = "/directorio")
-    public ResponseEntity<?> guardarDirectorio(
-            @RequestParam String numero,
-            @RequestParam String nombre,
-            @RequestParam(required = false) String departamento) {
-        try {
-            DirectorioTelefonico guardado = directorioTelefonicoService.guardarOActualizar(numero, nombre, departamento, "MANUAL");
-            return ResponseEntity.ok(guardado);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
-        }
-    }
-
-    @DeleteMapping(value = "/directorio/{id}")
-    public ResponseEntity<Void> eliminarDirectorio(@PathVariable Long id) {
-        directorioTelefonicoService.eliminar(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // 5. Endpoint directo para simular llamadas desde PuTTY o pruebas
+    // 5. Endpoint directo para simular llamadas desde pruebas o desarrollo
     @PostMapping(value = "/simular")
     public ResponseEntity<String> simularLlamada(
             @RequestParam(required = false, defaultValue = "2005") String caller,
             @RequestParam(required = false) String callerName,
             @RequestParam(required = false, defaultValue = "1005") String callee,
             @RequestParam(required = false, defaultValue = "NO ANSWER") String estado,
+            @AuthenticationPrincipal UserDetails userDetails,
             HttpServletRequest request) {
+
+        if (!simulacionEnabled) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Simulación de telefonía deshabilitada en este entorno.");
+        }
+
+        if (userDetails == null || authorizationService == null
+                || !authorizationService.tienePermiso(userDetails, "SISTEMA", "ADMINISTRAR")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Permisos insuficientes: requiere SISTEMA.ADMINISTRAR.");
+        }
 
         String resolvedName = (callerName != null && !callerName.isBlank() && !callerName.equals(caller))
                 ? callerName
@@ -177,13 +180,40 @@ public class TelefoniaController {
             resolvedName = caller;
         }
 
-        log.info("Simulación de llamada solicitada desde {}: {} ({}) -> {} [{}]",
-                request.getRemoteAddr(), resolvedName, caller, callee, estado);
+        log.info("Simulación de llamada solicitada por {} desde {}: {} ({}) -> {} [{}]",
+                userDetails.getUsername(), request.getRemoteAddr(), resolvedName, caller, callee, estado);
 
         eventService.notificarLlamadaEntrante(caller, resolvedName, callee, estado);
         ucmApiClient.registrarLlamadaEnVivo(caller, resolvedName, callee, estado);
 
         return ResponseEntity.ok(String.format("Llamada simulada registrada: %s (%s) -> %s [Estado: %s]",
                 resolvedName, caller, callee, estado));
+    }
+
+    /**
+     * Resuelve la IP del cliente siguiendo la misma politica estricta de LanOnlyAccessFilter:
+     * Solo confia en X-Forwarded-For si la conexion directa (remoteAddr) proviene de loopback (proxy local).
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String remoteAddress = request.getRemoteAddr();
+        if (!isLoopback(remoteAddress)) {
+            return remoteAddress;
+        }
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor == null || forwardedFor.isBlank()) {
+            return remoteAddress;
+        }
+        return forwardedFor.split(",")[0].trim();
+    }
+
+    private boolean isLoopback(String address) {
+        if (address == null || address.isBlank()) {
+            return false;
+        }
+        try {
+            return InetAddress.getByName(address.trim()).isLoopbackAddress();
+        } catch (UnknownHostException e) {
+            return false;
+        }
     }
 }
