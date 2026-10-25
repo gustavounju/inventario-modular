@@ -25,6 +25,8 @@ public class SecurityStartupValidator implements ApplicationRunner {
 
 	private static final Pattern JDBC_MYSQL = Pattern.compile("jdbc:mysql://([^:/?]+)(?::\\d+)?/.*");
 
+	static final int MIN_REMEMBER_ME_KEY_LENGTH = 32;
+
 	/**
 	 * SHA-256 de tokens de reporte que fueron publicados (repositorio, script .ps1 o valores por defecto historicos).
 	 * Se guardan como hash para no volver a publicar el valor en el codigo fuente.
@@ -39,6 +41,7 @@ public class SecurityStartupValidator implements ApplicationRunner {
 	private final boolean localDbAuthenticationEnabled;
 	private final String dataSourceUrl;
 	private final String reportToken;
+	private final String rememberMeKey;
 
 	public SecurityStartupValidator(
 			ActiveDirectoryProperties activeDirectoryProperties,
@@ -46,17 +49,24 @@ public class SecurityStartupValidator implements ApplicationRunner {
 			NetworkAccessProperties networkAccessProperties,
 			@Value("${inventario.local-db-auth.enabled:false}") boolean localDbAuthenticationEnabled,
 			@Value("${spring.datasource.url:}") String dataSourceUrl,
-			@Value("${inventario.security.report-token:}") String reportToken) {
+			@Value("${inventario.security.report-token:}") String reportToken,
+			@Value("${inventario.security.remember-me-key:}") String rememberMeKey) {
 		this.activeDirectoryProperties = activeDirectoryProperties;
 		this.localAuthenticationProperties = localAuthenticationProperties;
 		this.networkAccessProperties = networkAccessProperties;
 		this.localDbAuthenticationEnabled = localDbAuthenticationEnabled;
 		this.dataSourceUrl = dataSourceUrl;
 		this.reportToken = reportToken;
+		this.rememberMeKey = rememberMeKey;
 	}
 
 	@Override
 	public void run(ApplicationArguments args) {
+		if (!StringUtils.hasText(rememberMeKey) || rememberMeKey.trim().length() < MIN_REMEMBER_ME_KEY_LENGTH) {
+			throw new IllegalStateException(
+					"inventario.security.remember-me-key debe tener al menos " + MIN_REMEMBER_ME_KEY_LENGTH
+							+ " caracteres. Defina una clave aleatoria en la variable INVENTARIO_REMEMBER_ME_KEY.");
+		}
 		// Token vacio = token de maquina deshabilitado (permitido).
 		if (StringUtils.hasText(reportToken) && isLeakedReportToken(reportToken)) {
 			throw new IllegalStateException(

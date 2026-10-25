@@ -10,7 +10,9 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(properties = {
     "spring.flyway.enabled=false",
-    "spring.jpa.hibernate.ddl-auto=none"
+    "spring.jpa.hibernate.ddl-auto=none",
+    // El perfil casa ejecuta SecurityStartupValidator: requiere clave de recordarme (solo de prueba).
+    "inventario.security.remember-me-key=clave-recordarme-solo-para-tests-0123456789abcdef"
 })
 @ActiveProfiles("casa")
 class SimulateDataTest {

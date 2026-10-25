@@ -10,13 +10,33 @@ import org.junit.jupiter.api.Test;
 
 class SecurityStartupValidatorTests {
 
+	private static final String VALID_REMEMBER_ME_KEY = "clave-recordarme-de-prueba-con-mas-de-32-caracteres";
+
 	private SecurityStartupValidator validator(String reportToken) {
+		return validator(reportToken, VALID_REMEMBER_ME_KEY);
+	}
+
+	private SecurityStartupValidator validator(String reportToken, String rememberMeKey) {
 		ActiveDirectoryProperties ad = new ActiveDirectoryProperties();
 		ad.setEnabled(false);
 		NetworkAccessProperties network = new NetworkAccessProperties();
 		network.setLanOnly(false);
 		return new SecurityStartupValidator(ad, new LocalAuthenticationProperties(), network,
-				true, "", reportToken);
+				true, "", reportToken, rememberMeKey);
+	}
+
+	@Test
+	void rechazaClaveRecordarmeVacia() {
+		assertThatThrownBy(() -> validator("", "").run(null))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("remember-me-key");
+	}
+
+	@Test
+	void rechazaClaveRecordarmeCorta() {
+		assertThatThrownBy(() -> validator("", "menos-de-32-caracteres").run(null))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("remember-me-key");
 	}
 
 	@Test

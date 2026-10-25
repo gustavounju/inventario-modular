@@ -34,6 +34,10 @@ public class SecurityConfig {
 	@Value("${inventario.security.report-token:}")
 	private String reportToken;
 
+	// Sin valor por defecto: SecurityStartupValidator aborta el arranque si falta o es corta.
+	@Value("${inventario.security.remember-me-key:}")
+	private String rememberMeKey;
+
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
@@ -114,7 +118,8 @@ public class SecurityConfig {
 				.permitAll()
 			)
 			.rememberMe(remember -> remember
-				.key("InventarioModularSecretKey123!")
+				// Si falta la clave, Spring genera una aleatoria por arranque (nunca fija) y el validador aborta fuera de tests.
+				.key(StringUtils.hasText(rememberMeKey) ? rememberMeKey : null)
 				.alwaysRemember(true)
 				.tokenValiditySeconds(86400 * 30) // 30 dias de persistencia
 			)
