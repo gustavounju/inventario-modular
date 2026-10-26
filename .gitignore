@@ -66,4 +66,6 @@ static/
 !src/main/resources/static/
 /output/entrega-lan/
 /output/entrega-lan.zip
+/output/android/*.idsig
+*.idsig
 application-secrets.properties

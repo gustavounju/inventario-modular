@@ -147,15 +147,30 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	org.springframework.security.core.userdetails.UserDetailsService userDetailsService(
+	public org.springframework.security.core.userdetails.UserDetailsService userDetailsService(
 			ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioSistemaRepository usuarioRepository) {
 		return username -> {
 			ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioSistema usuario = usuarioRepository.findByUsernameIgnoreCase(username)
-					.orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("Usuario no encontrado"));
+					.orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("Usuario no encontrado: " + username));
+			if (!usuario.isActivo()) {
+				throw new org.springframework.security.authentication.DisabledException("El usuario '" + username + "' se encuentra inactivo.");
+			}
+
+			java.util.List<String> roleCodes = usuarioRepository.findRoleCodesByUsername(usuario.getUsername());
+			java.util.List<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>();
+			authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER"));
+			for (String code : roleCodes) {
+				if (StringUtils.hasText(code)) {
+					String rolNormalizado = code.trim().toUpperCase();
+					authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + rolNormalizado));
+					authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(rolNormalizado));
+				}
+			}
+
 			return new ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails(
 					usuario.getUsername(),
 					"{noop}", 
-					java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER")),
+					authorities,
 					usuario.getNombreVisible(),
 					usuario.getFuero(),
 					java.util.Map.of("modo", java.util.List.of("PERSISTENT_COOKIE"))
