@@ -48,8 +48,8 @@ public class RedIpPageController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String estado) {
 
-        if (!esAdministrador(userDetails)) {
-            return "redirect:/admin?errorAcceso";
+        if (userDetails == null) {
+            return "redirect:/login";
         }
 
         UsuarioActual usuarioActual = authorizationService.obtenerUsuarioActual(userDetails);
@@ -69,11 +69,12 @@ public class RedIpPageController {
 
         model.addAttribute("applicationName", applicationName);
         model.addAttribute("version", version);
-        model.addAttribute("username", usuarioActual.username());
-        model.addAttribute("displayName", usuarioActual.nombreVisible());
-        model.addAttribute("fuero", usuarioActual.fuero());
+        model.addAttribute("username", usuarioActual != null ? usuarioActual.username() : "");
+        model.addAttribute("displayName", usuarioActual != null ? usuarioActual.nombreVisible() : "");
+        model.addAttribute("fuero", usuarioActual != null ? usuarioActual.fuero() : "");
         model.addAttribute("activeModule", "red-ips");
-        model.addAttribute("canManageSystem", true);
+        model.addAttribute("canManageSystem", esAdministrador(userDetails));
+        model.addAttribute("puedeModificar", puedeModificar(userDetails));
 
         model.addAttribute("ips", ips);
         model.addAttribute("metricas", metricas);
@@ -96,8 +97,8 @@ public class RedIpPageController {
             @AuthenticationPrincipal UserDetails userDetails,
             RedirectAttributes redirectAttributes) {
 
-        if (!esAdministrador(userDetails)) {
-            return "redirect:/admin?errorAcceso";
+        if (!puedeModificar(userDetails)) {
+            return "redirect:/admin/red-ips?errorAcceso";
         }
 
         try {
@@ -120,8 +121,8 @@ public class RedIpPageController {
             @AuthenticationPrincipal UserDetails userDetails,
             RedirectAttributes redirectAttributes) {
 
-        if (!esAdministrador(userDetails)) {
-            return "redirect:/admin?errorAcceso";
+        if (!puedeModificar(userDetails)) {
+            return "redirect:/admin/red-ips?errorAcceso";
         }
 
         try {
@@ -167,5 +168,15 @@ public class RedIpPageController {
             return false;
         }
         return authorizationService.esAdministrador(userDetails);
+    }
+
+    private boolean puedeModificar(UserDetails userDetails) {
+        if (userDetails == null) {
+            return false;
+        }
+        return esAdministrador(userDetails)
+                || authorizationService.tienePermiso(userDetails, "TAREAS", "VER")
+                || authorizationService.tienePermiso(userDetails, "TAREAS", "ADMINISTRAR")
+                || authorizationService.tienePermiso(userDetails, "EQUIPOS", "ADMINISTRAR");
     }
 }
