@@ -73,6 +73,7 @@ class EquipoControllerTests {
 				  "ultimoUsuario": "jlopez",
 				  "fuero": "Informatica",
 				  "ip": "192.0.2.12",
+				  "mac": "00:1A:2B:3C:4D:5E",
 				  "sistemaOperativo": "Windows 11 Pro",
 				  "procesador": "AMD Ryzen 5",
 				  "ramMb": 16384,
@@ -98,6 +99,8 @@ class EquipoControllerTests {
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.nombre").value("PC-NUEVA-003"))
 			.andExpect(jsonPath("$.ultimoUsuario").value("jlopez"))
+			.andExpect(jsonPath("$.ip").value("192.0.2.12"))
+			.andExpect(jsonPath("$.mac").value("00:1A:2B:3C:4D:5E"))
 			.andExpect(jsonPath("$.ramDetalles").value("2x8GB DDR4 3200MHz"))
 			.andExpect(jsonPath("$.discosSeriales").value("DISK-001"))
 			.andExpect(jsonPath("$.monitores").value("Samsung 24 SN-456"))

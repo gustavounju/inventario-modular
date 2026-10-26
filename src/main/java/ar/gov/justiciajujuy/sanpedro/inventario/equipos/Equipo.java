@@ -36,6 +36,9 @@ public class Equipo {
 	@Column(length = 45)
 	private String ip;
 
+	@Column(length = 45)
+	private String mac;
+
 	@Column(name = "sistema_operativo", length = 180)
 	private String sistemaOperativo;
 
@@ -147,6 +150,14 @@ public class Equipo {
 		return ip;
 	}
 
+	public String getMac() {
+		return mac;
+	}
+
+	public void setMac(String mac) {
+		this.mac = mac;
+	}
+
 	public String getSistemaOperativo() {
 		return sistemaOperativo;
 	}
@@ -240,6 +251,7 @@ public class Equipo {
 			String fuero,
 			String ubicacion,
 			String ip,
+			String mac,
 			String sistemaOperativo,
 			String procesador,
 			Integer ramMb,
@@ -259,6 +271,7 @@ public class Equipo {
 		this.fuero = fuero;
 		this.ubicacion = ubicacion;
 		this.ip = ip;
+		this.mac = mac;
 		this.sistemaOperativo = sistemaOperativo;
 		this.procesador = procesador;
 		this.ramMb = ramMb;
@@ -283,6 +296,7 @@ public class Equipo {
 			String fuero,
 			String ubicacion,
 			String ip,
+			String mac,
 			String sistemaOperativo,
 			String procesador,
 			Integer ramMb,
@@ -302,6 +316,7 @@ public class Equipo {
 		this.fuero = fuero;
 		this.ubicacion = ubicacion;
 		this.ip = ip;
+		this.mac = mac;
 		this.sistemaOperativo = sistemaOperativo;
 		this.procesador = procesador;
 		this.ramMb = ramMb;

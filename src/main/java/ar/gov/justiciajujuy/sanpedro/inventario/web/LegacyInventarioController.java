@@ -67,8 +67,16 @@ public class LegacyInventarioController {
 
 		List<Map<String, Object>> red = (List<Map<String, Object>>) payload.get("Red");
 		String ip = null;
+		String mac = null;
 		if (red != null && !red.isEmpty()) {
 			ip = (String) red.get(0).get("IPAddress");
+			mac = (String) red.get(0).get("MACAddress");
+		}
+		if (mac == null) {
+			mac = texto(payload.get("MACAddress"));
+			if (mac == null) {
+				mac = texto(payload.get("mac"));
+			}
 		}
 
 		String impresora = (String) payload.get("Printer_Model");
@@ -79,6 +87,7 @@ public class LegacyInventarioController {
 				null, // Fuero will be automatically detected or preserved in Service
 				null,
 				ip,
+				mac,
 				osName,
 				procesador,
 				ramMb,

@@ -202,6 +202,10 @@
 					<span>Dirección IP</span>
 					<strong th:text="${equipo.ip ?: 'Sin reportar'}">192.0.2.20</strong>
 				</div>
+				<div>
+					<span>Dirección MAC</span>
+					<strong th:text="${equipo.mac ?: 'Sin reportar'}" style="font-family: monospace;">00:1A:2B:3C:4D:5E</strong>
+				</div>
 				<div th:unless="${esImpresora}">
 					<span>Memoria RAM</span>
 					<strong th:text="${equipo.ramMb != null} ? (${equipo.ramMb} + ' MB (' + (${equipo.ramMb} / 1024) + ' GB)') : 'Sin reportar'">16384 MB</strong>
@@ -262,6 +266,10 @@
 						<div class="attribute-row">
 							<span class="attribute-name">Dirección IP</span>
 							<span class="attribute-value" th:text="${equipo.ip ?: 'Sin reportar'}">192.0.2.20</span>
+						</div>
+						<div class="attribute-row">
+							<span class="attribute-name">Dirección MAC</span>
+							<span class="attribute-value" th:text="${equipo.mac ?: 'Sin reportar'}" style="font-family: monospace;">00:1A:2B:3C:4D:5E</span>
 						</div>
 						<div class="attribute-row">
 							<span class="attribute-name">Último Reporte Recibido</span>
@@ -1260,6 +1268,11 @@
 								<span>Direccion IP</span>
 								<input th:field="*{ip}" maxlength="45">
 								<small class="field-error" th:if="${#fields.hasErrors('ip')}" th:errors="*{ip}">Error</small>
+							</label>
+							<label>
+								<span>Dirección MAC</span>
+								<input th:field="*{mac}" maxlength="45" placeholder="Ej: 00:1A:2B:3C:4D:5E">
+								<small class="field-error" th:if="${#fields.hasErrors('mac')}" th:errors="*{mac}">Error</small>
 							</label>
 							<label>
 								<span>Sistema operativo</span>

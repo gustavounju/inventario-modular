@@ -509,6 +509,7 @@ public class EquipoPageController {
 				fuero,
 				ubicacion,
 				ip,
+				null,
 				"Impresora de Red",
 				null, null, null, null, null, null, null, motherboardSerial, null, null, null, null, null, true
 		));
@@ -1010,6 +1011,9 @@ public class EquipoPageController {
 		@Size(max = 45)
 		private String ip;
 
+		@Size(max = 45)
+		private String mac;
+
 		@Size(max = 180)
 		private String sistemaOperativo;
 
@@ -1061,6 +1065,7 @@ public class EquipoPageController {
 			form.fuero = equipo.fuero();
 			form.ubicacion = equipo.ubicacion();
 			form.ip = equipo.ip();
+			form.mac = equipo.mac();
 			form.sistemaOperativo = equipo.sistemaOperativo();
 			form.procesador = equipo.procesador();
 			form.ramMb = equipo.ramMb();
@@ -1086,6 +1091,7 @@ public class EquipoPageController {
 					fuero,
 					ubicacion,
 					ip,
+					mac,
 					sistemaOperativo,
 					procesador,
 					ramMb,
@@ -1149,6 +1155,14 @@ public class EquipoPageController {
 
 		public void setIp(String ip) {
 			this.ip = ip;
+		}
+
+		public String getMac() {
+			return mac;
+		}
+
+		public void setMac(String mac) {
+			this.mac = mac;
 		}
 
 		public String getSistemaOperativo() {

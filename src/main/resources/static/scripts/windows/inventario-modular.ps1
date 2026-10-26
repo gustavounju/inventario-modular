@@ -90,7 +90,11 @@ function Get-InventoryClass {
     return Get-WmiObject -Class $ClassName -Filter $Filter
 }
 
-function Get-FirstIPv4 {
+function Get-NetworkDetails {
+    $Result = [PSCustomObject]@{
+        IPAddress = ""
+        MACAddress = ""
+    }
     try {
         $Adapters = Get-InventoryClass -ClassName "Win32_NetworkAdapterConfiguration" -Filter "IPEnabled = True"
         foreach ($Adapter in $Adapters) {
@@ -98,15 +102,24 @@ function Get-FirstIPv4 {
                 if ($Address -match "^\d{1,3}(\.\d{1,3}){3}$" -and
                     -not $Address.StartsWith("127.") -and
                     -not $Address.StartsWith("169.254.")) {
-                    return $Address
+                    $Result.IPAddress = $Address
+                    if ($Adapter.MACAddress) {
+                        $Result.MACAddress = $Adapter.MACAddress
+                    }
+                    return $Result
                 }
             }
         }
     }
     catch {
-        return ""
+        return $Result
     }
-    return ""
+    return $Result
+}
+
+function Get-FirstIPv4 {
+    $Net = Get-NetworkDetails
+    return $Net.IPAddress
 }
 
 function Get-PrinterName {
@@ -387,7 +400,9 @@ $Processor = Get-InventoryClass -ClassName "Win32_Processor" | Select-Object -Fi
 
 $ComputerName = $env:COMPUTERNAME
 $CurrentUser = $env:USERNAME
-$IpAddress = Get-FirstIPv4
+$NetworkDetails = Get-NetworkDetails
+$IpAddress = $NetworkDetails.IPAddress
+$MacAddress = $NetworkDetails.MACAddress
 $RamMb = 0
 if ($ComputerSystem.TotalPhysicalMemory) {
     $RamMb = [int][Math]::Round($ComputerSystem.TotalPhysicalMemory / 1MB)
@@ -412,6 +427,7 @@ $Json += '"nombre":"' + (ConvertTo-JsonString $ComputerName) + '",'
 $Json += '"ultimoUsuario":"' + (ConvertTo-JsonString $CurrentUser) + '",'
 $Json += '"fuero":"' + (ConvertTo-JsonString $Fuero) + '",'
 $Json += '"ip":"' + (ConvertTo-JsonString $IpAddress) + '",'
+$Json += '"mac":"' + (ConvertTo-JsonString $MacAddress) + '",'
 $Json += '"sistemaOperativo":"' + (ConvertTo-JsonString $OperatingSystem.Caption) + '",'
 $Json += '"procesador":"' + (ConvertTo-JsonString $Processor.Name) + '",'
 $Json += '"ramMb":' + $RamMb + ','

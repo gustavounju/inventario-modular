@@ -65,6 +65,7 @@ public class InventarioViejoImportService {
 				valor(fila, "fuero", "area"),
 				valor(fila, "ubicacion", "oficina"),
 				valor(fila, "ip", "ipaddress"),
+				valor(fila, "mac", "macaddress", "dirección_mac", "direccion_mac"),
 				valor(fila, "sistemaoperativo", "osname", "windows"),
 				valor(fila, "procesador", "cpu"),
 				ramMb(fila),

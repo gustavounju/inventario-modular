@@ -3,11 +3,13 @@ package ar.gov.justiciajujuy.sanpedro.inventario;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+@Disabled("Script utilitario manual para insertar datos simulados en base local MySQL")
 @SpringBootTest(properties = {
     "spring.flyway.enabled=false",
     "spring.jpa.hibernate.ddl-auto=none",

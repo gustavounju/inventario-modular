@@ -186,6 +186,9 @@ public class EquipoController {
 			@Size(max = 45)
 			String ip,
 
+			@Size(max = 45)
+			String mac,
+
 			@Size(max = 180)
 			String sistemaOperativo,
 
@@ -235,6 +238,7 @@ public class EquipoController {
 					fuero,
 					ubicacion,
 					ip,
+					mac,
 					sistemaOperativo,
 					procesador,
 					ramMb,
@@ -270,6 +274,9 @@ public class EquipoController {
 
 			@Size(max = 45)
 			String ip,
+
+			@Size(max = 45)
+			String mac,
 
 			@Size(max = 180)
 			String sistemaOperativo,
@@ -320,6 +327,7 @@ public class EquipoController {
 					fuero,
 					ubicacion,
 					ip,
+					mac,
 					sistemaOperativo,
 					procesador,
 					ramMb,

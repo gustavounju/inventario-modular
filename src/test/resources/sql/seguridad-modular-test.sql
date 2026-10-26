@@ -67,6 +67,7 @@ CREATE TABLE equipos (
   fuero VARCHAR(120) NOT NULL,
   ubicacion VARCHAR(180),
   ip VARCHAR(45),
+  mac VARCHAR(45),
   sistema_operativo VARCHAR(180),
   procesador VARCHAR(255),
   ram_mb INT,

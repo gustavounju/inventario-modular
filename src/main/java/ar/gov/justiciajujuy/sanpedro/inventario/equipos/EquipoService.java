@@ -204,6 +204,7 @@ public class EquipoService {
 				fuero,
 				textoOpcional(command.ubicacion()),
 				textoOpcional(command.ip()),
+				textoOpcional(command.mac()),
 				textoOpcional(command.sistemaOperativo()),
 				textoOpcional(command.procesador()),
 				command.ramMb(),
@@ -279,7 +280,7 @@ public class EquipoService {
 		}
 		Equipo equipo = new Equipo(nombreNormalizado, fuero);
 		equipo.actualizarManualmente(
-				nombreNormalizado, null, fuero, ubicacion, ip, sistemaOperativo,
+				nombreNormalizado, null, fuero, ubicacion, ip, null, sistemaOperativo,
 				null, null, null, null, null, null, null, motherboardSerial, null, null, null, null, true);
 		Equipo guardado = equipoRepository.save(equipo);
 
@@ -335,6 +336,7 @@ public class EquipoService {
 				textoRequerido(command.fuero(), "fuero"),
 				ubiNueva,
 				textoOpcional(command.ip()),
+				textoOpcional(command.mac()),
 				textoOpcional(command.sistemaOperativo()),
 				textoOpcional(command.procesador()),
 				command.ramMb(),
@@ -494,6 +496,7 @@ public class EquipoService {
 				equipo.getFuero(),
 				equipo.getUbicacion(),
 				equipo.getIp(),
+				equipo.getMac(),
 				equipo.getSistemaOperativo(),
 				equipo.getMonitoreo(),
 				equipo.isActivo(),
@@ -509,6 +512,7 @@ public class EquipoService {
 				equipo.getFuero(),
 				equipo.getUbicacion(),
 				equipo.getIp(),
+				equipo.getMac(),
 				equipo.getSistemaOperativo(),
 				equipo.getProcesador(),
 				equipo.getRamMb(),
@@ -553,6 +557,7 @@ public class EquipoService {
 			String fuero,
 			String ubicacion,
 			String ip,
+			String mac,
 			String sistemaOperativo,
 			String procesador,
 			Integer ramMb,
@@ -575,6 +580,7 @@ public class EquipoService {
 			String fuero,
 			String ubicacion,
 			String ip,
+			String mac,
 			String sistemaOperativo,
 			String procesador,
 			Integer ramMb,
@@ -605,6 +611,7 @@ public class EquipoService {
 			String fuero,
 			String ubicacion,
 			String ip,
+			String mac,
 			String sistemaOperativo,
 			String monitoreo,
 			boolean activo,
@@ -619,6 +626,7 @@ public class EquipoService {
 			String fuero,
 			String ubicacion,
 			String ip,
+			String mac,
 			String sistemaOperativo,
 			String procesador,
 			Integer ramMb,
