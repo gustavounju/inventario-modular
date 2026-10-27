@@ -363,7 +363,7 @@ public class EquipoPageController {
 	}
 
 	private boolean esEquipoGenerico(String nombre) {
-		return nombre != null && TareaTecnicaService.EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(nombre);
+		return nombre != null && TareaTecnicaService.EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(nombre.trim());
 	}
 
 	@org.springframework.web.bind.annotation.GetMapping("/admin/equipos/{id:\\d+}")
@@ -1488,9 +1488,6 @@ public class EquipoPageController {
 		}
 	}
 
-	private boolean esEquipoGenerico(String nombre) {
-		return nombre != null && "PC-GENERICA".equalsIgnoreCase(nombre.trim());
-	}
 
 	private boolean esEquipoDeTaller(EquipoService.EquipoResumen e) {
 		if (e.ultimoReporteEn() != null) {
