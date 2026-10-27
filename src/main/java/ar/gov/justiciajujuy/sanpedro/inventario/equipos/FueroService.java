@@ -201,6 +201,36 @@ public class FueroService {
 		return bestMatch;
 	}
 
+	/**
+	 * Resuelve la ubicación física para un equipo:
+	 * 1. Si el reporte informó una ubicación explícita, se respeta.
+	 * 2. Si no, busca en el catálogo de ubicaciones activas una coincidencia por nombre o fuero.
+	 * 3. Si no hay una oficina específica cargada pero el fuero es conocido, adopta el fuero como ubicación base.
+	 */
+	public String resolverUbicacion(String ubicacionReportada, String fuero, String pcNombre) {
+		if (StringUtils.hasText(ubicacionReportada)) {
+			return ubicacionReportada.trim();
+		}
+		if (!StringUtils.hasText(fuero) || "Desconocido".equalsIgnoreCase(fuero.trim())) {
+			return null;
+		}
+		String fueroNormalizado = fuero.trim();
+		try {
+			for (Ubicacion u : ubicacionRepository.findAll()) {
+				if (u.isActivo() && u.getNombre() != null) {
+					if (u.getNombre().equalsIgnoreCase(fueroNormalizado)) {
+						return u.getNombre();
+					}
+					if (u.getFuero() != null && u.getFuero().equalsIgnoreCase(fueroNormalizado)) {
+						return u.getNombre();
+					}
+				}
+			}
+		} catch (Exception ignored) {
+		}
+		return fueroNormalizado;
+	}
+
 	public void invalidarCache() {
 		this.cachedFueros = null;
 		this.cacheLoadedAt = Instant.EPOCH;

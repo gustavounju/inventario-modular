@@ -3,6 +3,7 @@ param(
     [string]$ServerUrl = "http://localhost:8081/api/v1/equipos/inventario",
     [string]$Token = $env:INVENTARIO_REPORT_TOKEN,
     [string]$Fuero = $env:INVENTARIO_FUERO,
+    [string]$Ubicacion = $env:INVENTARIO_UBICACION,
     [string]$BackupDirectory = "$env:ProgramData\InventarioModular",
     [switch]$DetectActiveDirectoryOu,
     [switch]$SkipCertificateCheck,
@@ -146,7 +147,8 @@ function Get-PrinterName {
     return ""
 }
 
-function Get-ActiveDirectoryFuero {
+function Get-ActiveDirectoryInfo {
+    $Info = @{ Fuero = ""; Ubicacion = "" }
     try {
         $System = Get-InventoryClass -ClassName "Win32_ComputerSystem" | Select-Object -First 1
         $DomainRole = $System.DomainRole
@@ -171,7 +173,14 @@ function Get-ActiveDirectoryFuero {
                 }
                 if ($Ous.Count -gt 0) {
                     [array]::Reverse($Ous)
-                    return [string]::Join(" - ", $Ous)
+                    $FullOuPath = [string]::Join(" - ", $Ous)
+                    $Info.Fuero = $FullOuPath
+                    
+                    if ($Result.Properties["location"] -and $Result.Properties["location"][0]) {
+                        $Info.Ubicacion = [string]$Result.Properties["location"][0]
+                    } else {
+                        $Info.Ubicacion = $FullOuPath
+                    }
                 }
             }
         }
@@ -179,7 +188,12 @@ function Get-ActiveDirectoryFuero {
     catch {
         # Silencioso si no hay acceso al dominio o estamos en modo local
     }
-    return ""
+    return $Info
+}
+
+function Get-ActiveDirectoryFuero {
+    $Info = Get-ActiveDirectoryInfo
+    return $Info.Fuero
 }
 
 function Get-RamDetails {
@@ -421,18 +435,21 @@ $Monitors = Get-MonitorDetails
 $Keyboard = Get-PeripheralName -ClassName "Win32_Keyboard"
 $Mouse = Get-PeripheralName -ClassName "Win32_PointingDevice"
 
-if (-not (Test-HasText $Fuero) -and ($DetectActiveDirectoryOu -or $env:INVENTARIO_DETECT_AD_OU -eq "true")) {
-    $AdFuero = Get-ActiveDirectoryFuero
-    if (Test-HasText $AdFuero) {
-        $Fuero = $AdFuero
-        Write-Info "Fuero detectado: $Fuero" "Cyan"
-    }
+$AdInfo = Get-ActiveDirectoryInfo
+if (-not (Test-HasText $Fuero) -and (Test-HasText $AdInfo.Fuero)) {
+    $Fuero = $AdInfo.Fuero
+    Write-Info "Fuero detectado por AD: $Fuero" "Cyan"
+}
+if (-not (Test-HasText $Ubicacion) -and (Test-HasText $AdInfo.Ubicacion)) {
+    $Ubicacion = $AdInfo.Ubicacion
+    Write-Info "Ubicación detectada por AD: $Ubicacion" "Cyan"
 }
 
 $Json = "{"
 $Json += '"nombre":"' + (ConvertTo-JsonString $ComputerName) + '",'
 $Json += '"ultimoUsuario":"' + (ConvertTo-JsonString $CurrentUser) + '",'
 $Json += '"fuero":"' + (ConvertTo-JsonString $Fuero) + '",'
+$Json += '"ubicacion":"' + (ConvertTo-JsonString $Ubicacion) + '",'
 $Json += '"ip":"' + (ConvertTo-JsonString $IpAddress) + '",'
 $Json += '"mac":"' + (ConvertTo-JsonString $MacAddress) + '",'
 $Json += '"sistemaOperativo":"' + (ConvertTo-JsonString $OperatingSystem.Caption) + '",'

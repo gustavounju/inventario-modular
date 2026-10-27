@@ -198,11 +198,20 @@ public class EquipoService {
 			fuero = fueroService.resolverFuero(command.fuero(), nombre);
 		}
 
+		String ubicacion = null;
+		if (command.ubicacion() != null && StringUtils.hasText(command.ubicacion())) {
+			ubicacion = command.ubicacion().trim();
+		} else if (equipoExistente != null && StringUtils.hasText(equipoExistente.getUbicacion()) && !"Sin ubicación asignada".equalsIgnoreCase(equipoExistente.getUbicacion())) {
+			ubicacion = equipoExistente.getUbicacion();
+		} else {
+			ubicacion = fueroService.resolverUbicacion(command.ubicacion(), fuero, nombre);
+		}
+
 		Equipo equipo = equipoExistente != null ? equipoExistente : new Equipo(nombre, fuero);
 		equipo.actualizarDesdeReporte(
 				textoOpcional(command.ultimoUsuario()),
 				fuero,
-				textoOpcional(command.ubicacion()),
+				textoOpcional(ubicacion),
 				textoOpcional(command.ip()),
 				textoOpcional(command.mac()),
 				textoOpcional(command.sistemaOperativo()),

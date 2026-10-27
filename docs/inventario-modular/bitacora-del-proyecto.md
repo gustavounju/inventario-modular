@@ -2819,3 +2819,10 @@ Se implementaron mejoras operativas en el script de auditoría, base de datos, g
    - En el visor Kanban (`admin/tareas-visor.html`) y en el listado de tareas (`admin/tareas.html`), si la descripción o la nota de cierre es idéntica al título del requerimiento (común en tareas creadas desde la app móvil o por duplicación de campos), la tarjeta omite imprimir el texto duplicado, manteniendo una presentación limpia.
    - Clarificación sobre la métrica de cabecera (`resumenTareas.total` derivado de `SELECT COUNT(*)`) frente al identificador correlativo `#ID` (`AUTO_INCREMENT` de MySQL).
 
+5. **Captura y resolución automática de Ubicación física y Fuero en auditoría**:
+   - Detección automática en Active Directory: `inventario-modular.ps1` ahora extrae de forma automática tanto la jerarquía de OUs (`Fuero`) como la ubicación (`Ubicacion` / atributo `location`), sin requerir el parámetro explícito `-DetectActiveDirectoryOu`.
+   - Se añadió el parámetro `$Ubicacion` y el campo `"ubicacion"` en la carga útil JSON del script PowerShell.
+   - Protección de ubicaciones existentes: `EquipoService.registrarInventario` ya no pisa con `null` la ubicación asignada previamente de un equipo.
+   - Vinculación con el catálogo de ubicaciones físicas: `FueroService.resolverUbicacion` busca coincidencias en `UbicacionRepository` o adopta el fuero detectado para evitar que los equipos queden como "Sin ubicación asignada".
+
+
