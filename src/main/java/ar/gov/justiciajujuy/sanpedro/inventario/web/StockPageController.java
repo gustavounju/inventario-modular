@@ -140,6 +140,7 @@ public class StockPageController {
 			@RequestParam String fuero,
 			@RequestParam String ubicacion,
 			@RequestParam(required = false) String ip,
+			@RequestParam(required = false) String mac,
 			RedirectAttributes redirectAttributes) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		
@@ -148,7 +149,7 @@ public class StockPageController {
 		
 		try {
 			stockService.eliminar(id);
-			EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, "Impresora de Red", serial);
+			EquipoDetalle equipo = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, mac, "Impresora de Red", serial);
 			return "redirect:/admin/equipos/" + equipo.id();
 		} catch (IllegalStateException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
