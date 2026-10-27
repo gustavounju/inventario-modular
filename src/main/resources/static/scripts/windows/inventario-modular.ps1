@@ -25,8 +25,15 @@ try {
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12 -bor 3072
 } catch {}
 
-# No relajar validacion TLS salvo pedido explicito del administrador.
-if ($SkipCertificateCheck) {
+# Relajar validacion TLS si se solicito con -SkipCertificateCheck o si se envia por HTTPS a una IP privada LAN
+$isPrivateLan = $false
+try {
+    if ($ServerUrl -match '^https://(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|127\.|localhost)') {
+        $isPrivateLan = $true
+    }
+} catch {}
+
+if ($SkipCertificateCheck -or $isPrivateLan) {
     try {
         [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
     } catch {}
