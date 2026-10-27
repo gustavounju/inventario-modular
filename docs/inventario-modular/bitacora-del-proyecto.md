@@ -2793,3 +2793,29 @@ app. Se corrigio `scripts/start-local-ad.ps1` para separar:
 Tambien se agrego `scripts/test-ad-login.ps1` como diagnostico local sin arrancar Spring
 Boot. El script prueba conectividad LDAP y bind con los formatos habituales sin imprimir
 la clave.
+
+## 2026-10-27 - HTTPS intranet, gestión de MAC en impresoras y desduplicación visual de tareas
+
+Se implementaron mejoras operativas en el script de auditoría, base de datos, gestión de impresoras de red y visualización del tablero Kanban:
+
+1. **Soporte HTTPS con certificados autofirmados en script de auditoría (`inventario-modular.ps1`)**:
+   - Se configuró omisión automática de validación TLS/SSL (`ServerCertificateValidationCallback = {$true}`) cuando el script conecta por HTTPS hacia direcciones IP privadas de intranet (RFC 1918: `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`, `localhost`).
+   - Se actualizaron los fragmentos de comando en `login.html` y `equipo-detalle.html` para incorporar el callback de validación segura y el parámetro `-SkipCertificateCheck`.
+   - Se documentó la configuración de `INVENTARIO_REPORT_TOKEN` en variables de entorno del servidor.
+
+2. **Ajuste de migración Flyway `V33__tipo_tarea_y_ciclo_equipo.sql`**:
+   - Simplificación a sentencias `ALTER TABLE` directas compatibles con MySQL sin requerir sentencias dinámicas preparadas (`PREPARE`), asegurando el arranque automático de Hibernate y Flyway.
+
+3. **Soporte de Dirección MAC para Impresoras de Red**:
+   - Incorporación del campo opcional **Dirección MAC** en todos los flujos de gestión de impresoras:
+     - Modal de edición rápida en `admin/equipos.html` (`modal-editar-impresora`).
+     - Modal de creación de impresora de red en la ficha de equipo `admin/equipo-detalle.html` (`modalCrearImpRed`).
+     - Modal de conversión de componente escaneado en impresora de red en `admin/stock.html` (`modal-impresora`).
+   - Visualización de la MAC en el subtexto del catálogo de equipos (`IP: ... - MAC: ... - S/N: ...`).
+   - Sobrecarga de método `crearEquipoManual(...)` en `EquipoService` y actualización en `StockPageController`.
+
+4. **Desduplicación visual en tarjetas de Tareas Técnicas (Kanban y Listado)**:
+   - Se añadieron métodos auxiliares `tieneDescripcionDiferente()` y `tieneCierreDiferente()` en el record `TareaTecnicaDetalle`.
+   - En el visor Kanban (`admin/tareas-visor.html`) y en el listado de tareas (`admin/tareas.html`), si la descripción o la nota de cierre es idéntica al título del requerimiento (común en tareas creadas desde la app móvil o por duplicación de campos), la tarjeta omite imprimir el texto duplicado, manteniendo una presentación limpia.
+   - Clarificación sobre la métrica de cabecera (`resumenTareas.total` derivado de `SELECT COUNT(*)`) frente al identificador correlativo `#ID` (`AUTO_INCREMENT` de MySQL).
+
