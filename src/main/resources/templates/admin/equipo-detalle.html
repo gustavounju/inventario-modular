@@ -1491,8 +1491,11 @@
 			var reportToken = (document.body.dataset.reportToken || '').trim();
 			var tokenVar = (reportToken && reportToken.length > 0) ? ("$t='" + reportToken + "'; ") : "";
 			var tokenArg = (reportToken && reportToken.length > 0) ? " -Token $t" : "";
+			var isHttps = origin.indexOf("https://") === 0;
+			var certCallback = isHttps ? " [System.Net.ServicePointManager]::ServerCertificateValidationCallback={$true};" : "";
+			var skipCertArg = isHttps ? " -SkipCertificateCheck" : "";
 			var cmd = [
-				'[Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor 3072;',
+				'[Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor 3072;' + certCallback,
 				'$u="' + origin + '";',
 				tokenVar + '$p="$env:TEMP\\inventario-modular.ps1";',
 				'$wc=New-Object Net.WebClient;',
@@ -1502,7 +1505,7 @@
 				'$fs=[System.IO.File]::OpenRead($p);',
 				'try{$a=([BitConverter]::ToString($sha.ComputeHash($fs))).Replace("-","").ToLowerInvariant()}finally{$fs.Close()};',
 				'if($a -ne $h){throw "SHA-256 invalido. Script descargado no coincide con el publicado por el servidor."};',
-				'try{powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"' + tokenArg + '}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue};',
+				'try{powershell -ExecutionPolicy Bypass -NoProfile -File $p -ServerUrl "$u/api/v1/equipos/inventario"' + tokenArg + skipCertArg + '}finally{Remove-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue};',
 				'if($LASTEXITCODE -ne 0){Write-Host "`n[ERROR] El script falló o no pudo enviar los datos." -ForegroundColor Red; Read-Host "Presione Enter para salir"}else{exit}\n#'
 			].join(' ') + '\r\n';
 			if (navigator.clipboard && navigator.clipboard.writeText) {
