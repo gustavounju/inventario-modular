@@ -83,9 +83,9 @@
 									<span class="table-subtext" th:text="${(equipo.ubicacion != null and !#strings.isEmpty(equipo.ubicacion) ? equipo.ubicacion : 'Sin ubicación asignada') + ' - IP: ' + (equipo.ip != null and !#strings.isEmpty(equipo.ip) ? equipo.ip : 'Sin IP') + (equipo.mac != null and !#strings.isEmpty(equipo.mac) ? ' - MAC: ' + equipo.mac : '') + (equipo.sistemaOperativo == 'Impresora de Red' and equipo.motherboardSerial != null and !#strings.isEmpty(equipo.motherboardSerial) ? ' - S/N: ' + equipo.motherboardSerial : '')}">Oficina - IP: 192.168.0.20</span>
 								</td>
 								<td data-label="Usuario Actual">
-									<strong th:if="${equipo.sistemaOperativo != 'Impresora de Red' and equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario)}" 
+									<strong th:if="${equipo.sistemaOperativo != 'Impresora de Red' and equipo.ultimoUsuario != null and !#strings.isEmpty(equipo.ultimoUsuario) and !'Sin asignar'.equalsIgnoreCase(equipo.ultimoUsuario)}" 
 									        th:text="${nombresUsuarios != null and nombresUsuarios.containsKey(equipo.ultimoUsuario) ? nombresUsuarios.get(equipo.ultimoUsuario) + ' (' + equipo.ultimoUsuario + ')' : equipo.ultimoUsuario}">usuario.tecnico</strong>
-									<span th:if="${equipo.sistemaOperativo != 'Impresora de Red' and (equipo.ultimoUsuario == null or #strings.isEmpty(equipo.ultimoUsuario))}" style="color: #facc15; font-size: 0.82rem; font-weight: 600;">⚠️ Sin asignar</span>
+									<span th:if="${equipo.sistemaOperativo != 'Impresora de Red' and (equipo.ultimoUsuario == null or #strings.isEmpty(equipo.ultimoUsuario) or 'Sin asignar'.equalsIgnoreCase(equipo.ultimoUsuario))}" style="color: #facc15; font-size: 0.82rem; font-weight: 600;">⚠️ Sin asignar</span>
 									<button th:if="${equipo.sistemaOperativo == 'Impresora de Red'}" class="secondary-action" th:attr="onclick='abrirModalVinculados(' + ${equipo.id} + ')'" style="font-size: 0.78rem; padding: 4px 8px; border-color: #3b82f6; color: #3b82f6;">🔗 Ver equipos vinculados</button>
 								</td>
 								<td data-label="Fuero / Ubicación" th:text="${equipo.fuero}">Informática</td>
@@ -98,7 +98,13 @@
 										<span th:if="${equipo.ultimoReporteEn != null and equiposConGemelo != null and equiposConGemelo.contains(equipo.id)}" class="authorization-badge is-authorized" style="font-size: 0.72rem; padding: 2px 6px;">
 											🟢 Gemelo Sincronizado
 										</span>
-										<span th:if="${equipo.ultimoReporteEn == null}" class="authorization-badge is-pending" style="font-size: 0.72rem; padding: 2px 6px;">
+										<span th:if="${equipo.ultimoReporteEn == null and equipo.estadoCiclo != null and equipo.estadoCiclo.name() == 'DISPONIBLE'}" class="authorization-badge is-authorized" style="font-size: 0.72rem; padding: 2px 6px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3);">
+											🟢 PC Disponible
+										</span>
+										<span th:if="${equipo.ultimoReporteEn == null and equipo.estadoCiclo != null and equipo.estadoCiclo.name() == 'EN_ARMADO'}" class="authorization-badge" style="font-size: 0.72rem; padding: 2px 6px; background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.3);">
+											🛠️ En Armado
+										</span>
+										<span th:if="${equipo.ultimoReporteEn == null and (equipo.estadoCiclo == null or (equipo.estadoCiclo.name() != 'DISPONIBLE' and equipo.estadoCiclo.name() != 'EN_ARMADO'))}" class="authorization-badge is-pending" style="font-size: 0.72rem; padding: 2px 6px;">
 											🟡 Esperando Script
 										</span>
 										<span th:if="${equipo.ultimoReporteEn != null}" style="font-size: 0.72rem; color: var(--text-muted);" th:text="${#temporals.format(equipo.ultimoReporteEn, 'dd/MM HH:mm')}">03/09 17:30</span>
@@ -199,16 +205,37 @@
 
 		<!-- Modal Taller -->
 		<dialog id="modal-taller" class="modal-dialog">
-			<form th:action="@{/admin/equipos/taller}" method="post" class="modal-content">
-				<h3 style="margin-top:0;">🛠️ Armar PC en Taller</h3>
-				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Crea un equipo fantasma para pre-ensamblar componentes en el taller.</p>
+			<form th:action="@{/admin/equipos/taller}" method="post" class="modal-content" style="max-width: 500px;">
+				<h3 style="margin-top:0; display: flex; align-items: center; gap: 8px;">🛠️ Armar PC en Taller</h3>
+				<p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+					Registra el nuevo equipo en preparación y crea automáticamente la <strong>tarea técnica</strong> asignada para su seguimiento en el Visor.
+				</p>
+				
+				<div style="background: rgba(59, 130, 246, 0.08); border-left: 3px solid #3b82f6; padding: 10px 14px; margin-bottom: 1.2rem; border-radius: 4px; font-size: 0.84rem; color: var(--text-main);">
+					💡 <strong>Integración automática:</strong> Esta PC quedará en estado <em>En Armado</em> en el Taller de Informática. Cuando el técnico finalice y cierre la tarea técnica, el equipo pasará a <strong>Disponible</strong> listo para entrega.
+				</div>
+
 				<label style="display:block; margin-bottom: 1rem;">
-					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre Provisorio</span>
-					<input type="text" name="nombre" required th:value="${'TALLER-' + T(java.util.UUID).randomUUID().toString().substring(0,4).toUpperCase()}" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Nombre Provisorio / Identificador *</span>
+					<input type="text" name="nombre" required th:value="${'ARMADO-' + T(java.util.UUID).randomUUID().toString().substring(0,4).toUpperCase()}" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
 				</label>
+
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Técnico Responsable Asignado *</span>
+					<select name="responsable" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-card); color: var(--text-main);">
+						<option value="" th:text="${'-- Asignarme a mí (' + #authentication.name + ') --'}">-- Asignarme a mí --</option>
+						<option th:each="t : ${tecnicos}" th:value="${t.username}" th:text="${t.nombreVisible + ' (' + t.username + ')'}">Juan Perez (tecnico.juan)</option>
+					</select>
+				</label>
+
+				<label style="display:block; margin-bottom: 1.2rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Instrucciones / Observación (Opcional)</span>
+					<textarea name="descripcion" rows="2" placeholder="Ej. Instalación de Windows 11, armado de gabinete con disco SSD y memoria..." style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; font-family: inherit; font-size: 0.9rem;"></textarea>
+				</label>
+
 				<div class="modal-actions" style="display: flex; gap: 8px; justify-content: flex-end;">
 					<button type="button" class="secondary-action" onclick="document.getElementById('modal-taller').close()">Cancelar</button>
-					<button type="submit" class="primary-action">Crear Equipo Taller</button>
+					<button type="submit" class="primary-action" style="background-color: #fb923c; border-color: #ea580c;">🛠️ Crear y Asignar en Visor</button>
 				</div>
 			</form>
 		</dialog>

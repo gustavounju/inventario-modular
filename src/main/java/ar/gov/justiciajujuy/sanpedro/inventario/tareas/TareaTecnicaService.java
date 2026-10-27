@@ -14,6 +14,8 @@ import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.ComponenteService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EstadoCicloEquipo;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponente;
@@ -36,6 +38,7 @@ public class TareaTecnicaService {
 	private final AuditoriaService auditoriaService;
 	private final TareaAvisoService avisoService;
 	private final ActiveDirectoryDomainService activeDirectoryDomainService;
+	private final EquipoService equipoService;
 
 	public TareaTecnicaService(
 			TareaTecnicaRepository tareaTecnicaRepository,
@@ -46,7 +49,8 @@ public class TareaTecnicaService {
 			ComponenteService componenteService,
 			AuditoriaService auditoriaService,
 			TareaAvisoService avisoService,
-			ActiveDirectoryDomainService activeDirectoryDomainService) {
+			ActiveDirectoryDomainService activeDirectoryDomainService,
+			EquipoService equipoService) {
 		this.tareaTecnicaRepository = tareaTecnicaRepository;
 		this.comentarioRepository = comentarioRepository;
 		this.stockUsoRepository = stockUsoRepository;
@@ -56,6 +60,7 @@ public class TareaTecnicaService {
 		this.auditoriaService = auditoriaService;
 		this.avisoService = avisoService;
 		this.activeDirectoryDomainService = activeDirectoryDomainService;
+		this.equipoService = equipoService;
 	}
 
 	@Transactional(readOnly = true)
@@ -170,78 +175,59 @@ public class TareaTecnicaService {
 
 	@Transactional
 	public TareaTecnicaDetalle crear(GuardarTareaTecnicaCommand command) {
-		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
-		validarSolicitanteEnAd(solicitanteUsername);
-		String solicitanteFuero = StringUtils.hasText(command.solicitanteFuero()) ? command.solicitanteFuero().trim() : null;
-		if (!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero)) {
-			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(solicitanteUsername);
-			if (StringUtils.hasText(fueroAd)) {
-				solicitanteFuero = fueroAd;
-			}
+		TipoTareaTecnica tipo = command.tipo() == null ? TipoTareaTecnica.INCIDENTE : command.tipo();
+		String creadoPor = textoOpcional(command.creadoPor());
+		Equipo equipo = tipo == TipoTareaTecnica.ALISTAMIENTO && command.equipoId() == null
+				? crearEquipoParaAlistamiento(command.codigoEquipo())
+				: buscarEquipoParaTarea(command.equipoId());
+		Solicitante solicitante = resolverSolicitante(tipo, command, equipo, null);
+		// Trabajo interno: si nadie fue elegido, el responsable es quien lo carga (el tecnico que arma).
+		String responsable = textoOpcional(command.responsable());
+		if (responsable == null && tipo.esTrabajoInterno()) {
+			responsable = creadoPor;
 		}
-		Equipo equipo = buscarEquipoParaTarea(command.equipoId());
-		if ((!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero))
-				&& equipo != null && StringUtils.hasText(equipo.getFuero())) {
-			solicitanteFuero = equipo.getFuero();
-		}
-		if (!StringUtils.hasText(solicitanteFuero)) {
-			solicitanteFuero = "Sin fuero informado";
-		}
-		String solicitanteNombre = StringUtils.hasText(command.solicitanteNombre())
-				? command.solicitanteNombre().trim()
-				: solicitanteUsername;
 		TareaTecnica tarea = new TareaTecnica(textoRequerido(command.titulo(), "titulo"));
+		tarea.definirTipo(tipo);
 		tarea.actualizarDatos(
 				equipo,
 				textoRequerido(command.titulo(), "titulo"),
 				textoOpcional(command.descripcion()),
-				solicitanteUsername,
-				solicitanteNombre,
-				solicitanteFuero,
+				solicitante.username(),
+				solicitante.nombre(),
+				solicitante.fuero(),
 				command.prioridad() == null ? PrioridadTareaTecnica.MEDIA : command.prioridad(),
-				textoOpcional(command.responsable()));
-		tarea.marcarCreadoPor(textoOpcional(command.creadoPor()));
+				responsable);
+		if (tipo.esTrabajoInterno() && responsable != null) {
+			// El tecnico ya esta trabajando en su propio armado: entra directo a su panel "En proceso".
+			tarea.tomar(responsable);
+		}
+		tarea.marcarCreadoPor(creadoPor);
 		TareaTecnica guardada = tareaTecnicaRepository.save(tarea);
 		auditoriaService.registrar("TAREAS", "CREAR", "TareaTecnica", guardada.getId(),
-				"Tarea tecnica creada: " + guardada.getTitulo() + ".");
+				"Tarea tecnica (" + tipo + ") creada: " + guardada.getTitulo() + ".");
 		avisoService.registrarCreacion(guardada);
 		return toDetalle(guardada);
 	}
 
 	@Transactional
 	public TareaTecnicaDetalle actualizar(Long id, GuardarTareaTecnicaCommand command) {
-		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
-		validarSolicitanteEnAd(solicitanteUsername);
 		TareaTecnica tarea = tareaTecnicaRepository.findById(id)
 				.orElseThrow(() -> new TareaTecnicaNoEncontradaException(id));
+		TipoTareaTecnica tipo = command.tipo() == null ? tarea.getTipo() : command.tipo();
 		String responsableAnterior = textoOpcional(tarea.getResponsable());
-		String solicitanteFuero = StringUtils.hasText(command.solicitanteFuero()) ? command.solicitanteFuero().trim() : null;
-		if (!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero)) {
-			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(solicitanteUsername);
-			if (StringUtils.hasText(fueroAd)) {
-				solicitanteFuero = fueroAd;
-			} else if (StringUtils.hasText(tarea.getSolicitanteFuero())) {
-				solicitanteFuero = tarea.getSolicitanteFuero();
-			}
-		}
-		Equipo equipo = buscarEquipoParaTarea(command.equipoId());
-		if ((!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero))
-				&& equipo != null && StringUtils.hasText(equipo.getFuero())) {
-			solicitanteFuero = equipo.getFuero();
-		}
-		if (!StringUtils.hasText(solicitanteFuero)) {
-			solicitanteFuero = "Sin fuero informado";
-		}
-		String solicitanteNombre = StringUtils.hasText(command.solicitanteNombre())
-				? command.solicitanteNombre().trim()
-				: solicitanteUsername;
+		// Un alistamiento ya tiene su equipo en armado: no se reemplaza por la PC generica al editar.
+		Equipo equipo = command.equipoId() == null && tipo == TipoTareaTecnica.ALISTAMIENTO && tarea.getEquipo() != null
+				? tarea.getEquipo()
+				: buscarEquipoParaTarea(command.equipoId());
+		Solicitante solicitante = resolverSolicitante(tipo, command, equipo, tarea.getSolicitanteFuero());
+		tarea.definirTipo(tipo);
 		tarea.actualizarDatos(
 				equipo,
 				textoRequerido(command.titulo(), "titulo"),
 				textoOpcional(command.descripcion()),
-				solicitanteUsername,
-				solicitanteNombre,
-				solicitanteFuero,
+				solicitante.username(),
+				solicitante.nombre(),
+				solicitante.fuero(),
 				command.prioridad() == null ? PrioridadTareaTecnica.MEDIA : command.prioridad(),
 				textoOpcional(command.responsable()));
 		auditoriaService.registrar("TAREAS", "ACTUALIZAR", "TareaTecnica", tarea.getId(),
@@ -253,6 +239,48 @@ public class TareaTecnicaService {
 			avisoService.registrarAsignacion(tarea, textoOpcional(command.creadoPor()));
 		}
 		return toDetalle(tarea);
+	}
+
+	/**
+	 * Resuelve quien pidio el trabajo. Incidentes y solicitudes exigen un solicitante real;
+	 * el trabajo interno del taller lo registra a nombre del taller si no se informa otro.
+	 */
+	private Solicitante resolverSolicitante(TipoTareaTecnica tipo, GuardarTareaTecnicaCommand command,
+			Equipo equipo, String fueroPrevio) {
+		if (tipo.esTrabajoInterno() && !StringUtils.hasText(command.solicitanteUsername())) {
+			return new Solicitante(null, TipoTareaTecnica.SOLICITANTE_TALLER, TipoTareaTecnica.SOLICITANTE_TALLER);
+		}
+		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
+		validarSolicitanteEnAd(solicitanteUsername);
+		String solicitanteFuero = StringUtils.hasText(command.solicitanteFuero()) ? command.solicitanteFuero().trim() : null;
+		if (!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero)) {
+			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(solicitanteUsername);
+			if (StringUtils.hasText(fueroAd)) {
+				solicitanteFuero = fueroAd;
+			} else if (StringUtils.hasText(fueroPrevio)) {
+				solicitanteFuero = fueroPrevio;
+			}
+		}
+		if ((!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero))
+				&& equipo != null && StringUtils.hasText(equipo.getFuero())) {
+			solicitanteFuero = equipo.getFuero();
+		}
+		if (!StringUtils.hasText(solicitanteFuero)) {
+			solicitanteFuero = "Sin fuero informado";
+		}
+		String solicitanteNombre = StringUtils.hasText(command.solicitanteNombre())
+				? command.solicitanteNombre().trim()
+				: solicitanteUsername;
+		return new Solicitante(solicitanteUsername, solicitanteNombre, solicitanteFuero);
+	}
+
+	private Equipo crearEquipoParaAlistamiento(String codigoEquipo) {
+		// Reutiliza el alta de taller existente (ARMADO-001, ARMADO-002...) que ya registra el movimiento.
+		Long equipoId = equipoService.crearEquipoEnTaller(textoOpcional(codigoEquipo)).id();
+		return buscarEquipoOpcional(equipoId);
+	}
+
+	private record Solicitante(String username, String nombre, String fuero) {
 	}
 
 	@Transactional
@@ -324,8 +352,28 @@ public class TareaTecnicaService {
 		tarea.cambiarEstado(estado, textoOpcional(observaciones));
 		auditoriaService.registrar("TAREAS", "CAMBIAR_ESTADO", "TareaTecnica", tarea.getId(),
 				"Tarea tecnica " + tarea.getId() + " cambio a " + estado + ".");
+		if (estado == EstadoTareaTecnica.CERRADA) {
+			liberarEquipoAlistado(tarea, autor);
+		}
 		avisoService.registrarCambioEstado(tarea, textoOpcional(autor));
 		return toDetalle(tarea);
+	}
+
+	/**
+	 * Cerrar un alistamiento acredita el trabajo al tecnico y deja el equipo DISPONIBLE en taller.
+	 * La espera hasta la entrega la guarda el equipo, no la tarea.
+	 */
+	private void liberarEquipoAlistado(TareaTecnica tarea, String autor) {
+		Equipo equipo = tarea.getEquipo();
+		if (tarea.getTipo() != TipoTareaTecnica.ALISTAMIENTO || equipo == null
+				|| EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(equipo.getNombre())) {
+			return;
+		}
+		if (equipo.marcarDisponibleEnTaller()) {
+			auditoriaService.registrar("EQUIPOS", "DISPONIBLE_EN_TALLER", "Equipo", equipo.getId(),
+					"Equipo " + equipo.getNombre() + " listo y disponible en taller (tarea #" + tarea.getId()
+							+ " cerrada por " + textoOpcional(autor) + ").");
+		}
 	}
 
 	@Transactional
@@ -454,7 +502,9 @@ public class TareaTecnicaService {
 				tarea.getCreadoPor(),
 				tarea.getObservacionesCierre(),
 				tarea.getCreadoEn(),
-				tarea.getCerradoEn());
+				tarea.getCerradoEn(),
+				tarea.getTipo(),
+				equipo == null ? null : equipo.getEstadoCiclo());
 	}
 
 	private TareaComentarioDetalle toComentarioDetalle(TareaTecnicaComentario comentario) {
@@ -520,7 +570,17 @@ public class TareaTecnicaService {
 			String solicitanteFuero,
 			PrioridadTareaTecnica prioridad,
 			String responsable,
-			String creadoPor) {
+			String creadoPor,
+			TipoTareaTecnica tipo,
+			String codigoEquipo) {
+
+		/** Compatibilidad: altas sin tipo explicito siguen siendo incidentes. */
+		public GuardarTareaTecnicaCommand(Long equipoId, String titulo, String descripcion,
+				String solicitanteUsername, String solicitanteNombre, String solicitanteFuero,
+				PrioridadTareaTecnica prioridad, String responsable, String creadoPor) {
+			this(equipoId, titulo, descripcion, solicitanteUsername, solicitanteNombre, solicitanteFuero,
+					prioridad, responsable, creadoPor, TipoTareaTecnica.INCIDENTE, null);
+		}
 	}
 
 	public record CambiarEstadoTareaCommand(
@@ -560,7 +620,13 @@ public class TareaTecnicaService {
 			String creadoPor,
 			String observacionesCierre,
 			LocalDateTime creadoEn,
-			LocalDateTime cerradoEn) {
+			LocalDateTime cerradoEn,
+			TipoTareaTecnica tipo,
+			EstadoCicloEquipo equipoEstadoCiclo) {
+
+		public boolean esTrabajoInterno() {
+			return tipo != null && tipo.esTrabajoInterno();
+		}
 	}
 
 	public record TareaComentarioDetalle(

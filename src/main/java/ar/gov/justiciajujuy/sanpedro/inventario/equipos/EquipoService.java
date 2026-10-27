@@ -263,7 +263,7 @@ public class EquipoService {
 		if (equipoRepository.findByNombreIgnoreCase(nombreNormalizado).isPresent()) {
 			throw new EquipoDuplicadoException(nombreNormalizado);
 		}
-		Equipo equipo = new Equipo(nombreNormalizado, "Taller de Informática San Pedro");
+		Equipo equipo = Equipo.crearParaTaller(nombreNormalizado);
 		Equipo guardado = equipoRepository.save(equipo);
 
 		if (auditoriaService != null) {
@@ -501,7 +501,8 @@ public class EquipoService {
 				equipo.getMonitoreo(),
 				equipo.isActivo(),
 				equipo.getMotherboardSerial(),
-				equipo.getUltimoReporteEn());
+				equipo.getUltimoReporteEn(),
+				equipo.getEstadoCiclo());
 	}
 
 	private EquipoDetalle toDetalle(Equipo equipo) {
@@ -533,7 +534,8 @@ public class EquipoService {
 				equipo.getImpresoraRedAsignada() != null ? equipo.getImpresoraRedAsignada().getFuero() : null,
 				equipo.getMonitoreo(),
 				equipo.isActivo(),
-				equipo.getUltimoReporteEn());
+				equipo.getUltimoReporteEn(),
+				equipo.getEstadoCiclo());
 	}
 
 	private String normalizarNombre(String nombre) {
@@ -616,7 +618,8 @@ public class EquipoService {
 			String monitoreo,
 			boolean activo,
 			String motherboardSerial,
-			LocalDateTime ultimoReporteEn) {
+			LocalDateTime ultimoReporteEn,
+			EstadoCicloEquipo estadoCiclo) {
 	}
 
 	public record EquipoDetalle(
@@ -647,7 +650,8 @@ public class EquipoService {
 			String impresoraRedFuero,
 			String monitoreo,
 			boolean activo,
-			LocalDateTime ultimoReporteEn) {
+			LocalDateTime ultimoReporteEn,
+			EstadoCicloEquipo estadoCiclo) {
 	}
 
 	public static class EquipoNoEncontradoException extends RuntimeException {

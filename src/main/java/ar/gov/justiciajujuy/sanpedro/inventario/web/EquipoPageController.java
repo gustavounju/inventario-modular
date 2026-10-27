@@ -14,8 +14,11 @@ import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoNoEn
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.InventarioViejoImportService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
+import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockService;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.PrioridadTareaTecnica;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TipoTareaTecnica;
 import ar.gov.justiciajujuy.sanpedro.inventario.ubicaciones.UbicacionService;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -73,6 +76,7 @@ public class EquipoPageController {
 	private final StockService stockService;
 	private final TareaTecnicaService tareaTecnicaService;
 	private final ActiveDirectoryDomainService activeDirectoryDomainService;
+	private final UsuarioManagementService usuarioManagementService;
 
 	@org.springframework.beans.factory.annotation.Value("${inventario.security.report-token:}")
 	private String reportToken;
@@ -88,7 +92,8 @@ public class EquipoPageController {
 			ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService fueroService,
 			StockService stockService,
 			TareaTecnicaService tareaTecnicaService,
-			ActiveDirectoryDomainService activeDirectoryDomainService) {
+			ActiveDirectoryDomainService activeDirectoryDomainService,
+			UsuarioManagementService usuarioManagementService) {
 		this.authorizationService = authorizationService;
 		this.equipoService = equipoService;
 		this.componenteService = componenteService;
@@ -99,6 +104,7 @@ public class EquipoPageController {
 		this.stockService = stockService;
 		this.tareaTecnicaService = tareaTecnicaService;
 		this.activeDirectoryDomainService = activeDirectoryDomainService;
+		this.usuarioManagementService = usuarioManagementService;
 	}
 
 	/**
@@ -128,44 +134,60 @@ public class EquipoPageController {
 				.toList();
 		var equiposConGemelo = componenteService.obtenerEquipoIdsConRelevamientoInicial();
 
+		// Separación: Parque en Producción (real) vs Equipos temporales de Taller
+		var equiposEnTaller = todosLosEquipos.stream()
+				.filter(this::esEquipoDeTaller)
+				.toList();
+		var equiposEnProduccion = todosLosEquipos.stream()
+				.filter(e -> !esEquipoDeTaller(e))
+				.toList();
+
 		// 2. Cálculo de métricas para las tarjetas superiores
-		long totalEquipos = todosLosEquipos.size();
-		long sincronizadosCount = todosLosEquipos.stream()
+		long totalEquipos = equiposEnProduccion.size(); // Refleja el parque oficial en producción
+		long sincronizadosCount = equiposEnProduccion.stream()
 				.filter(e -> e.ultimoReporteEn() != null && equiposConGemelo.contains(e.id()))
 				.count();
-		long pendientesGemeloCount = todosLosEquipos.stream()
+		long pendientesGemeloCount = equiposEnProduccion.stream()
 				.filter(e -> e.ultimoReporteEn() != null && !equiposConGemelo.contains(e.id()))
 				.count();
-		long enTallerCount = todosLosEquipos.stream()
-				.filter(e -> e.ultimoReporteEn() == null)
-				.count();
+		long enTallerCount = equiposEnTaller.size();
 
-		// 3. Filtrado por término de búsqueda (q) y estado seleccionado en las tarjetas métricas
-		var resultadoEquipos = equipoService.listar(q, 0, 50);
-		var listaFiltrada = resultadoEquipos.equipos().stream()
-			.filter(e -> !esEquipoGenerico(e.nombre()))
-			.filter(e -> {
-			if (org.springframework.util.StringUtils.hasText(estado)) {
-				if ("SINCRONIZADO".equalsIgnoreCase(estado)) {
-					return e.ultimoReporteEn() != null && equiposConGemelo.contains(e.id());
-				} else if ("PENDIENTE".equalsIgnoreCase(estado)) {
-					return e.ultimoReporteEn() != null && !equiposConGemelo.contains(e.id());
-				} else if ("TALLER".equalsIgnoreCase(estado)) {
-					return e.ultimoReporteEn() == null;
-				} else if ("IMPRESORA".equalsIgnoreCase(estado)) {
-					return "Impresora de Red".equals(e.sistemaOperativo());
-				}
-				return true;
+		// 3. Filtrado por término de búsqueda (q) o estado de filtro seleccionado
+		List<EquipoService.EquipoResumen> listaFiltrada;
+		if (org.springframework.util.StringUtils.hasText(q)) {
+			// Si busca por texto, se busca sobre el universo completo para que encuentre lo que escribió
+			String qNorm = q.trim().toLowerCase();
+			listaFiltrada = todosLosEquipos.stream()
+					.filter(e -> (e.nombre() != null && e.nombre().toLowerCase().contains(qNorm))
+							|| (e.ultimoUsuario() != null && e.ultimoUsuario().toLowerCase().contains(qNorm))
+							|| (e.fuero() != null && e.fuero().toLowerCase().contains(qNorm))
+							|| (e.ubicacion() != null && e.ubicacion().toLowerCase().contains(qNorm))
+							|| (e.ip() != null && e.ip().toLowerCase().contains(qNorm)))
+					.toList();
+		} else if (org.springframework.util.StringUtils.hasText(estado)) {
+			if ("SINCRONIZADO".equalsIgnoreCase(estado)) {
+				listaFiltrada = equiposEnProduccion.stream()
+						.filter(e -> e.ultimoReporteEn() != null && equiposConGemelo.contains(e.id()))
+						.toList();
+			} else if ("PENDIENTE".equalsIgnoreCase(estado)) {
+				listaFiltrada = equiposEnProduccion.stream()
+						.filter(e -> e.ultimoReporteEn() != null && !equiposConGemelo.contains(e.id()))
+						.toList();
+			} else if ("TALLER".equalsIgnoreCase(estado)) {
+				listaFiltrada = equiposEnTaller;
+			} else if ("IMPRESORA".equalsIgnoreCase(estado)) {
+				listaFiltrada = todosLosEquipos.stream()
+						.filter(e -> "Impresora de Red".equals(e.sistemaOperativo()))
+						.toList();
 			} else {
-				// Vista por defecto: ocultar los equipos creados en taller que no fueron reportados
-				if (org.springframework.util.StringUtils.hasText(q)) {
-					return true; // Si busca por texto, mostramos todo lo que coincida
-				}
-				return e.ultimoReporteEn() != null || (e.nombre() != null && !e.nombre().startsWith("TALLER-"));
+				listaFiltrada = equiposEnProduccion;
 			}
-		}).toList();
-		
-		resultadoEquipos = new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoPagina(
+		} else {
+			// Vista por defecto ("VER TODOS"): sólo equipos en producción (se ocultan los equipos que solo están en taller)
+			listaFiltrada = equiposEnProduccion;
+		}
+
+		var resultadoEquipos = new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoPagina(
 				listaFiltrada,
 				new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.Paginacion(0, 50, listaFiltrada.size(), 1));
 
@@ -217,6 +239,7 @@ public class EquipoPageController {
 		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
 		model.addAttribute("ubicacionesActivas", ubicacionService.activas());
 		model.addAttribute("nombresUsuarios", nombresUsuarios);
+		model.addAttribute("tecnicos", usuarioManagementService.listarTecnicosAsignables());
 		return "admin/equipos";
 	}
 
@@ -365,9 +388,11 @@ public class EquipoPageController {
 		model.addAttribute("relevamientoConsolidado", "relevamiento".equals(actualizado) || "1".equals(relevamiento));
 		model.addAttribute("esImpresora", "Impresora de Red".equals(equipo.sistemaOperativo()));
 		
-		// Load Taller equipments for linking
+		// Cargar solo equipos de taller que estén DISPONIBLES (armado terminado) para absorber
 		var tallerEquipos = equipoService.listar(null, 0, 1000).equipos().stream()
-			.filter(e -> e.ultimoReporteEn() == null && !e.id().equals(id))
+			.filter(e -> !esEquipoGenerico(e.nombre()) && !e.id().equals(id))
+			.filter(this::esEquipoDeTaller)
+			.filter(e -> e.estadoCiclo() == ar.gov.justiciajujuy.sanpedro.inventario.equipos.EstadoCicloEquipo.DISPONIBLE)
 			.toList();
 		model.addAttribute("equiposTaller", tallerEquipos);
 
@@ -452,12 +477,36 @@ public class EquipoPageController {
 	public String crearEquipoTaller(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestParam String nombre,
+			@RequestParam(required = false) String responsable,
+			@RequestParam(required = false) String descripcion,
 			RedirectAttributes redirectAttributes) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
 		}
-		EquipoDetalle equipo = equipoService.crearEquipoTaller(nombre);
-		return "redirect:/admin/equipos/" + equipo.id();
+		String nombreNormalizado = nombre.trim().toUpperCase();
+		String resp = org.springframework.util.StringUtils.hasText(responsable)
+				? responsable.trim()
+				: (userDetails != null ? userDetails.getUsername() : null);
+		String desc = org.springframework.util.StringUtils.hasText(descripcion)
+				? descripcion.trim()
+				: "Montaje, armado e instalación en taller desde cero.";
+
+		var tarea = tareaTecnicaService.crear(new TareaTecnicaService.GuardarTareaTecnicaCommand(
+				null,
+				"Armado de PC en Taller: " + nombreNormalizado,
+				desc,
+				null,
+				null,
+				"Taller de Informática",
+				PrioridadTareaTecnica.MEDIA,
+				resp,
+				userDetails != null ? userDetails.getUsername() : null,
+				TipoTareaTecnica.ALISTAMIENTO,
+				nombreNormalizado));
+
+		redirectAttributes.addFlashAttribute("mensajeExito",
+				"Equipo " + nombreNormalizado + " creado en taller y asignado a " + (resp != null ? resp : "Taller") + " en el Visor de Tareas.");
+		return "redirect:/admin/equipos/" + (tarea.equipoId() != null ? tarea.equipoId() : "");
 	}
 
 	@PostMapping("/admin/equipos/manual")
@@ -1437,5 +1486,24 @@ public class EquipoPageController {
 		public void setProveedor(String proveedor) {
 			this.proveedor = proveedor;
 		}
+	}
+
+	private boolean esEquipoGenerico(String nombre) {
+		return nombre != null && "PC-GENERICA".equalsIgnoreCase(nombre.trim());
+	}
+
+	private boolean esEquipoDeTaller(EquipoService.EquipoResumen e) {
+		if (e.ultimoReporteEn() != null) {
+			return false; // Si reportó por telemetría/script, es una PC física viva en producción
+		}
+		String nombre = e.nombre() != null ? e.nombre().toUpperCase() : "";
+		String fuero = e.fuero() != null ? e.fuero().toUpperCase() : "";
+		String ubicacion = e.ubicacion() != null ? e.ubicacion().toUpperCase() : "";
+		return nombre.startsWith("TALLER-")
+				|| nombre.startsWith("ARMADO-")
+				|| fuero.contains("TALLER")
+				|| ubicacion.contains("TALLER")
+				|| e.estadoCiclo() == ar.gov.justiciajujuy.sanpedro.inventario.equipos.EstadoCicloEquipo.EN_ARMADO
+				|| e.estadoCiclo() == ar.gov.justiciajujuy.sanpedro.inventario.equipos.EstadoCicloEquipo.DISPONIBLE;
 	}
 }

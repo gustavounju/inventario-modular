@@ -27,6 +27,10 @@ public class TareaTecnica {
 	@JoinColumn(name = "equipo_id")
 	private Equipo equipo;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 40)
+	private TipoTareaTecnica tipo = TipoTareaTecnica.INCIDENTE;
+
 	@Column(nullable = false, length = 180)
 	private String titulo;
 
@@ -94,6 +98,10 @@ public class TareaTecnica {
 		}
 	}
 
+	public void definirTipo(TipoTareaTecnica tipo) {
+		this.tipo = tipo == null ? TipoTareaTecnica.INCIDENTE : tipo;
+	}
+
 	public void tomar(String responsable) {
 		this.responsable = responsable;
 		this.estado = EstadoTareaTecnica.EN_PROCESO;
@@ -118,6 +126,7 @@ public class TareaTecnica {
 
 	public Long getId() { return id; }
 	public Equipo getEquipo() { return equipo; }
+	public TipoTareaTecnica getTipo() { return tipo; }
 	public String getTitulo() { return titulo; }
 	public String getDescripcion() { return descripcion; }
 	public EstadoTareaTecnica getEstado() { return estado; }

@@ -184,6 +184,12 @@
 							<tbody>
 								<tr th:each="tarea : ${tareas}">
 									<td data-label="Tarea">
+										<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+											<span class="count-badge" style="background: rgba(14, 165, 233, 0.15); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.3); font-size: 0.72rem; padding: 2px 6px;"
+												  th:text="${tarea.tipo != null ? tarea.tipo.etiqueta : 'Incidente'}">Incidente</span>
+											<span th:if="${tarea.equipoEstadoCiclo != null and tarea.equipoEstadoCiclo.name() == 'DISPONIBLE'}"
+												  class="authorization-badge is-authorized" style="font-size: 0.7rem; padding: 2px 6px;">Listo en taller</span>
+										</div>
 										<strong th:text="${tarea.titulo}">Revisar fuente</strong>
 										<span class="table-subtext" th:text="${tarea.descripcion ?: 'Sin descripción'}">Detalle</span>
 										<span class="table-subtext" th:if="${tarea.observacionesCierre}" th:text="'Cierre: ' + ${tarea.observacionesCierre}" style="color: #4ade80; font-weight: 600;">Cierre</span>
@@ -251,9 +257,15 @@
 										</dialog>
 									</td>
 									<td data-label="Solicitante">
-										<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Juan Pérez</strong>
-										<span class="table-subtext" th:text="${tarea.solicitanteUsername ?: ''}">jperez</span>
-										<span class="table-subtext" th:text="${tarea.solicitanteFuero ?: 'Sin fuero informado'}">Oficina</span>
+										<div th:if="${tarea.esTrabajoInterno()}">
+											<strong style="color: #0284c7;">🛠️ Taller de Informática</strong>
+											<span class="table-subtext">Trabajo interno de taller</span>
+										</div>
+										<div th:unless="${tarea.esTrabajoInterno()}">
+											<strong th:text="${tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: 'Sin solicitante'}">Juan Pérez</strong>
+											<span class="table-subtext" th:text="${tarea.solicitanteUsername ?: ''}">jperez</span>
+											<span class="table-subtext" th:text="${tarea.solicitanteFuero ?: 'Sin fuero informado'}">Oficina</span>
+										</div>
 									</td>
 									<td data-label="Equipo">
 										<span th:if="${tarea.equipoId != null}">
@@ -333,10 +345,25 @@
 
 					<form class="equipment-form" th:action="@{/admin/tareas}" th:object="${tareaForm}" method="post">
 						<div class="form-grid">
-							<p class="section-note" style="grid-column: 1 / -1; margin: 0;">
-								Si no se conoce el equipo, deje el campo sin seleccionar y la tarea quedará asociada a PC genérica.
-							</p>
-							<div style="display:flex; flex-direction:column; gap:4px; position:relative;">
+							<label style="grid-column: 1 / -1; margin-bottom: 4px;">
+								<span style="font-size: 0.95rem; font-weight: 700; color: #0284c7;">1. Tipo de trabajo a realizar *</span>
+								<select th:field="*{tipo}" id="tipo-tarea-select" onchange="toggleTipoTarea(this.value)" style="font-weight: 600; padding: 6px 10px;">
+									<option th:each="tipoItem : ${tiposTarea}" th:value="${tipoItem}" th:text="${tipoItem.etiqueta}">Incidente</option>
+								</select>
+							</label>
+
+							<div id="alistamiento-info-box" style="display: none; grid-column: 1 / -1; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 6px;">
+								<strong style="color: #0284c7; display: block; font-size: 0.88rem; margin-bottom: 4px;">🖥️ Armado / Alistamiento de Equipo desde cero</strong>
+								<p style="font-size: 0.8rem; color: #64748b; margin: 0 0 8px 0;">
+									Esta tarea se registrará a su nombre en su panel de trabajo. Al guardar, se dará de alta el equipo en estado <strong>'En armado en taller'</strong>. Una vez completado el montaje e instalación, cerrará la tarea y el equipo quedará automáticamente como <strong>'Disponible en taller'</strong> a la espera de ser entregado.
+								</p>
+								<label style="margin: 0;">
+									<span style="font-size: 0.8rem; font-weight: 600;">Identificador o Código sugerido para la PC (opcional)</span>
+									<input th:field="*{codigoEquipo}" id="codigo-equipo-input" placeholder="Dejar en blanco para autogenerar 'ARMADO-001', 'ARMADO-002'..." style="max-width: 420px; font-size: 0.82rem;">
+								</label>
+							</div>
+
+							<div id="solicitante-container" style="display:flex; flex-direction:column; gap:4px; position:relative;">
 								<span style="font-weight:600; font-size:0.85rem;">Quién solicita *</span>
 								<div class="solicitante-autocomplete-box">
 									<input type="text"
@@ -354,7 +381,7 @@
 								</small>
 								<small class="field-error" th:if="${#fields.hasErrors('solicitanteUsername')}" th:errors="*{solicitanteUsername}">Error</small>
 							</div>
-							<label>
+							<label id="fuero-container">
 								<span>Fuero / Unidad organizativa (opcional)</span>
 								<select th:field="*{solicitanteFuero}" id="solicitante-fuero">
 									<option value="">Sin especificar / Automático</option>
@@ -362,10 +389,10 @@
 								</select>
 								<small class="field-error" th:if="${#fields.hasErrors('solicitanteFuero')}" th:errors="*{solicitanteFuero}">Error</small>
 							</label>
-							<label>
+							<label id="equipo-afectado-container">
 								<span>Equipo afectado</span>
-								<select th:field="*{equipoId}">
-									<option value="">No se conoce el equipo</option>
+								<select th:field="*{equipoId}" id="equipo-afectado-select">
+									<option value="">No se conoce el equipo / PC genérica</option>
 									<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}">PC-INF-001</option>
 								</select>
 							</label>
@@ -548,9 +575,51 @@
 			}
 		}
 
-		// Leer hash inicial al cargar e inicializar autocompletado
+		function toggleTipoTarea(tipo) {
+			const solicitanteBox = document.getElementById('solicitante-container');
+			const fueroBox = document.getElementById('fuero-container');
+			const equipoBox = document.getElementById('equipo-afectado-container');
+			const alistamientoBox = document.getElementById('alistamiento-info-box');
+			const solicitanteInput = document.getElementById('solicitante-input');
+			const responsableSelect = document.getElementById('responsable');
+			const tituloInput = document.getElementById('titulo');
+			const usuarioActual = '[[${usuarioActual}]]';
+
+			const esInterno = (tipo === 'ALISTAMIENTO');
+
+			if (solicitanteBox) {
+				solicitanteBox.style.display = esInterno ? 'none' : 'flex';
+			}
+			if (fueroBox) {
+				fueroBox.style.display = esInterno ? 'none' : 'block';
+			}
+			if (solicitanteInput) {
+				solicitanteInput.required = !esInterno;
+			}
+
+			if (tipo === 'ALISTAMIENTO') {
+				if (alistamientoBox) alistamientoBox.style.display = 'block';
+				if (equipoBox) equipoBox.style.display = 'none';
+				if (tituloInput && (!tituloInput.value || tituloInput.value.trim() === '')) {
+					tituloInput.value = 'Montaje, ensamblado e instalación de equipo nuevo';
+				}
+				if (responsableSelect && usuarioActual) {
+					responsableSelect.value = usuarioActual;
+				}
+			} else {
+				if (alistamientoBox) alistamientoBox.style.display = 'none';
+				if (equipoBox) equipoBox.style.display = 'block';
+			}
+		}
+
+		// Leer hash inicial al cargar e inicializar autocompletado y tipo
 		window.addEventListener('DOMContentLoaded', function() {
 			initSolicitanteAutocomplete();
+
+			const tipoSelect = document.getElementById('tipo-tarea-select');
+			if (tipoSelect) {
+				toggleTipoTarea(tipoSelect.value);
+			}
 
 			const hash = window.location.hash;
 			if (hash === '#tab-nuevo') {

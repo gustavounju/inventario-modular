@@ -91,6 +91,10 @@ public class Equipo {
 	@Column(nullable = false)
 	private boolean activo = true;
 
+	@jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+	@Column(name = "estado_ciclo", nullable = false, length = 40)
+	private EstadoCicloEquipo estadoCiclo = EstadoCicloEquipo.EN_SERVICIO;
+
 	@Column(name = "ultimo_reporte_en")
 	private LocalDateTime ultimoReporteEn;
 
@@ -120,10 +124,28 @@ public class Equipo {
 	public static Equipo crearParaTaller(String nombre) {
 		Equipo equipo = new Equipo(nombre, "Taller de Informática");
 		equipo.ubicacion = "Taller de Informática";
-		equipo.ultimoUsuario = "Sin asignar";
+		equipo.ultimoUsuario = null;
 		equipo.sistemaOperativo = "Pendiente de instalación / relevamiento";
 		equipo.activo = true;
+		equipo.estadoCiclo = EstadoCicloEquipo.EN_ARMADO;
 		return equipo;
+	}
+
+	public EstadoCicloEquipo getEstadoCiclo() {
+		return estadoCiclo;
+	}
+
+	/**
+	 * El armado termino: el equipo queda en el taller a la espera de ser entregado.
+	 *
+	 * @return true si hubo transicion (solo desde EN_ARMADO o EN_REPARACION)
+	 */
+	public boolean marcarDisponibleEnTaller() {
+		if (estadoCiclo != EstadoCicloEquipo.EN_ARMADO && estadoCiclo != EstadoCicloEquipo.EN_REPARACION) {
+			return false;
+		}
+		this.estadoCiclo = EstadoCicloEquipo.DISPONIBLE;
+		return true;
 	}
 
 	public Long getId() {

@@ -412,6 +412,23 @@
             $('solicitante-search').value = '';
             $('solicitante-help').textContent = 'Escriba al menos 2 letras para buscar en Active Directory.';
         }
+        // Listener de tipo de tarea
+        const tipoSelect = $('movil-tipo-select');
+        const updateTipoView = () => {
+            const val = tipoSelect ? tipoSelect.value : 'INCIDENTE';
+            const esInterno = (val === 'ALISTAMIENTO');
+            if ($('movil-solicitante-field')) $('movil-solicitante-field').style.display = esInterno ? 'none' : 'block';
+            if ($('movil-alistamiento-box')) $('movil-alistamiento-box').style.display = val === 'ALISTAMIENTO' ? 'block' : 'none';
+            if ($('solicitante-search')) $('solicitante-search').required = !esInterno;
+            if (val === 'ALISTAMIENTO' && !form.elements.descripcion.value) {
+                form.elements.descripcion.value = 'Montaje, ensamblado e instalación de equipo nuevo en taller';
+            }
+        };
+        if (tipoSelect) {
+            tipoSelect.value = task ? (task.tipo || 'INCIDENTE') : 'INCIDENTE';
+            tipoSelect.onchange = updateTipoView;
+            updateTipoView();
+        }
         // En creacion de tarea: si es telefonista queda libre para que la tome un tecnico.
         // Si es tecnico, pertenece al tecnico creador (autoasignada).
         $('responsable-field').hidden = true;
@@ -443,11 +460,19 @@
         act(async () => {
             const data = Object.fromEntries(new FormData(event.target));
             data.descripcion = data.descripcion?.trim() || '';
-            if (!syncApplicantFromInput()) throw new Error('Indique quien solicito la ayuda.');
-            data.solicitanteUsername = event.target.elements.solicitanteUsername.value?.trim();
-            data.solicitanteNombre = event.target.elements.solicitanteNombre.value?.trim();
-            data.solicitanteFuero = event.target.elements.solicitanteFuero.value?.trim() || 'Sin fuero informado';
-            if (!data.solicitanteUsername) throw new Error('Seleccione el usuario solicitante de Active Directory.');
+            const tipo = data.tipo || 'INCIDENTE';
+            const esInterno = (tipo === 'ALISTAMIENTO');
+            if (!esInterno) {
+                if (!syncApplicantFromInput()) throw new Error('Indique quien solicito la ayuda.');
+                data.solicitanteUsername = event.target.elements.solicitanteUsername.value?.trim();
+                data.solicitanteNombre = event.target.elements.solicitanteNombre.value?.trim();
+                data.solicitanteFuero = event.target.elements.solicitanteFuero.value?.trim() || 'Sin fuero informado';
+                if (!data.solicitanteUsername) throw new Error('Seleccione el usuario solicitante de Active Directory.');
+            } else {
+                data.solicitanteUsername = null;
+                data.solicitanteNombre = 'Taller de Informática';
+                data.solicitanteFuero = 'Taller de Informática';
+            }
             // En movil el tecnico o telefonista carga el problema; el titulo queda derivado para cumplir el contrato API.
             data.titulo = titleFromProblem(data.descripcion);
             data.equipoId = editing?.equipoId || null;

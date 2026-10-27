@@ -19,6 +19,7 @@ import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.PrioridadTareaTecnica;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TipoTareaTecnica;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.AgregarComentarioTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.CambiarEstadoTareaCommand;
@@ -133,6 +134,13 @@ public class TareaTecnicaPageController {
 			RedirectAttributes redirectAttributes) {
 		try {
 			exigirAdministradorTareas(userDetails);
+			if (tareaForm.getTipo() == null) {
+				tareaForm.setTipo(TipoTareaTecnica.INCIDENTE);
+			}
+			if (tareaForm.getTipo().requiereSolicitante() && !StringUtils.hasText(tareaForm.getSolicitanteUsername())) {
+				redirectAttributes.addFlashAttribute("error", "El solicitante es obligatorio para requerimientos e incidentes.");
+				return redireccionTareas(origen);
+			}
 			tareaForm.aplicarReglaResponsable(userDetails.getUsername(), puedeAdministrarTareas(userDetails));
 			if (bindingResult.hasErrors()) {
 				redirectAttributes.addFlashAttribute("error", "Por favor complete todos los campos obligatorios para guardar la tarea.");
@@ -336,6 +344,7 @@ public class TareaTecnicaPageController {
 				.orElse(null));
 		model.addAttribute("estadosTarea", EstadoTareaTecnica.values());
 		model.addAttribute("prioridadesTarea", PrioridadTareaTecnica.values());
+		model.addAttribute("tiposTarea", TipoTareaTecnica.values());
 		model.addAttribute("filtroEstado", estado);
 		model.addAttribute("filtroEquipoId", equipoId);
 		model.addAttribute("filtroResponsable", responsable);
@@ -424,6 +433,10 @@ public class TareaTecnicaPageController {
 
 		private Long equipoId;
 
+		private TipoTareaTecnica tipo = TipoTareaTecnica.INCIDENTE;
+
+		private String codigoEquipo;
+
 		@NotBlank
 		@Size(max = 180)
 		private String titulo;
@@ -431,7 +444,6 @@ public class TareaTecnicaPageController {
 		@Size(max = 1000)
 		private String descripcion;
 
-		@NotBlank
 		@Size(max = 120)
 		private String solicitanteUsername;
 
@@ -452,12 +464,13 @@ public class TareaTecnicaPageController {
 		}
 
 		GuardarTareaTecnicaCommand toCommand(String creadoPor) {
+			TipoTareaTecnica tipoFinal = (tipo != null) ? tipo : TipoTareaTecnica.INCIDENTE;
 			String nombre = org.springframework.util.StringUtils.hasText(solicitanteNombre)
 					? solicitanteNombre.trim()
-					: (org.springframework.util.StringUtils.hasText(solicitanteUsername) ? solicitanteUsername.trim() : "Sin solicitante");
+					: (org.springframework.util.StringUtils.hasText(solicitanteUsername) ? solicitanteUsername.trim() : (tipoFinal.esTrabajoInterno() ? TipoTareaTecnica.SOLICITANTE_TALLER : "Sin solicitante"));
 			String fuero = org.springframework.util.StringUtils.hasText(solicitanteFuero)
 					? solicitanteFuero.trim()
-					: "Sin fuero informado";
+					: (tipoFinal.esTrabajoInterno() ? TipoTareaTecnica.SOLICITANTE_TALLER : "Sin fuero informado");
 			return new GuardarTareaTecnicaCommand(
 					equipoId,
 					titulo,
@@ -467,17 +480,23 @@ public class TareaTecnicaPageController {
 					fuero,
 					prioridad,
 					responsable,
-					creadoPor);
+					creadoPor,
+					tipoFinal,
+					codigoEquipo);
 		}
 
 		void aplicarReglaResponsable(String usernameActual, boolean puedeAsignarResponsable) {
-			if (!puedeAsignarResponsable) {
+			if (!puedeAsignarResponsable || (tipo != null && tipo.esTrabajoInterno() && !org.springframework.util.StringUtils.hasText(responsable))) {
 				this.responsable = usernameActual;
 			}
 		}
 
 		public Long getEquipoId() { return equipoId; }
 		public void setEquipoId(Long equipoId) { this.equipoId = equipoId; }
+		public TipoTareaTecnica getTipo() { return tipo; }
+		public void setTipo(TipoTareaTecnica tipo) { this.tipo = tipo; }
+		public String getCodigoEquipo() { return codigoEquipo; }
+		public void setCodigoEquipo(String codigoEquipo) { this.codigoEquipo = codigoEquipo; }
 		public String getTitulo() { return titulo; }
 		public void setTitulo(String titulo) { this.titulo = titulo; }
 		public String getDescripcion() { return descripcion; }

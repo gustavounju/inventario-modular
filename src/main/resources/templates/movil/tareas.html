@@ -110,11 +110,21 @@
             <input name="solicitanteNombre" type="hidden">
             <input name="solicitanteFuero" type="hidden">
             <input name="responsable" type="hidden">
-            <label>Solicitante
+            <label>Tipo de tarea
+                <select name="tipo" id="movil-tipo-select">
+                    <option value="INCIDENTE" selected>Incidente / Solicitud de servicio</option>
+                    <option value="ALISTAMIENTO">Armado de PC en Taller</option>
+                </select>
+            </label>
+            <div id="movil-alistamiento-box" style="display: none; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 0.82rem;">
+                <span style="font-weight: 600; color: #38bdf8;">🖥️ Alistamiento de equipo</span>
+                <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 0.78rem;">Se creará una PC en Taller (ARMADO-XXX) y la tarea quedará a su nombre. Al cerrarla, la PC pasará a 'Disponible'.</p>
+            </div>
+            <label id="movil-solicitante-field">Solicitante
                 <div class="autocomplete-wrapper">
                     <input id="solicitante-search" type="search" maxlength="180"
                            autocomplete="off" autocapitalize="words"
-                           placeholder="Escriba apellido, nombre o usuario de AD" required>
+                           placeholder="Escriba apellido, nombre o usuario de AD">
                     <div id="solicitante-dropdown" class="autocomplete-dropdown" hidden></div>
                 </div>
                 <span id="solicitante-help" class="field-help">Escriba para buscar y elegir un usuario de Active Directory.</span>

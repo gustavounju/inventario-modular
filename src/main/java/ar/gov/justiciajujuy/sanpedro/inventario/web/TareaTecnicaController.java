@@ -5,6 +5,7 @@ import java.util.List;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.PrioridadTareaTecnica;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TipoTareaTecnica;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.AgregarComentarioTareaCommand;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.CambiarEstadoTareaCommand;
@@ -318,9 +319,11 @@ public class TareaTecnicaController {
 
 	public record GuardarTareaTecnicaRequest(
 			Long equipoId,
+			TipoTareaTecnica tipo,
+			String codigoEquipo,
 			@NotBlank @Size(max = 180) String titulo,
 			@Size(max = 1000) String descripcion,
-			@NotBlank @Size(max = 120) String solicitanteUsername,
+			@Size(max = 120) String solicitanteUsername,
 			@Size(max = 180) String solicitanteNombre,
 			@Size(max = 120) String solicitanteFuero,
 			PrioridadTareaTecnica prioridad,
@@ -332,12 +335,13 @@ public class TareaTecnicaController {
 			if (esTelefonista && responsableFinal != null && responsableFinal.equalsIgnoreCase(userDetails.getUsername())) {
 				responsableFinal = null;
 			}
+			TipoTareaTecnica tipoFinal = (tipo != null) ? tipo : TipoTareaTecnica.INCIDENTE;
 			String nombreFinal = (solicitanteNombre != null && !solicitanteNombre.isBlank())
 					? solicitanteNombre.trim()
-					: (solicitanteUsername != null ? solicitanteUsername.trim() : "Sin solicitante");
+					: (solicitanteUsername != null ? solicitanteUsername.trim() : (tipoFinal.esTrabajoInterno() ? TipoTareaTecnica.SOLICITANTE_TALLER : "Sin solicitante"));
 			String fueroFinal = (solicitanteFuero != null && !solicitanteFuero.isBlank())
 					? solicitanteFuero.trim()
-					: "Sin fuero informado";
+					: (tipoFinal.esTrabajoInterno() ? TipoTareaTecnica.SOLICITANTE_TALLER : "Sin fuero informado");
 			return new GuardarTareaTecnicaCommand(
 					equipoId,
 					titulo,
@@ -347,7 +351,9 @@ public class TareaTecnicaController {
 					fueroFinal,
 					prioridad,
 					responsableFinal,
-					userDetails.getUsername());
+					userDetails.getUsername(),
+					tipoFinal,
+					codigoEquipo);
 		}
 	}
 

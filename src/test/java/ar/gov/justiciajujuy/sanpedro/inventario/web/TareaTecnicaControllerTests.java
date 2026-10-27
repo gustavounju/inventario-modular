@@ -345,6 +345,55 @@ class TareaTecnicaControllerTests {
 			.andExpect(status().isForbidden());
 	}
 
+	@Test
+	void creaTareaAlistamientoSinSolicitante_autoAsignaEquipoYAlCerrarPasaADisponible() throws Exception {
+		String alistamiento = """
+				{
+				  "tipo": "ALISTAMIENTO",
+				  "codigoEquipo": "ARMADO-TEST-001",
+				  "titulo": "Montaje de PC nueva para taller",
+				  "descripcion": "Placa madre, 16GB RAM, SSD 500GB y Windows 11."
+				}
+				""";
+		String createResponse = mockMvc.perform(post("/api/v1/tareas-tecnicas")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(alistamiento))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.tipo").value("ALISTAMIENTO"))
+			.andExpect(jsonPath("$.solicitanteNombre").value("Taller de Informática"))
+			.andExpect(jsonPath("$.responsable").value("admin.local"))
+			.andExpect(jsonPath("$.estado").value("EN_PROCESO"))
+			.andExpect(jsonPath("$.equipoNombre").value("ARMADO-TEST-001"))
+			.andExpect(jsonPath("$.equipoEstadoCiclo").value("EN_ARMADO"))
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+
+		Number id = JsonPath.read(createResponse, "$.id");
+
+		// Al cerrar la tarea tecnica, el equipo ensamblado pasa a DISPONIBLE en el taller
+		String cierre = """
+				{
+				  "estado": "CERRADA",
+				  "observacionesCierre": "Montaje finalizado y SO instalado."
+				}
+				""";
+		mockMvc.perform(patch("/api/v1/tareas-tecnicas/" + id + "/estado")
+				.with(user(adminLocal()))
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cierre))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.estado").value("CERRADA"))
+			.andExpect(jsonPath("$.equipoEstadoCiclo").value("DISPONIBLE"));
+
+		String cicloEnBase = jdbcTemplate.queryForObject(
+				"SELECT estado_ciclo FROM equipos WHERE nombre = 'ARMADO-TEST-001'", String.class);
+		assertEquals("DISPONIBLE", cicloEnBase);
+	}
+
 	private ActiveDirectoryUserDetails adminLocal() {
 		return new ActiveDirectoryUserDetails(
 				"admin.local",
