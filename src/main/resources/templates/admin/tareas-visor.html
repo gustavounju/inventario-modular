@@ -242,7 +242,7 @@
 								</div>
 							</div>
 							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
-							<p class="kcard-desc" th:if="${tarea.descripcion != null and !#strings.isEmpty(tarea.descripcion)}"
+							<p class="kcard-desc" th:if="${tarea.tieneDescripcionDiferente()}"
 							   th:text="${tarea.descripcion}">Descripción</p>
 							<div class="kcard-meta">
 								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
@@ -301,7 +301,7 @@
 								</div>
 							</div>
 							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
-							<p class="kcard-desc" th:if="${tarea.descripcion != null and !tarea.descripcion.isEmpty()}"
+							<p class="kcard-desc" th:if="${tarea.tieneDescripcionDiferente()}"
 							   th:text="${tarea.descripcion}">Descripción</p>
 							<div class="kcard-meta">
 								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
@@ -375,7 +375,7 @@
 								</div>
 							</div>
 							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
-							<p class="kcard-desc" th:if="${tarea.observacionesCierre != null and !#strings.isEmpty(tarea.observacionesCierre)}"
+							<p class="kcard-desc" th:if="${tarea.tieneCierreDiferente()}"
 							   th:text="${tarea.observacionesCierre}">Nota de cierre</p>
 							<div class="kcard-meta">
 								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
@@ -421,7 +421,7 @@
 								<span class="kbadge kbadge--cancelled">✕ Cancelada</span>
 							</div>
 							<h4 class="kcard-title" th:text="${tarea.titulo}">Título de tarea</h4>
-							<p class="kcard-desc" th:if="${tarea.observacionesCierre != null and !#strings.isEmpty(tarea.observacionesCierre)}"
+							<p class="kcard-desc" th:if="${tarea.tieneCierreDiferente()}"
 							   th:text="${tarea.observacionesCierre}">Motivo cancelación</p>
 							<div class="kcard-meta">
 								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>

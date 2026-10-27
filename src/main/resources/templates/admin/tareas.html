@@ -191,7 +191,7 @@
 												  class="authorization-badge is-authorized" style="font-size: 0.7rem; padding: 2px 6px;">Listo en taller</span>
 										</div>
 										<strong th:text="${tarea.titulo}">Revisar fuente</strong>
-										<span class="table-subtext" th:text="${tarea.descripcion ?: 'Sin descripción'}">Detalle</span>
+										<span class="table-subtext" th:if="${tarea.tieneDescripcionDiferente()}" th:text="${tarea.descripcion}">Detalle</span>
 										<span class="table-subtext" th:if="${tarea.observacionesCierre}" th:text="'Cierre: ' + ${tarea.observacionesCierre}" style="color: #4ade80; font-weight: 600;">Cierre</span>
 										<div class="comment-thread" th:if="${comentariosPorTarea[tarea.id] != null and !#lists.isEmpty(comentariosPorTarea[tarea.id])}"
 											 style="margin-top: 8px; border-left: 2px solid var(--border-color); padding-left: 8px;">

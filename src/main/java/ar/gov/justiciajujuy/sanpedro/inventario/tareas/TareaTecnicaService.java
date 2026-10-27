@@ -627,6 +627,20 @@ public class TareaTecnicaService {
 		public boolean esTrabajoInterno() {
 			return tipo != null && tipo.esTrabajoInterno();
 		}
+
+		public boolean tieneDescripcionDiferente() {
+			if (descripcion == null || descripcion.isBlank()) {
+				return false;
+			}
+			return titulo == null || !descripcion.trim().equalsIgnoreCase(titulo.trim());
+		}
+
+		public boolean tieneCierreDiferente() {
+			if (observacionesCierre == null || observacionesCierre.isBlank()) {
+				return false;
+			}
+			return titulo == null || !observacionesCierre.trim().equalsIgnoreCase(titulo.trim());
+		}
 	}
 
 	public record TareaComentarioDetalle(
