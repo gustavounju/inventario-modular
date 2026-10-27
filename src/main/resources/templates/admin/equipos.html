@@ -129,7 +129,7 @@
 										        type="button"
 										        class="primary-action"
 										        style="font-size: 0.82rem; padding: 6px 12px; font-weight: 700; background-color: #3b82f6;"
-										        th:attr="onclick='abrirModalEditarImpresora(' + ${equipo.id} + ', \'' + ${#strings.escapeJavaScript(equipo.nombre)} + '\', \'' + ${#strings.escapeJavaScript(equipo.fuero)} + '\', \'' + ${#strings.escapeJavaScript(equipo.ubicacion ?: '')} + '\', \'' + ${#strings.escapeJavaScript(equipo.ip ?: '')} + '\', \'' + ${#strings.escapeJavaScript(equipo.motherboardSerial ?: '')} + '\')'">
+										        th:attr="onclick='abrirModalEditarImpresora(' + ${equipo.id} + ', \'' + ${#strings.escapeJavaScript(equipo.nombre)} + '\', \'' + ${#strings.escapeJavaScript(equipo.fuero)} + '\', \'' + ${#strings.escapeJavaScript(equipo.ubicacion ?: '')} + '\', \'' + ${#strings.escapeJavaScript(equipo.ip ?: '')} + '\', \'' + ${#strings.escapeJavaScript(equipo.mac ?: '')} + '\', \'' + ${#strings.escapeJavaScript(equipo.motherboardSerial ?: '')} + '\')'">
 											✏️ Editar
 										</button>
 										
@@ -254,7 +254,11 @@
 				</label>
 				<label style="display:block; margin-bottom: 1rem;">
 					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Dirección IP (Opcional)</span>
-					<input type="text" id="edit-impresora-ip" name="ip" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+					<input type="text" id="edit-impresora-ip" name="ip" placeholder="Ej. 10.15.0.25" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px;">
+				</label>
+				<label style="display:block; margin-bottom: 1rem;">
+					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Dirección MAC (Opcional)</span>
+					<input type="text" id="edit-impresora-mac" name="mac" placeholder="Ej. 00:1A:2B:3C:4D:5E" maxlength="45" style="width:100%; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; font-family: monospace;">
 				</label>
 				<label style="display:block; margin-bottom: 1rem;">
 					<span style="display:block; margin-bottom:0.3rem; font-weight: 600;">Número de Serie (S/N)</span>
@@ -310,12 +314,13 @@
 			});
 		}
 
-		function abrirModalEditarImpresora(id, nombre, fuero, ubicacion, ip, sn) {
+		function abrirModalEditarImpresora(id, nombre, fuero, ubicacion, ip, mac, sn) {
 			document.getElementById('edit-impresora-id').value = id;
 			document.getElementById('edit-impresora-nombre').value = nombre || '';
 			document.getElementById('edit-impresora-fuero').value = fuero || '';
 			document.getElementById('edit-impresora-ubicacion').value = ubicacion || '';
 			document.getElementById('edit-impresora-ip').value = ip || '';
+			document.getElementById('edit-impresora-mac').value = mac || '';
 			document.getElementById('edit-impresora-sn').value = sn || '';
 			document.getElementById('modal-editar-impresora').showModal();
 		}

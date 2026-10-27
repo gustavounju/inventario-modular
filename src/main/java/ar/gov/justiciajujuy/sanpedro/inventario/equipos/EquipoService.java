@@ -273,14 +273,14 @@ public class EquipoService {
 		return toDetalle(guardado);
 	}
 
-	public EquipoDetalle crearEquipoManual(String nombre, String fuero, String ubicacion, String ip, String sistemaOperativo, String motherboardSerial) {
+	public EquipoDetalle crearEquipoManual(String nombre, String fuero, String ubicacion, String ip, String mac, String sistemaOperativo, String motherboardSerial) {
 		String nombreNormalizado = normalizarNombre(nombre);
 		if (equipoRepository.findByNombreIgnoreCase(nombreNormalizado).isPresent()) {
 			throw new EquipoDuplicadoException(nombreNormalizado);
 		}
 		Equipo equipo = new Equipo(nombreNormalizado, fuero);
 		equipo.actualizarManualmente(
-				nombreNormalizado, null, fuero, ubicacion, ip, null, sistemaOperativo,
+				nombreNormalizado, null, fuero, ubicacion, ip, mac, sistemaOperativo,
 				null, null, null, null, null, null, null, motherboardSerial, null, null, null, null, true);
 		Equipo guardado = equipoRepository.save(equipo);
 
@@ -289,6 +289,10 @@ public class EquipoService {
 					"Equipo manual '" + nombreNormalizado + "' creado.");
 		}
 		return toDetalle(guardado);
+	}
+
+	public EquipoDetalle crearEquipoManual(String nombre, String fuero, String ubicacion, String ip, String sistemaOperativo, String motherboardSerial) {
+		return crearEquipoManual(nombre, fuero, ubicacion, ip, null, sistemaOperativo, motherboardSerial);
 	}
 
 	@Transactional

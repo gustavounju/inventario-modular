@@ -348,12 +348,13 @@ public class EquipoPageController {
 			@RequestParam String fuero,
 			@RequestParam String ubicacion,
 			@RequestParam(required = false) String ip,
+			@RequestParam(required = false) String mac,
 			RedirectAttributes redirectAttributes) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
 		}
 		try {
-			EquipoDetalle nuevaImp = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, "Impresora de Red", null);
+			EquipoDetalle nuevaImp = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, mac, "Impresora de Red", null);
 			equipoService.asignarImpresoraRed(id, nuevaImp.id());
 			redirectAttributes.addFlashAttribute("mensajeImpresora", "Impresora de red '" + nombre + "' creada y vinculada correctamente al puesto.");
 		} catch (EquipoDuplicadoException e) {
@@ -547,6 +548,7 @@ public class EquipoPageController {
 			@RequestParam String fuero,
 			@RequestParam String ubicacion,
 			@RequestParam(required = false) String ip,
+			@RequestParam(required = false) String mac,
 			@RequestParam(required = false) String motherboardSerial,
 			RedirectAttributes redirectAttributes) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
@@ -558,7 +560,7 @@ public class EquipoPageController {
 				fuero,
 				ubicacion,
 				ip,
-				null,
+				mac,
 				"Impresora de Red",
 				null, null, null, null, null, null, null, motherboardSerial, null, null, null, null, null, true
 		));
