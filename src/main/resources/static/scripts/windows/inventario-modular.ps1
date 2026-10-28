@@ -130,21 +130,72 @@ function Get-FirstIPv4 {
     return $Net.IPAddress
 }
 
-function Get-PrinterName {
+function Get-PrinterInfo {
+    $Info = @{ Name = ""; Ip = ""; IsNetwork = $false; Port = "" }
     try {
-        $DefaultPrinter = Get-InventoryClass -ClassName "Win32_Printer" | Where-Object { $_.Default -eq $true } | Select-Object -First 1
-        if ($DefaultPrinter -and $DefaultPrinter.Name) {
-            return $DefaultPrinter.Name
+        $Printers = Get-InventoryClass -ClassName "Win32_Printer"
+        if (-not $Printers) { return $Info }
+
+        $PhysicalPrinters = $Printers | Where-Object { $_.Name -notmatch "PDF|XPS|OneNote|Fax" }
+        if (-not $PhysicalPrinters) { return $Info }
+
+        $Selected = $PhysicalPrinters | Where-Object { $_.Default -eq $true } | Select-Object -First 1
+        if (-not $Selected) {
+            $Selected = $PhysicalPrinters | Select-Object -First 1
         }
-        $Printer = Get-InventoryClass -ClassName "Win32_Printer" | Where-Object { $_.Name -notmatch "PDF|XPS|OneNote|Fax" } | Select-Object -First 1
-        if ($Printer -and $Printer.Name) {
-            return $Printer.Name
+        if (-not $Selected) { return $Info }
+
+        $Info.Name = [string]$Selected.Name
+        $Info.Port = [string]$Selected.PortName
+        $Location = [string]$Selected.Location
+        $IsNet = [bool]$Selected.Network
+
+        $PrinterIp = ""
+        # 1. WSD o HTTP en Location (comun en Windows 10/11 para impresoras WiFi/Red)
+        if ($Location -match 'https?://(\d{1,3}(?:\.\d{1,3}){3})') {
+            $PrinterIp = $matches[1]
+            $IsNet = $true
         }
+        # 2. PortName con IP directa (ej: 192.168.1.9)
+        elseif ($Info.Port -match '^(\d{1,3}(?:\.\d{1,3}){3})$') {
+            $PrinterIp = $matches[1]
+            $IsNet = $true
+        }
+        # 3. PortName con prefijo o sufijo que contiene una IP (ej: IP_192.168.1.9)
+        elseif ($Info.Port -match '(\d{1,3}(?:\.\d{1,3}){3})') {
+            $PrinterIp = $matches[1]
+            $IsNet = $true
+        }
+        # 4. Puerto estandar TCP/IP registrado en Win32_TCPIPPrinterPort
+        if (-not $PrinterIp -and (Test-HasText $Info.Port)) {
+            try {
+                $TcpPort = Get-InventoryClass -ClassName "Win32_TCPIPPrinterPort" -Filter "Name = '$($Info.Port)'"
+                if ($TcpPort -and $TcpPort.HostAddress -and $TcpPort.HostAddress -match '^\d{1,3}(?:\.\d{1,3}){3}$') {
+                    $PrinterIp = $TcpPort.HostAddress
+                    $IsNet = $true
+                }
+            } catch {}
+        }
+        # 5. Puerto WSD: si el puerto empieza con WSD-, es de red
+        if ($Info.Port -match '^WSD-') {
+            $IsNet = $true
+        }
+        # 6. Nombre UNC (\\servidor\cola)
+        if ($Info.Name -match '^\\\\') {
+            $IsNet = $true
+        }
+
+        $Info.Ip = $PrinterIp
+        $Info.IsNetwork = $IsNet
+    } catch {
+        # Silencioso
     }
-    catch {
-        return ""
-    }
-    return ""
+    return $Info
+}
+
+function Get-PrinterName {
+    $Info = Get-PrinterInfo
+    return $Info.Name
 }
 
 function Get-ActiveDirectoryInfo {
@@ -464,7 +515,10 @@ $Json += '"motherboardSerial":"' + (ConvertTo-JsonString $MotherboardDetails.Ser
 $Json += '"monitores":"' + (ConvertTo-JsonString $Monitors) + '",'
 $Json += '"teclado":"' + (ConvertTo-JsonString $Keyboard) + '",'
 $Json += '"mouse":"' + (ConvertTo-JsonString $Mouse) + '",'
-$Json += '"impresora":"' + (ConvertTo-JsonString (Get-PrinterName)) + '",'
+$PrinterInfo = Get-PrinterInfo
+$Json += '"impresora":"' + (ConvertTo-JsonString $PrinterInfo.Name) + '",'
+$Json += '"impresoraIp":"' + (ConvertTo-JsonString $PrinterInfo.Ip) + '",'
+$Json += '"impresoraEnRed":' + ($PrinterInfo.IsNetwork.ToString().ToLower()) + ','
 $Json += '"activo":true'
 $Json += "}"
 

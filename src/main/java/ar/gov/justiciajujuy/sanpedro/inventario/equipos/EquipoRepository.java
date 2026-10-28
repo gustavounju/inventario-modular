@@ -19,6 +19,8 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 
 	List<Equipo> findByImpresoraRedAsignadaId(Long id);
 
+	List<Equipo> findByIp(String ip);
+
 	@Query("""
 			SELECT e
 			FROM Equipo e

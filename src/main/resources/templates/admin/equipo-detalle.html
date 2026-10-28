@@ -399,14 +399,17 @@
 					<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:16px;">
 						<div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:12px;">
 							<span style="font-size:0.75rem; text-transform:uppercase; color:#64748b; font-weight:700; display:block;">Detectada en Windows (Script)</span>
-							<div style="margin-top:4px; font-size:0.95rem; font-weight:600; color:#0f172a;" th:text="${equipo.impresora ?: 'Sin impresora detectada en Windows'}">Brother HL-2270DW</div>
+							<div style="margin-top:4px; font-size:0.95rem; font-weight:600; color:#0f172a;">
+								<span th:text="${equipo.impresora ?: 'Sin impresora detectada en Windows'}">Brother HL-2270DW</span>
+								<span th:if="${equipo.impresoraIp != null and !#strings.isEmpty(equipo.impresoraIp)}" style="color:#0284c7; font-weight:600; font-size:0.88rem;" th:text="' [IP: ' + ${equipo.impresoraIp} + ']'"></span>
+							</div>
 							<small style="color:#64748b; font-size:0.78rem;">Modelo detectado físicamente o instalado en el SO del puesto.</small>
 						</div>
 
 						<div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:12px;">
 							<span style="font-size:0.75rem; text-transform:uppercase; color:#64748b; font-weight:700; display:block;">Activo de Red Vinculado (Para Acta)</span>
 							<div style="margin-top:4px; font-size:0.95rem; font-weight:600;">
-								<span th:if="${equipo.impresoraRedNombre != null}" style="color:#16a34a;" th:text="${equipo.impresoraRedNombre + (equipo.impresoraRedIp != null ? ' (IP: ' + equipo.impresoraRedIp + ')' : '')}">HP LaserJet</span>
+								<span th:if="${equipo.impresoraRedNombre != null}" style="color:#16a34a;" th:text="${equipo.impresoraRedNombre + (equipo.impresoraRedIp != null and !#strings.isEmpty(equipo.impresoraRedIp) ? ' (IP: ' + equipo.impresoraRedIp + ')' : (equipo.impresoraIp != null and !#strings.isEmpty(equipo.impresoraIp) ? ' (IP: ' + equipo.impresoraIp + ')' : ' (Sin IP)'))}">HP LaserJet</span>
 								<span th:unless="${equipo.impresoraRedNombre != null}" style="color:#d97706;">⚠️ Usa impresora de red genérica (sin vincular a activo específico)</span>
 							</div>
 							<small style="color:#64748b; font-size:0.78rem;" th:text="${equipo.impresoraRedNombre != null ? 'El acta incluirá los datos específicos de este activo.' : 'El acta saldrá con leyenda genérica de impresión en red.'}"></small>
@@ -423,7 +426,7 @@
 								<option value="">-- Usar impresora de red genérica --</option>
 								<option th:each="imp : ${impresorasRed}" th:value="${imp.id}"
 										th:selected="${equipo.impresoraRedId != null and equipo.impresoraRedId == imp.id}"
-										th:text="${imp.nombre + (imp.ip != null ? ' [IP: ' + imp.ip + ']' : '') + ' - ' + imp.ubicacion}">
+										th:text="${imp.nombre + (imp.ip != null and !#strings.isEmpty(imp.ip) ? ' [IP: ' + imp.ip + ']' : '') + ' - ' + imp.ubicacion}">
 								</option>
 							</select>
 							<button type="submit" class="secondary-action" style="padding:6px 14px; font-size:0.85rem; font-weight:600;">
@@ -454,7 +457,7 @@
 							
 							<label style="display:flex; flex-direction:column; gap:4px; font-size:0.85rem; font-weight:600; color:#334155;">
 								Dirección IP (opcional)
-								<input type="text" name="ip" placeholder="ej. 10.15.0.25" maxlength="45"
+								<input type="text" name="ip" th:value="${equipo.impresoraIp ?: ''}" placeholder="ej. 10.15.0.25" maxlength="45"
 									   style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem;">
 							</label>
 
@@ -466,14 +469,34 @@
 
 							<label style="display:flex; flex-direction:column; gap:4px; font-size:0.85rem; font-weight:600; color:#334155;">
 								Ubicación
-								<input type="text" name="ubicacion" th:value="${equipo.ubicacion ?: 'Mesa de Entradas'}" required maxlength="120"
-									   style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem;">
+								<select id="modalImpRedUbicacion" name="ubicacion" required
+										onchange="const sel = this.options[this.selectedIndex]; const f = sel.getAttribute('data-fuero'); if(f &amp;&amp; f.trim() !== '') { document.getElementById('modalImpRedFuero').value = f; }"
+										style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem; background:#fff;">
+									<option value="">-- Seleccionar ubicación cargada --</option>
+									<option th:if="${equipo.ubicacion != null and !'Sin ubicación asignada'.equalsIgnoreCase(equipo.ubicacion) and !#lists.contains(ubicacionesActivas.![nombre], equipo.ubicacion)}"
+											th:value="${equipo.ubicacion}"
+											th:text="${equipo.ubicacion + ' (Actual del puesto)'}"
+											th:attr="data-fuero=${equipo.fuero}"
+											selected>
+									</option>
+									<option th:each="u : ${ubicacionesActivas}"
+											th:value="${u.nombre}"
+											th:attr="data-fuero=${u.fuero}"
+											th:selected="${equipo.ubicacion != null and equipo.ubicacion == u.nombre}"
+											th:text="${u.nombre + (u.fuero != null and !#strings.isEmpty(u.fuero) ? ' (' + u.fuero + ')' : '')}">
+									</option>
+								</select>
 							</label>
 
 							<label style="display:flex; flex-direction:column; gap:4px; font-size:0.85rem; font-weight:600; color:#334155;">
 								Fuero
-								<input type="text" name="fuero" th:value="${equipo.fuero ?: 'Civil y Comercial'}" required maxlength="120"
+								<input type="text" id="modalImpRedFuero" name="fuero" list="listaFuerosImpRed"
+									   th:value="${equipo.fuero != null and !'Desconocido'.equalsIgnoreCase(equipo.fuero) ? equipo.fuero : ''}"
+									   placeholder="ej. Dpto. Informática / Civil 1" required maxlength="120"
 									   style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.9rem;">
+								<datalist id="listaFuerosImpRed">
+									<option th:each="f : ${fuerosDisponibles}" th:value="${f}"></option>
+								</datalist>
 							</label>
 						</div>
 
@@ -491,7 +514,7 @@
 						<thead>
 							<tr>
 								<th>Activa</th>
-								<th>Descripción</th>
+								<th>Impresora / Modelo</th>
 								<th>Origen</th>
 								<th th:if="${puedeEditarComponentes}">Acción</th>
 							</tr>
@@ -502,7 +525,11 @@
 									<span th:if="${imp.esImpresoraActiva}">✅</span>
 									<span th:unless="${imp.esImpresoraActiva}" style="color:#d1d5db;">○</span>
 								</td>
-								<td th:text="${imp.descripcion}">HP LaserJet</td>
+								<td>
+									<strong th:text="${imp.modelo != null and !#strings.isEmpty(imp.modelo) ? imp.modelo : (imp.descripcion != null and !#strings.isEmpty(imp.descripcion) ? imp.descripcion : 'Impresora local')}">HP LaserJet</strong>
+									<small th:if="${imp.serial != null and !#strings.isEmpty(imp.serial)}" style="display:block; color:var(--text-muted); font-size:0.78rem;" th:text="'S/N: ' + ${imp.serial}"></small>
+									<small th:if="${imp.modelo != null and imp.descripcion != null and imp.descripcion != imp.modelo and imp.descripcion != 'Impresora detectada'}" style="display:block; color:var(--text-muted); font-size:0.78rem;" th:text="${imp.descripcion}"></small>
+								</td>
 								<td><span class="status-badge" th:text="${imp.origen}">SCRIPT</span></td>
 								<td th:if="${puedeEditarComponentes}">
 									<form th:unless="${imp.esImpresoraActiva}"

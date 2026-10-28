@@ -140,12 +140,14 @@
 							<td>IMPRESORA EN RED</td>
 							<td th:text="${equipo.nombre}">Nombre de Impresora</td>
 							<td th:text="${equipo.fuero}">Fuero</td>
-							<td th:text="${equipo.motherboardSerial ?: '-'}">Serial</td>
+							<td th:text="${(equipo.ip != null and !equipo.ip.isBlank()) ? 'IP: ' + equipo.ip + (equipo.motherboardSerial != null and !equipo.motherboardSerial.isBlank() ? ' / S/N: ' + equipo.motherboardSerial : '') : (equipo.motherboardSerial ?: '-')}">Serial</td>
 						</tr>
 						<!-- Fila especial si la PC imprime en red (pero no es una impresora en sí) -->
 						<tr th:if="${impresoraEnRed and !esImpresora}">
 							<td>IMPRESORA</td>
-							<td colspan="3" style="font-style:italic; color:#555;" th:text="${equipo.impresoraRedNombre != null ? 'Imprime en red — ' + equipo.impresoraRedNombre + ' (' + (equipo.impresoraRedIp ?: 'IP no registrada') + ') - ' + (equipo.impresoraRedFuero ?: 'Ubicación desconocida') : 'Imprime en red — sin impresora local (Genérica)'}">Imprime en red — sin impresora local</td>
+							<td th:text="${(equipo.impresoraRedFuero != null and !equipo.impresoraRedFuero.isBlank() and !'Desconocido'.equalsIgnoreCase(equipo.impresoraRedFuero)) ? 'Imprime en red (' + equipo.impresoraRedFuero + ')' : ((equipo.impresoraRedNombre != null or (equipo.impresora != null and !equipo.impresora.isBlank()) or (equipo.impresoraIp != null and !equipo.impresoraIp.isBlank())) ? 'Imprime en red' : 'Imprime en red — sin impresora local asignada')}">Imprime en red</td>
+							<td th:text="${equipo.impresoraRedNombre ?: ((equipo.impresora != null and !equipo.impresora.isBlank()) ? equipo.impresora : '-')}">Brother HL-2270DW series Printer</td>
+							<td th:text="${(equipo.impresoraRedIp != null and !equipo.impresoraRedIp.isBlank()) ? 'IP: ' + equipo.impresoraRedIp : ((equipo.impresoraIp != null and !equipo.impresoraIp.isBlank()) ? 'IP: ' + equipo.impresoraIp : '-')}">IP: 192.168.1.9</td>
 						</tr>
 						<tr th:if="${#lists.isEmpty(componentes) and !impresoraEnRed and !esImpresora}">
 							<td colspan="4" style="text-align: center; font-style: italic;">No hay componentes registrados para este equipo.</td>

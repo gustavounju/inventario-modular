@@ -420,6 +420,7 @@ public class ComponenteService {
 					detectado.getUbicacion(),
 					observacionConsolidada(detectado.getObservaciones()),
 					true);
+			relevado.setEsImpresoraActiva(detectado.isEsImpresoraActiva());
 					
 			// Limpieza de duplicados en el propio equipo (ej. piezas pre-cargadas desde Taller)
 			List<Componente> componentesEquipo = componenteRepository.findByEquipoIdOrderByTipoAscDescripcionAsc(equipoId);
@@ -517,16 +518,20 @@ public class ComponenteService {
 		registrarSiHayDato(equipo, TipoComponente.TECLADO, "Teclado detectado", null, command.teclado(), null, null, "Puesto de trabajo", command.teclado());
 		registrarSiHayDato(equipo, TipoComponente.MOUSE, "Mouse detectado", null, command.mouse(), null, null, "Puesto de trabajo", command.mouse());
 		if (equipo.getImpresoraRedAsignada() == null) {
-			registrarSiHayDato(equipo, TipoComponente.IMPRESORA, "Impresora detectada", null, command.impresora(), null, null, "Puesto de trabajo", command.impresora());
+			String descImpresora = StringUtils.hasText(command.impresora()) ? command.impresora().trim() : "Impresora detectada";
+			registrarSiHayDato(equipo, TipoComponente.IMPRESORA, descImpresora, null, command.impresora(), null, null, "Puesto de trabajo", command.impresora());
 		}
-		// Detección automática de impresora en red: si el nombre contiene \\ (UNC path) o una IP
-		if (command.impresora() != null) {
-			boolean esEnRed = command.impresora().contains("\\\\") ||
-					command.impresora().matches(".*\\d+\\.\\d+\\.\\d+\\.\\d+.*");
-			if (esEnRed) {
-				equipo.setImpresoraEnRed(true);
-				equipoRepository.save(equipo);
+		// Detección automática de impresora en red: si el script reporta flag de red, tiene IP, contiene \\ (UNC path) o una IP
+		boolean esEnRed = Boolean.TRUE.equals(command.impresoraEnRed()) ||
+				StringUtils.hasText(command.impresoraIp()) ||
+				(command.impresora() != null && (command.impresora().contains("\\\\") || command.impresora().matches(".*\\d+\\.\\d+\\.\\d+\\.\\d+.*")));
+		if (esEnRed) {
+			equipo.setImpresoraEnRed(true);
+			if (equipo.getImpresoraRedAsignada() != null && (!StringUtils.hasText(equipo.getImpresoraRedAsignada().getIp()) || "Sin IP".equalsIgnoreCase(equipo.getImpresoraRedAsignada().getIp())) && StringUtils.hasText(command.impresoraIp())) {
+				equipo.getImpresoraRedAsignada().setIp(command.impresoraIp().trim());
+				equipoRepository.save(equipo.getImpresoraRedAsignada());
 			}
+			equipoRepository.save(equipo);
 		}
 		auditoriaService.registrar("COMPONENTES", "REGISTRAR_SCRIPT", "Equipo", equipoId,
 				"Se registraron componentes detectados por script para " + equipo.getNombre() + ".");

@@ -123,7 +123,9 @@ public class EquipoPageController {
 			Model model,
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestParam(required = false) String q,
-			@RequestParam(required = false) String estado) {
+			@RequestParam(required = false) String estado,
+			@RequestParam(required = false, defaultValue = "nombre") String orden,
+			@RequestParam(required = false, defaultValue = "asc") String dir) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para ver equipos.");
 		}
@@ -187,10 +189,6 @@ public class EquipoPageController {
 			listaFiltrada = equiposEnProduccion;
 		}
 
-		var resultadoEquipos = new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoPagina(
-				listaFiltrada,
-				new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.Paginacion(0, 50, listaFiltrada.size(), 1));
-
 		// 3.5 Mapeo de nombres reales de usuarios
 		var nombresUsuarios = new java.util.HashMap<String, String>();
 		if (activeDirectoryDomainService != null) {
@@ -198,7 +196,7 @@ public class EquipoPageController {
 			if (dominioUsuarios.disponible()) {
 				var dict = dominioUsuarios.usuarios().stream()
 						.collect(Collectors.toMap(u -> u.username().toLowerCase(), u -> u.nombreVisible(), (a, b) -> a));
-				for (var e : resultadoEquipos.equipos()) {
+				for (var e : listaFiltrada) {
 					if (e.ultimoUsuario() != null) {
 						String raw = e.ultimoUsuario();
 						String tempKey = raw;
@@ -223,9 +221,107 @@ public class EquipoPageController {
 			}
 		}
 
+		// 3.6 Ordenamiento configurable (por fuero, usuario, nombre, ubicacion o fecha)
+		String ordenFinal = "nombre";
+		boolean asc = true;
+
+		if (org.springframework.util.StringUtils.hasText(orden)) {
+			String o = orden.trim().toLowerCase();
+			if (o.endsWith("_desc")) {
+				ordenFinal = o.substring(0, o.length() - 5);
+				asc = false;
+			} else if (o.endsWith("_asc")) {
+				ordenFinal = o.substring(0, o.length() - 4);
+				asc = true;
+			} else {
+				ordenFinal = o;
+				if ("desc".equalsIgnoreCase(dir)) {
+					asc = false;
+				}
+			}
+		} else if ("desc".equalsIgnoreCase(dir)) {
+			asc = false;
+		}
+
+		final boolean finalAsc = asc;
+		java.util.Comparator<EquipoService.EquipoResumen> comparator;
+		switch (ordenFinal) {
+			case "fuero":
+				java.util.Comparator<EquipoService.EquipoResumen> fueroComp = (e1, e2) -> {
+					boolean empty1 = e1.fuero() == null || e1.fuero().isBlank() || "Sin fuero".equalsIgnoreCase(e1.fuero());
+					boolean empty2 = e2.fuero() == null || e2.fuero().isBlank() || "Sin fuero".equalsIgnoreCase(e2.fuero());
+					if (empty1 && empty2) return 0;
+					if (empty1) return 1;
+					if (empty2) return -1;
+					int c = e1.fuero().compareToIgnoreCase(e2.fuero());
+					return finalAsc ? c : -c;
+				};
+				comparator = fueroComp.thenComparing(e -> e.nombre() != null ? e.nombre().toLowerCase() : "");
+				break;
+			case "usuario":
+				java.util.Comparator<EquipoService.EquipoResumen> usuarioComp = (e1, e2) -> {
+					String u1 = e1.ultimoUsuario();
+					String u2 = e2.ultimoUsuario();
+					boolean empty1 = u1 == null || u1.isBlank() || "Sin asignar".equalsIgnoreCase(u1);
+					boolean empty2 = u2 == null || u2.isBlank() || "Sin asignar".equalsIgnoreCase(u2);
+					if (empty1 && empty2) return 0;
+					if (empty1) return 1;
+					if (empty2) return -1;
+					String disp1 = nombresUsuarios.getOrDefault(u1, u1);
+					String disp2 = nombresUsuarios.getOrDefault(u2, u2);
+					int c = disp1.compareToIgnoreCase(disp2);
+					return finalAsc ? c : -c;
+				};
+				comparator = usuarioComp.thenComparing(e -> e.nombre() != null ? e.nombre().toLowerCase() : "");
+				break;
+			case "ubicacion":
+				java.util.Comparator<EquipoService.EquipoResumen> ubicacionComp = (e1, e2) -> {
+					boolean empty1 = e1.ubicacion() == null || e1.ubicacion().isBlank() || "Sin ubicación asignada".equalsIgnoreCase(e1.ubicacion());
+					boolean empty2 = e2.ubicacion() == null || e2.ubicacion().isBlank() || "Sin ubicación asignada".equalsIgnoreCase(e2.ubicacion());
+					if (empty1 && empty2) return 0;
+					if (empty1) return 1;
+					if (empty2) return -1;
+					int c = e1.ubicacion().compareToIgnoreCase(e2.ubicacion());
+					return finalAsc ? c : -c;
+				};
+				comparator = ubicacionComp.thenComparing(e -> e.nombre() != null ? e.nombre().toLowerCase() : "");
+				break;
+			case "fecha":
+			case "reporte":
+				java.util.Comparator<EquipoService.EquipoResumen> reporteComp = (e1, e2) -> {
+					boolean empty1 = e1.ultimoReporteEn() == null;
+					boolean empty2 = e2.ultimoReporteEn() == null;
+					if (empty1 && empty2) return 0;
+					if (empty1) return 1;
+					if (empty2) return -1;
+					int c = e1.ultimoReporteEn().compareTo(e2.ultimoReporteEn());
+					return finalAsc ? c : -c;
+				};
+				comparator = reporteComp.thenComparing(e -> e.nombre() != null ? e.nombre().toLowerCase() : "");
+				break;
+			case "nombre":
+			default:
+				java.util.Comparator<EquipoService.EquipoResumen> nombreComp = (e1, e2) -> {
+					String n1 = e1.nombre() != null ? e1.nombre() : "";
+					String n2 = e2.nombre() != null ? e2.nombre() : "";
+					int c = n1.compareToIgnoreCase(n2);
+					return finalAsc ? c : -c;
+				};
+				comparator = nombreComp;
+				break;
+		}
+
+		List<EquipoService.EquipoResumen> listaOrdenada = listaFiltrada.stream().sorted(comparator).toList();
+
+		var resultadoEquipos = new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoPagina(
+				listaOrdenada,
+				new ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.Paginacion(0, 100, listaOrdenada.size(), 1));
+
 		// 4. Carga de atributos en el modelo para renderizado en Thymeleaf
 		model.addAttribute("query", q == null ? "" : q.trim());
 		model.addAttribute("estadoFiltro", estado);
+		model.addAttribute("orden", ordenFinal);
+		model.addAttribute("dir", asc ? "asc" : "desc");
 		model.addAttribute("totalEquipos", totalEquipos);
 		model.addAttribute("sincronizadosCount", sincronizadosCount);
 		model.addAttribute("pendientesGemeloCount", pendientesGemeloCount);
@@ -345,16 +441,23 @@ public class EquipoPageController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable Long id,
 			@RequestParam String nombre,
-			@RequestParam String fuero,
-			@RequestParam String ubicacion,
+			@RequestParam(required = false) String fuero,
+			@RequestParam(required = false) String ubicacion,
 			@RequestParam(required = false) String ip,
 			@RequestParam(required = false) String mac,
 			RedirectAttributes redirectAttributes) {
 		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para crear equipos.");
 		}
+		EquipoDetalle equipoHost = obtenerEquipoOResponder404(id);
+		String fueroFinal = (fuero != null && !fuero.isBlank() && !"Desconocido".equalsIgnoreCase(fuero.trim()))
+				? fuero.trim()
+				: (equipoHost.fuero() != null && !equipoHost.fuero().isBlank() ? equipoHost.fuero().trim() : "Desconocido");
+		String ubicacionFinal = (ubicacion != null && !ubicacion.isBlank() && !"Sin ubicación asignada".equalsIgnoreCase(ubicacion.trim()))
+				? ubicacion.trim()
+				: (equipoHost.ubicacion() != null && !equipoHost.ubicacion().isBlank() ? equipoHost.ubicacion().trim() : "Sin ubicación asignada");
 		try {
-			EquipoDetalle nuevaImp = equipoService.crearEquipoManual(nombre, fuero, ubicacion, ip, mac, "Impresora de Red", null);
+			EquipoDetalle nuevaImp = equipoService.crearEquipoManual(nombre, fueroFinal, ubicacionFinal, ip, mac, "Impresora de Red", null);
 			equipoService.asignarImpresoraRed(id, nuevaImp.id());
 			redirectAttributes.addFlashAttribute("mensajeImpresora", "Impresora de red '" + nombre + "' creada y vinculada correctamente al puesto.");
 		} catch (EquipoDuplicadoException e) {
@@ -798,7 +901,7 @@ public class EquipoPageController {
 		model.addAttribute("relevamientoConsolidado", false);
 
 		// Cálculo de habilitación del acta (impresora activa o en red configurada)
-		var impresorasGestion = listaComponentes.stream()
+		var impresorasGestion = componentesGestion.stream()
 				.filter(c -> c.tipo() == TipoComponente.IMPRESORA)
 				.toList();
 		boolean esImpresoraDeRed = "Impresora de Red".equals(equipo.sistemaOperativo());

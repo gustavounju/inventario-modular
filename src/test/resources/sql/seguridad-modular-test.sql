@@ -82,6 +82,7 @@ CREATE TABLE equipos (
   mouse VARCHAR(180),
   impresora VARCHAR(180),
   impresora_en_red BOOLEAN NOT NULL DEFAULT FALSE,
+  impresora_ip VARCHAR(45),
   impresora_red_id BIGINT,
   monitoreo VARCHAR(60) NOT NULL DEFAULT 'SIN_REPORTE',
   activo BOOLEAN NOT NULL DEFAULT TRUE,

@@ -78,6 +78,9 @@ public class Equipo {
 	@Column(length = 180)
 	private String impresora;
 
+	@Column(name = "impresora_ip", length = 45)
+	private String impresoraIp;
+
 	@Column(name = "impresora_en_red", nullable = false)
 	private boolean impresoraEnRed = false;
 
@@ -164,12 +167,24 @@ public class Equipo {
 		return fuero;
 	}
 
+	public void setFuero(String fuero) {
+		this.fuero = fuero;
+	}
+
 	public String getUbicacion() {
 		return ubicacion;
 	}
 
+	public void setUbicacion(String ubicacion) {
+		this.ubicacion = ubicacion;
+	}
+
 	public String getIp() {
 		return ip;
+	}
+
+	public void setIp(String ip) {
+		this.ip = ip;
 	}
 
 	public String getMac() {
@@ -240,6 +255,14 @@ public class Equipo {
 		this.impresora = impresora;
 	}
 
+	public String getImpresoraIp() {
+		return impresoraIp;
+	}
+
+	public void setImpresoraIp(String impresoraIp) {
+		this.impresoraIp = impresoraIp;
+	}
+
 	public boolean isImpresoraEnRed() {
 		return impresoraEnRed;
 	}
@@ -287,6 +310,8 @@ public class Equipo {
 			String teclado,
 			String mouse,
 			String impresora,
+			String impresoraIp,
+			Boolean impresoraEnRed,
 			boolean activo,
 			LocalDateTime reportadoEn) {
 		this.ultimoUsuario = ultimoUsuario;
@@ -307,6 +332,21 @@ public class Equipo {
 		this.teclado = teclado;
 		this.mouse = mouse;
 		this.impresora = impresora;
+		this.impresoraIp = impresoraIp;
+		if (impresoraEnRed != null) {
+			this.impresoraEnRed = impresoraEnRed;
+		}
+		if (this.impresoraRedAsignada != null) {
+			if ((this.impresoraRedAsignada.getIp() == null || this.impresoraRedAsignada.getIp().isBlank() || "Sin IP".equalsIgnoreCase(this.impresoraRedAsignada.getIp())) && (impresoraIp != null && !impresoraIp.isBlank())) {
+				this.impresoraRedAsignada.setIp(impresoraIp);
+			}
+			if ((this.impresoraRedAsignada.getFuero() == null || this.impresoraRedAsignada.getFuero().isBlank() || "Desconocido".equalsIgnoreCase(this.impresoraRedAsignada.getFuero())) && (fuero != null && !fuero.isBlank() && !"Desconocido".equalsIgnoreCase(fuero))) {
+				this.impresoraRedAsignada.setFuero(fuero);
+			}
+			if ((this.impresoraRedAsignada.getUbicacion() == null || this.impresoraRedAsignada.getUbicacion().isBlank() || "Sin ubicación asignada".equalsIgnoreCase(this.impresoraRedAsignada.getUbicacion()) || "Mesa de Entradas".equalsIgnoreCase(this.impresoraRedAsignada.getUbicacion())) && (ubicacion != null && !ubicacion.isBlank() && !"Sin ubicación asignada".equalsIgnoreCase(ubicacion))) {
+				this.impresoraRedAsignada.setUbicacion(ubicacion);
+			}
+		}
 		this.activo = activo;
 		this.monitoreo = "REPORTADO";
 		this.ultimoReporteEn = reportadoEn;

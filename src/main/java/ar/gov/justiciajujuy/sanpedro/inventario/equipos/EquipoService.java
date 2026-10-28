@@ -227,8 +227,18 @@ public class EquipoService {
 				textoOpcional(command.teclado()),
 				textoOpcional(command.mouse()),
 				textoOpcional(command.impresora()),
+				textoOpcional(command.impresoraIp()),
+				command.impresoraEnRed(),
 				command.activo(),
 				LocalDateTime.now(clock));
+		if (equipo.isImpresoraEnRed() && equipo.getImpresoraRedAsignada() == null) {
+			if (StringUtils.hasText(equipo.getImpresoraIp())) {
+				equipoRepository.findByIp(equipo.getImpresoraIp().trim()).stream()
+						.filter(e -> "Impresora de Red".equalsIgnoreCase(e.getSistemaOperativo()))
+						.findFirst()
+						.ifPresent(equipo::setImpresoraRedAsignada);
+			}
+		}
 		Equipo guardado = equipoRepository.save(equipo);
 		vincularTareasAbiertasDelUsuarioReportado(guardado);
 		if (auditoriaService != null && equipoExistente == null) {
@@ -451,6 +461,24 @@ public class EquipoService {
 					.orElseThrow(() -> new EquipoNoEncontradoException(impresoraRedId));
 			equipo.setImpresoraRedAsignada(impresora);
 			equipo.setImpresoraEnRed(true);
+
+			// Heredar fuero y ubicación del equipo de donde se obtuvo la impresora si la impresora no los tiene o tiene genéricos
+			boolean actualizarImpresora = false;
+			if (StringUtils.hasText(equipo.getFuero()) && !"Desconocido".equalsIgnoreCase(equipo.getFuero())) {
+				if (!StringUtils.hasText(impresora.getFuero()) || "Desconocido".equalsIgnoreCase(impresora.getFuero())) {
+					impresora.setFuero(equipo.getFuero().trim());
+					actualizarImpresora = true;
+				}
+			}
+			if (StringUtils.hasText(equipo.getUbicacion()) && !"Sin ubicación asignada".equalsIgnoreCase(equipo.getUbicacion())) {
+				if (!StringUtils.hasText(impresora.getUbicacion()) || "Sin ubicación asignada".equalsIgnoreCase(impresora.getUbicacion()) || "Mesa de Entradas".equalsIgnoreCase(impresora.getUbicacion())) {
+					impresora.setUbicacion(equipo.getUbicacion().trim());
+					actualizarImpresora = true;
+				}
+			}
+			if (actualizarImpresora) {
+				equipoRepository.save(impresora);
+			}
 		} else {
 			equipo.setImpresoraRedAsignada(null);
 		}
@@ -540,6 +568,7 @@ public class EquipoService {
 				equipo.getTeclado(),
 				equipo.getMouse(),
 				equipo.getImpresora(),
+				equipo.getImpresoraIp(),
 				equipo.isImpresoraEnRed(),
 				equipo.getImpresoraRedAsignada() != null ? equipo.getImpresoraRedAsignada().getId() : null,
 				equipo.getImpresoraRedAsignada() != null ? equipo.getImpresoraRedAsignada().getNombre() : null,
@@ -586,7 +615,20 @@ public class EquipoService {
 			String teclado,
 			String mouse,
 			String impresora,
+			String impresoraIp,
+			Boolean impresoraEnRed,
 			boolean activo) {
+
+		public ReporteInventarioCommand(
+				String nombre, String ultimoUsuario, String fuero, String ubicacion,
+				String ip, String mac, String sistemaOperativo, String procesador,
+				Integer ramMb, String ramDetalles, String ramSeriales, String discosModelos,
+				String discosSeriales, String motherboardModelo, String motherboardSerial,
+				String monitores, String teclado, String mouse, String impresora, boolean activo) {
+			this(nombre, ultimoUsuario, fuero, ubicacion, ip, mac, sistemaOperativo, procesador,
+					ramMb, ramDetalles, ramSeriales, discosModelos, discosSeriales, motherboardModelo,
+					motherboardSerial, monitores, teclado, mouse, impresora, null, null, activo);
+		}
 	}
 
 	public record ActualizarEquipoCommand(
@@ -656,6 +698,7 @@ public class EquipoService {
 			String teclado,
 			String mouse,
 			String impresora,
+			String impresoraIp,
 			boolean impresoraEnRed,
 			Long impresoraRedId,
 			String impresoraRedNombre,

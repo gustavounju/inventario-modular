@@ -229,6 +229,11 @@ public class EquipoController {
 			@Size(max = 180)
 			String impresora,
 
+			@Size(max = 45)
+			String impresoraIp,
+
+			Boolean impresoraEnRed,
+
 			boolean activo) {
 
 		private ReporteInventarioCommand toCommand() {
@@ -252,6 +257,8 @@ public class EquipoController {
 					teclado,
 					mouse,
 					impresora,
+					impresoraIp,
+					impresoraEnRed,
 					activo);
 		}
 	}
