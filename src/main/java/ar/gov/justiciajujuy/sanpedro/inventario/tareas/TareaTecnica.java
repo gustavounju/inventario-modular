@@ -66,11 +66,27 @@ public class TareaTecnica {
 	@Column(name = "cerrado_en")
 	private LocalDateTime cerradoEn;
 
-	@Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
+	@Column(name = "creado_en", nullable = false, updatable = false)
 	private LocalDateTime creadoEn;
 
-	@Column(name = "actualizado_en", nullable = false, insertable = false, updatable = false)
+	@Column(name = "actualizado_en", nullable = false)
 	private LocalDateTime actualizadoEn;
+
+	@jakarta.persistence.PrePersist
+	void prePersist() {
+		LocalDateTime ahora = LocalDateTime.now();
+		if (this.creadoEn == null) {
+			this.creadoEn = ahora;
+		}
+		if (this.actualizadoEn == null) {
+			this.actualizadoEn = ahora;
+		}
+	}
+
+	@jakarta.persistence.PreUpdate
+	void preUpdate() {
+		this.actualizadoEn = LocalDateTime.now();
+	}
 
 	protected TareaTecnica() {
 	}

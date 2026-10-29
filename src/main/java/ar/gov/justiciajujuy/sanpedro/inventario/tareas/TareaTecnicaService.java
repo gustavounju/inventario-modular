@@ -27,6 +27,8 @@ import org.springframework.util.StringUtils;
 @Service
 public class TareaTecnicaService {
 
+	private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(TareaTecnicaService.class);
+
 	public static final String EQUIPO_GENERICO_NOMBRE = "PC-GENERICA";
 
 	private final TareaTecnicaRepository tareaTecnicaRepository;
@@ -62,6 +64,19 @@ public class TareaTecnicaService {
 		this.activeDirectoryDomainService = activeDirectoryDomainService;
 		this.equipoService = equipoService;
 	}
+
+	@jakarta.annotation.PostConstruct
+	public void autoCorregirFechasFuturas() {
+		try {
+			int cant = tareaTecnicaRepository.corregirFechasFuturas(java.time.LocalDateTime.now());
+			if (cant > 0) {
+				LOGGER.info("Se corrigieron {} tareas tecnicas con fecha de creacion futura en BD.", cant);
+			}
+		} catch (Exception e) {
+			LOGGER.warn("No se pudo auto-corregir fechas futuras de tareas: {}", e.getMessage());
+		}
+	}
+
 
 	@Transactional(readOnly = true)
 	public List<TareaTecnicaDetalle> buscar(EstadoTareaTecnica estado, Long equipoId, String responsable) {
@@ -501,7 +516,7 @@ public class TareaTecnicaService {
 				tarea.getResponsable(),
 				tarea.getCreadoPor(),
 				tarea.getObservacionesCierre(),
-				tarea.getCreadoEn(),
+				(tarea.getCreadoEn() != null && tarea.getCreadoEn().isAfter(java.time.LocalDateTime.now())) ? java.time.LocalDateTime.now() : tarea.getCreadoEn(),
 				tarea.getCerradoEn(),
 				tarea.getTipo(),
 				equipo == null ? null : equipo.getEstadoCiclo());

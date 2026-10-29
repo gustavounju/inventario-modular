@@ -120,5 +120,9 @@ public interface TareaTecnicaRepository extends JpaRepository<TareaTecnica, Long
 	List<TareaTecnica> buscarAbiertasSinEquipoRealPorSolicitante(
 			@Param("solicitanteUsername") String solicitanteUsername,
 			@Param("estados") Collection<EstadoTareaTecnica> estados);
+	@org.springframework.data.jpa.repository.Modifying
+	@org.springframework.transaction.annotation.Transactional
+	@Query("UPDATE TareaTecnica t SET t.creadoEn = :ahora WHERE t.creadoEn > :ahora")
+	int corregirFechasFuturas(@Param("ahora") java.time.LocalDateTime ahora);
 }
 
