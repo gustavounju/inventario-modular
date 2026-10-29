@@ -3,6 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="csrf-token" th:content="${_csrf.token}">
+	<meta name="csrf-header" th:content="${_csrf.headerName}">
 	<title>Tareas técnicas - Inventario Modular</title>
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 	<style>
@@ -796,12 +798,33 @@
 			btn.textContent = '⏳ Vinculando tareas...';
 
 			try {
+				const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+					|| document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+				const csrfHeader = document.querySelector('meta[name="csrf-header"]')?.getAttribute('content')
+					|| document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content')
+					|| 'X-CSRF-TOKEN';
+
+				const reqHeaders = { 'Content-Type': 'application/json' };
+				if (csrfToken) {
+					reqHeaders[csrfHeader] = csrfToken;
+				}
+
 				const resp = await fetch('/api/v1/tareas/conciliacion/aplicar', {
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+					headers: reqHeaders,
 					body: JSON.stringify(seleccionadas)
 				});
-				if (!resp.ok) throw new Error('Error al aplicar conciliación');
+
+				if (!resp.ok) {
+					const errorText = await resp.text();
+					let parsedError = errorText;
+					try {
+						const errJson = JSON.parse(errorText);
+						parsedError = errJson.message || errJson.error || errorText;
+					} catch (e) {}
+					throw new Error(parsedError || ('HTTP ' + resp.status));
+				}
+
 				const data = await resp.json();
 
 				alert(data.mensaje || 'Conciliación aplicada con éxito.');

@@ -59,7 +59,12 @@ public class SecurityConfig {
 			.addFilterBefore(new TokenAuthenticationFilter(reportToken), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new LoginRateLimitFilter(loginAttemptService), UsernamePasswordAuthenticationFilter.class)
 			.csrf(csrf -> csrf
-				.ignoringRequestMatchers("/api/v1/equipos/inventario", "/submit_inventory", "/api/telefonia/webhook/llamada")
+				.ignoringRequestMatchers(
+					"/api/v1/equipos/inventario",
+					"/submit_inventory",
+					"/api/telefonia/webhook/llamada",
+					"/api/v1/tareas/conciliacion/**"
+				)
 			)
 			.headers(headers -> headers
 				.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
