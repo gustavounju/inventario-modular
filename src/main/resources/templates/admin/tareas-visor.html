@@ -103,6 +103,7 @@
 				<a class="kbtn kbtn--secondary" th:href="@{/admin}" th:if="${!esSoloMovil}">Panel general</a>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin/red-ips}" th:if="${currentUser != null or (username != null and !username.isEmpty())}" title="Consultar plano y asignación de direcciones IP">🌐 Plano de IPs</a>
 				<button type="button" class="kbtn kbtn--secondary" onclick="abrirHistorialLlamadas()">📞 Llamadas Recientes</button>
+				<button type="button" class="kbtn kbtn--ghost" onclick="abrirModalConciliacion()" th:if="${puedeEditarTareas}" style="color: #4ade80; border-color: rgba(74, 222, 128, 0.4);" title="Vincular tareas en PC genérica con sus equipos reales por usuario">⚡ Vincular PCs</button>
 				<button type="button" class="kbtn kbtn--primary" onclick="document.getElementById('modal-nueva-tarea').showModal()" th:if="${puedeEditarTareas}">➕ Nueva Tarea</button>
 
 				<!-- Botón Iniciar sesión si es visitante -->
@@ -1310,5 +1311,192 @@
 				});
 		}
 	</script>
+
+	<!-- Modal de Conciliación de Tareas con Equipos -->
+	<dialog id="modal-conciliacion" class="modal-dialog" style="max-width: 900px; width: 95%;">
+		<div class="modal-content" style="max-height: 85vh; display: flex; flex-direction: column;">
+			<header class="task-stock-modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+				<div>
+					<h3 style="margin:0; font-size:1.15rem; font-weight:700;">⚡ Vincular Tareas con Equipos por Solicitante</h3>
+					<span style="font-size:0.8rem; color:#64748b;">Reconciliación inteligente: detecta la PC física en el inventario para tareas huérfanas en PC-GENÉRICA.</span>
+				</div>
+				<button type="button" class="secondary-action" onclick="cerrarModalConciliacion()">✕</button>
+			</header>
+
+			<div id="conciliacion-loading" style="padding: 40px 20px; text-align: center; color: #64748b;">
+				<div style="font-size: 1.5rem; margin-bottom: 8px;">🔍</div>
+				<strong>Analizando inventario y correlacionando usuarios...</strong>
+			</div>
+
+			<div id="conciliacion-body" style="display: none; padding: 16px 0; overflow-y: auto; flex: 1;">
+				<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
+					<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center;">
+						<div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">TAREAS EN PC-GENÉRICA</div>
+						<div id="kpi-total-genericas" style="font-size: 1.4rem; font-weight: 700; color: #1e293b;">0</div>
+					</div>
+					<div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; text-align: center;">
+						<div style="font-size: 0.75rem; color: #166534; font-weight: 600;">COINCIDENCIAS ENCONTRADAS</div>
+						<div id="kpi-vinculables" style="font-size: 1.4rem; font-weight: 700; color: #15803d;">0</div>
+					</div>
+					<div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; text-align: center;">
+						<div style="font-size: 0.75rem; color: #991b1b; font-weight: 600;">SIN EQUIPO REGISTRADO</div>
+						<div id="kpi-sin-equipo" style="font-size: 1.4rem; font-weight: 700; color: #b91c1c;">0</div>
+					</div>
+				</div>
+
+				<div id="conciliacion-empty" style="display: none; padding: 24px; text-align: center; color: #64748b; background: #f8fafc; border-radius: 8px;">
+					🎉 No hay tareas pendientes de vinculación. Todas las tareas ya tienen un equipo asignado o los usuarios solicitantes no tienen PCs registradas.
+				</div>
+
+				<div id="conciliacion-tabla-container" class="responsive-table" style="max-height: 45vh; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
+					<table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+						<thead style="position: sticky; top: 0; background: #f8fafc; z-index: 1;">
+							<tr>
+								<th style="padding: 8px 10px; width: 36px; text-align: center;"><input type="checkbox" id="chk-conciliar-todos" checked onchange="toggleSeleccionTodos(this.checked)"></th>
+								<th style="padding: 8px 10px;">Tarea</th>
+								<th style="padding: 8px 10px;">Solicitante</th>
+								<th style="padding: 8px 10px;">PC Actual</th>
+								<th style="padding: 8px 10px;">PC Sugerida (Inventario)</th>
+								<th style="padding: 8px 10px;">Criterio</th>
+							</tr>
+						</thead>
+						<tbody id="conciliacion-tabla-body">
+							<!-- Filas dinámicas -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<footer style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-color); margin-top: auto;">
+				<button type="button" class="secondary-action" onclick="cerrarModalConciliacion()">Cancelar</button>
+				<button type="button" id="btn-aplicar-conciliacion" class="primary-action" onclick="aplicarConciliacion()" style="background:#15803d; border-color:#15803d;">
+					✔ Confirmar y Vincular Tareas Seleccionadas
+				</button>
+			</footer>
+		</div>
+	</dialog>
+
+	<script>
+		let propuestasActuales = [];
+
+		async function abrirModalConciliacion() {
+			const modal = document.getElementById('modal-conciliacion');
+			if (!modal) return;
+			modal.showModal();
+
+			document.getElementById('conciliacion-loading').style.display = 'block';
+			document.getElementById('conciliacion-body').style.display = 'none';
+
+			try {
+				const resp = await fetch('/api/v1/tareas/conciliacion/analisis');
+				if (!resp.ok) throw new Error('Error al analizar conciliación');
+				const data = await resp.json();
+
+				propuestasActuales = data.propuestas || [];
+				document.getElementById('kpi-total-genericas').textContent = data.totalGenericas || 0;
+				document.getElementById('kpi-vinculables').textContent = data.totalVinculables || 0;
+				document.getElementById('kpi-sin-equipo').textContent = data.totalSinCoincidencia || 0;
+
+				const tbody = document.getElementById('conciliacion-tabla-body');
+				tbody.innerHTML = '';
+
+				if (propuestasActuales.length === 0) {
+					document.getElementById('conciliacion-empty').style.display = 'block';
+					document.getElementById('conciliacion-tabla-container').style.display = 'none';
+					document.getElementById('btn-aplicar-conciliacion').disabled = true;
+				} else {
+					document.getElementById('conciliacion-empty').style.display = 'none';
+					document.getElementById('conciliacion-tabla-container').style.display = 'block';
+					document.getElementById('btn-aplicar-conciliacion').disabled = false;
+					document.getElementById('btn-aplicar-conciliacion').textContent = `✔ Confirmar y Vincular ${propuestasActuales.length} Tareas`;
+
+					propuestasActuales.forEach(p => {
+						const tr = document.createElement('tr');
+						tr.style.borderBottom = '1px solid #f1f5f9';
+						tr.innerHTML = `
+							<td style="text-align:center; padding:8px;"><input type="checkbox" class="chk-propuesta" value="${p.tareaId}" checked onchange="actualizarBotonAplicar()"></td>
+							<td style="padding:8px 10px;">
+								<strong>#${p.tareaId}</strong> <span style="color:#1e293b;">${escapeHtmlConcil(p.tareaTitulo)}</span>
+							</td>
+							<td style="padding:8px 10px;">
+								<span style="font-weight:600; color:#0f172a;">${escapeHtmlConcil(p.solicitanteNombre)}</span><br>
+								<small style="color:#64748b;">${escapeHtmlConcil(p.solicitanteUsername)}</small>
+							</td>
+							<td style="padding:8px 10px; color:#64748b;">
+								<span class="count-badge" style="background:#f1f5f9; color:#475569;">${escapeHtmlConcil(p.equipoActual)}</span>
+							</td>
+							<td style="padding:8px 10px;">
+								<span class="authorization-badge is-authorized" style="font-weight:700; font-size:0.8rem; padding:3px 8px;">💻 ${escapeHtmlConcil(p.equipoSugeridoNombre)}</span><br>
+								<small style="color:#64748b;">${escapeHtmlConcil(p.equipoSugeridoFuero)}</small>
+							</td>
+							<td style="padding:8px 10px; color:#0369a1; font-size:0.75rem;">
+								${escapeHtmlConcil(p.criterioMatch)}
+							</td>
+						`;
+						tbody.appendChild(tr);
+					});
+				}
+
+				document.getElementById('conciliacion-loading').style.display = 'none';
+				document.getElementById('conciliacion-body').style.display = 'block';
+			} catch (err) {
+				document.getElementById('conciliacion-loading').innerHTML = `
+					<div style="color:#b91c1c; font-weight:600;">Error al consultar conciliación de equipos.</div>
+					<p style="font-size:0.8rem; color:#64748b;">${escapeHtmlConcil(err.message)}</p>
+				`;
+			}
+		}
+
+		function cerrarModalConciliacion() {
+			const modal = document.getElementById('modal-conciliacion');
+			if (modal) modal.close();
+		}
+
+		function toggleSeleccionTodos(checked) {
+			document.querySelectorAll('.chk-propuesta').forEach(c => c.checked = checked);
+			actualizarBotonAplicar();
+		}
+
+		function actualizarBotonAplicar() {
+			const seleccionadas = Array.from(document.querySelectorAll('.chk-propuesta:checked')).map(c => Number(c.value));
+			const btn = document.getElementById('btn-aplicar-conciliacion');
+			btn.disabled = seleccionadas.length === 0;
+			btn.textContent = `✔ Confirmar y Vincular ${seleccionadas.length} Tareas`;
+		}
+
+		async function aplicarConciliacion() {
+			const seleccionadas = Array.from(document.querySelectorAll('.chk-propuesta:checked')).map(c => Number(c.value));
+			if (seleccionadas.length === 0) return;
+
+			const btn = document.getElementById('btn-aplicar-conciliacion');
+			btn.disabled = true;
+			btn.textContent = '⏳ Vinculando tareas...';
+
+			try {
+				const resp = await fetch('/api/v1/tareas/conciliacion/aplicar', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(seleccionadas)
+				});
+				if (!resp.ok) throw new Error('Error al aplicar conciliación');
+				const data = await resp.json();
+
+				alert(data.mensaje || 'Conciliación aplicada con éxito.');
+				window.location.reload();
+			} catch (err) {
+				alert('Ocurrió un error al vincular las tareas: ' + err.message);
+				btn.disabled = false;
+				actualizarBotonAplicar();
+			}
+		}
+
+		function escapeHtmlConcil(str) {
+			if (!str) return '';
+			return String(str).replace(/[&<>"']/g, function(m) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+			});
+		}
+	</script>
 </body>
+
 </html>

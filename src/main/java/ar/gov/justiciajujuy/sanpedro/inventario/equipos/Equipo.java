@@ -163,6 +163,10 @@ public class Equipo {
 		return ultimoUsuario;
 	}
 
+	public void setUltimoUsuario(String ultimoUsuario) {
+		this.ultimoUsuario = ultimoUsuario;
+	}
+
 	public String getFuero() {
 		return fuero;
 	}
@@ -393,5 +397,13 @@ public class Equipo {
 		this.mouse = mouse;
 		this.impresora = impresora;
 		this.activo = activo;
+	}
+
+	public LocalDateTime getActualizadoEn() {
+		return actualizadoEn;
+	}
+
+	public LocalDateTime getCreadoEn() {
+		return creadoEn;
 	}
 }

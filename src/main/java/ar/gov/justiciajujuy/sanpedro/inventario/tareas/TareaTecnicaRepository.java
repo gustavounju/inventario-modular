@@ -124,5 +124,18 @@ public interface TareaTecnicaRepository extends JpaRepository<TareaTecnica, Long
 	@org.springframework.transaction.annotation.Transactional
 	@Query("UPDATE TareaTecnica t SET t.creadoEn = :ahora WHERE t.creadoEn > :ahora")
 	int corregirFechasFuturas(@Param("ahora") java.time.LocalDateTime ahora);
-}
 
+	@Query("""
+			SELECT t
+			FROM TareaTecnica t
+			LEFT JOIN FETCH t.equipo e
+			WHERE (e IS NULL OR UPPER(e.nombre) = 'PC-GENERICA')
+			  AND (
+			    (t.solicitanteUsername IS NOT NULL AND TRIM(t.solicitanteUsername) <> '')
+			    OR
+			    (t.solicitanteNombre IS NOT NULL AND TRIM(t.solicitanteNombre) <> '')
+			  )
+			ORDER BY t.id DESC
+			""")
+	List<TareaTecnica> buscarTareasConEquipoGenerico();
+}

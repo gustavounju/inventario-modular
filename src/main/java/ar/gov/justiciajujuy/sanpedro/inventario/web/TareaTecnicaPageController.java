@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestBody;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaConciliacionService;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService;
@@ -62,6 +64,7 @@ public class TareaTecnicaPageController {
 	private final UsuarioManagementService usuarioManagementService;
 	private final FueroService fueroService;
 	private final ApkPresenciaService apkPresenciaService;
+	private final TareaConciliacionService tareaConciliacionService;
 
 	public TareaTecnicaPageController(
 			AuthorizationService authorizationService,
@@ -70,7 +73,8 @@ public class TareaTecnicaPageController {
 			ActiveDirectoryDomainService activeDirectoryDomainService,
 			UsuarioManagementService usuarioManagementService,
 			FueroService fueroService,
-			ApkPresenciaService apkPresenciaService) {
+			ApkPresenciaService apkPresenciaService,
+			TareaConciliacionService tareaConciliacionService) {
 		this.authorizationService = authorizationService;
 		this.tareaTecnicaService = tareaTecnicaService;
 		this.equipoRepository = equipoRepository;
@@ -78,6 +82,7 @@ public class TareaTecnicaPageController {
 		this.usuarioManagementService = usuarioManagementService;
 		this.fueroService = fueroService;
 		this.apkPresenciaService = apkPresenciaService;
+		this.tareaConciliacionService = tareaConciliacionService;
 	}
 
 	@GetMapping("/admin/tareas")
@@ -121,6 +126,23 @@ public class TareaTecnicaPageController {
 			@RequestParam(name = "q", required = false) String query) {
 		exigirPermiso(userDetails, PERMISO_VER);
 		return activeDirectoryDomainService.buscarUsuarios(query);
+	}
+
+	@GetMapping("/api/v1/tareas/conciliacion/analisis")
+	@ResponseBody
+	public TareaConciliacionService.ResumenConciliacion analizarConciliacion(
+			@AuthenticationPrincipal UserDetails userDetails) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		return tareaConciliacionService.analizar();
+	}
+
+	@PostMapping("/api/v1/tareas/conciliacion/aplicar")
+	@ResponseBody
+	public TareaConciliacionService.ResultadoConciliacion aplicarConciliacion(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody(required = false) List<Long> tareaIds) {
+		exigirPermiso(userDetails, PERMISO_EDITAR);
+		return tareaConciliacionService.aplicar(tareaIds);
 	}
 
 

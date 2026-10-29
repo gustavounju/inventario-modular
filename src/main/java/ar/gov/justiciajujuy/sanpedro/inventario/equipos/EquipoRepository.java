@@ -37,4 +37,14 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 			ORDER BY e.nombre
 			""")
 	Page<Equipo> buscar(@Param("query") String query, Pageable pageable);
+
+	@Query("""
+			SELECT e
+			FROM Equipo e
+			WHERE e.ultimoUsuario IS NOT NULL
+			  AND TRIM(e.ultimoUsuario) <> ''
+			  AND UPPER(e.nombre) <> 'PC-GENERICA'
+			ORDER BY e.actualizadoEn DESC, e.id DESC
+			""")
+	List<Equipo> findAllConUltimoUsuarioValido();
 }
