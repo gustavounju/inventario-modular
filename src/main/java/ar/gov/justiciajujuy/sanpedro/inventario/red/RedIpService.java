@@ -1,7 +1,13 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.red;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +20,11 @@ public class RedIpService {
     private static final Logger log = LoggerFactory.getLogger(RedIpService.class);
 
     private final RedIpRepository repository;
+    private final EquipoRepository equipoRepository;
 
-    public RedIpService(RedIpRepository repository) {
+    public RedIpService(RedIpRepository repository, EquipoRepository equipoRepository) {
         this.repository = repository;
+        this.equipoRepository = equipoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -124,6 +132,125 @@ public class RedIpService {
         return new MetricasRedIp(total, ocupadas, libres, reservadas, porcentaje);
     }
 
+    /**
+     * Cruza el plano IPAM (tabla red_ips) contra las IPs reales detectadas por el script de inventario
+     * (equipos e impresoras de red) para detectar colisiones o IPs que figuran LIBRES pero están en uso.
+     */
+    @Transactional(readOnly = true)
+    public List<DiscrepanciaIp> detectarDiscrepanciasConInventario() {
+        List<Equipo> equipos = equipoRepository.findAllByOrderByNombreAsc();
+        Map<String, RedIp> mapaIpam = repository.findAllByOrderByIpNumeroAsc().stream()
+                .collect(Collectors.toMap(RedIp::getIp, r -> r, (a, b) -> a));
+
+        Map<String, List<Equipo>> equiposPorIp = new LinkedHashMap<>();
+        for (Equipo eq : equipos) {
+            if (!eq.isActivo() || "PC-GENERICA".equalsIgnoreCase(eq.getNombre())) {
+                continue;
+            }
+            String ip = eq.getIp() != null ? eq.getIp().trim() : "";
+            if (esIpAuditableJudicial(ip)) {
+                equiposPorIp.computeIfAbsent(ip, k -> new ArrayList<>()).add(eq);
+            }
+            // Si una PC reportó una IP de impresora de red y aún no está reflejada
+            String impIp = eq.getImpresoraIp() != null ? eq.getImpresoraIp().trim() : "";
+            if (esIpAuditableJudicial(impIp) && !impIp.equals(ip)) {
+                equiposPorIp.computeIfAbsent(impIp, k -> new ArrayList<>());
+            }
+        }
+
+        List<DiscrepanciaIp> discrepancias = new ArrayList<>();
+        for (Map.Entry<String, List<Equipo>> entry : equiposPorIp.entrySet()) {
+            String ip = entry.getKey();
+            List<Equipo> hosts = entry.getValue();
+            if (hosts.isEmpty()) {
+                continue;
+            }
+            RedIp registroIpam = mapaIpam.get(ip);
+
+            if (hosts.size() > 1) {
+                String nombres = hosts.stream().map(Equipo::getNombre).collect(Collectors.joining(", "));
+                Equipo primero = hosts.get(0);
+                discrepancias.add(new DiscrepanciaIp(
+                        ip,
+                        "DUPLICADA_EN_INVENTARIO",
+                        "🚨 Colisión: " + hosts.size() + " equipos reportan la misma IP (" + nombres + ")",
+                        primero.getId(),
+                        primero.getNombre(),
+                        primero.getFuero(),
+                        primero.getUbicacion(),
+                        registroIpam != null ? registroIpam.getEquipo() : null,
+                        registroIpam != null ? registroIpam.getEstado() : null,
+                        esImpresora(primero) ? CategoriaIp.OTRO : CategoriaIp.TERMINAL));
+                continue;
+            }
+
+            Equipo host = hosts.get(0);
+            CategoriaIp catSugerida = esImpresora(host) ? CategoriaIp.OTRO : CategoriaIp.TERMINAL;
+            if (registroIpam == null) {
+                discrepancias.add(new DiscrepanciaIp(
+                        ip,
+                        "NO_REGISTRADA_EN_PLANO",
+                        "⚠️ IP activa en inventario pero ausente en el plano IPAM",
+                        host.getId(),
+                        host.getNombre(),
+                        host.getFuero(),
+                        host.getUbicacion(),
+                        null,
+                        null,
+                        catSugerida));
+            } else if (registroIpam.getEstado() == EstadoIp.LIBRE) {
+                discrepancias.add(new DiscrepanciaIp(
+                        ip,
+                        "FIGURA_LIBRE_PERO_USADA",
+                        "⚠️ Figura LIBRE en el plano pero el equipo " + host.getNombre() + " la está usando",
+                        host.getId(),
+                        host.getNombre(),
+                        host.getFuero(),
+                        host.getUbicacion(),
+                        registroIpam.getEquipo(),
+                        registroIpam.getEstado(),
+                        catSugerida));
+            } else if (registroIpam.getEquipo() != null
+                    && !registroIpam.getEquipo().isBlank()
+                    && !coincideNombreEquipo(registroIpam.getEquipo(), host.getNombre())) {
+                discrepancias.add(new DiscrepanciaIp(
+                        ip,
+                        "DIFERENTE_EQUIPO",
+                        "🔄 En plano figura '" + registroIpam.getEquipo() + "' pero el script reporta '" + host.getNombre() + "'",
+                        host.getId(),
+                        host.getNombre(),
+                        host.getFuero(),
+                        host.getUbicacion(),
+                        registroIpam.getEquipo(),
+                        registroIpam.getEstado(),
+                        catSugerida));
+            }
+        }
+        return discrepancias;
+    }
+
+    private boolean esImpresora(Equipo host) {
+        return "Impresora de Red".equalsIgnoreCase(host.getSistemaOperativo());
+    }
+
+    private boolean esIpAuditableJudicial(String ip) {
+        if (ip == null || ip.isBlank() || "Sin IP".equalsIgnoreCase(ip) || "127.0.0.1".equals(ip)) {
+            return false;
+        }
+        // Solo auditar la VLAN/subred LAN monitoreada del Juzgado: 10.15.0.0/24 (10.15.0.1 a 10.15.0.254)
+        // Ignora cualquier otra IP fuera de esta subred
+        return ip.matches("^10\\.15\\.0\\.\\d{1,3}$");
+    }
+
+    private boolean coincideNombreEquipo(String nombrePlano, String nombreInventario) {
+        if (nombrePlano == null || nombreInventario == null) {
+            return false;
+        }
+        String a = nombrePlano.trim().toLowerCase();
+        String b = nombreInventario.trim().toLowerCase();
+        return a.equals(b) || a.contains(b) || b.contains(a);
+    }
+
     private Integer extraerNumeroIp(String ip) {
         try {
             String[] partes = ip.split("\\.");
@@ -158,5 +285,18 @@ public class RedIpService {
             long libres,
             long reservadas,
             int porcentajeUso
+    ) {}
+
+    public record DiscrepanciaIp(
+            String ip,
+            String tipo,
+            String descripcion,
+            Long equipoId,
+            String equipoInventario,
+            String fuero,
+            String ubicacion,
+            String equipoPlano,
+            EstadoIp estadoPlano,
+            CategoriaIp categoriaSugerida
     ) {}
 }

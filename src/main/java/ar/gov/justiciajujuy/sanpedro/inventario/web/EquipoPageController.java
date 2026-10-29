@@ -82,8 +82,11 @@ public class EquipoPageController {
 	private String reportToken;
 
 	@ModelAttribute("reportToken")
-	public String reportToken() {
-		return reportToken;
+	public String reportToken(@AuthenticationPrincipal UserDetails userDetails) {
+		if (userDetails != null && authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_EDITAR)) {
+			return reportToken;
+		}
+		return "";
 	}
 
 	public EquipoPageController(AuthorizationService authorizationService, EquipoService equipoService,
@@ -189,36 +192,14 @@ public class EquipoPageController {
 			listaFiltrada = equiposEnProduccion;
 		}
 
-		// 3.5 Mapeo de nombres reales de usuarios
+		// 3.5 Mapeo de nombres reales de usuarios (sin consultas LDAP N+1 por fila)
 		var nombresUsuarios = new java.util.HashMap<String, String>();
 		if (activeDirectoryDomainService != null) {
-			var dominioUsuarios = activeDirectoryDomainService.listarUsuariosParaTareas();
-			if (dominioUsuarios.disponible()) {
-				var dict = dominioUsuarios.usuarios().stream()
-						.collect(Collectors.toMap(u -> u.username().toLowerCase(), u -> u.nombreVisible(), (a, b) -> a));
-				for (var e : listaFiltrada) {
-					if (e.ultimoUsuario() != null) {
-						String raw = e.ultimoUsuario();
-						String tempKey = raw;
-						int slash = raw.indexOf('\\');
-						if (slash >= 0) tempKey = raw.substring(slash + 1);
-						final String key = tempKey.toLowerCase();
-						if (dict.containsKey(key)) {
-							nombresUsuarios.put(raw, dict.get(key));
-						} else {
-							var busquedaIndividual = activeDirectoryDomainService.buscarUsuarios(key);
-							if (busquedaIndividual.disponible() && busquedaIndividual.usuarios() != null) {
-								var match = busquedaIndividual.usuarios().stream()
-										.filter(u -> u.username().equalsIgnoreCase(key))
-										.findFirst();
-								if (match.isPresent()) {
-									nombresUsuarios.put(raw, match.get().nombreVisible());
-								}
-							}
-						}
-					}
-				}
-			}
+			var usernamesRaw = listaFiltrada.stream()
+					.map(EquipoService.EquipoResumen::ultimoUsuario)
+					.filter(org.springframework.util.StringUtils::hasText)
+					.toList();
+			nombresUsuarios.putAll(activeDirectoryDomainService.resolverNombresVisiblesCacheados(usernamesRaw));
 		}
 
 		// 3.6 Ordenamiento configurable (por fuero, usuario, nombre, ubicacion o fecha)
@@ -451,11 +432,11 @@ public class EquipoPageController {
 		}
 		EquipoDetalle equipoHost = obtenerEquipoOResponder404(id);
 		String fueroFinal = (fuero != null && !fuero.isBlank() && !"Desconocido".equalsIgnoreCase(fuero.trim()))
-				? fuero.trim()
-				: (equipoHost.fuero() != null && !equipoHost.fuero().isBlank() ? equipoHost.fuero().trim() : "Desconocido");
+		        ? fuero.trim()
+		        : (equipoHost.fuero() != null && !equipoHost.fuero().isBlank() ? equipoHost.fuero().trim() : "Desconocido");
 		String ubicacionFinal = (ubicacion != null && !ubicacion.isBlank() && !"Sin ubicación asignada".equalsIgnoreCase(ubicacion.trim()))
-				? ubicacion.trim()
-				: (equipoHost.ubicacion() != null && !equipoHost.ubicacion().isBlank() ? equipoHost.ubicacion().trim() : "Sin ubicación asignada");
+		        ? ubicacion.trim()
+		        : (equipoHost.ubicacion() != null && !equipoHost.ubicacion().isBlank() ? equipoHost.ubicacion().trim() : "Sin ubicación asignada");
 		try {
 			EquipoDetalle nuevaImp = equipoService.crearEquipoManual(nombre, fueroFinal, ubicacionFinal, ip, mac, "Impresora de Red", null);
 			equipoService.asignarImpresoraRed(id, nuevaImp.id());
@@ -492,20 +473,17 @@ public class EquipoPageController {
 		model.addAttribute("relevamientoConsolidado", "relevamiento".equals(actualizado) || "1".equals(relevamiento));
 		model.addAttribute("esImpresora", "Impresora de Red".equals(equipo.sistemaOperativo()));
 		
-		// Cargar solo equipos de taller que estén DISPONIBLES (armado terminado) para absorber
-		var tallerEquipos = equipoService.listar(null, 0, 1000).equipos().stream()
+		// Una sola lectura de catálogo para extraer equipos de taller y de red
+		var todosResumen = equipoService.listar(null, 0, 1000).equipos();
+		var tallerEquipos = todosResumen.stream()
 			.filter(e -> !esEquipoGenerico(e.nombre()) && !e.id().equals(id))
 			.filter(this::esEquipoDeTaller)
 			.filter(e -> e.estadoCiclo() == ar.gov.justiciajujuy.sanpedro.inventario.equipos.EstadoCicloEquipo.DISPONIBLE)
 			.toList();
 		model.addAttribute("equiposTaller", tallerEquipos);
 
-		// Stock disponible para el modal de carga masiva de piezas
-		var stockDisponible = stockService.listarDisponiblesYActivos();
-		model.addAttribute("stockDisponible", stockDisponible);
-
 		// Impresoras de red disponibles para vincular
-		var impresorasRed = equipoService.listar(null, 0, 1000).equipos().stream()
+		var impresorasRed = todosResumen.stream()
 			.filter(e -> "Impresora de Red".equals(e.sistemaOperativo()) && !e.id().equals(id))
 			.toList();
 		model.addAttribute("impresorasRed", impresorasRed);
@@ -782,41 +760,23 @@ public class EquipoPageController {
 
 		BrujulaEquipo brujula = calcularBrujula(equipo, listaComponentes, tieneRelevamientoInicial, diferenciasCount);
 		var tareasEquipo = tareaTecnicaService.buscar(null, equipo.id(), null);
-		Map<Long, List<TareaTecnicaService.TareaComentarioDetalle>> comentariosPorTarea = tareasEquipo.stream()
-				.collect(Collectors.toMap(
-						TareaTecnicaService.TareaTecnicaDetalle::id,
-						tarea -> tareaTecnicaService.comentarios(tarea.id())));
-		Map<Long, List<TareaTecnicaService.TareaStockUsoDetalle>> stockPorTarea = tareasEquipo.stream()
-				.collect(Collectors.toMap(
-						TareaTecnicaService.TareaTecnicaDetalle::id,
-						tarea -> tareaTecnicaService.stockUsado(tarea.id())));
+		var tareaIds = tareasEquipo.stream().map(TareaTecnicaService.TareaTecnicaDetalle::id).toList();
+		var comentariosLote = tareaTecnicaService.comentariosPorTareas(tareaIds);
+		var stockLote = tareaTecnicaService.stockUsadoPorTareas(tareaIds);
+		Map<Long, List<TareaTecnicaService.TareaComentarioDetalle>> comentariosPorTarea = new java.util.HashMap<>();
+		Map<Long, List<TareaTecnicaService.TareaStockUsoDetalle>> stockPorTarea = new java.util.HashMap<>();
+		for (Long tid : tareaIds) {
+			comentariosPorTarea.put(tid, comentariosLote.getOrDefault(tid, List.of()));
+			stockPorTarea.put(tid, stockLote.getOrDefault(tid, List.of()));
+		}
 
 		// =========================================================================================
 		// GESTIÓN DE HARDWARE: DISTINCIÓN ENTRE ACCIONES RÁPIDAS DE TALLER Y ÓRDENES DE ARMADO
 		// =========================================================================================
-		// 1. Acciones Rápidas (Día a día):
-		//    El técnico instala o retira componentes de stock directamente desde la ficha del equipo
-		//    sin necesidad de trámites ni burocracia (vía /componentes/instalar-desde-stock y /retirar).
-		// 2. Órdenes de Armado (Planificación / Institucional):
-		//    Se reservan para compras masivas, ensamblaje de PCs desde cero, reserva de piezas para juzgados
-		//    o requerimientos de trazabilidad y actas patrimoniales con firma del técnico responsable.
-		//
-		// FILTRADO DE LECTURAS CRUDAS DEL SCRIPT:
-		// Si el equipo ya cuenta con relevamiento inicial consolidado (Gemelo Digital oficial confirmado),
-		// excluimos las filas crudas con origen SCRIPT de la lista de gestión para no duplicar visualmente
-		// los componentes oficiales con las lecturas de telemetría viva.
 		var componentesGestion = tieneRelevamientoInicial
 				? listaComponentes.stream().filter(c -> c.origen() != OrigenComponente.SCRIPT).toList()
 				: listaComponentes;
 
-		// =========================================================================================
-		// CLASIFICACIÓN MODULAR POR CATEGORÍAS DE HARDWARE:
-		// Se agrupan los componentes en 4 módulos lógicos para una visualización ordenada y limpia:
-		//   1. Procesamiento y Placa Madre: CPU, MOTHERBOARD, FUENTE, GABINETE
-		//   2. Memorias RAM: Módulos individuales organizados por Ranura/Slot y Capacidad
-		//   3. Almacenamiento y Discos: Discos magnéticos y de estado sólido (SSD, NVMe, SATA)
-		//   4. Periféricos y Puesto de Trabajo: Monitores, Teclados, Mouse, Impresoras y otros
-		// =========================================================================================
 		var cpuYMother = componentesGestion.stream()
 				.filter(c -> c.tipo() == TipoComponente.CPU || c.tipo() == TipoComponente.MOTHERBOARD || c.tipo() == TipoComponente.FUENTE || c.tipo() == TipoComponente.GABINETE)
 				.toList();
@@ -867,6 +827,8 @@ public class EquipoPageController {
 				.toList();
 		Set<Long> componentesFaltantesIds = calcularComponentesFaltantes(componentesGestion, discrepancias);
 
+		var stockActivos = stockService.listarDisponiblesYActivos();
+
 		model.addAttribute("equipo", equipo);
 		model.addAttribute("equipoGenerico", false);
 		model.addAttribute("equipoForm", equipoForm);
@@ -894,7 +856,8 @@ public class EquipoPageController {
 		model.addAttribute("estadosComparacion", EstadoComparacion.values());
 		model.addAttribute("ubicacionesActivas", ubicacionService.activas());
 		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
-		model.addAttribute("stockDisponibles", stockService.listarDisponiblesYActivos().stream()
+		model.addAttribute("stockDisponible", stockActivos);
+		model.addAttribute("stockDisponibles", stockActivos.stream()
 				.filter(s -> "DISPONIBLE".equals(s.estado().name()))
 				.toList());
 		model.addAttribute("actualizado", false);
@@ -924,10 +887,12 @@ public class EquipoPageController {
 
 	private void prepararDetalleGenerico(Model model, UserDetails userDetails, EquipoDetalle equipo) {
 		var tareas = tareaTecnicaService.buscar(null, equipo.id(), null);
-		Map<Long, List<TareaTecnicaService.TareaComentarioDetalle>> comentariosPorTarea = tareas.stream()
-				.collect(Collectors.toMap(
-						TareaTecnicaService.TareaTecnicaDetalle::id,
-						tarea -> tareaTecnicaService.comentarios(tarea.id())));
+		var tareaIds = tareas.stream().map(TareaTecnicaService.TareaTecnicaDetalle::id).toList();
+		var comentariosLote = tareaTecnicaService.comentariosPorTareas(tareaIds);
+		Map<Long, List<TareaTecnicaService.TareaComentarioDetalle>> comentariosPorTarea = new java.util.HashMap<>();
+		for (Long tid : tareaIds) {
+			comentariosPorTarea.put(tid, comentariosLote.getOrDefault(tid, List.of()));
+		}
 		var equiposReasignacion = equipoService.listar(null, 0, 1000).equipos().stream()
 				.filter(e -> !esEquipoGenerico(e.nombre()))
 				.toList();
@@ -949,8 +914,6 @@ public class EquipoPageController {
 			List<ComponenteService.ComponenteDetalle> componentes,
 			List<GemeloDigitalService.ComparacionComponente> discrepancias) {
 		Set<Long> faltantes = new LinkedHashSet<>();
-		// La comparacion viva informa texto esperado, no id de componente. Por eso la
-		// pantalla reconstruye la coincidencia para resaltar abajo solo la pieza a decidir.
 		var esperadosFaltantes = discrepancias.stream()
 				.filter(d -> d.resultado() == EstadoComparacion.FALTA)
 				.toList();

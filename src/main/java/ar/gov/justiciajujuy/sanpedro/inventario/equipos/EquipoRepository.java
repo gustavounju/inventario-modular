@@ -28,8 +28,12 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
 			   OR LOWER(e.nombre) LIKE LOWER(CONCAT('%', :query, '%'))
 			   OR LOWER(COALESCE(e.ultimoUsuario, '')) LIKE LOWER(CONCAT('%', :query, '%'))
 			   OR LOWER(e.fuero) LIKE LOWER(CONCAT('%', :query, '%'))
+			   OR LOWER(COALESCE(e.ubicacion, '')) LIKE LOWER(CONCAT('%', :query, '%'))
 			   OR LOWER(COALESCE(e.ip, '')) LIKE LOWER(CONCAT('%', :query, '%'))
 			   OR LOWER(COALESCE(e.mac, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+			   OR LOWER(COALESCE(e.motherboardSerial, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+			   OR LOWER(COALESCE(e.ramSeriales, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+			   OR LOWER(COALESCE(e.discosSeriales, '')) LIKE LOWER(CONCAT('%', :query, '%'))
 			ORDER BY e.nombre
 			""")
 	Page<Equipo> buscar(@Param("query") String query, Pageable pageable);

@@ -11,7 +11,7 @@
     let applicantSearchTimer, assigneeSearchTimer;
     const applicantOptions = new Map();
     const assigneeOptions = new Map();
-    // Los previews de comentarios se cargan aparte para no retrasar el listado principal de tareas.
+    // Los previews de comentarios se cargan en lote (1 sola peticion HTTP) para no saturar la red del celular.
     let renderToken = 0;
     const commentPreviewCache = new Map();
     const icons = () => window.lucide?.createIcons();
@@ -80,7 +80,9 @@
             return match && text.includes(query);
         });
         $('task-list').replaceChildren();
-        for (const t of found.slice(0, limit)) {
+        const visibleTasks = found.slice(0, limit);
+        const uncachedIds = [];
+        for (const t of visibleTasks) {
             const row = element('article', null, 'task-row');
             const title = element('button', '#' + t.id + '  ' + t.titulo, 'task-open');
             title.onclick = () => openDetail(t);
@@ -96,7 +98,14 @@
             preview.setAttribute('aria-label', 'Comentarios de la tarea ' + t.id);
             row.append(preview);
             $('task-list').append(row);
-            loadCommentPreview(t.id, token);
+            if (commentPreviewCache.has(t.id)) {
+                renderCommentPreview(t.id, commentPreviewCache.get(t.id));
+            } else {
+                uncachedIds.push(t.id);
+            }
+        }
+        if (uncachedIds.length > 0) {
+            loadCommentPreviewsBatch(uncachedIds, token);
         }
         $('result-count').textContent = found.length + ' tareas';
         $('empty').hidden = found.length !== 0;
@@ -302,7 +311,7 @@
         const preview = $('comments-preview-' + id);
         if (!preview) return;
         preview.replaceChildren();
-        if (!list.length) {
+        if (!list || !list.length) {
             preview.textContent = 'Sin comentarios cargados.';
             return;
         }
@@ -314,6 +323,24 @@
     }
     function sameText(a, b) {
         return (a || '').trim().toLocaleLowerCase() === (b || '').trim().toLocaleLowerCase();
+    }
+    async function loadCommentPreviewsBatch(ids, token) {
+        try {
+            const map = await request(api + '/comentarios-lote?ids=' + ids.join(','));
+            if (map && typeof map === 'object') {
+                for (const id of ids) {
+                    const list = map[id] || map[String(id)] || [];
+                    commentPreviewCache.set(id, list);
+                    if (token === renderToken) renderCommentPreview(id, list);
+                }
+                return;
+            }
+        } catch {
+            // Fallback por si un servidor anterior no tiene /comentarios-lote
+        }
+        for (const id of ids) {
+            loadCommentPreview(id, token);
+        }
     }
     async function loadCommentPreview(id, token) {
         if (commentPreviewCache.has(id)) {

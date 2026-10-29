@@ -59,7 +59,7 @@ public class SecurityConfig {
 			.addFilterBefore(new TokenAuthenticationFilter(reportToken), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new LoginRateLimitFilter(loginAttemptService), UsernamePasswordAuthenticationFilter.class)
 			.csrf(csrf -> csrf
-				.ignoringRequestMatchers("/api/v1/**", "/submit_inventory", "/api/telefonia/webhook/llamada")
+				.ignoringRequestMatchers("/api/v1/equipos/inventario", "/submit_inventory", "/api/telefonia/webhook/llamada")
 			)
 			.headers(headers -> headers
 				.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
@@ -91,8 +91,15 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.GET, "/api/v1/movil/tecnicos-conectados").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/telefonia/webhook/llamada").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/telefonia/stream", "/api/telefonia/historial-hoy", "/api/telefonia/directorio").permitAll()
-				.requestMatchers("/submit_inventory").authenticated()
-				.anyRequest().authenticated()
+				.requestMatchers(HttpMethod.POST, "/api/v1/equipos/inventario", "/submit_inventory").authenticated()
+				.anyRequest().access((authenticationSupplier, context) -> {
+					var auth = authenticationSupplier.get();
+					boolean authenticated = auth != null && auth.isAuthenticated()
+							&& !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
+					boolean isMachine = authenticated && auth.getAuthorities().stream()
+							.anyMatch(a -> "ROLE_MACHINE".equals(a.getAuthority()));
+					return new org.springframework.security.authorization.AuthorizationDecision(authenticated && !isMachine);
+				})
 			)
 			.formLogin(form -> form
 				.loginPage("/login")

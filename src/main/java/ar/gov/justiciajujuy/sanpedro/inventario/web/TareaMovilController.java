@@ -1,6 +1,12 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.GemeloDigitalService;
+import ar.gov.justiciajujuy.sanpedro.inventario.componentes.GemeloDigitalService.ComparacionComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.TipoComponente;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoDetalle;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoNoEncontradoException;
+import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoService.EquipoResumen;
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService;
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService.ApkInfo;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
@@ -10,6 +16,8 @@ import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainSe
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioManagementService.UsuarioResumen;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaAvisoService;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,6 +35,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -43,19 +52,28 @@ public class TareaMovilController {
     private final TareaAvisoService avisos;
     private final ApkDistributionService apkDistributionService;
     private final ApkPresenciaService apkPresenciaService;
+    private final EquipoService equipoService;
+    private final GemeloDigitalService gemeloDigitalService;
+    private final TareaTecnicaService tareaTecnicaService;
 
     public TareaMovilController(AuthorizationService authorization,
             ActiveDirectoryDomainService activeDirectoryDomainService,
             UsuarioManagementService usuarioManagementService,
             TareaAvisoService avisos,
             ApkDistributionService apkDistributionService,
-            ApkPresenciaService apkPresenciaService) {
+            ApkPresenciaService apkPresenciaService,
+            EquipoService equipoService,
+            GemeloDigitalService gemeloDigitalService,
+            TareaTecnicaService tareaTecnicaService) {
         this.authorization = authorization;
         this.activeDirectoryDomainService = activeDirectoryDomainService;
         this.usuarioManagementService = usuarioManagementService;
         this.avisos = avisos;
         this.apkDistributionService = apkDistributionService;
         this.apkPresenciaService = apkPresenciaService;
+        this.equipoService = equipoService;
+        this.gemeloDigitalService = gemeloDigitalService;
+        this.tareaTecnicaService = tareaTecnicaService;
     }
 
     @GetMapping("/movil/login")
@@ -74,6 +92,7 @@ public class TareaMovilController {
         model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
         model.addAttribute("apkInfo", apkDistributionService.info());
         model.addAttribute("puedeVerStock", authorization.tienePermiso(user, "STOCK", "VER"));
+        model.addAttribute("puedeVerEquipos", tienePermisoEquiposMovil(user));
         return "movil/tareas";
     }
 
@@ -88,7 +107,51 @@ public class TareaMovilController {
         model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
         model.addAttribute("apkInfo", apkDistributionService.info());
         model.addAttribute("tiposComponente", TipoComponente.values());
+        model.addAttribute("puedeVerEquipos", tienePermisoEquiposMovil(user));
         return "movil/stock";
+    }
+
+    @GetMapping("/movil/equipos")
+    public String equipos(@AuthenticationPrincipal UserDetails user,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent,
+            Model model) {
+        exigirPermisoEquiposMovil(user);
+        apkPresenciaService.registrarActividad(user, userAgent);
+        boolean appInstalada = userAgent != null && userAgent.contains("InventarioLAN/1");
+        model.addAttribute("appInstalada", appInstalada);
+        model.addAttribute("apkDisponible", apkDistributionService.isAvailable() && !appInstalada);
+        model.addAttribute("apkInfo", apkDistributionService.info());
+        model.addAttribute("puedeVerStock", authorization.tienePermiso(user, "STOCK", "VER"));
+        return "movil/equipos";
+    }
+
+    @GetMapping("/api/v1/movil/equipos")
+    @ResponseBody
+    public List<EquipoResumen> buscarEquiposMovil(
+            @AuthenticationPrincipal UserDetails user,
+            @RequestParam(name = "q", required = false) String query,
+            HttpServletResponse response) {
+        exigirPermisoEquiposMovil(user);
+        response.setHeader("Cache-Control", "no-store");
+        return equipoService.listar(query, 0, 40).equipos();
+    }
+
+    @GetMapping("/api/v1/movil/equipos/{id}")
+    @ResponseBody
+    public FichaEquipoMovil detalleEquipoMovil(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long id,
+            HttpServletResponse response) {
+        exigirPermisoEquiposMovil(user);
+        response.setHeader("Cache-Control", "no-store");
+        try {
+            EquipoDetalle equipo = equipoService.obtener(id);
+            List<ComparacionComponente> gemelo = gemeloDigitalService.compararEquipo(id);
+            List<TareaTecnicaDetalle> tareasEquipo = tareaTecnicaService.buscar(null, id, null);
+            return new FichaEquipoMovil(equipo, gemelo, tareasEquipo);
+        } catch (EquipoNoEncontradoException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
+        }
     }
 
     @GetMapping("/api/v1/movil/apk")
@@ -226,6 +289,18 @@ public class TareaMovilController {
         }
     }
 
+    private boolean tienePermisoEquiposMovil(UserDetails user) {
+        return authorization.tienePermiso(user, "EQUIPOS", "VER")
+                || authorization.tienePermiso(user, "TAREAS", "VER")
+                || authorization.tienePermiso(user, "STOCK", "VER");
+    }
+
+    private void exigirPermisoEquiposMovil(UserDetails user) {
+        if (!tienePermisoEquiposMovil(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para consultar equipos en terreno.");
+        }
+    }
+
     private void exigirPermisoStock(UserDetails user, String permiso) {
         if (!authorization.tienePermiso(user, "STOCK", permiso)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para operar stock.");
@@ -251,6 +326,11 @@ public class TareaMovilController {
     private boolean contiene(String valor, String aguja) {
         return valor != null && valor.toLowerCase(Locale.ROOT).contains(aguja);
     }
+
+    public record FichaEquipoMovil(
+            EquipoDetalle equipo,
+            List<ComparacionComponente> gemelo,
+            List<TareaTecnicaDetalle> tareas) { }
 
     public record SesionMovil(AuthorizationService.UsuarioActual usuario, boolean puedeCrear, boolean puedeEditar,
             boolean puedeOperarPropias, boolean puedeAsignarResponsable, boolean mostrarMisTareas,

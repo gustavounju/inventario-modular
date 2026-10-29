@@ -21,6 +21,7 @@
         <div><span class="brand">Centro Judicial San Pedro</span><span class="mobile-kicker">Taller Informatica · Inventario Modular</span><h1>Stock</h1></div>
         <div class="header-actions">
             <a class="icon-button" th:href="@{/movil/tareas}" aria-label="Tareas" title="Tareas"><i data-lucide="clipboard-list"></i></a>
+            <a th:if="${puedeVerEquipos}" class="icon-button" th:href="@{/movil/equipos}" aria-label="Equipos en terreno" title="Equipos en terreno"><i data-lucide="monitor"></i></a>
             <a id="download-apk" th:if="${apkDisponible}" class="icon-button" th:href="@{/api/v1/movil/apk}" aria-label="Descargar APK" title="Descargar APK"><i data-lucide="smartphone"></i></a>
             <form th:action="@{/logout}" method="post"><button class="icon-button" title="Cerrar sesion" aria-label="Cerrar sesion"><i data-lucide="log-out"></i></button></form>
         </div>

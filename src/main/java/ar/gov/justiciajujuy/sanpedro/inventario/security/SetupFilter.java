@@ -20,28 +20,42 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class SetupFilter extends OncePerRequestFilter {
 
+	private static final long SETUP_CACHE_TTL_MS = 30_000L;
+
 	private final UsuarioSistemaRepository usuarioRepository;
+	private volatile long setupVerifiedUntilMs = 0L;
 
 	public SetupFilter(UsuarioSistemaRepository usuarioRepository) {
 		this.usuarioRepository = usuarioRepository;
+	}
+
+	public void invalidateCache() {
+		this.setupVerifiedUntilMs = 0L;
 	}
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 
+		String contextPath = request.getContextPath() != null ? request.getContextPath() : "";
 		String path = request.getRequestURI();
-		
+
 		// Bypass static resources, public scripts, downloads and the setup page itself
-		if (path.startsWith(request.getContextPath() + "/css/") ||
-			path.startsWith(request.getContextPath() + "/js/") ||
-			path.startsWith(request.getContextPath() + "/images/") ||
-			path.startsWith(request.getContextPath() + "/webjars/") ||
-			path.startsWith(request.getContextPath() + "/scripts/") ||
-			path.startsWith(request.getContextPath() + "/app/") ||
-			path.equals(request.getContextPath() + "/favicon.ico") ||
-			path.equals(request.getContextPath() + "/setup")) {
-			
+		if (path.startsWith(contextPath + "/css/") ||
+			path.startsWith(contextPath + "/js/") ||
+			path.startsWith(contextPath + "/images/") ||
+			path.startsWith(contextPath + "/webjars/") ||
+			path.startsWith(contextPath + "/scripts/") ||
+			path.startsWith(contextPath + "/app/") ||
+			path.equals(contextPath + "/favicon.ico") ||
+			path.equals(contextPath + "/setup")) {
+
+			filterChain.doFilter(request, response);
+			return;
+		}
+
+		long now = System.currentTimeMillis();
+		if (now < setupVerifiedUntilMs) {
 			filterChain.doFilter(request, response);
 			return;
 		}
@@ -49,9 +63,11 @@ public class SetupFilter extends OncePerRequestFilter {
 		// If there are zero admins in the system, intercept and redirect to /setup
 		try {
 			if (usuarioRepository.countAdministradores() == 0) {
-				response.sendRedirect(request.getContextPath() + "/setup");
+				setupVerifiedUntilMs = 0L;
+				response.sendRedirect(contextPath + "/setup");
 				return;
 			}
+			setupVerifiedUntilMs = now + SETUP_CACHE_TTL_MS;
 		} catch (Exception ignored) {
 			// Si la base no contiene la tabla o se encuentra en inicialización, continuar la cadena
 		}

@@ -132,7 +132,7 @@ public class MainActivity extends Activity {
                     setAlerts(false);
                     if ("/".equals(path) || "/login".equals(path)) web.loadUrl(base + "/movil/login");
                     else if (path.startsWith("/admin")) web.loadUrl(base + "/movil/tareas");
-                } else if ("/movil/tareas".equals(path)) {
+                } else if ("/movil/tareas".equals(path) || "/movil/equipos".equals(path) || "/movil/stock".equals(path)) {
                     if (getSharedPreferences("LanApp", MODE_PRIVATE).getBoolean("avisos_enabled", false) && !AvisosService.running) {
                         enableAlerts();
                     }
@@ -181,12 +181,31 @@ public class MainActivity extends Activity {
     }
 
     private void configureServer() {
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, 0);
+
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
         input.setHint(BuildConfig.DEBUG ? "http://192.168.1.8:8081" : "https://inventario.interno");
         input.setText(base);
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Servidor de tareas").setView(input)
+        container.addView(input);
+
+        LinearLayout presets = new LinearLayout(this);
+        presets.setOrientation(LinearLayout.HORIZONTAL);
+        Button btnJuzgado = new Button(this);
+        btnJuzgado.setText("🏛️ Juzgado LAN");
+        btnJuzgado.setOnClickListener(v -> input.setText(BuildConfig.DEFAULT_SERVER.isEmpty() ? "http://10.15.0.62:8081" : BuildConfig.DEFAULT_SERVER));
+        Button btnCasa = new Button(this);
+        btnCasa.setText("🏠 Casa / Local");
+        btnCasa.setOnClickListener(v -> input.setText("http://192.168.1.8:8081"));
+        presets.addView(btnJuzgado, new LinearLayout.LayoutParams(0, -2, 1));
+        presets.addView(btnCasa, new LinearLayout.LayoutParams(0, -2, 1));
+        container.addView(presets);
+
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Servidor de tareas (Casa / Juzgado)").setView(container)
                 .setPositiveButton("Abrir tareas", null).setNegativeButton("Cancelar", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             try {

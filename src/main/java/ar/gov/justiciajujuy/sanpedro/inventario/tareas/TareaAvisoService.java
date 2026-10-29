@@ -94,7 +94,7 @@ public class TareaAvisoService {
         long actual = jdbc.queryForObject("SELECT ultimo_id FROM tareas_aviso_secuencia WHERE id = 1", Long.class);
         // Primer ingreso o base restaurada: establecer referencia, sin hacer sonar todo el historial.
         if (despuesDe == null || despuesDe > actual) {
-            return new LoteAvisos(actual, List.of());
+            return new LoteAvisos(actual, List.of(), username);
         }
         String condicionDestinatario = incluirAvisosGenerales
                 ? "(destinatario_username IS NULL OR LOWER(destinatario_username) = LOWER(?))"
@@ -113,10 +113,14 @@ public class TareaAvisoService {
                         rs.getTimestamp("creado_en").toLocalDateTime()), despuesDe, username);
         // Avanzar solo hasta el lote entregado; usar 'actual' perderia los avisos de la pagina siguiente.
         long siguiente = avisos.isEmpty() ? despuesDe : avisos.getLast().id();
-        return new LoteAvisos(siguiente, avisos);
+        return new LoteAvisos(siguiente, avisos, username);
     }
 
     public record Aviso(long id, long tareaId, String titulo, String autor, String tipo, String destinatarioUsername,
             LocalDateTime creadoEn) { }
-    public record LoteAvisos(long siguiente, List<Aviso> avisos) { }
+    public record LoteAvisos(long siguiente, List<Aviso> avisos, String username) {
+        public LoteAvisos(long siguiente, List<Aviso> avisos) {
+            this(siguiente, avisos, null);
+        }
+    }
 }

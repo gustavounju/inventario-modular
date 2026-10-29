@@ -3,16 +3,22 @@ package ar.gov.justiciajujuy.sanpedro.inventario.web;
 import java.util.List;
 import java.util.Map;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService.AuditoriaEventoDetalle;
 import ar.gov.justiciajujuy.sanpedro.inventario.config.RuntimeModeService;
 import ar.gov.justiciajujuy.sanpedro.inventario.componentes.GemeloDigitalService;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkDistributionService;
+import ar.gov.justiciajujuy.sanpedro.inventario.movil.ApkPresenciaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.red.RedIpService;
+import ar.gov.justiciajujuy.sanpedro.inventario.red.RedIpService.MetricasRedIp;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryUserDetails;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService.UsuarioActual;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.EstadoStockComponente;
 import ar.gov.justiciajujuy.sanpedro.inventario.stock.StockComponenteRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnicaService.TareaTecnicaDetalle;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,6 +53,9 @@ public class AdminController {
 	private final StockComponenteRepository stockComponenteRepository;
 	private final EquipoRepository equipoRepository;
 	private final GemeloDigitalService gemeloDigitalService;
+	private final RedIpService redIpService;
+	private final AuditoriaService auditoriaService;
+	private final ApkPresenciaService apkPresenciaService;
 
 	public AdminController(
 			@Value("${spring.application.name}") String applicationName,
@@ -57,7 +66,10 @@ public class AdminController {
 			TareaTecnicaService tareaTecnicaService,
 			StockComponenteRepository stockComponenteRepository,
 			EquipoRepository equipoRepository,
-			GemeloDigitalService gemeloDigitalService) {
+			GemeloDigitalService gemeloDigitalService,
+			RedIpService redIpService,
+			AuditoriaService auditoriaService,
+			ApkPresenciaService apkPresenciaService) {
 		this.applicationName = applicationName;
 		this.version = version;
 		this.authorizationService = authorizationService;
@@ -67,6 +79,9 @@ public class AdminController {
 		this.stockComponenteRepository = stockComponenteRepository;
 		this.equipoRepository = equipoRepository;
 		this.gemeloDigitalService = gemeloDigitalService;
+		this.redIpService = redIpService;
+		this.auditoriaService = auditoriaService;
+		this.apkPresenciaService = apkPresenciaService;
 	}
 
 	@GetMapping("/")
@@ -118,7 +133,12 @@ public class AdminController {
 				authorizationService.tienePermiso(userDetails, MODULO_USUARIOS, PERMISO_ADMINISTRAR));
 		model.addAttribute("adAttributes", activeDirectoryAttributes(userDetails));
 		model.addAttribute("runtimeMode", runtimeModeService.current());
-		model.addAttribute("decisionPanel", prepararPanelDecision(userDetails));
+		DecisionPanel panel = prepararPanelDecision(userDetails);
+		model.addAttribute("decisionPanel", panel);
+		model.addAttribute("tareasRecientes", panel.tareasRecientes());
+		model.addAttribute("metricasRed", panel.metricasRed());
+		model.addAttribute("eventosRecientes", panel.eventosRecientes());
+		model.addAttribute("tecnicosConectados", apkPresenciaService.obtenerConectados());
 		return "admin/index";
 	}
 
@@ -127,6 +147,7 @@ public class AdminController {
 		boolean puedeVerStock = authorizationService.tienePermiso(userDetails, MODULO_STOCK, PERMISO_VER);
 		boolean puedeVerEquipos = authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER);
 		boolean puedeVerDiferencias = authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER);
+		boolean puedeVerAuditoria = authorizationService.tienePermiso(userDetails, MODULO_AUDITORIA, PERMISO_VER);
 
 		TareaTecnicaService.ResumenTareas tareas = puedeVerTareas
 				? tareaTecnicaService.resumenDelDia()
@@ -135,10 +156,30 @@ public class AdminController {
 		long stockDisponible = puedeVerStock
 				? stockComponenteRepository.countByActivoTrueAndEstado(EstadoStockComponente.DISPONIBLE)
 				: 0;
+		long stockReservado = puedeVerStock
+				? stockComponenteRepository.countByActivoTrueAndEstado(EstadoStockComponente.RESERVADO)
+				: 0;
 		long equipos = puedeVerEquipos ? equipoRepository.countByNombreIgnoreCaseNot(TareaTecnicaService.EQUIPO_GENERICO_NOMBRE) : 0;
 		long diferencias = puedeVerDiferencias ? gemeloDigitalService.dashboardDiferencias().conteo().pendientes() : 0;
 
-		return new DecisionPanel(tareas, stockPendiente, stockDisponible, equipos, diferencias);
+		List<TareaTecnicaDetalle> tareasRecientes = puedeVerTareas
+				? tareaTecnicaService.buscarParaVisor().stream()
+						.filter(t -> "PENDIENTE".equalsIgnoreCase(String.valueOf(t.estado()))
+								|| "EN_PROCESO".equalsIgnoreCase(String.valueOf(t.estado())))
+						.limit(6)
+						.toList()
+				: List.of();
+
+		MetricasRedIp metricasRed = (puedeVerEquipos || puedeVerTareas)
+				? redIpService.metricas()
+				: new MetricasRedIp(0, 0, 0, 0, 0);
+
+		List<AuditoriaEventoDetalle> eventosRecientes = puedeVerAuditoria
+				? auditoriaService.listarRecientes().stream().limit(6).toList()
+				: List.of();
+
+		return new DecisionPanel(tareas, stockPendiente, stockDisponible, stockReservado, equipos, diferencias,
+				tareasRecientes, metricasRed, eventosRecientes);
 	}
 
 	private Map<String, List<String>> activeDirectoryAttributes(UserDetails userDetails) {
@@ -152,7 +193,11 @@ public class AdminController {
 			TareaTecnicaService.ResumenTareas tareas,
 			long stockPendiente,
 			long stockDisponible,
+			long stockReservado,
 			long equipos,
-			long diferencias) {
+			long diferencias,
+			List<TareaTecnicaDetalle> tareasRecientes,
+			MetricasRedIp metricasRed,
+			List<AuditoriaEventoDetalle> eventosRecientes) {
 	}
 }

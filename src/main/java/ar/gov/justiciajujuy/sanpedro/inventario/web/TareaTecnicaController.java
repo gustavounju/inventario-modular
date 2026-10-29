@@ -1,6 +1,7 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.web;
 
 import java.util.List;
+import java.util.Map;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.security.AuthorizationService;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica;
@@ -87,6 +88,18 @@ public class TareaTecnicaController {
 					.toList();
 		}
 		return tareas;
+	}
+
+	@GetMapping("/comentarios-lote")
+	public Map<Long, List<TareaComentarioDetalle>> comentariosPorLote(
+			@AuthenticationPrincipal UserDetails userDetails,
+			@RequestParam(required = false) List<Long> ids) {
+		exigirPermiso(userDetails, PERMISO_VER);
+		if (ids == null || ids.isEmpty()) {
+			return Map.of();
+		}
+		List<Long> limitados = ids.size() > 100 ? ids.subList(0, 100) : ids;
+		return tareaTecnicaService.comentariosPorTareas(limitados);
 	}
 
 	@GetMapping("/stock-disponible")

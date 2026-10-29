@@ -1,8 +1,13 @@
 package ar.gov.justiciajujuy.sanpedro.inventario.security;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -31,11 +36,19 @@ public class ActiveDirectoryDomainService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ActiveDirectoryDomainService.class);
 	private static final int MIN_QUERY_LENGTH = 2;
 	private static final String ATTRIBUTE_NAME_PATTERN = "[a-zA-Z][a-zA-Z0-9-]*";
+	private static final long CIRCUIT_BREAKER_COOLDOWN_MS = 30_000L;
+	private static final long LISTAR_TAREAS_CACHE_TTL_MS = 60_000L;
 
 	private final ActiveDirectoryProperties properties;
 	private final LdapOperations ldapOperations;
 	private final LdapConfigurationService ldapConfigurationService;
 	private final RuntimeLdapClientFactory runtimeLdapClientFactory;
+
+	private final ConcurrentMap<String, String> fueroUsuarioCache = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, String> nombreVisibleCache = new ConcurrentHashMap<>();
+	private volatile DominioUsuarios cachedUsuariosTareas;
+	private volatile long cachedUsuariosTareasUntilMs = 0L;
+	private volatile long circuitOpenUntilMs = 0L;
 
 	@Autowired
 	public ActiveDirectoryDomainService(
@@ -89,6 +102,17 @@ public class ActiveDirectoryDomainService {
 			return DominioUsuarios.noDisponible("La cuenta LDAP lectora no tiene clave configurada.", "");
 		}
 
+		long now = System.currentTimeMillis();
+		if (runtimeLdapClientFactory != null) {
+			DominioUsuarios cached = this.cachedUsuariosTareas;
+			if (cached != null && now < this.cachedUsuariosTareasUntilMs) {
+				return cached;
+			}
+			if (now < this.circuitOpenUntilMs) {
+				return DominioUsuarios.noDisponible("Active Directory temporalmente inalcanzable (Modo Casa / Contingencia).", "");
+			}
+		}
+
 		try {
 			String displayNameAttribute = safeAttributeName(config.displayNameAttribute(), "displayName");
 			SearchControls controls = new SearchControls();
@@ -112,11 +136,75 @@ public class ActiveDirectoryDomainService {
 				.stream()
 				.filter(usuario -> !esCuentaAdministrativa(usuario.username()))
 				.toList();
-			return DominioUsuarios.disponible(usuarios, "");
+			cacheUsuarios(usuarios);
+			DominioUsuarios result = DominioUsuarios.disponible(usuarios, "");
+			if (runtimeLdapClientFactory != null) {
+				this.cachedUsuariosTareas = result;
+				this.cachedUsuariosTareasUntilMs = now + LISTAR_TAREAS_CACHE_TTL_MS;
+				this.circuitOpenUntilMs = 0L;
+			}
+			return result;
 		} catch (RuntimeException exception) {
+			if (runtimeLdapClientFactory != null) {
+				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
+			}
 			LOGGER.warn("No se pudo consultar Active Directory para listar solicitantes: {}", exception.getMessage());
 			return DominioUsuarios.noDisponible("No se pudo consultar Active Directory.", "");
 		}
+	}
+
+	/**
+	 * Resuelve en bloque los nombres visibles conocidos sin disparar N+1 conexiones TCP por cada equipo.
+	 */
+	public Map<String, String> resolverNombresVisiblesCacheados(Collection<String> rawUsernames) {
+		Map<String, String> result = new HashMap<>();
+		if (rawUsernames == null || rawUsernames.isEmpty()) {
+			return result;
+		}
+		if (nombreVisibleCache.isEmpty()) {
+			listarUsuariosParaTareas();
+		}
+		for (String raw : rawUsernames) {
+			if (!StringUtils.hasText(raw)) {
+				continue;
+			}
+			String clean = normalizeUsernameKey(raw);
+			String nombre = nombreVisibleCache.get(clean);
+			if (StringUtils.hasText(nombre)) {
+				result.put(raw, nombre);
+			}
+		}
+		return result;
+	}
+
+	private void cacheUsuarios(List<UsuarioDominio> usuarios) {
+		if (usuarios == null) {
+			return;
+		}
+		for (UsuarioDominio u : usuarios) {
+			if (u != null && StringUtils.hasText(u.username())) {
+				String key = normalizeUsernameKey(u.username());
+				if (StringUtils.hasText(u.nombreVisible())) {
+					nombreVisibleCache.put(key, u.nombreVisible());
+				}
+				if (StringUtils.hasText(u.fuero()) && !"Sin fuero informado".equalsIgnoreCase(u.fuero())) {
+					fueroUsuarioCache.put(key, u.fuero());
+				}
+			}
+		}
+	}
+
+	private String normalizeUsernameKey(String username) {
+		String clean = username.trim().toLowerCase();
+		int slash = clean.indexOf('\\');
+		if (slash >= 0 && slash + 1 < clean.length()) {
+			clean = clean.substring(slash + 1);
+		}
+		int at = clean.indexOf('@');
+		if (at > 0) {
+			clean = clean.substring(0, at);
+		}
+		return clean;
 	}
 
 	public DominioUsuarios buscarUsuarios(String query) {
@@ -141,6 +229,11 @@ public class ActiveDirectoryDomainService {
 			return DominioUsuarios.noDisponible("La cuenta LDAP lectora no tiene clave configurada.", queryNormalizada);
 		}
 
+		long now = System.currentTimeMillis();
+		if (runtimeLdapClientFactory != null && now < this.circuitOpenUntilMs) {
+			return DominioUsuarios.noDisponible("No se pudo consultar Active Directory.", queryNormalizada);
+		}
+
 		try {
 			String displayNameAttribute = safeAttributeName(config.displayNameAttribute(), "displayName");
 			SearchControls controls = new SearchControls();
@@ -161,8 +254,15 @@ public class ActiveDirectoryDomainService {
 					buildSearchFilter(queryNormalizada, displayNameAttribute, config),
 					controls,
 					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config));
+			cacheUsuarios(usuarios);
+			if (runtimeLdapClientFactory != null) {
+				this.circuitOpenUntilMs = 0L;
+			}
 			return DominioUsuarios.disponible(usuarios, queryNormalizada);
 		} catch (RuntimeException exception) {
+			if (runtimeLdapClientFactory != null) {
+				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
+			}
 			LOGGER.warn("No se pudo consultar Active Directory para autorizar usuarios: {}", exception.getMessage());
 			return DominioUsuarios.noDisponible("No se pudo consultar Active Directory.", queryNormalizada);
 		}
@@ -209,21 +309,11 @@ public class ActiveDirectoryDomainService {
 			"EQUIPOS", "USUARIOS", "PODJUDSP", "COMPUTERS", "DOMAIN CONTROLLERS", "SYSTEM", "BUILTIN"
 	);
 
-	private final java.util.concurrent.ConcurrentMap<String, String> fueroUsuarioCache = new java.util.concurrent.ConcurrentHashMap<>();
-
 	public String obtenerFueroDeUsuario(String username) {
 		if (!StringUtils.hasText(username)) {
 			return null;
 		}
-		String clean = username.trim().toLowerCase();
-		int slash = clean.indexOf('\\');
-		if (slash >= 0 && slash + 1 < clean.length()) {
-			clean = clean.substring(slash + 1);
-		}
-		int at = clean.indexOf('@');
-		if (at > 0) {
-			clean = clean.substring(0, at);
-		}
+		String clean = normalizeUsernameKey(username);
 		if (fueroUsuarioCache.containsKey(clean)) {
 			return fueroUsuarioCache.get(clean);
 		}
@@ -235,6 +325,10 @@ public class ActiveDirectoryDomainService {
 		}
 		if (StringUtils.hasText(config.readOnlyUserDn())
 				&& !StringUtils.hasText(config.readOnlyPassword())) {
+			return null;
+		}
+		long now = System.currentTimeMillis();
+		if (runtimeLdapClientFactory != null && now < this.circuitOpenUntilMs) {
 			return null;
 		}
 		try {
@@ -259,6 +353,7 @@ public class ActiveDirectoryDomainService {
 			if (results.isEmpty()) {
 				return null;
 			}
+			cacheUsuarios(results);
 			String fuero = results.get(0).fuero();
 			if (StringUtils.hasText(fuero) && !"Sin fuero informado".equalsIgnoreCase(fuero)) {
 				fueroUsuarioCache.put(clean, fuero);
@@ -266,6 +361,9 @@ public class ActiveDirectoryDomainService {
 			}
 			return null;
 		} catch (RuntimeException exception) {
+			if (runtimeLdapClientFactory != null) {
+				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
+			}
 			LOGGER.warn("No se pudo consultar fuero de usuario {} en Active Directory: {}", username, exception.getMessage());
 			return null;
 		}
@@ -278,6 +376,10 @@ public class ActiveDirectoryDomainService {
 		LdapRuntimeConfig config = currentConfig();
 		LdapOperations operations = currentOperations(config);
 		if (!config.enabled() || operations == null) {
+			return List.of();
+		}
+		long now = System.currentTimeMillis();
+		if (runtimeLdapClientFactory != null && now < this.circuitOpenUntilMs) {
 			return List.of();
 		}
 		try {
@@ -302,6 +404,9 @@ public class ActiveDirectoryDomainService {
 					.sorted(String.CASE_INSENSITIVE_ORDER)
 					.toList();
 		} catch (RuntimeException exception) {
+			if (runtimeLdapClientFactory != null) {
+				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
+			}
 			LOGGER.warn("No se pudieron consultar las Unidades Organizativas (OUs) en Active Directory: {}", exception.getMessage());
 			return List.of();
 		}
@@ -314,6 +419,10 @@ public class ActiveDirectoryDomainService {
 		LdapRuntimeConfig config = currentConfig();
 		LdapOperations operations = currentOperations(config);
 		if (!config.enabled() || operations == null || !StringUtils.hasText(nombreEquipo)) {
+			return null;
+		}
+		long now = System.currentTimeMillis();
+		if (runtimeLdapClientFactory != null && now < this.circuitOpenUntilMs) {
 			return null;
 		}
 		try {
@@ -333,6 +442,9 @@ public class ActiveDirectoryDomainService {
 			}
 			return parsearFueroDesdeDn(results.get(0));
 		} catch (RuntimeException exception) {
+			if (runtimeLdapClientFactory != null) {
+				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
+			}
 			LOGGER.warn("No se pudo consultar el equipo {} en Active Directory: {}", nombreEquipo, exception.getMessage());
 			return null;
 		}

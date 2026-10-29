@@ -25,10 +25,14 @@ public class LdapConfigurationService {
 	private static final String USER_SEARCH_BASE = PREFIX + "userSearchBase";
 	private static final String USER_SEARCH_FILTER = PREFIX + "userSearchFilter";
 	private static final String USER_SEARCH_LIMIT = PREFIX + "userSearchLimit";
+	private static final long CACHE_TTL_MS = 10_000L;
 
 	private final SistemaConfiguracionRepository repository;
 	private final ActiveDirectoryProperties properties;
 	private final SecretProtector secretProtector;
+
+	private volatile LdapRuntimeConfig cachedConfig;
+	private volatile long cachedUntilMs = 0L;
 
 	public LdapConfigurationService(
 			SistemaConfiguracionRepository repository,
@@ -41,24 +45,34 @@ public class LdapConfigurationService {
 
 	@Transactional(readOnly = true)
 	public LdapRuntimeConfig current() {
+		long now = System.currentTimeMillis();
+		LdapRuntimeConfig snapshot = this.cachedConfig;
+		if (snapshot != null && now < this.cachedUntilMs) {
+			return snapshot;
+		}
 		Map<String, String> values = persistedValues();
 		boolean persisted = values.containsKey(ENABLED);
+		LdapRuntimeConfig resolved;
 		if (!persisted) {
-			return fromProperties(false);
+			resolved = fromProperties(false);
+		} else {
+			resolved = new LdapRuntimeConfig(
+					Boolean.parseBoolean(values.getOrDefault(ENABLED, "false")),
+					values.getOrDefault(URL, properties.getUrl()),
+					values.getOrDefault(DOMAIN, properties.getDomain()),
+					values.getOrDefault(BASE_DN, properties.getBaseDn()),
+					values.getOrDefault(DISPLAY_NAME_ATTRIBUTE, properties.getDisplayNameAttribute()),
+					values.getOrDefault(FUERO_ATTRIBUTE, properties.getFueroAttribute()),
+					values.getOrDefault(READ_ONLY_USER_DN, properties.getReadOnlyUserDn()),
+					reveal(values.get(READ_ONLY_PASSWORD)),
+					values.getOrDefault(USER_SEARCH_BASE, properties.getUserSearchBase()),
+					values.getOrDefault(USER_SEARCH_FILTER, properties.getUserSearchFilter()),
+					parseLimit(values.get(USER_SEARCH_LIMIT), properties.getUserSearchLimit()),
+					true);
 		}
-		return new LdapRuntimeConfig(
-				Boolean.parseBoolean(values.getOrDefault(ENABLED, "false")),
-				values.getOrDefault(URL, properties.getUrl()),
-				values.getOrDefault(DOMAIN, properties.getDomain()),
-				values.getOrDefault(BASE_DN, properties.getBaseDn()),
-				values.getOrDefault(DISPLAY_NAME_ATTRIBUTE, properties.getDisplayNameAttribute()),
-				values.getOrDefault(FUERO_ATTRIBUTE, properties.getFueroAttribute()),
-				values.getOrDefault(READ_ONLY_USER_DN, properties.getReadOnlyUserDn()),
-				reveal(values.get(READ_ONLY_PASSWORD)),
-				values.getOrDefault(USER_SEARCH_BASE, properties.getUserSearchBase()),
-				values.getOrDefault(USER_SEARCH_FILTER, properties.getUserSearchFilter()),
-				parseLimit(values.get(USER_SEARCH_LIMIT), properties.getUserSearchLimit()),
-				true);
+		this.cachedConfig = resolved;
+		this.cachedUntilMs = now + CACHE_TTL_MS;
+		return resolved;
 	}
 
 	@Transactional
@@ -80,6 +94,12 @@ public class LdapConfigurationService {
 		put(USER_SEARCH_BASE, command.userSearchBase().trim());
 		put(USER_SEARCH_FILTER, textOrDefault(command.userSearchFilter(), "(&(objectClass=user)(!(objectClass=computer)))"));
 		put(USER_SEARCH_LIMIT, String.valueOf(Math.max(1, command.userSearchLimit())));
+		invalidateCache();
+	}
+
+	public void invalidateCache() {
+		this.cachedUntilMs = 0L;
+		this.cachedConfig = null;
 	}
 
 	@Transactional(readOnly = true)

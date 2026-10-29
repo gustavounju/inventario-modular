@@ -330,18 +330,15 @@ public class TareaTecnicaPageController {
 		Map<Long, List<TareaComentarioDetalle>> comentariosPorTarea = tareaTecnicaService.comentariosPorTareas(tareaIds);
 		Map<Long, List<TareaStockUsoDetalle>> stockPorTarea = tareaTecnicaService.stockUsadoPorTareas(tareaIds);
 
+		boolean autenticado = userDetails != null;
+		boolean puedeEditarTareas = puedeAdministrarTareas(userDetails);
+		boolean puedeAsignarResponsable = puedeEditarTareas;
+
 		model.addAttribute("tareas", tareas);
 		model.addAttribute("comentariosPorTarea", comentariosPorTarea);
 		model.addAttribute("stockPorTarea", stockPorTarea);
-		model.addAttribute("stockDisponibleParaTareas", tareaTecnicaService.stockDisponibleParaTareas());
 		model.addAttribute("resumenTareas", tareaTecnicaService.resumenDelDia());
 		model.addAttribute("tareaForm", tareaForm);
-		model.addAttribute("equipos", equipoRepository.buscar(null, org.springframework.data.domain.Pageable.unpaged()).getContent().stream()
-				.filter(equipo -> !TareaTecnicaService.EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(equipo.getNombre()))
-				.toList());
-		model.addAttribute("equipoGenericoId", equipoRepository.findByNombreIgnoreCase(TareaTecnicaService.EQUIPO_GENERICO_NOMBRE)
-				.map(ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo::getId)
-				.orElse(null));
 		model.addAttribute("estadosTarea", EstadoTareaTecnica.values());
 		model.addAttribute("prioridadesTarea", PrioridadTareaTecnica.values());
 		model.addAttribute("tiposTarea", TipoTareaTecnica.values());
@@ -351,20 +348,38 @@ public class TareaTecnicaPageController {
 		model.addAttribute("filtroFecha", fechaFiltro);
 		model.addAttribute("esModoTodas", todas);
 		model.addAttribute("fechaHoy", hoy);
-		boolean puedeEditarTareas = puedeAdministrarTareas(userDetails);
-		boolean puedeAsignarResponsable = puedeEditarTareas;
-		List<UsuarioDominio> solicitantes = solicitantesParaTareas();
 		model.addAttribute("puedeEditarTareas", puedeEditarTareas);
 		model.addAttribute("puedeAsignarResponsable", puedeAsignarResponsable);
-		model.addAttribute("usuarioActual", userDetails != null ? userDetails.getUsername() : "");
-		model.addAttribute("solicitantes", solicitantes);
-		model.addAttribute("fuerosDisponibles", fuerosParaTareas(solicitantes));
-		model.addAttribute("tecnicosAsignables", usuarioManagementService.listarTecnicosAsignables());
-		model.addAttribute("usuariosFrecuentes", usuarioManagementService.listarTecnicosAsignables());
+		model.addAttribute("usuarioActual", autenticado ? userDetails.getUsername() : "");
 		model.addAttribute("tecnicosConectados", apkPresenciaService.obtenerConectados());
 		model.addAttribute("esFiltroActivo", tieneFiltro);
 		model.addAttribute("esSoloMovil", authorizationService.esSoloMovil(userDetails));
 		model.addAttribute("esAdministrador", authorizationService.esAdministrador(userDetails));
+
+		if (autenticado) {
+			model.addAttribute("stockDisponibleParaTareas", tareaTecnicaService.stockDisponibleParaTareas());
+			model.addAttribute("equipos", equipoRepository.buscar(null, org.springframework.data.domain.Pageable.unpaged()).getContent().stream()
+					.filter(equipo -> !TareaTecnicaService.EQUIPO_GENERICO_NOMBRE.equalsIgnoreCase(equipo.getNombre()))
+					.toList());
+			model.addAttribute("equipoGenericoId", equipoRepository.findByNombreIgnoreCase(TareaTecnicaService.EQUIPO_GENERICO_NOMBRE)
+					.map(ar.gov.justiciajujuy.sanpedro.inventario.equipos.Equipo::getId)
+					.orElse(null));
+			List<UsuarioDominio> solicitantes = solicitantesParaTareas();
+			var tecnicos = usuarioManagementService.listarTecnicosAsignables();
+			model.addAttribute("solicitantes", solicitantes);
+			model.addAttribute("fuerosDisponibles", fuerosParaTareas(solicitantes));
+			model.addAttribute("tecnicosAsignables", tecnicos);
+			model.addAttribute("usuariosFrecuentes", tecnicos);
+		} else {
+			// Visor público en pantallas de guardia/taller sin login: no exponer ni consultar catálogos privados de edición
+			model.addAttribute("stockDisponibleParaTareas", List.of());
+			model.addAttribute("equipos", List.of());
+			model.addAttribute("equipoGenericoId", null);
+			model.addAttribute("solicitantes", List.of());
+			model.addAttribute("fuerosDisponibles", List.of());
+			model.addAttribute("tecnicosAsignables", List.of());
+			model.addAttribute("usuariosFrecuentes", List.of());
+		}
 	}
 
 

@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -30,12 +31,16 @@ import java.security.cert.X509Certificate;
 public class UcmApiClient {
 
     private static final Logger log = LoggerFactory.getLogger(UcmApiClient.class);
+    private static final long CIRCUIT_BREAKER_COOLDOWN_MS = 30_000L;
+    private static final long ACCOUNT_SYNC_INTERVAL_MS = 900_000L; // 15 min
+
     private final ObjectMapper objectMapper;
     private final SSLContext sslContextInseguro;
     private final TelefoniaConfigurationService configurationService;
-    private volatile String trackId = null;
-
     private final DirectorioTelefonicoService directorioTelefonicoService;
+
+    private volatile long circuitOpenUntilMs = 0L;
+    private volatile long lastAccountSyncMs = 0L;
 
     @Value("${ucm.url:https://10.15.0.2:8089/api}")
     private String defaultBaseUrl;
@@ -168,6 +173,7 @@ public class UcmApiClient {
     }
 
     public String obtenerHistorialCdr() {
+        long now = System.currentTimeMillis();
         try {
             TelefoniaRuntimeConfig config = currentConfig();
 
@@ -183,14 +189,21 @@ public class UcmApiClient {
                 return "{\"error\":\"Falta configurar la contraseña de la central IP en Administración -> Central Telefónica.\"}";
             }
 
+            if (now < this.circuitOpenUntilMs) {
+                if (!llamadasEnVivo.isEmpty()) {
+                    return armarJsonRespuesta(this.llamadasEnVivo);
+                }
+                return "{\"status\":0,\"deshabilitado\":true,\"mensaje\":\"Central telefónica temporalmente inalcanzable (Modo Casa / Contingencia).\",\"response\":{\"cdr\":[]}}";
+            }
+
             String url = (config.url() != null && !config.url().isBlank()) ? config.url() : defaultBaseUrl;
             String user = (config.user() != null && !config.user().isBlank()) ? config.user() : defaultApiUser;
             String password = config.password();
             boolean isSslStrict = config.sslStrict();
             String interno = (config.interno() != null && !config.interno().isBlank()) ? config.interno() : defaultInternoTaller;
 
-            // Iniciar sesión limpia
-            this.trackId = null;
+            // Contexto de sesión aislado por hilo/petición (evita race condition en trackId)
+            SessionCookieHolder cookieHolder = new SessionCookieHolder();
 
             // 1. Obtener Challenge (Estructura oficial Grandstream: request -> action)
             ObjectNode challengeReq = objectMapper.createObjectNode();
@@ -200,7 +213,7 @@ public class UcmApiClient {
             ObjectNode challengePayloadObj = objectMapper.createObjectNode();
             challengePayloadObj.set("request", challengeReq);
             String challengePayload = objectMapper.writeValueAsString(challengePayloadObj);
-            String challengeRes = realizarPeticion(url, challengePayload, isSslStrict);
+            String challengeRes = realizarPeticion(url, challengePayload, isSslStrict, cookieHolder);
             JsonNode challengeNode = objectMapper.readTree(challengeRes);
             if (challengeNode.get("status") == null || challengeNode.get("status").asInt() != 0) {
                 log.warn("Fallo al obtener challenge de UCM. Respuesta: {}", challengeRes);
@@ -224,7 +237,7 @@ public class UcmApiClient {
             ObjectNode loginPayloadObj = objectMapper.createObjectNode();
             loginPayloadObj.set("request", loginReq);
             String loginPayload = objectMapper.writeValueAsString(loginPayloadObj);
-            String loginRes = realizarPeticion(url, loginPayload, isSslStrict);
+            String loginRes = realizarPeticion(url, loginPayload, isSslStrict, cookieHolder);
             JsonNode loginNode = objectMapper.readTree(loginRes);
             if (loginNode.get("status") == null || loginNode.get("status").asInt() != 0) {
                 log.warn("Fallo login en central UCM. Respuesta: {}", loginRes);
@@ -233,17 +246,20 @@ public class UcmApiClient {
             }
             String sessionCookie = loginNode.path("response").path("cookie").asText();
 
-            // Sincronizar directorio de cuentas / internos si la central lo permite
-            try {
-                ObjectNode accReq = objectMapper.createObjectNode();
-                accReq.put("action", "listAccount");
-                accReq.put("cookie", sessionCookie);
-                ObjectNode accPayloadObj = objectMapper.createObjectNode();
-                accPayloadObj.set("request", accReq);
-                String accRes = realizarPeticion(url, objectMapper.writeValueAsString(accPayloadObj), isSslStrict);
-                actualizarDirectorioDesdeUcm(accRes);
-            } catch (Exception ex) {
-                log.debug("Consulta de listAccount en UCM no completada: {}", ex.getMessage());
+            // Sincronizar directorio de cuentas / internos periódicamente (máx 1 vez cada 15 min)
+            if (now - this.lastAccountSyncMs > ACCOUNT_SYNC_INTERVAL_MS) {
+                try {
+                    ObjectNode accReq = objectMapper.createObjectNode();
+                    accReq.put("action", "listAccount");
+                    accReq.put("cookie", sessionCookie);
+                    ObjectNode accPayloadObj = objectMapper.createObjectNode();
+                    accPayloadObj.set("request", accReq);
+                    String accRes = realizarPeticion(url, objectMapper.writeValueAsString(accPayloadObj), isSslStrict, cookieHolder);
+                    actualizarDirectorioDesdeUcm(accRes);
+                    this.lastAccountSyncMs = now;
+                } catch (Exception ex) {
+                    log.debug("Consulta de listAccount en UCM no completada: {}", ex.getMessage());
+                }
             }
 
             // 4. Pedir CDR (action cdrapi oficial)
@@ -254,12 +270,15 @@ public class UcmApiClient {
             ObjectNode cdrPayloadObj = objectMapper.createObjectNode();
             cdrPayloadObj.set("request", cdrReq);
             String cdrPayload = objectMapper.writeValueAsString(cdrPayloadObj);
-            String cdrRaw = realizarPeticion(url, cdrPayload, isSslStrict);
+            String cdrRaw = realizarPeticion(url, cdrPayload, isSslStrict, cookieHolder);
+
+            this.circuitOpenUntilMs = 0L;
 
             // 5. Procesar y estandarizar cdr_root para el visor frontend
             return procesarCdrRoot(cdrRaw, interno);
 
         } catch (Exception e) {
+            this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
             log.warn("Central UCM no accesible: {}", e.getMessage());
             if (!llamadasEnVivo.isEmpty()) {
                 return armarJsonRespuesta(this.llamadasEnVivo);
@@ -283,6 +302,8 @@ public class UcmApiClient {
         }
 
         try {
+            SessionCookieHolder cookieHolder = new SessionCookieHolder();
+
             // 1. Petición de challenge
             ObjectNode challengeReq = objectMapper.createObjectNode();
             challengeReq.put("action", "challenge");
@@ -292,7 +313,7 @@ public class UcmApiClient {
             challengePayloadObj.set("request", challengeReq);
             String challengePayload = objectMapper.writeValueAsString(challengePayloadObj);
 
-            String challengeRes = realizarPeticion(config.url().trim(), challengePayload, config.sslStrict());
+            String challengeRes = realizarPeticion(config.url().trim(), challengePayload, config.sslStrict(), cookieHolder);
             JsonNode challengeNode = objectMapper.readTree(challengeRes);
             int chalStatus = challengeNode.path("status").asInt(-99);
             if (chalStatus != 0) {
@@ -319,12 +340,13 @@ public class UcmApiClient {
             loginPayloadObj.set("request", loginReq);
             String loginPayload = objectMapper.writeValueAsString(loginPayloadObj);
 
-            String loginRes = realizarPeticion(config.url().trim(), loginPayload, config.sslStrict());
+            String loginRes = realizarPeticion(config.url().trim(), loginPayload, config.sslStrict(), cookieHolder);
             JsonNode loginNode = objectMapper.readTree(loginRes);
             int loginStatus = loginNode.path("status").asInt(-99);
             if (loginStatus != 0) {
                 return new TestResult(false, "Fallo de autenticación en la central (status: " + loginStatus + "). Verifique usuario y contraseña.");
             }
+            this.circuitOpenUntilMs = 0L;
             return new TestResult(true, "Conexión y autenticación con la central UCM exitosa. Sesión establecida correctamente.");
         } catch (Exception e) {
             log.warn("Fallo de prueba de conexión a central telefónica: {}", e.getMessage());
@@ -467,7 +489,7 @@ public class UcmApiClient {
         }
     }
 
-    private String realizarPeticion(String urlStr, String jsonPayload, boolean isSslStrict) throws Exception {
+    private String realizarPeticion(String urlStr, String jsonPayload, boolean isSslStrict, SessionCookieHolder cookieHolder) throws Exception {
         URL url = new URL(urlStr);
         URLConnection rawConn = url.openConnection();
         if (rawConn instanceof HttpsURLConnection httpsConn) {
@@ -483,17 +505,17 @@ public class UcmApiClient {
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
 
-        // Enviar TRACKID en Cookie si ya fue capturado previamente
-        if (this.trackId != null && !this.trackId.isBlank()) {
-            conn.setRequestProperty("Cookie", this.trackId + "; CookieName=CookieValue");
+        // Enviar TRACKID en Cookie si ya fue capturado previamente en esta sesión
+        if (cookieHolder != null && cookieHolder.trackId != null && !cookieHolder.trackId.isBlank()) {
+            conn.setRequestProperty("Cookie", cookieHolder.trackId + "; CookieName=CookieValue");
         }
 
-        conn.setConnectTimeout(2500);
-        conn.setReadTimeout(3000);
+        conn.setConnectTimeout(1500);
+        conn.setReadTimeout(2500);
         conn.setDoOutput(true);
 
         try (OutputStream os = conn.getOutputStream()) {
-            byte[] input = jsonPayload.getBytes("utf-8");
+            byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
 
@@ -501,10 +523,10 @@ public class UcmApiClient {
 
         // Capturar o actualizar TRACKID de la cabecera Set-Cookie
         String setCookie = conn.getHeaderField("Set-Cookie");
-        if (setCookie != null && setCookie.contains("TRACKID=")) {
+        if (cookieHolder != null && setCookie != null && setCookie.contains("TRACKID=")) {
             for (String part : setCookie.split(";")) {
                 if (part.trim().startsWith("TRACKID=")) {
-                    this.trackId = part.trim();
+                    cookieHolder.trackId = part.trim();
                     break;
                 }
             }
@@ -512,7 +534,7 @@ public class UcmApiClient {
 
         if (responseCode >= 400) {
             String errorMsg = "";
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "utf-8"))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
                 StringBuilder sb = new StringBuilder();
                 String line;
                 while ((line = br.readLine()) != null) sb.append(line.trim());
@@ -522,7 +544,7 @@ public class UcmApiClient {
             throw new RuntimeException("HTTP " + responseCode + (errorMsg.isEmpty() ? "" : " - " + errorMsg));
         }
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
             StringBuilder response = new StringBuilder();
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
@@ -534,7 +556,7 @@ public class UcmApiClient {
 
     private String generarMd5(String input) throws Exception {
         MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] digest = md.digest(input.getBytes());
+        byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
         StringBuilder hexString = new StringBuilder();
         for (byte b : digest) {
             String hex = Integer.toHexString(0xff & b);
@@ -564,6 +586,10 @@ public class UcmApiClient {
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private static final class SessionCookieHolder {
+        String trackId;
     }
 
     public record TestResult(boolean ok, String message) {

@@ -90,6 +90,14 @@
 			</div>
 
 			<div class="kanban-topbar-actions">
+				<!-- Indicador Modo Casa / Modo Producción -->
+				<span th:if="${runtimeMode != null}"
+				      th:title="${runtimeMode.mensaje}"
+				      th:style="${runtimeMode.modoTrabajo == 'TRABAJO'
+				        ? 'display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:9999px; font-size:0.74rem; font-weight:700; background:rgba(22, 163, 74, 0.14); color:#15803d; border:1px solid rgba(22, 163, 74, 0.35);'
+				        : 'display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:9999px; font-size:0.74rem; font-weight:700; background:rgba(217, 119, 6, 0.14); color:#b45309; border:1px solid rgba(217, 119, 6, 0.35);'}">
+					<span th:text="${runtimeMode.modoTrabajo == 'TRABAJO' ? '🏛️ Modo Producción' : '🏠 Modo Casa'}">🏠 Modo Casa</span>
+				</span>
 				<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
 				<span id="visor-live-status" class="kanban-live-status" role="status"></span>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin}" th:if="${!esSoloMovil}">Panel general</a>
@@ -213,8 +221,6 @@
 				</span>
 			</div>
 		</div>
-
-		<!-- Mensaje removido del flujo principal para convertirlo en toast -->
 
 		<!-- ===== TABLERO KANBAN ===== -->
 		<div class="kanban-board" id="kanban-board">
@@ -584,7 +590,6 @@
 			input.addEventListener('input', function() {
 				clearTimeout(solicitanteTimer);
 				const query = this.value.trim();
-				// Reset hidden fields if user clears or modifies text
 				usernameField.value = '';
 				nombreField.value = '';
 
@@ -644,7 +649,6 @@
 									helpText.style.color = '#166534';
 								}
 
-								// Sincronizar fuero si coincide con la lista
 								if (fueroSelect && u.fuero) {
 									const optMatch = Array.from(fueroSelect.options).find(opt => 
 										opt.value.trim().toLowerCase() === u.fuero.trim().toLowerCase()
@@ -671,7 +675,6 @@
 				}, 260);
 			});
 
-			// Ocultar dropdown al hacer clic afuera
 			document.addEventListener('pointerdown', function(e) {
 				if (!e.target.closest('.solicitante-autocomplete-box')) {
 					dropdown.style.display = 'none';
@@ -701,7 +704,61 @@
 			}
 		}
 
-		// Cerrar modal al hacer clic en el backdrop
+		// Función 1-Click: Convertir llamada telefónica (en vivo o perdida/atendida en historial) en Tarea Técnica
+		function crearTareaDesdeLlamada(numero, nombreRemoto, fechaHora, estadoLlamada) {
+			const modalNueva = document.getElementById('modal-nueva-tarea');
+			if (!modalNueva) {
+				alert('Inicie sesión con permisos de edición para crear tareas desde llamadas.');
+				return;
+			}
+			const modalHistorial = document.getElementById('modal-historial-llamadas');
+			if (modalHistorial && modalHistorial.open) {
+				modalHistorial.close();
+			}
+
+			const solicitanteInput = document.getElementById('visor-solicitante-input');
+			const usernameField = document.getElementById('visor-solicitante-username');
+			const nombreField = document.getElementById('visor-solicitante-nombre');
+			const fueroSelect = document.getElementById('visor-solicitante-fuero');
+			const tituloInput = modalNueva.querySelector('input[name="titulo"]');
+			const descTextarea = modalNueva.querySelector('textarea[name="descripcion"]');
+
+			const etiquetaSolicitante = (nombreRemoto && nombreRemoto !== numero)
+				? `${nombreRemoto} (Int. ${numero})`
+				: `Interno ${numero}`;
+
+			if (solicitanteInput) solicitanteInput.value = etiquetaSolicitante;
+			if (usernameField) usernameField.value = etiquetaSolicitante;
+			if (nombreField) nombreField.value = etiquetaSolicitante;
+
+			// Intentar inferir fuero si el nombre del interno coincide con alguno de la lista
+			if (fueroSelect && nombreRemoto) {
+				const nomLower = nombreRemoto.toLowerCase();
+				const matchOpt = Array.from(fueroSelect.options).find(opt =>
+					opt.value && nomLower.includes(opt.value.toLowerCase())
+				);
+				if (matchOpt) {
+					fueroSelect.value = matchOpt.value;
+				}
+			}
+
+			if (tituloInput) {
+				tituloInput.value = estadoLlamada === 'NO ANSWER'
+					? `Devolver llamado / Solicitud telefónica (${etiquetaSolicitante})`
+					: `Requerimiento telefónico (${etiquetaSolicitante})`;
+			}
+			if (descTextarea) {
+				const detalleFecha = fechaHora ? ` registrada el ${fechaHora}` : '';
+				descTextarea.value = `Originada desde central telefónica UCM — Interno ${numero}${nombreRemoto ? ' (' + nombreRemoto + ')' : ''}${detalleFecha}. `;
+			}
+
+			modalNueva.showModal();
+			if (tituloInput) {
+				tituloInput.focus();
+				tituloInput.select();
+			}
+		}
+
 		document.addEventListener('DOMContentLoaded', function () {
 			initVisorSolicitanteAutocomplete();
 
@@ -883,11 +940,11 @@
 	</dialog>
 
 	<!-- Modal para Historial de Llamadas (CDR) -->
-	<dialog id="modal-historial-llamadas" class="modal-dialog" style="max-width: 820px; width: 92%; padding: 24px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 12px 30px rgba(0,0,0,0.25);">
+	<dialog id="modal-historial-llamadas" class="modal-dialog" style="max-width: 880px; width: 94%; padding: 24px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 12px 30px rgba(0,0,0,0.25);">
 		<header class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px;">
 			<div>
 				<h3 style="margin: 0; font-size: 1.25rem; color: #006f99; font-weight: 700;">📞 Llamadas del Taller</h3>
-				<p style="margin: 3px 0 0; font-size: 0.84rem; color: #64748b;">Historial reciente de llamadas entrantes, salientes y perdidas.</p>
+				<p style="margin: 3px 0 0; font-size: 0.84rem; color: #64748b;">Historial reciente de llamadas entrantes, salientes y perdidas · Convierta cualquier llamada en Tarea Técnica con 1 clic.</p>
 			</div>
 			<button type="button" class="modal-close" onclick="document.getElementById('modal-historial-llamadas').close()" title="Cerrar" style="background: none; border: none; font-size: 1.35rem; cursor: pointer; color: #64748b; line-height: 1; padding: 4px 8px; border-radius: 6px;">✕</button>
 		</header>
@@ -905,6 +962,7 @@
 						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Llamada y contacto</th>
 						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Duración</th>
 						<th style="padding: 10px 8px; text-align: left; font-weight: 700;">Estado</th>
+						<th th:if="${puedeEditarTareas}" style="padding: 10px 8px; text-align: right; font-weight: 700;">Acción</th>
 					</tr>
 				</thead>
 				<tbody id="cdr-tbody">
@@ -964,6 +1022,7 @@
 			// Módulo: Integración de Telefonía en Vivo (SSE)
 			// ==========================================
 			const container = document.querySelector('.kanban-toast-container');
+			const puedeEditar = document.body.dataset.isAdmin === 'true';
 			let activeCallToast = null;
 
 			if (window.EventSource) {
@@ -980,25 +1039,28 @@
 					callSource.addEventListener('llamada', function(e) {
 						try {
 							const data = JSON.parse(e.data);
-							const callee = data.callee || '';
-
 							const caller = data.caller || 'Desconocido';
 							const callerName = data.callerName || '';
 							const estado = (data.status || '').toUpperCase();
 
-							// 1. Mostrar banner cuando suena
 							if (estado === 'RINGING' || estado === 'RING') {
 								if (!activeCallToast) {
 									activeCallToast = document.createElement('div');
 									activeCallToast.className = 'kanban-toast';
-									// Estilo azul distintivo para llamadas
 									activeCallToast.style.borderLeftColor = '#3b82f6';
 									activeCallToast.style.color = '#1e3a8a';
 									container.appendChild(activeCallToast);
 								}
-								activeCallToast.innerHTML = `📞 <strong>Llamada entrante al taller</strong><br>De: ${escapeHtml(callerName)} (${escapeHtml(caller)})`;
+								activeCallToast.innerHTML = `
+									<div style="display:flex; flex-direction:column; gap:8px;">
+										<div>📞 <strong>Llamada entrante al taller</strong><br>De: ${escapeHtml(callerName)} (${escapeHtml(caller)})</div>
+										${puedeEditar ? `<button type="button" class="kbtn kbtn--primary kbtn--sm" style="align-self:flex-start;" id="btn-toast-crear-tarea">➕ Crear Tarea de este interno</button>` : ''}
+									</div>`;
+								const btn = activeCallToast.querySelector('#btn-toast-crear-tarea');
+								if (btn) {
+									btn.addEventListener('click', () => crearTareaDesdeLlamada(caller, callerName, 'Ahora mismo', 'RINGING'));
+								}
 							} 
-							// 2. Limpiar banner cuando atienden o cortan
 							else if (estado === 'ANSWERED' || estado === 'HANGUP' || estado === 'NO ANSWER') {
 								if (activeCallToast) {
 									activeCallToast.style.opacity = '0';
@@ -1016,8 +1078,6 @@
 					});
 
 					callSource.onerror = function(err) {
-						// Si el navegador cierra la conexión (ej. HTTP 429 o fallo de red), readyState pasa a CLOSED (2).
-						// El navegador NO reconecta por sí mismo en ese estado, por lo que forzamos reintento programado.
 						if (callSource.readyState === EventSource.CLOSED) {
 							console.warn("Conexión SSE de telefonía cerrada. Reintentando en 5s...");
 							callSource.close();
@@ -1071,11 +1131,12 @@
 		function renderizarTablaLlamadas(cdrs) {
 			const tbody = document.getElementById('cdr-tbody');
 			const countSpan = document.getElementById('cdr-count');
+			const puedeEditar = document.body.dataset.isAdmin === 'true';
 			if (!tbody) return;
 			tbody.innerHTML = '';
 
 			if (!cdrs || cdrs.length === 0) {
-				tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: #64748b; font-style: italic;">No hay llamadas para mostrar.</td></tr>';
+				tbody.innerHTML = `<tr><td colspan="${puedeEditar ? 5 : 4}" style="text-align: center; padding: 24px; color: #64748b; font-style: italic;">No hay llamadas para mostrar.</td></tr>`;
 				if (countSpan) countSpan.textContent = 'Sin llamadas';
 				return;
 			}
@@ -1094,7 +1155,6 @@
 
 				const esSaliente = Boolean(llamada.esSaliente || (llamada.caller && (llamada.caller.startsWith('↗') || llamada.caller.toLowerCase().includes('saliente'))));
 				
-				// Estado y Resultado natural y humano
 				let estadoHtml = llamada.disposition || '';
 				if (llamada.disposition === 'ANSWERED') {
 					estadoHtml = '<span style="color: #166534; font-weight: 600; background: #dcfce7; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">✓ Atendida</span>';
@@ -1108,7 +1168,6 @@
 					estadoHtml = '<span style="color: #9a3412; font-weight: 600; background: #ffedd5; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 9999px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">⏳ Ocupado</span>';
 				}
 
-				// Duración limpia: guión si no hubo conversación, minutos/segundos si atendió
 				const billsec = parseInt(llamada.billsec || 0, 10);
 				let duracionStr = '';
 				if (billsec <= 0) {
@@ -1123,7 +1182,6 @@
 					}
 				}
 
-				// Dirección y contacto legible
 				let dirBadge = '';
 				if (esSaliente) {
 					dirBadge = '<span style="color: #0284c7; font-weight: 600; margin-right: 6px; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 2px;">↗ Saliente a:</span>';
@@ -1146,12 +1204,26 @@
 
 				const fechaFormateada = formatearFechaAmigable(llamada.start);
 
+				let accionTd = '';
+				if (puedeEditar) {
+					accionTd = `<td style="padding: 10px 8px; text-align: right; white-space: nowrap;">
+						<button type="button" class="kbtn kbtn--sm kbtn--secondary btn-crear-tarea-cdr" title="Crear tarea técnica pre-cargada con los datos de este interno">
+							➕ Crear Tarea
+						</button>
+					</td>`;
+				}
+
 				tr.innerHTML = `
 					<td style="padding: 10px 8px; white-space: nowrap; font-variant-numeric: tabular-nums;" title="${escapeHtml(llamada.start || '')}">${fechaFormateada}</td>
 					<td style="padding: 10px 8px;">${detalleContacto}</td>
 					<td style="padding: 10px 8px; color: #475569; font-variant-numeric: tabular-nums;">${duracionStr}</td>
 					<td style="padding: 10px 8px;">${estadoHtml}</td>
+					${accionTd}
 				`;
+				const btnCrear = tr.querySelector('.btn-crear-tarea-cdr');
+				if (btnCrear) {
+					btnCrear.addEventListener('click', () => crearTareaDesdeLlamada(num, nom, llamada.start || '', llamada.disposition || ''));
+				}
 				tbody.appendChild(tr);
 			});
 		}
@@ -1218,7 +1290,6 @@
 						return;
 					}
 					
-					// Grandstream retorna las llamadas en data.response.cdr
 					const cdrs = (data.response && data.response.cdr) ? data.response.cdr : [];
 					_ultimasLlamadasCdr = cdrs;
 					

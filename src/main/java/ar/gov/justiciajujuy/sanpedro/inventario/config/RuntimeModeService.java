@@ -18,10 +18,15 @@ public class RuntimeModeService {
 
 	private static final Pattern JDBC_MYSQL = Pattern.compile("jdbc:mysql://([^:/]+)(?::(\\d+))?/([^?;]+).*");
 	private static final Pattern LDAP = Pattern.compile("ldaps?://([^:/]+)(?::(\\d+))?.*");
+	private static final long CACHE_TTL_MS = 30_000L;
 
 	private final DataSource dataSource;
 	private final Environment environment;
 	private final ActiveDirectoryProperties activeDirectoryProperties;
+
+	private volatile DatabaseInfo cachedDbInfo;
+	private volatile RuntimeMode cachedMode;
+	private volatile long cachedUntilMs = 0L;
 
 	public RuntimeModeService(
 			DataSource dataSource,
@@ -33,6 +38,11 @@ public class RuntimeModeService {
 	}
 
 	public RuntimeMode current() {
+		long now = System.currentTimeMillis();
+		RuntimeMode snapshot = cachedMode;
+		if (snapshot != null && now < cachedUntilMs) {
+			return snapshot;
+		}
 		DatabaseInfo databaseInfo = databaseInfo();
 		boolean ldapConfigured = activeDirectoryProperties.isEnabled();
 		boolean ldapReachable = ldapConfigured && ldapReachable();
@@ -42,7 +52,7 @@ public class RuntimeModeService {
 				? "Conectado a red de trabajo: usuarios de dominio y MySQL remoto."
 				: "Modo local/fallback: se usan usuarios locales y base local disponible.";
 
-		return new RuntimeMode(
+		RuntimeMode computed = new RuntimeMode(
 				activeProfile(),
 				workMode,
 				databaseInfo.mode(),
@@ -51,6 +61,14 @@ public class RuntimeModeService {
 				ldapReachable,
 				authMode,
 				message);
+		cachedMode = computed;
+		cachedUntilMs = now + CACHE_TTL_MS;
+		return computed;
+	}
+
+	public void invalidateCache() {
+		this.cachedUntilMs = 0L;
+		this.cachedMode = null;
 	}
 
 	private String activeProfile() {
@@ -59,6 +77,10 @@ public class RuntimeModeService {
 	}
 
 	private DatabaseInfo databaseInfo() {
+		DatabaseInfo existing = cachedDbInfo;
+		if (existing != null && !"No disponible".equals(existing.mode())) {
+			return existing;
+		}
 		try (Connection connection = dataSource.getConnection()) {
 			String url = connection.getMetaData().getURL();
 			String product = connection.getMetaData().getDatabaseProductName();
@@ -67,22 +89,28 @@ public class RuntimeModeService {
 					&& !"127.0.0.1".equals(matcher.group(1))
 					&& !"localhost".equalsIgnoreCase(matcher.group(1));
 			String mode = remote ? "MySQL remoto" : product + " local";
-			return new DatabaseInfo(mode, safeJdbcUrl(url), remote);
+			DatabaseInfo resolved = new DatabaseInfo(mode, safeJdbcUrl(url), remote);
+			this.cachedDbInfo = resolved;
+			return resolved;
 		} catch (SQLException ex) {
 			return new DatabaseInfo("No disponible", "No disponible", false);
 		}
 	}
 
 	private boolean ldapReachable() {
-		Matcher matcher = LDAP.matcher(activeDirectoryProperties.getUrl());
+		String url = activeDirectoryProperties.getUrl();
+		if (!StringUtils.hasText(url)) {
+			return false;
+		}
+		Matcher matcher = LDAP.matcher(url);
 		if (!matcher.matches() || !StringUtils.hasText(matcher.group(1))) {
 			return false;
 		}
 		int port = matcher.group(2) == null
-				? (activeDirectoryProperties.getUrl().startsWith("ldaps://") ? 636 : 389)
+				? (url.startsWith("ldaps://") ? 636 : 389)
 				: Integer.parseInt(matcher.group(2));
 		try (Socket socket = new Socket()) {
-			socket.connect(new InetSocketAddress(matcher.group(1), port), 1200);
+			socket.connect(new InetSocketAddress(matcher.group(1), port), 500);
 			return true;
 		} catch (IOException ex) {
 			return false;

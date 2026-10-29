@@ -17,11 +17,13 @@ import org.springframework.util.StringUtils;
 public class DirectorioTelefonicoService {
 
 	private static final Logger log = LoggerFactory.getLogger(DirectorioTelefonicoService.class);
+	private static final long CACHE_WARM_TTL_MS = 120_000L;
 
 	private final DirectorioTelefonicoRepository repository;
 
-	// Fallback en memoria con internos iniciales conocidos
+	// Fallback y caché en memoria con internos conocidos
 	private final Map<String, String> cacheInternos = new ConcurrentHashMap<>();
+	private volatile long cacheLoadedUntilMs = 0L;
 
 	@Autowired
 	public DirectorioTelefonicoService(@Autowired(required = false) DirectorioTelefonicoRepository repository) {
@@ -36,13 +38,39 @@ public class DirectorioTelefonicoService {
 		this(null);
 	}
 
+	private void ensureCacheWarm() {
+		if (repository == null) {
+			return;
+		}
+		long now = System.currentTimeMillis();
+		if (now < cacheLoadedUntilMs) {
+			return;
+		}
+		try {
+			List<DirectorioTelefonico> all = repository.findAllByOrderByNumeroAsc();
+			for (DirectorioTelefonico entry : all) {
+				if (entry != null && StringUtils.hasText(entry.getNumero()) && StringUtils.hasText(entry.getNombre())) {
+					cacheInternos.put(entry.getNumero().trim(), entry.getNombre().trim());
+				}
+			}
+			cacheLoadedUntilMs = now + CACHE_WARM_TTL_MS;
+		} catch (Exception e) {
+			log.debug("Error precargando directorio telefónico en memoria: {}", e.getMessage());
+		}
+	}
+
 	@Transactional(readOnly = true)
 	public String resolverNombre(String numero) {
 		if (!StringUtils.hasText(numero)) {
 			return "";
 		}
 		String num = numero.trim();
-		if (repository != null) {
+		ensureCacheWarm();
+		String cached = cacheInternos.get(num);
+		if (StringUtils.hasText(cached)) {
+			return cached;
+		}
+		if (repository != null && cacheLoadedUntilMs == 0L) {
 			try {
 				Optional<DirectorioTelefonico> opt = repository.findByNumero(num);
 				if (opt.isPresent() && StringUtils.hasText(opt.get().getNombre())) {
@@ -103,7 +131,14 @@ public class DirectorioTelefonicoService {
 	public List<DirectorioTelefonico> listarTodos() {
 		if (repository != null) {
 			try {
-				return repository.findAllByOrderByNumeroAsc();
+				List<DirectorioTelefonico> list = repository.findAllByOrderByNumeroAsc();
+				for (DirectorioTelefonico entry : list) {
+					if (entry != null && StringUtils.hasText(entry.getNumero()) && StringUtils.hasText(entry.getNombre())) {
+						cacheInternos.put(entry.getNumero().trim(), entry.getNombre().trim());
+					}
+				}
+				cacheLoadedUntilMs = System.currentTimeMillis() + CACHE_WARM_TTL_MS;
+				return list;
 			} catch (Exception e) {
 				log.warn("No se pudo listar el directorio telefónico desde la BD: {}", e.getMessage());
 			}

@@ -7,48 +7,102 @@
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 	<style>
 		.ipam-container {
-			max-width: 1300px;
+			max-width: 1520px;
 			margin: 0 auto;
 		}
 		.ipam-stats-grid {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-			gap: 14px;
-			margin-bottom: 20px;
+			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			gap: 16px;
+			margin-bottom: 18px;
 		}
 		.ipam-stat-card {
-			background: var(--bg-surface, #ffffff);
+			position: relative;
+			background: var(--bg-card, #ffffff);
 			border: 1px solid var(--border-color, #e2e8f0);
-			border-radius: 10px;
-			padding: 14px 18px;
+			border-radius: 12px;
+			padding: 16px 20px;
 			display: flex;
 			flex-direction: column;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+			justify-content: space-between;
+			box-shadow: var(--shadow-sm);
+			overflow: hidden;
 		}
+		.ipam-stat-card::before {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 4px;
+			height: 100%;
+			background: var(--accent-primary, #0284c7);
+		}
+		.ipam-stat-card.ocupada::before { background: #ef4444; }
+		.ipam-stat-card.libre::before { background: #22c55e; }
+		.ipam-stat-card.reservada::before { background: #f59e0b; }
+
 		.ipam-stat-card span {
-			font-size: 0.8rem;
-			color: #64748b;
+			font-size: 0.75rem;
+			color: var(--text-secondary, #64748b);
 			text-transform: uppercase;
 			letter-spacing: 0.5px;
-			font-weight: 600;
+			font-weight: 700;
 		}
 		.ipam-stat-card strong {
-			font-size: 1.7rem;
-			color: #0f172a;
-			margin: 4px 0 2px;
+			font-size: 1.9rem;
+			color: var(--text-primary, #0f172a);
+			margin: 6px 0 4px;
+			font-weight: 800;
+			line-height: 1.1;
 		}
 		.ipam-stat-card small {
-			font-size: 0.8rem;
-			color: #475569;
+			font-size: 0.79rem;
+			color: var(--text-muted, #475569);
 		}
 		.ipam-stat-card.ocupada strong { color: #dc2626; }
 		.ipam-stat-card.libre strong { color: #16a34a; }
 		.ipam-stat-card.reservada strong { color: #d97706; }
+		:root[data-theme="dark"] .ipam-stat-card.ocupada strong { color: #f87171; }
+		:root[data-theme="dark"] .ipam-stat-card.libre strong { color: #4ade80; }
+		:root[data-theme="dark"] .ipam-stat-card.reservada strong { color: #fbbf24; }
+
+		/* Barra de Saturación de Subred */
+		.ipam-capacity-bar-card {
+			background: var(--bg-card, #ffffff);
+			border: 1px solid var(--border-color, #e2e8f0);
+			border-radius: 12px;
+			padding: 14px 20px;
+			margin-bottom: 18px;
+			box-shadow: var(--shadow-sm);
+		}
+		.ipam-capacity-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin-bottom: 8px;
+			font-size: 0.82rem;
+			color: var(--text-secondary);
+			font-weight: 600;
+		}
+		.ipam-capacity-track {
+			display: flex;
+			width: 100%;
+			height: 10px;
+			border-radius: 999px;
+			overflow: hidden;
+			background: #dcfce7;
+			gap: 2px;
+		}
+		.ipam-seg-ocupada { background: #ef4444; height: 100%; transition: width 0.3s ease; }
+		.ipam-seg-reservada { background: #f59e0b; height: 100%; transition: width 0.3s ease; }
+		.ipam-seg-libre { background: #22c55e; height: 100%; flex: 1; }
 
 		.ipam-toolbar {
-			background: #f8fafc;
-			border: 1px solid #e2e8f0;
-			border-radius: 10px;
+			background: var(--bg-card, #f8fafc);
+			border: 1px solid var(--border-color, #e2e8f0);
+			border-radius: 12px;
 			padding: 14px 18px;
 			display: flex;
 			flex-wrap: wrap;
@@ -56,6 +110,7 @@
 			align-items: center;
 			justify-content: space-between;
 			margin-bottom: 20px;
+			box-shadow: var(--shadow-sm);
 		}
 		.ipam-search-box {
 			display: flex;
@@ -66,11 +121,12 @@
 		}
 		.ipam-search-input {
 			width: 100%;
-			padding: 8px 12px;
-			border: 1px solid #cbd5e1;
-			border-radius: 6px;
+			padding: 9px 14px;
+			border: 1px solid var(--border-input, #cbd5e1);
+			border-radius: 8px;
 			font-size: 0.9rem;
-			background: #ffffff;
+			background: var(--bg-input, #ffffff);
+			color: var(--text-primary, #0f172a);
 		}
 		.ipam-filter-group {
 			display: flex;
@@ -79,93 +135,105 @@
 			flex-wrap: wrap;
 		}
 		.ipam-filter-btn {
-			padding: 6px 12px;
-			font-size: 0.82rem;
-			border: 1px solid #cbd5e1;
-			border-radius: 6px;
-			background: #ffffff;
+			padding: 7px 13px;
+			font-size: 0.8rem;
+			border: 1px solid var(--border-color, #cbd5e1);
+			border-radius: 8px;
+			background: var(--bg-card-secondary, #ffffff);
 			cursor: pointer;
-			color: #475569;
-			font-weight: 500;
+			color: var(--text-secondary, #475569);
+			font-weight: 600;
 			transition: all 0.15s ease;
 		}
 		.ipam-filter-btn:hover {
-			background: #f1f5f9;
-			color: #0f172a;
+			background: var(--bg-card-hover, #f1f5f9);
+			color: var(--text-primary, #0f172a);
 		}
 		.ipam-filter-btn.active {
-			background: #0284c7;
+			background: var(--accent-primary, #0284c7);
 			color: #ffffff;
-			border-color: #0284c7;
+			border-color: var(--accent-primary, #0284c7);
 		}
 
 		/* Grid Mapa de Red */
 		.ipam-map-grid {
 			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-			gap: 10px;
+			grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+			gap: 12px;
 			margin-bottom: 30px;
 		}
 		.ipam-cell {
-			background: #ffffff;
-			border: 1px solid #e2e8f0;
-			border-radius: 8px;
-			padding: 10px;
+			background: var(--bg-card, #ffffff);
+			border: 1px solid var(--border-color, #e2e8f0);
+			border-radius: 10px;
+			padding: 12px 13px;
 			display: flex;
 			flex-direction: column;
-			gap: 4px;
+			justify-content: space-between;
+			gap: 6px;
 			cursor: pointer;
-			transition: all 0.15s ease;
+			transition: all 0.16s ease;
 			position: relative;
 			overflow: hidden;
 			text-align: left;
+			min-height: 108px;
+			box-shadow: 0 2px 6px rgba(0,0,0,0.03);
 		}
 		.ipam-cell:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-			border-color: #94a3b8;
+			transform: translateY(-3px);
+			box-shadow: var(--shadow-card);
+			border-color: var(--accent-primary, #0284c7);
 		}
 		.ipam-cell-ip {
-			font-size: 0.95rem;
-			font-weight: 700;
-			color: #0f172a;
+			font-size: 0.8rem;
+			font-weight: 600;
+			color: var(--text-muted, #64748b);
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
+			font-family: monospace;
 		}
 		.ipam-cell-octeto {
-			font-size: 0.72rem;
-			background: #e2e8f0;
-			padding: 1px 5px;
-			border-radius: 4px;
-			color: #475569;
+			font-size: 1.05rem;
+			font-weight: 800;
+			background: var(--badge-bg, #e2e8f0);
+			border: 1px solid var(--badge-border, #cbd5e1);
+			padding: 1px 7px;
+			border-radius: 6px;
+			color: var(--badge-text, #0f172a);
+			font-family: "Segoe UI", sans-serif;
 		}
 		.ipam-cell-equipo {
-			font-size: 0.82rem;
-			font-weight: 600;
-			color: #1e293b;
+			font-size: 0.88rem;
+			font-weight: 700;
+			color: var(--text-primary, #1e293b);
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
 		}
 		.ipam-cell-detalle {
-			font-size: 0.73rem;
-			color: #64748b;
+			font-size: 0.74rem;
+			color: var(--text-secondary, #64748b);
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
 		}
 		.ipam-cell.is-ocupada {
-			border-left: 4px solid #ef4444;
-			background: #ffffff;
+			border-top: 4px solid #ef4444;
 		}
 		.ipam-cell.is-libre {
-			border-left: 4px solid #22c55e;
-			background: #fcfdfc;
+			border-top: 4px solid #22c55e;
+			opacity: 0.92;
+		}
+		.ipam-cell.is-libre .ipam-cell-equipo {
+			color: #16a34a;
+			font-weight: 600;
+		}
+		:root[data-theme="dark"] .ipam-cell.is-libre .ipam-cell-equipo {
+			color: #4ade80;
 		}
 		.ipam-cell.is-reservada {
-			border-left: 4px solid #f59e0b;
-			background: #fffdfa;
+			border-top: 4px solid #f59e0b;
 		}
 
 		/* Badge de categoría */
@@ -255,27 +323,79 @@
 				<span th:text="${mensajeError}">Error en la operación</span>
 			</div>
 
+			<!-- Detector de Discrepancias IPAM vs Script PowerShell -->
+			<div th:if="${discrepancias != null and !#lists.isEmpty(discrepancias)}"
+			     style="background: #fffbeb; border: 1px solid #fcd34d; border-left: 5px solid #f59e0b; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;">
+				<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+					<div>
+						<strong style="color: #92400e; font-size: 0.96rem; display: flex; align-items: center; gap: 6px;">
+							⚡ Auditoría Automática IPAM vs. Script PowerShell:
+							<span th:text="${#lists.size(discrepancias)} + ' discrepancia(s) detectada(s)'">1 discrepancia</span>
+						</strong>
+						<p style="margin: 3px 0 0; font-size: 0.83rem; color: #78350f;">
+							Se cruzaron las IPs reales reportadas por los equipos en vivo contra el plano IPAM. Puede sincronizar cada registro con 1 clic.
+						</p>
+					</div>
+					<button type="button" class="secondary-action" onclick="const box = document.getElementById('ipam-discrepancias-list'); box.style.display = box.style.display === 'none' ? 'flex' : 'none';" style="font-size: 0.82rem; padding: 6px 12px;">
+						🔍 Ver / Ocultar Detalles
+					</button>
+				</div>
+				<div id="ipam-discrepancias-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px; max-height: 260px; overflow-y: auto;">
+					<div th:each="disc : ${discrepancias}"
+					     style="background: #ffffff; border: 1px solid #fde68a; border-radius: 8px; padding: 9px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+						<div style="font-size: 0.85rem; color: #1e293b;">
+							<strong style="font-family: monospace; font-size: 0.92rem; color: #0f172a; background: #fef3c7; padding: 2px 6px; border-radius: 4px;" th:text="${disc.ip}">10.15.0.25</strong>
+							<span style="margin-left: 6px;" th:text="${disc.descripcion}">Descripción</span>
+							<a th:if="${disc.equipoId != null}" th:href="@{/admin/equipos/{id}(id=${disc.equipoId})}" style="margin-left: 6px; font-size: 0.78rem; color: #0284c7; text-decoration: underline;">Ver ficha PC</a>
+						</div>
+						<form th:if="${puedeModificar}" th:action="@{/admin/red-ips/sincronizar-desde-inventario}" method="post" style="margin: 0;">
+							<input type="hidden" name="ip" th:value="${disc.ip}">
+							<input type="hidden" name="equipo" th:value="${disc.equipoInventario}">
+							<input type="hidden" name="detalle" th:value="${disc.fuero != null ? 'Equipo en ' + disc.fuero : 'Sincronizado desde Script'}">
+							<input type="hidden" name="observaciones" th:value="${disc.ubicacion}">
+							<input type="hidden" name="categoria" th:value="${disc.categoriaSugerida}">
+							<button type="submit" class="kbtn kbtn--sm kbtn--primary" style="font-size: 0.78rem; padding: 5px 10px;">
+								🔄 Sincronizar en Plano
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+
 			<!-- Tarjetas de Estadísticas -->
 			<div class="ipam-stats-grid">
 				<div class="ipam-stat-card">
 					<span>Subred LAN Monitoreada</span>
 					<strong>10.15.0.0/24</strong>
-					<small th:text="${metricas.total()} + ' direcciones registradas'">140 direcciones</small>
+					<small th:text="${metricas.total()} + ' direcciones registradas en el rango'">140 direcciones</small>
 				</div>
 				<div class="ipam-stat-card ocupada">
 					<span>IPs Asignadas / Ocupadas</span>
 					<strong th:text="${metricas.ocupadas()}">0</strong>
-					<small th:text="${metricas.porcentajeUso()} + '% de utilización del rango'">0%</small>
+					<small th:text="${metricas.porcentajeUso()} + '% de utilización activa'">0%</small>
 				</div>
 				<div class="ipam-stat-card libre">
 					<span>IPs Libres Disponibles</span>
 					<strong th:text="${metricas.libres()}">0</strong>
-					<small>Listas para asignar sin duplicación</small>
+					<small>Listas para asignar sin conflicto</small>
 				</div>
 				<div class="ipam-stat-card reservada">
-					<span>IPs Reservadas / Off-line</span>
+					<span>IPs Reservadas / Infraestructura</span>
 					<strong th:text="${metricas.reservadas()}">0</strong>
-					<small>Servicios reservados o provisorios</small>
+					<small>Switches, Servidores, Relojes, APs</small>
+				</div>
+			</div>
+
+			<!-- Barra Visual de Capacidad del Segmento 10.15.0.0/24 -->
+			<div class="ipam-capacity-bar-card" th:if="${metricas.total() > 0}">
+				<div class="ipam-capacity-header">
+					<span>Distribución de Capacidad de Red · Segmento 10.15.0.1 – 10.15.0.254</span>
+					<span th:text="${'🔴 Ocupadas: ' + metricas.ocupadas() + '  ·  🟡 Reservadas: ' + metricas.reservadas() + '  ·  🟢 Libres: ' + metricas.libres()}">Resumen</span>
+				</div>
+				<div class="ipam-capacity-track">
+					<div class="ipam-seg-ocupada" th:style="'width:' + ${metricas.total() > 0 ? (metricas.ocupadas() * 100.0 / metricas.total()) : 0} + '%'" title="IPs Ocupadas"></div>
+					<div class="ipam-seg-reservada" th:style="'width:' + ${metricas.total() > 0 ? (metricas.reservadas() * 100.0 / metricas.total()) : 0} + '%'" title="IPs Reservadas"></div>
+					<div class="ipam-seg-libre" title="IPs Libres"></div>
 				</div>
 			</div>
 

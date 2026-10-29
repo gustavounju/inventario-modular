@@ -14,6 +14,8 @@
     async function update() {
         try {
             if (!toggle.checked || edited || document.activeElement?.closest('form')) return;
+            // Si hay algún modal <dialog open> abierto en pantalla, posponer reemplazo del DOM
+            if (document.querySelector('dialog[open]')) return;
             const response = await fetch(location.href, { credentials: 'same-origin', cache: 'no-store', signal: AbortSignal.timeout(15000) });
             if (response.redirected || response.status === 401 || response.status === 403) {
                 toggle.checked = false;
@@ -22,9 +24,9 @@
             }
             if (!response.ok) throw new Error('Conexion');
             const next = new DOMParser().parseFromString(await response.text(), 'text/html');
-            // El usuario pudo empezar a escribir mientras viajaba la respuesta; comprobar otra vez antes de reemplazar.
-            if (edited || !toggle.checked || document.activeElement?.closest('form')) return;
-            for (const selector of ['.task-metric-grid', '.task-board', '#apk-chips-list']) {
+            // El usuario pudo empezar a escribir o abrir un modal mientras viajaba la respuesta; comprobar otra vez antes de reemplazar.
+            if (edited || !toggle.checked || document.activeElement?.closest('form') || document.querySelector('dialog[open]')) return;
+            for (const selector of ['.kanban-total-pill', '.kanban-board', '.task-metric-grid', '.task-board', '#apk-chips-list']) {
                 const current = document.querySelector(selector), fresh = next.querySelector(selector);
                 if (current && fresh) current.replaceWith(fresh);
             }

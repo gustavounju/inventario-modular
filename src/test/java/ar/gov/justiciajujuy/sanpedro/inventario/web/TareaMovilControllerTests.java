@@ -112,7 +112,7 @@ class TareaMovilControllerTests {
                 .andExpect(jsonPath("$.consultaRealizada").value(true));
         mvc.perform(get("/api/v1/tareas-tecnicas/1/comentarios").with(user("admin.local"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].comentario").value("Comentario inicial de seguimiento."));
-        mvc.perform(post("/api/v1/tareas-tecnicas").with(user("admin.local")).contentType(MediaType.APPLICATION_JSON).content(NUEVA))
+        mvc.perform(post("/api/v1/tareas-tecnicas").with(user("admin.local")).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(NUEVA))
                 .andExpect(status().isCreated());
     }
 
@@ -431,6 +431,26 @@ class TareaMovilControllerTests {
                 .andExpect(jsonPath("$[0].esApk").value(true))
                 .andExpect(jsonPath("$[0].version").value("0.1.11"))
                 .andExpect(jsonPath("$[0].iniciales").value("AL"));
+    }
+
+    @Test void consultaEquiposYGemeloDigitalEnTerreno() throws Exception {
+        mvc.perform(get("/movil/equipos")).andExpect(redirectedUrl("/movil/login"));
+        mvc.perform(get("/movil/equipos").with(user("sin.permisos"))).andExpect(status().isForbidden());
+        mvc.perform(get("/movil/equipos").with(user("admin.local")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Equipos y Gemelo")))
+                .andExpect(content().string(containsString("scan-equipo-qr")));
+        mvc.perform(get("/api/v1/movil/equipos").param("q", "").with(user("admin.local")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+        mvc.perform(get("/api/v1/movil/equipos/1").with(user("admin.local")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.equipo.id").value(1))
+                .andExpect(jsonPath("$.gemelo").isArray())
+                .andExpect(jsonPath("$.tareas").isArray());
+        mvc.perform(get("/api/v1/movil/avisos").with(user("admin.local")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("admin.local"));
     }
 
     private int tomarAlMismoTiempo(CountDownLatch inicio, Long id, String username) throws Exception {

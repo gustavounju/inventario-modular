@@ -3,6 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="_csrf" th:content="${_csrf.token}">
+	<meta name="_csrf_header" th:content="${_csrf.headerName}">
 	<title>Equipos - Inventario Modular</title>
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 </head>
@@ -420,8 +422,15 @@
 			btnElement.innerText = 'Desvinculando...';
 			btnElement.disabled = true;
 			
+			const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+			const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
+			const headers = {};
+			if (csrfToken) {
+				headers[csrfHeader] = csrfToken;
+			}
+			
 			try {
-				const response = await fetch('/api/v1/equipos/' + equipoId + '/desvincular-impresora', { method: 'POST' });
+				const response = await fetch('/api/v1/equipos/' + equipoId + '/desvincular-impresora', { method: 'POST', headers });
 				if (response.ok) {
 					btnElement.closest('li').remove();
 					const lista = document.getElementById('lista-vinculados');

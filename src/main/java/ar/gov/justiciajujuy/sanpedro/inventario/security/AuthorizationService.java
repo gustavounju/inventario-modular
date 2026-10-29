@@ -16,6 +16,8 @@ public class AuthorizationService {
 
 	private static final String USUARIO_ACTUAL_REQUEST_ATTRIBUTE =
 			AuthorizationService.class.getName() + ".usuarioActual";
+	private static final String ROLES_REQUEST_ATTRIBUTE =
+			AuthorizationService.class.getName() + ".rolesUsuario";
 
 	private final UsuarioSistemaRepository usuarioSistemaRepository;
 	private final ModuloRepository moduloRepository;
@@ -95,7 +97,7 @@ public class AuthorizationService {
 		if (username == null || username.isBlank()) {
 			return false;
 		}
-		List<String> roles = usuarioSistemaRepository.findRoleCodesByUsername(username);
+		List<String> roles = obtenerRolesCacheadosEnRequest(username);
 		return roles.stream().anyMatch(r -> "ADMINISTRADOR".equalsIgnoreCase(r != null ? r.trim() : ""));
 	}
 
@@ -108,7 +110,7 @@ public class AuthorizationService {
 			return false;
 		}
 		String username = userDetails.getUsername();
-		List<String> roles = usuarioSistemaRepository.findRoleCodesByUsername(username);
+		List<String> roles = obtenerRolesCacheadosEnRequest(username);
 		if (roles.contains("TECNICO") || roles.contains("TELEFONISTA")) {
 			return true;
 		}
@@ -117,6 +119,24 @@ public class AuthorizationService {
 				|| tienePermiso(userDetails, "PATRIMONIO", "VER")
 				|| tienePermiso(userDetails, "EQUIPOS", "ADMINISTRAR");
 		return tieneTareas && !tieneAdminModulos;
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<String> obtenerRolesCacheadosEnRequest(String username) {
+		if (username == null || username.isBlank()) {
+			return List.of();
+		}
+		if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
+			String attrKey = ROLES_REQUEST_ATTRIBUTE + ":" + username.toLowerCase();
+			Object cached = attributes.getRequest().getAttribute(attrKey);
+			if (cached instanceof List<?> list) {
+				return (List<String>) list;
+			}
+			List<String> roles = List.copyOf(usuarioSistemaRepository.findRoleCodesByUsername(username));
+			attributes.getRequest().setAttribute(attrKey, roles);
+			return roles;
+		}
+		return usuarioSistemaRepository.findRoleCodesByUsername(username);
 	}
 
 	private List<ModuloAutorizado> obtenerModulos(String username) {

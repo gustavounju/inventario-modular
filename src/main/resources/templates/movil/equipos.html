@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#006f99">
+    <meta name="csrf-token" th:content="${_csrf.token}">
+    <meta name="csrf-header" th:content="${_csrf.headerName}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Tareas LAN">
+    <link rel="apple-touch-icon" th:href="@{/icons/apple-touch-icon.png}">
+    <link rel="manifest" th:href="@{/manifest.json}">
+    <title>Equipos en Terreno | Centro Judicial San Pedro</title>
+    <link rel="stylesheet" th:href="@{/css/movil.css(v=2)}">
+    <script defer th:src="@{/js/lucide.min.js}"></script>
+    <script defer th:src="@{/js/movil-equipos.js(v=1)}"></script>
+</head>
+<body th:attr="data-base=@{/}">
+    <header class="mobile-header">
+        <div>
+            <span class="brand">Centro Judicial San Pedro</span>
+            <span class="mobile-kicker">Taller Informática · Relevamiento en Terreno</span>
+            <h1>Equipos y Gemelo</h1>
+        </div>
+        <div class="header-actions">
+            <a class="icon-button" th:href="@{/movil/tareas}" aria-label="Tareas" title="Tareas"><i data-lucide="clipboard-list"></i></a>
+            <a th:if="${puedeVerStock}" class="icon-button" th:href="@{/movil/stock}" aria-label="Stock" title="Stock"><i data-lucide="scan-barcode"></i></a>
+            <a id="download-apk" th:if="${apkDisponible}" class="icon-button" th:href="@{/api/v1/movil/apk}" aria-label="Descargar APK" title="Descargar APK"><i data-lucide="smartphone"></i></a>
+            <form th:action="@{/logout}" method="post"><button class="icon-button" title="Cerrar sesión" aria-label="Cerrar sesión"><i data-lucide="log-out"></i></button></form>
+        </div>
+    </header>
+    <main class="mobile-main">
+        <div class="session-line">
+            <span id="username">Cargando usuario...</span>
+            <span class="apk-version" th:text="'APK ' + ${apkInfo.version}">APK</span>
+            <span id="connection" role="status">Conectando...</span>
+        </div>
+
+        <section class="metrics" aria-label="Resumen de equipos encontrados">
+            <div><strong id="equipos-total-count">0</strong><span>Encontrados</span></div>
+            <div><strong id="equipos-activos-count">0</strong><span>Con reporte</span></div>
+            <div><strong id="equipos-taller-count">0</strong><span>En taller / rev.</span></div>
+        </section>
+
+        <section class="quick-scan-panel" aria-labelledby="equipos-search-title">
+            <div class="quick-scan-header">
+                <div>
+                    <h2 id="equipos-search-title">Buscar o escanear PC</h2>
+                    <p class="muted">Busque por nombre de PC, IP, usuario AD, fuero, ubicación o escanee el código/serial de placa o componente.</p>
+                </div>
+            </div>
+            <div class="scan-row">
+                <label>Equipo, IP, Serial o Usuario
+                    <input id="equipo-search" type="search" maxlength="160" placeholder="Ej: JCC8, 10.15.0.85, sn12345..." autocomplete="off">
+                </label>
+                <button id="scan-equipo-qr" class="primary icon-button scan-button" type="button" title="Escanear código QR / Barra" aria-label="Escanear código QR / Barra">
+                    <i data-lucide="scan-line"></i>
+                </button>
+                <button id="refresh-equipos" class="icon-button" type="button" title="Actualizar listado" aria-label="Actualizar listado">
+                    <i data-lucide="refresh-cw"></i>
+                </button>
+            </div>
+        </section>
+
+        <p id="feedback" class="feedback" hidden></p>
+        <section id="equipos-list" class="task-list" aria-live="polite"></section>
+    </main>
+
+    <dialog id="equipo-detail-dialog" class="task-dialog">
+        <div class="task-form">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                <div>
+                    <span id="detail-fuero" class="badge">Fuero</span>
+                    <h2 id="detail-nombre" style="margin:0.25rem 0 0 0;">PC-NOMBRE</h2>
+                </div>
+                <button id="close-detail" type="button" class="icon-button" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+
+            <div id="detail-meta" style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; font-size:0.88rem; background:#f8fafc; padding:0.75rem; border-radius:0.5rem; border:1px solid #e2e8f0;">
+            </div>
+
+            <div id="detail-hardware" style="font-size:0.86rem; background:#ffffff; padding:0.75rem; border-radius:0.5rem; border:1px solid #e2e8f0;">
+            </div>
+
+            <div>
+                <h3 style="font-size:0.95rem; margin:0.25rem 0 0.5rem 0;">Gemelo Digital (Físico vs. Esperado)</h3>
+                <div id="detail-gemelo" style="display:flex; flex-direction:column; gap:0.4rem; max-height:220px; overflow-y:auto;"></div>
+            </div>
+
+            <div>
+                <h3 style="font-size:0.95rem; margin:0.25rem 0 0.5rem 0;">Tareas Técnicas Recientes</h3>
+                <div id="detail-tareas" style="display:flex; flex-direction:column; gap:0.4rem; max-height:160px; overflow-y:auto;"></div>
+            </div>
+
+            <div class="dialog-actions" style="margin-top:0.75rem; display:flex; flex-wrap:wrap; gap:0.5rem;">
+                <button id="open-quick-task" type="button" class="primary"><i data-lucide="plus-circle"></i><span>Crear tarea para este equipo</span></button>
+                <button id="close-detail-bottom" type="button">Cerrar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="quick-task-dialog" class="task-dialog">
+        <form id="quick-task-form" class="task-form">
+            <h2>Nueva tarea en terreno</h2>
+            <p id="quick-task-equipo-label" class="muted" style="margin-top:-0.25rem;"></p>
+            <input id="quick-task-equipo-id" type="hidden">
+            <input id="quick-task-solicitante-username" type="hidden">
+            <input id="quick-task-solicitante-nombre" type="hidden">
+            <input id="quick-task-solicitante-fuero" type="hidden">
+            <label>Problema o intervención requerida
+                <input id="quick-task-titulo" required maxlength="160" placeholder="Ej: Cambio de fuente / Sin red / Impresora">
+            </label>
+            <div class="two-cols">
+                <label>Prioridad
+                    <select id="quick-task-prioridad">
+                        <option value="ALTA">Alta</option>
+                        <option value="MEDIA" selected>Media</option>
+                        <option value="BAJA">Baja</option>
+                        <option value="CRITICA">Crítica</option>
+                    </select>
+                </label>
+                <label>Tipo
+                    <select id="quick-task-tipo">
+                        <option value="REPARACION" selected>Reparación</option>
+                        <option value="SOPORTE_SITIO">Soporte en sitio</option>
+                        <option value="RED">Red / Conectividad</option>
+                        <option value="IMPRESORA">Impresora</option>
+                        <option value="INSTALACION">Instalación</option>
+                        <option value="MANTENIMIENTO">Mantenimiento</option>
+                    </select>
+                </label>
+            </div>
+            <label>Detalle técnico (opcional)
+                <textarea id="quick-task-descripcion" rows="3" maxlength="2000" placeholder="Observaciones relevadas en el puesto de trabajo"></textarea>
+            </label>
+            <div class="dialog-actions">
+                <button id="cancel-quick-task" type="button">Cancelar</button>
+                <button class="primary" type="submit"><i data-lucide="check"></i><span>Registrar tarea</span></button>
+            </div>
+        </form>
+    </dialog>
+</body>
+</html>
+

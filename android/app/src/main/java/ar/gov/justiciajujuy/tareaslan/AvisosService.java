@@ -94,12 +94,15 @@ public class AvisosService extends Service {
         if (!running) return;
         try {
             if (!getSystemService(NotificationManager.class).areNotificationsEnabled()) throw new LanClient.SessionExpired();
-            // Una nueva cuenta en el WebView no puede consumir avisos con el cursor de la cuenta anterior.
-            String activeUser = LanClient.get(base, "/api/v1/movil/sesion").getJSONObject("usuario").getString("username");
-            if (!username.equalsIgnoreCase(activeUser)) throw new LanClient.SessionExpired();
             String path = "/api/v1/movil/avisos";
             if (preferences.contains(cursorKey)) path += "?despuesDe=" + preferences.getLong(cursorKey, 0);
             JSONObject batch = LanClient.get(base, path);
+            // Validar usuario en el mismo lote de avisos para evitar doble request HTTP cada 10s (/sesion + /avisos).
+            String activeUser = batch.optString("username", "");
+            if (activeUser.isBlank()) {
+                activeUser = LanClient.get(base, "/api/v1/movil/sesion").getJSONObject("usuario").getString("username");
+            }
+            if (!username.equalsIgnoreCase(activeUser)) throw new LanClient.SessionExpired();
             JSONArray events = batch.getJSONArray("avisos");
             for (int i = 0; i < events.length() && running; i++) {
                 JSONObject event = events.getJSONObject(i);
