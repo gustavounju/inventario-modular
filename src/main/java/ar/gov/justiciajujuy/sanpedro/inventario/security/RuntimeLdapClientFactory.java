@@ -28,10 +28,13 @@ public class RuntimeLdapClientFactory {
 			if (this.cachedOperations != null && config.equals(this.cachedConfig)) {
 				return this.cachedOperations;
 			}
-			LdapOperations created = new LdapTemplate(createContextSource(config));
+			LdapTemplate template = new LdapTemplate(createContextSource(config));
+			template.setIgnorePartialResultException(true);
+			template.setIgnoreNameNotFoundException(true);
+			template.setIgnoreSizeLimitExceededException(true);
 			this.cachedConfig = config;
-			this.cachedOperations = created;
-			return created;
+			this.cachedOperations = template;
+			return template;
 		}
 	}
 
@@ -39,13 +42,15 @@ public class RuntimeLdapClientFactory {
 		LdapContextSource contextSource = new LdapContextSource();
 		contextSource.setUrl(config.url());
 		contextSource.setBase(config.baseDn());
+		contextSource.setReferral("ignore");
+		contextSource.setAnonymousReadOnly(false);
 		if (StringUtils.hasText(config.readOnlyUserDn())) {
 			contextSource.setUserDn(config.readOnlyUserDn());
 			contextSource.setPassword(config.readOnlyPassword());
 		}
 		Map<String, Object> baseEnv = new HashMap<>();
-		baseEnv.put("com.sun.jndi.ldap.connect.timeout", "1200");
-		baseEnv.put("com.sun.jndi.ldap.read.timeout", "2500");
+		baseEnv.put("com.sun.jndi.ldap.connect.timeout", "4000");
+		baseEnv.put("com.sun.jndi.ldap.read.timeout", "8000");
 		contextSource.setBaseEnvironmentProperties(baseEnv);
 		contextSource.afterPropertiesSet();
 		return contextSource;

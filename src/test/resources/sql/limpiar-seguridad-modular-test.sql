@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS red_ips;
 DROP TABLE IF EXISTS directorio_telefonico;
 DROP TABLE IF EXISTS tareas_avisos;
 DROP TABLE IF EXISTS tareas_aviso_secuencia;

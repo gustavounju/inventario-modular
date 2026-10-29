@@ -145,12 +145,22 @@ public class SecurityConfig {
 		LdapContextSource contextSource = new LdapContextSource();
 		contextSource.setUrl(properties.getUrl());
 		contextSource.setBase(properties.getBaseDn());
+		contextSource.setReferral("ignore");
+		contextSource.setAnonymousReadOnly(false);
 		if (StringUtils.hasText(properties.getReadOnlyUserDn())) {
 			contextSource.setUserDn(properties.getReadOnlyUserDn());
 			contextSource.setPassword(properties.getReadOnlyPassword());
 		}
+		java.util.Map<String, Object> baseEnv = new java.util.HashMap<>();
+		baseEnv.put("com.sun.jndi.ldap.connect.timeout", "4000");
+		baseEnv.put("com.sun.jndi.ldap.read.timeout", "8000");
+		contextSource.setBaseEnvironmentProperties(baseEnv);
 		contextSource.afterPropertiesSet();
-		return new LdapTemplate(contextSource);
+		org.springframework.ldap.core.LdapTemplate template = new org.springframework.ldap.core.LdapTemplate(contextSource);
+		template.setIgnorePartialResultException(true);
+		template.setIgnoreNameNotFoundException(true);
+		template.setIgnoreSizeLimitExceededException(true);
+		return template;
 	}
 
 	@Bean

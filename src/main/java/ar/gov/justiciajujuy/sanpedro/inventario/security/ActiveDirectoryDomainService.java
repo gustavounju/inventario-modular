@@ -2,6 +2,7 @@ package ar.gov.justiciajujuy.sanpedro.inventario.security;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class ActiveDirectoryDomainService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ActiveDirectoryDomainService.class);
 	private static final int MIN_QUERY_LENGTH = 2;
 	private static final String ATTRIBUTE_NAME_PATTERN = "[a-zA-Z][a-zA-Z0-9-]*";
-	private static final long CIRCUIT_BREAKER_COOLDOWN_MS = 30_000L;
+	private static final long CIRCUIT_BREAKER_COOLDOWN_MS = 5_000L;
 	private static final long LISTAR_TAREAS_CACHE_TTL_MS = 60_000L;
 
 	private final ActiveDirectoryProperties properties;
@@ -81,6 +82,67 @@ public class ActiveDirectoryDomainService {
 		this.runtimeLdapClientFactory = runtimeLdapClientFactory;
 	}
 
+	public static String resolveRelativeSearchBase(String searchBase, String baseDn) {
+		if (!StringUtils.hasText(searchBase)) {
+			return "";
+		}
+		String cleanBase = searchBase.trim();
+		if (!StringUtils.hasText(baseDn)) {
+			return cleanBase;
+		}
+		String cleanBaseDn = baseDn.trim();
+		if (cleanBase.equalsIgnoreCase(cleanBaseDn)) {
+			return "";
+		}
+		String suffix = "," + cleanBaseDn;
+		if (cleanBase.toLowerCase().endsWith(suffix.toLowerCase())) {
+			return cleanBase.substring(0, cleanBase.length() - suffix.length()).trim();
+		}
+		return cleanBase;
+	}
+
+	private String[] buildReturningAttributes(LdapRuntimeConfig config, String displayNameAttribute) {
+		List<String> attrs = new ArrayList<>();
+		attrs.add("sAMAccountName");
+		attrs.add("userPrincipalName");
+		if (StringUtils.hasText(displayNameAttribute)) {
+			attrs.add(displayNameAttribute);
+		}
+		String fueroAttr = safeAttributeName(config.fueroAttribute(), "department");
+		if (StringUtils.hasText(fueroAttr) && !attrs.contains(fueroAttr)) {
+			attrs.add(fueroAttr);
+		}
+		attrs.add("distinguishedName");
+		attrs.add("description");
+		attrs.add("physicalDeliveryOfficeName");
+		return attrs.toArray(new String[0]);
+	}
+
+	private List<UsuarioDominio> ejecutarBusquedaUsuarios(
+			LdapOperations operations,
+			LdapRuntimeConfig config,
+			String searchFilter,
+			SearchControls controls) {
+		String relativeBase = resolveRelativeSearchBase(config.userSearchBase(), config.baseDn());
+		try {
+			return operations.search(
+					relativeBase,
+					searchFilter,
+					controls,
+					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config));
+		} catch (org.springframework.ldap.NameNotFoundException nnfe) {
+			if (StringUtils.hasText(relativeBase)) {
+				LOGGER.info("Base de busqueda '{}' no encontrada en AD, reintentando en la raiz: {}", relativeBase, nnfe.getMessage());
+				return operations.search(
+						"",
+						searchFilter,
+						controls,
+						(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config));
+			}
+			throw nnfe;
+		}
+	}
+
 	public DominioUsuarios listarUsuarios() {
 		return DominioUsuarios.esperandoBusqueda(
 				"Ingrese al menos " + MIN_QUERY_LENGTH + " caracteres para buscar usuarios de dominio.");
@@ -118,21 +180,13 @@ public class ActiveDirectoryDomainService {
 			SearchControls controls = new SearchControls();
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			controls.setCountLimit(Math.max(1, config.userSearchLimit()));
-			controls.setReturningAttributes(new String[] {
-					"sAMAccountName",
-					"userPrincipalName",
-					displayNameAttribute,
-					config.fueroAttribute(),
-					"distinguishedName",
-					"description",
-					"physicalDeliveryOfficeName"
-			});
+			controls.setReturningAttributes(buildReturningAttributes(config, displayNameAttribute));
 
-			List<UsuarioDominio> usuarios = operations.search(
-					config.userSearchBase(),
+			List<UsuarioDominio> usuarios = ejecutarBusquedaUsuarios(
+					operations,
+					config,
 					config.userSearchFilter(),
-					controls,
-					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config))
+					controls)
 				.stream()
 				.filter(usuario -> !esCuentaAdministrativa(usuario.username()))
 				.toList();
@@ -148,7 +202,8 @@ public class ActiveDirectoryDomainService {
 			if (runtimeLdapClientFactory != null) {
 				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
 			}
-			LOGGER.warn("No se pudo consultar Active Directory para listar solicitantes: {}", exception.getMessage());
+			LOGGER.warn("No se pudo consultar Active Directory para listar solicitantes [{}]: {}",
+					exception.getClass().getSimpleName(), exception.getMessage());
 			return DominioUsuarios.noDisponible("No se pudo consultar Active Directory.", "");
 		}
 	}
@@ -239,21 +294,13 @@ public class ActiveDirectoryDomainService {
 			SearchControls controls = new SearchControls();
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			controls.setCountLimit(Math.max(1, config.userSearchLimit()));
-			controls.setReturningAttributes(new String[] {
-					"sAMAccountName",
-					"userPrincipalName",
-					displayNameAttribute,
-					config.fueroAttribute(),
-					"distinguishedName",
-					"description",
-					"physicalDeliveryOfficeName"
-			});
+			controls.setReturningAttributes(buildReturningAttributes(config, displayNameAttribute));
 
-			List<UsuarioDominio> usuarios = operations.search(
-					config.userSearchBase(),
+			List<UsuarioDominio> usuarios = ejecutarBusquedaUsuarios(
+					operations,
+					config,
 					buildSearchFilter(queryNormalizada, displayNameAttribute, config),
-					controls,
-					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config));
+					controls);
 			cacheUsuarios(usuarios);
 			if (runtimeLdapClientFactory != null) {
 				this.circuitOpenUntilMs = 0L;
@@ -263,7 +310,8 @@ public class ActiveDirectoryDomainService {
 			if (runtimeLdapClientFactory != null) {
 				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
 			}
-			LOGGER.warn("No se pudo consultar Active Directory para autorizar usuarios: {}", exception.getMessage());
+			LOGGER.warn("No se pudo consultar Active Directory para autorizar/buscar usuarios [{}]: {}",
+					exception.getClass().getSimpleName(), exception.getMessage());
 			return DominioUsuarios.noDisponible("No se pudo consultar Active Directory.", queryNormalizada);
 		}
 	}
@@ -294,8 +342,9 @@ public class ActiveDirectoryDomainService {
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			controls.setCountLimit(1);
 			controls.setReturningAttributes(new String[] { "sAMAccountName" });
+			String base = resolveRelativeSearchBase(config.userSearchBase(), config.baseDn());
 			return !operations.search(
-					config.userSearchBase(),
+					base,
 					buildExactUserFilter(username, config),
 					controls,
 					(AttributesMapper<String>) attrs -> firstText(attrs, "sAMAccountName", "")).isEmpty();
@@ -345,8 +394,9 @@ public class ActiveDirectoryDomainService {
 					"description",
 					"physicalDeliveryOfficeName"
 			});
+			String base = resolveRelativeSearchBase(config.userSearchBase(), config.baseDn());
 			List<UsuarioDominio> results = operations.search(
-					config.userSearchBase(),
+					base,
 					buildExactUserFilter(clean, config),
 					controls,
 					(AttributesMapper<UsuarioDominio>) attrs -> toUsuarioDominio(attrs, config));
@@ -477,8 +527,16 @@ public class ActiveDirectoryDomainService {
 
 	private String buildSearchFilter(String query, String displayNameAttribute, LdapRuntimeConfig config) {
 		String encodedQuery = encodeLdapFilterValue(query);
+		String baseFilter = config.userSearchFilter();
+		if (!StringUtils.hasText(baseFilter)) {
+			baseFilter = "(&(objectClass=user)(!(objectClass=computer)))";
+		}
+		baseFilter = baseFilter.trim();
+		if (!baseFilter.startsWith("(") || !baseFilter.endsWith(")")) {
+			baseFilter = "(" + baseFilter + ")";
+		}
 		return "(&"
-				+ config.userSearchFilter()
+				+ baseFilter
 				+ "(|"
 				+ "(sAMAccountName=*" + encodedQuery + "*)"
 				+ "(userPrincipalName=*" + encodedQuery + "*)"

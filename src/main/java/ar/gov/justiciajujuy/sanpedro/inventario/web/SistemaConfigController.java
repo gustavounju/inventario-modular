@@ -128,8 +128,10 @@ public class SistemaConfigController {
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			controls.setCountLimit(1);
 			controls.setReturningAttributes(new String[] { "sAMAccountName" });
+			String searchBase = ar.gov.justiciajujuy.sanpedro.inventario.security.ActiveDirectoryDomainService
+					.resolveRelativeSearchBase(config.userSearchBase(), config.baseDn());
 			List<String> results = operations.search(
-					config.userSearchBase(),
+					searchBase,
 					config.userSearchFilter(),
 					controls,
 					(AttributesMapper<String>) attrs -> String.valueOf(attrs.get("sAMAccountName").get()));
