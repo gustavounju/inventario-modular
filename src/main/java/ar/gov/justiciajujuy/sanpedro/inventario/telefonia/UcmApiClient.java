@@ -510,8 +510,8 @@ public class UcmApiClient {
             conn.setRequestProperty("Cookie", cookieHolder.trackId + "; CookieName=CookieValue");
         }
 
-        conn.setConnectTimeout(1500);
-        conn.setReadTimeout(2500);
+        conn.setConnectTimeout(4000);
+        conn.setReadTimeout(5000);
         conn.setDoOutput(true);
 
         try (OutputStream os = conn.getOutputStream()) {
