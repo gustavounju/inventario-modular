@@ -19,7 +19,8 @@ import java.util.Map;
 public class NetworkEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
     private static final Log log = LogFactory.getLog(NetworkEnvironmentPostProcessor.class);
-    private static final String DEFAULT_JUDICIAL_DB_HOST = "10.15.0.62";
+    private static final String DEFAULT_JUDICIAL_PROBE_HOST = "10.15.0.41";
+    private static final int DEFAULT_JUDICIAL_PROBE_PORT = 389;
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
@@ -28,44 +29,51 @@ public class NetworkEnvironmentPostProcessor implements EnvironmentPostProcessor
                 || activeProfiles.contains("casa")
                 || activeProfiles.contains("trabajo")
                 || activeProfiles.contains("prod")
+                || activeProfiles.contains("local")
                 || isRunningUnderTest()) {
             return;
         }
 
-        // Host and port to check for the remote database (defaults to judicial DB host if auto-detect is enabled)
+        // Host and port to check for judicial network connectivity (defaults to domain controller 10.15.0.41:389)
         String autoDetect = environment.getProperty("INVENTARIO_AUTO_DETECT_NETWORK", "true");
         if ("false".equalsIgnoreCase(autoDetect)) {
             return;
         }
 
-        String remoteDbHost = environment.getProperty("INVENTARIO_PROBE_DB_HOST");
-        if (!StringUtils.hasText(remoteDbHost)) {
-            remoteDbHost = DEFAULT_JUDICIAL_DB_HOST;
+        String probeHost = environment.getProperty("INVENTARIO_PROBE_HOST");
+        if (!StringUtils.hasText(probeHost)) {
+            probeHost = environment.getProperty("INVENTARIO_PROBE_DB_HOST");
+        }
+        if (!StringUtils.hasText(probeHost)) {
+            probeHost = DEFAULT_JUDICIAL_PROBE_HOST;
         }
 
-        int remoteDbPort = 3306;
-        String remoteDbPortProp = environment.getProperty("INVENTARIO_PROBE_DB_PORT");
-        if (StringUtils.hasText(remoteDbPortProp)) {
+        int probePort = DEFAULT_JUDICIAL_PROBE_PORT;
+        String probePortProp = environment.getProperty("INVENTARIO_PROBE_PORT");
+        if (!StringUtils.hasText(probePortProp)) {
+            probePortProp = environment.getProperty("INVENTARIO_PROBE_DB_PORT");
+        }
+        if (StringUtils.hasText(probePortProp)) {
             try {
-                remoteDbPort = Integer.parseInt(remoteDbPortProp.trim());
+                probePort = Integer.parseInt(probePortProp.trim());
             } catch (NumberFormatException ignored) {
             }
         }
 
-        log.info("Verificando conexion a la base de datos remota (" + remoteDbHost + ":" + remoteDbPort + ") para determinar el entorno (Casa vs Produccion)...");
+        log.info("Verificando conexion a la Red Judicial (" + probeHost + ":" + probePort + ") para determinar el entorno (Casa vs Produccion)...");
 
         boolean isReachable = false;
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(remoteDbHost, remoteDbPort), 600);
+            socket.connect(new InetSocketAddress(probeHost, probePort), 1200);
             isReachable = true;
         } catch (IOException e) {
             // Ignored
         }
 
         if (isReachable) {
-            log.info("Red Judicial detectada (" + remoteDbHost + ":" + remoteDbPort + " alcanzable). Operando en Modo Produccion/Trabajo.");
+            log.info("Red Judicial detectada (" + probeHost + ":" + probePort + " alcanzable). Operando en Modo Produccion/Trabajo.");
         } else {
-            log.info("Red Judicial (" + remoteDbHost + ":" + remoteDbPort + ") INALCANZABLE. Activando Modo Casa automatico (DB MySQL local 127.0.0.1, AD y UCM pasivos).");
+            log.info("Red Judicial (" + probeHost + ":" + probePort + ") INALCANZABLE. Activando Modo Casa automatico (DB MySQL local 127.0.0.1, AD y UCM pasivos).");
             environment.addActiveProfile("casa");
             Map<String, Object> overrides = new LinkedHashMap<>();
             if (!StringUtils.hasText(environment.getProperty("INVENTARIO_LDAP_ENABLED"))) {

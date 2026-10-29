@@ -9,6 +9,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
 
+import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.LdapConfigurationService;
+import ar.gov.justiciajujuy.sanpedro.inventario.configuracion.LdapRuntimeConfig;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -23,6 +27,7 @@ public class RuntimeModeService {
 	private final DataSource dataSource;
 	private final Environment environment;
 	private final ActiveDirectoryProperties activeDirectoryProperties;
+	private final LdapConfigurationService ldapConfigurationService;
 
 	private volatile DatabaseInfo cachedDbInfo;
 	private volatile RuntimeMode cachedMode;
@@ -31,10 +36,12 @@ public class RuntimeModeService {
 	public RuntimeModeService(
 			DataSource dataSource,
 			Environment environment,
-			ActiveDirectoryProperties activeDirectoryProperties) {
+			ActiveDirectoryProperties activeDirectoryProperties,
+			@Lazy @Autowired(required = false) LdapConfigurationService ldapConfigurationService) {
 		this.dataSource = dataSource;
 		this.environment = environment;
 		this.activeDirectoryProperties = activeDirectoryProperties;
+		this.ldapConfigurationService = ldapConfigurationService;
 	}
 
 	public RuntimeMode current() {
@@ -44,16 +51,43 @@ public class RuntimeModeService {
 			return snapshot;
 		}
 		DatabaseInfo databaseInfo = databaseInfo();
-		boolean ldapConfigured = activeDirectoryProperties.isEnabled();
-		boolean ldapReachable = ldapConfigured && ldapReachable();
-		String workMode = databaseInfo.remote() && ldapReachable ? "TRABAJO" : "LOCAL";
-		String authMode = ldapReachable ? "Active Directory + autorizacion local" : "Usuarios locales";
-		String message = databaseInfo.remote() && ldapReachable
-				? "Conectado a red de trabajo: usuarios de dominio y MySQL remoto."
-				: "Modo local/fallback: se usan usuarios locales y base local disponible.";
+
+		LdapRuntimeConfig ldapConfig = null;
+		if (ldapConfigurationService != null) {
+			try {
+				ldapConfig = ldapConfigurationService.current();
+			} catch (Exception ignored) {
+			}
+		}
+
+		boolean ldapConfigured = (ldapConfig != null && ldapConfig.enabled()) || activeDirectoryProperties.isEnabled();
+		String ldapUrl = (ldapConfig != null && StringUtils.hasText(ldapConfig.url()))
+				? ldapConfig.url()
+				: activeDirectoryProperties.getUrl();
+		if (!StringUtils.hasText(ldapUrl) && ldapConfigured) {
+			ldapUrl = "ldap://10.15.0.41:389";
+		}
+
+		boolean ldapReachable = ldapConfigured && ldapReachable(ldapUrl);
+
+		String profiles = activeProfile();
+		boolean isProduccionOrTrabajo = profiles.contains("prod")
+				|| profiles.contains("trabajo")
+				|| ldapReachable
+				|| databaseInfo.remote();
+
+		String workMode = isProduccionOrTrabajo ? "TRABAJO" : "LOCAL";
+		String authMode = ldapReachable
+				? "Active Directory + autorizacion local"
+				: (ldapConfigured ? "Active Directory (no alcanzable) / local" : "Usuarios locales");
+		String message = isProduccionOrTrabajo
+				? (ldapReachable
+						? "Conectado a Red Judicial: Active Directory y base de datos operativa."
+						: "Operando en Producción / Red de Trabajo.")
+				: "Modo local / contingencia: se usan usuarios locales y base de datos local.";
 
 		RuntimeMode computed = new RuntimeMode(
-				activeProfile(),
+				profiles,
 				workMode,
 				databaseInfo.mode(),
 				databaseInfo.safeUrl(),
@@ -97,8 +131,7 @@ public class RuntimeModeService {
 		}
 	}
 
-	private boolean ldapReachable() {
-		String url = activeDirectoryProperties.getUrl();
+	private boolean ldapReachable(String url) {
 		if (!StringUtils.hasText(url)) {
 			return false;
 		}
@@ -110,7 +143,7 @@ public class RuntimeModeService {
 				? (url.startsWith("ldaps://") ? 636 : 389)
 				: Integer.parseInt(matcher.group(2));
 		try (Socket socket = new Socket()) {
-			socket.connect(new InetSocketAddress(matcher.group(1), port), 500);
+			socket.connect(new InetSocketAddress(matcher.group(1), port), 1200);
 			return true;
 		} catch (IOException ex) {
 			return false;

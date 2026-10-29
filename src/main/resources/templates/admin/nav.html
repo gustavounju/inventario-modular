@@ -159,9 +159,9 @@
 			</span>
 
 			<!-- Botón de conmutación de modo visual institucional / oscuro -->
-			<button type="button" class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar entre Modo Institucional Claro y Modo Azul Nocturno" aria-label="Alternar modo visual">
-				<span class="theme-toggle-icon" id="theme-toggle-icon">INS</span>
-				<span class="theme-toggle-text" id="theme-toggle-label">Modo Institucional</span>
+			<button type="button" class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar entre Tema Claro y Tema Nocturno" aria-label="Alternar modo visual">
+				<span class="theme-toggle-icon" id="theme-toggle-icon">☀️</span>
+				<span class="theme-toggle-text" id="theme-toggle-label">Tema Claro</span>
 			</button>
 
 			<a class="topbar-apk-link" th:if="${apkDisponible != null and apkDisponible}" th:href="@{/api/v1/movil/apk}" title="Descargar APK" aria-label="Descargar APK">
@@ -216,11 +216,11 @@
 			var label = document.getElementById('theme-toggle-label');
 			if (icon && label) {
 				if (resolved === 'light') {
-					icon.textContent = 'INS';
-					label.textContent = 'Modo Institucional';
+					icon.textContent = '☀️';
+					label.textContent = 'Tema Claro';
 				} else {
-					icon.textContent = 'AZL';
-					label.textContent = 'Modo Azul Nocturno';
+					icon.textContent = '🌙';
+					label.textContent = 'Tema Nocturno';
 				}
 			}
 		}
