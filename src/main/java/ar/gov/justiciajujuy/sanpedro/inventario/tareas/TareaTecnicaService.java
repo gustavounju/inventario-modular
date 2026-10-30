@@ -265,6 +265,17 @@ public class TareaTecnicaService {
 		if (tipo.esTrabajoInterno() && !StringUtils.hasText(command.solicitanteUsername())) {
 			return new Solicitante(null, TipoTareaTecnica.SOLICITANTE_TALLER, TipoTareaTecnica.SOLICITANTE_TALLER);
 		}
+		if (TipoTareaTecnica.esSolicitanteInternoSistemas(command.solicitanteUsername())
+				|| TipoTareaTecnica.esSolicitanteInternoSistemas(command.solicitanteNombre())) {
+			String fueroInterno = StringUtils.hasText(command.solicitanteFuero())
+					&& !"Sin fuero informado".equalsIgnoreCase(command.solicitanteFuero().trim())
+					? command.solicitanteFuero().trim()
+					: TipoTareaTecnica.SOLICITANTE_SISTEMAS_FUERO;
+			return new Solicitante(
+					TipoTareaTecnica.SOLICITANTE_SISTEMAS_USERNAME,
+					TipoTareaTecnica.SOLICITANTE_SISTEMAS_NOMBRE,
+					fueroInterno);
+		}
 		String solicitanteUsername = textoRequerido(command.solicitanteUsername(), "solicitante");
 		validarSolicitanteEnAd(solicitanteUsername);
 		String solicitanteFuero = StringUtils.hasText(command.solicitanteFuero()) ? command.solicitanteFuero().trim() : null;
@@ -484,6 +495,9 @@ public class TareaTecnicaService {
 	}
 
 	private void validarSolicitanteEnAd(String solicitanteUsername) {
+		if (TipoTareaTecnica.esSolicitanteInternoSistemas(solicitanteUsername)) {
+			return;
+		}
 		if (!activeDirectoryDomainService.ldapHabilitado()) {
 			return;
 		}
@@ -497,9 +511,13 @@ public class TareaTecnicaService {
 		String solicitanteFuero = tarea.getSolicitanteFuero();
 		if ((!StringUtils.hasText(solicitanteFuero) || "Sin fuero informado".equalsIgnoreCase(solicitanteFuero))
 				&& StringUtils.hasText(tarea.getSolicitanteUsername())) {
-			String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(tarea.getSolicitanteUsername());
-			if (StringUtils.hasText(fueroAd)) {
-				solicitanteFuero = fueroAd;
+			if (TipoTareaTecnica.esSolicitanteInternoSistemas(tarea.getSolicitanteUsername())) {
+				solicitanteFuero = TipoTareaTecnica.SOLICITANTE_SISTEMAS_FUERO;
+			} else {
+				String fueroAd = activeDirectoryDomainService.obtenerFueroDeUsuario(tarea.getSolicitanteUsername());
+				if (StringUtils.hasText(fueroAd)) {
+					solicitanteFuero = fueroAd;
+				}
 			}
 		}
 		return new TareaTecnicaDetalle(

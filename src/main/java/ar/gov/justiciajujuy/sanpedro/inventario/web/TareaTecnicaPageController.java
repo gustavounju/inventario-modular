@@ -125,7 +125,7 @@ public class TareaTecnicaPageController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestParam(name = "q", required = false) String query) {
 		exigirPermiso(userDetails, PERMISO_VER);
-		return activeDirectoryDomainService.buscarUsuarios(query);
+		return activeDirectoryDomainService.buscarSolicitantesParaTareas(query);
 	}
 
 	@GetMapping("/api/v1/tareas/conciliacion/analisis")
@@ -425,9 +425,15 @@ public class TareaTecnicaPageController {
 	}
 
 	private List<UsuarioDominio> solicitantesParaTareas() {
-		return usuarioManagementService.listarUsuariosActivosNoAdministrativos().stream()
+		java.util.List<UsuarioDominio> lista = new java.util.ArrayList<>();
+		lista.add(new UsuarioDominio(
+				TipoTareaTecnica.SOLICITANTE_SISTEMAS_USERNAME,
+				TipoTareaTecnica.SOLICITANTE_SISTEMAS_NOMBRE,
+				TipoTareaTecnica.SOLICITANTE_SISTEMAS_FUERO));
+		usuarioManagementService.listarUsuariosActivosNoAdministrativos().stream()
 				.map(usuario -> new UsuarioDominio(usuario.username(), usuario.nombreVisible(), usuario.fuero()))
-				.toList();
+				.forEach(lista::add);
+		return List.copyOf(lista);
 	}
 
 	private void exigirPermiso(UserDetails userDetails, String permiso) {

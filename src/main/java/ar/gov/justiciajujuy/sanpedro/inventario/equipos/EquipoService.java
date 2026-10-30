@@ -257,7 +257,7 @@ public class EquipoService {
 	private void vincularTareasAbiertasDelUsuarioReportado(Equipo equipo) {
 		if (tareaTecnicaRepository == null || !StringUtils.hasText(equipo.getUltimoUsuario())
 				|| "Sin asignar".equalsIgnoreCase(equipo.getUltimoUsuario())
-				|| "PC-GENERICA".equalsIgnoreCase(equipo.getNombre())) {
+				|| "PC-GENERICA".equalsIgnoreCase(equipo.getNombre()) || ar.gov.justiciajujuy.sanpedro.inventario.tareas.TipoTareaTecnica.esSolicitanteInternoSistemas(equipo.getUltimoUsuario())) {
 			return;
 		}
 		List<ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaTecnica> tareas =

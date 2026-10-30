@@ -705,6 +705,34 @@
 			}
 		}
 
+		function seleccionarSolicitanteSistemasVisor() {
+			const input = document.getElementById('visor-solicitante-input');
+			const usernameField = document.getElementById('visor-solicitante-username');
+			const nombreField = document.getElementById('visor-solicitante-nombre');
+			const fueroSelect = document.getElementById('visor-solicitante-fuero');
+			const helpText = document.getElementById('visor-solicitante-help');
+			const dropdown = document.getElementById('visor-solicitante-dropdown');
+
+			const displayName = 'Departamento de Sistemas (Uso Interno)';
+			if (usernameField) usernameField.value = 'sistemas';
+			if (nombreField) nombreField.value = displayName;
+			if (input) input.value = `${displayName} (sistemas)`;
+			if (dropdown) {
+				dropdown.style.display = 'none';
+				dropdown.innerHTML = '';
+			}
+			if (helpText) {
+				helpText.textContent = `✔ Seleccionado: ${displayName} (@sistemas)`;
+				helpText.style.color = '#166534';
+			}
+			if (fueroSelect) {
+				const optMatch = Array.from(fueroSelect.options).find(opt =>
+					opt.value.toLowerCase().includes('sistemas') || opt.value.toLowerCase().includes('informatica')
+				);
+				if (optMatch) fueroSelect.value = optMatch.value;
+			}
+		}
+
 		// Función 1-Click: Convertir llamada telefónica (en vivo o perdida/atendida en historial) en Tarea Técnica
 		function crearTareaDesdeLlamada(numero, nombreRemoto, fechaHora, estadoLlamada) {
 			const modalNueva = document.getElementById('modal-nueva-tarea');
@@ -790,7 +818,10 @@
 				<input type="hidden" name="origen" value="visor">
 				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
 					<div style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:4px; position:relative;">
-						<span style="font-size:0.8rem; font-weight:600;">Quién solicita *</span>
+						<div style="display:flex; justify-content:space-between; align-items:center;">
+							<span style="font-size:0.8rem; font-weight:600;">Quién solicita *</span>
+							<button type="button" onclick="seleccionarSolicitanteSistemasVisor()" style="font-size:0.74rem; padding:2px 9px; border-radius:9999px; background:#f0fdf4; color:#15803d; border:1px solid #86efac; font-weight:700; cursor:pointer;" title="Registrar tarea interna solicitada por el Departamento de Sistemas / Taller">⚡ Uso Interno / Sistemas</button>
+						</div>
 						<div class="solicitante-autocomplete-box">
 							<input type="text"
 							       id="visor-solicitante-input"

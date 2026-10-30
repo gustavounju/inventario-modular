@@ -16,7 +16,19 @@
     const commentPreviewCache = new Map();
     const icons = () => window.lucide?.createIcons();
     const isOpen = task => ['PENDIENTE', 'EN_PROCESO'].includes(task.estado);
-    const owns = task => task.responsable?.toLowerCase() === session.usuario.username.toLowerCase();
+    const owns = task => {
+        if (!session?.usuario) return false;
+        const u = (session.usuario.username || '').trim().toLowerCase();
+        const v = (session.usuario.nombreVisible || '').trim().toLowerCase();
+        const r = (task.responsable || '').trim().toLowerCase();
+        if (r && (r === u || (v && r === v))) return true;
+        if (!session.puedeEditar) {
+            const su = (task.solicitanteUsername || '').trim().toLowerCase();
+            const sn = (task.solicitanteNombre || '').trim().toLowerCase();
+            return (su && su === u) || (v && sn === v) || createdByMe(task);
+        }
+        return false;
+    };
     const createdByMe = task => task.creadoPor?.toLowerCase() === session.usuario.username.toLowerCase();
     const isTelefonista = () => Boolean(session && (session.puedeOperarPropias || !session.puedeEditar));
     const mayEdit = task => session.administrador || createdByMe(task);
@@ -579,6 +591,18 @@
         }
     });
     $('solicitante-search').addEventListener('change', syncApplicantFromInput);
+    if ($('btn-solicitante-sistemas')) {
+        $('btn-solicitante-sistemas').onclick = () => {
+            const sis = {
+                username: 'sistemas',
+                nombreVisible: 'Departamento de Sistemas (Uso Interno)',
+                fuero: 'Sistemas - Infraestructura y Taller'
+            };
+            rememberApplicant(sis);
+            setApplicant(sis, applicantLabel(sis));
+            $('solicitante-help').textContent = 'Solicitante interno: Departamento de Sistemas (sistemas)';
+        };
+    }
     $('responsable-search').addEventListener('input', event => {
         clearTimeout(assigneeSearchTimer);
         const value = event.target.value.trim();

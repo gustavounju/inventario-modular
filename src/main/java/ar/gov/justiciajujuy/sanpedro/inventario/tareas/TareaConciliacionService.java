@@ -79,8 +79,10 @@ public class TareaConciliacionService {
 		int sinCoincidencia = 0;
 
 		for (TareaTecnica tarea : tareasGenericas) {
-			if (tarea.getTipo() != null && tarea.getTipo().esTrabajoInterno()) {
-				// No vincular tareas de armado o taller interno a computadoras de oficina.
+			if ((tarea.getTipo() != null && tarea.getTipo().esTrabajoInterno())
+					|| TipoTareaTecnica.esSolicitanteInternoSistemas(tarea.getSolicitanteUsername())
+					|| TipoTareaTecnica.esSolicitanteInternoSistemas(tarea.getSolicitanteNombre())) {
+				// No vincular tareas de armado o taller interno / Sistemas a computadoras de oficina.
 				continue;
 			}
 			totalGenericas++;

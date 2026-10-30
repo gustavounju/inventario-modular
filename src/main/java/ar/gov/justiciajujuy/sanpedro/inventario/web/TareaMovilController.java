@@ -242,7 +242,7 @@ public class TareaMovilController {
         exigirPermiso(user);
         // El autocompletado se consulta desde celulares compartidos en LAN; evitamos cachear nombres de AD.
         response.setHeader("Cache-Control", "no-store");
-        return activeDirectoryDomainService.buscarUsuarios(query);
+        return activeDirectoryDomainService.buscarSolicitantesParaTareas(query);
     }
 
     @GetMapping("/api/v1/movil/tecnicos-asignables")

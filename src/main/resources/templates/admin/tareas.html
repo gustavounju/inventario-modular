@@ -371,7 +371,10 @@
 							</div>
 
 							<div id="solicitante-container" style="display:flex; flex-direction:column; gap:4px; position:relative;">
-								<span style="font-weight:600; font-size:0.85rem;">Quién solicita *</span>
+								<div style="display:flex; justify-content:space-between; align-items:center;">
+									<span style="font-weight:600; font-size:0.85rem;">Quién solicita *</span>
+									<button type="button" onclick="seleccionarSolicitanteSistemas()" style="font-size:0.74rem; padding:2px 9px; border-radius:9999px; background:#f0fdf4; color:#15803d; border:1px solid #86efac; font-weight:700; cursor:pointer;" title="Registrar tarea interna solicitada por el Departamento de Sistemas / Taller">⚡ Uso Interno / Sistemas</button>
+								</div>
 								<div class="solicitante-autocomplete-box">
 									<input type="text"
 									       id="solicitante-input"
@@ -579,6 +582,34 @@
 			});
 			if (history.replaceState) {
 				history.replaceState(null, null, '#tab-' + tabId);
+			}
+		}
+
+		function seleccionarSolicitanteSistemas() {
+			const input = document.getElementById('solicitante-input');
+			const usernameField = document.getElementById('solicitante-username');
+			const nombreField = document.getElementById('solicitante-nombre');
+			const fueroSelect = document.getElementById('solicitante-fuero');
+			const helpText = document.getElementById('solicitante-help');
+			const dropdown = document.getElementById('solicitante-dropdown');
+
+			const displayName = 'Departamento de Sistemas (Uso Interno)';
+			if (usernameField) usernameField.value = 'sistemas';
+			if (nombreField) nombreField.value = displayName;
+			if (input) input.value = `${displayName} (sistemas)`;
+			if (dropdown) {
+				dropdown.style.display = 'none';
+				dropdown.innerHTML = '';
+			}
+			if (helpText) {
+				helpText.textContent = `✔ Seleccionado: ${displayName} (@sistemas)`;
+				helpText.style.color = '#166534';
+			}
+			if (fueroSelect) {
+				const optMatch = Array.from(fueroSelect.options).find(opt =>
+					opt.value.toLowerCase().includes('sistemas') || opt.value.toLowerCase().includes('informatica')
+				);
+				if (optMatch) fueroSelect.value = optMatch.value;
 			}
 		}
 

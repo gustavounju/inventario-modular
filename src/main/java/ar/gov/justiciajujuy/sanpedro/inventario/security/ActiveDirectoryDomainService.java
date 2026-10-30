@@ -316,6 +316,41 @@ public class ActiveDirectoryDomainService {
 		}
 	}
 
+	/**
+	 * Busca solicitantes en Active Directory e inyecta la identidad institucional interna
+	 * 'sistemas' (Departamento de Sistemas - Uso Interno) cuando la búsqueda coincide.
+	 */
+	public DominioUsuarios buscarSolicitantesParaTareas(String query) {
+		String queryNormalizada = query == null ? "" : query.trim();
+		DominioUsuarios base = buscarUsuarios(query);
+		if (queryNormalizada.length() < MIN_QUERY_LENGTH || !coincideSolicitanteSistemas(queryNormalizada)) {
+			return base;
+		}
+		UsuarioDominio sistemas = new UsuarioDominio(
+				ar.gov.justiciajujuy.sanpedro.inventario.tareas.TipoTareaTecnica.SOLICITANTE_SISTEMAS_USERNAME,
+				ar.gov.justiciajujuy.sanpedro.inventario.tareas.TipoTareaTecnica.SOLICITANTE_SISTEMAS_NOMBRE,
+				ar.gov.justiciajujuy.sanpedro.inventario.tareas.TipoTareaTecnica.SOLICITANTE_SISTEMAS_FUERO);
+		java.util.List<UsuarioDominio> combinados = new java.util.ArrayList<>();
+		combinados.add(sistemas);
+		if (base.usuarios() != null) {
+			base.usuarios().stream()
+					.filter(u -> !sistemas.username().equalsIgnoreCase(u.username()))
+					.forEach(combinados::add);
+		}
+		return new DominioUsuarios(true, true, queryNormalizada, base.mensaje(), java.util.List.copyOf(combinados));
+	}
+
+	private boolean coincideSolicitanteSistemas(String query) {
+		String q = query.toLowerCase(java.util.Locale.ROOT);
+		return "sistemas".contains(q)
+				|| "departamento de sistemas (uso interno)".contains(q)
+				|| "taller de informatica".contains(q)
+				|| "taller de informática".contains(q)
+				|| "infraestructura".contains(q)
+				|| q.contains("sistemas")
+				|| q.contains("taller");
+	}
+
 	public boolean ldapHabilitado() {
 		return currentConfig().enabled();
 	}
