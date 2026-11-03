@@ -20,6 +20,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.util.StringUtils;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.security.TokenAuthenticationFilter;
@@ -62,14 +63,18 @@ public class SecurityConfig {
 				.ignoringRequestMatchers(
 					"/api/v1/equipos/inventario",
 					"/submit_inventory",
-					"/api/telefonia/webhook/llamada",
-					"/api/v1/tareas/conciliacion/**"
+					"/api/telefonia/webhook/llamada"
+
 				)
 			)
 			.headers(headers -> headers
 				.httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
 				.contentTypeOptions(contentType -> {})
 				.frameOptions(frame -> frame.sameOrigin())
+				.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+				.contentSecurityPolicy(csp -> csp.policyDirectives(
+					"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self';"
+				))
 			)
 			.exceptionHandling(exceptions -> exceptions
 				.defaultAuthenticationEntryPointFor(
