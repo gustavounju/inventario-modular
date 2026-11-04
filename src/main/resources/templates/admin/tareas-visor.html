@@ -289,31 +289,6 @@
 			</div>
 		</section>
 
-		<!-- Banner indicador del modo actual de visualización -->
-		<div style="margin: 8px 0 14px 0; padding: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #475569;">
-			<div style="display:flex; align-items:center; gap: 8px;">
-				<span th:if="${!esModoTodas}">
-					📅 <strong>Tareas del día:</strong>
-					<span th:text="${#temporals.format(filtroFecha, 'dd/MM/yyyy')}">14/10/2026</span>
-					<span th:if="${filtroFecha != null and filtroFecha.equals(fechaHoy)}" style="color: #0284c7; font-weight: 600;">(Hoy)</span>
-					· <strong th:text="${#lists.size(tareas)}">0</strong> tareas en pantalla
-				</span>
-				<span th:if="${esModoTodas}">
-					📋 <strong>Mostrando todas las tareas activas acumuladas (Backlog completo)</strong>
-					· <strong th:text="${#lists.size(tareas)}">0</strong> tareas cargadas
-				</span>
-			</div>
-			<div>
-				<span th:if="${!esModoTodas and resumenTareas != null and resumenTareas.pendientes > 0}">
-					⚠️ Hay <strong th:text="${resumenTareas.pendientes}">0</strong> pendientes en total
-					<a th:href="@{/admin/tareas/visor(todas=true)}" style="margin-left: 6px; color: #2563eb; text-decoration: underline; font-weight: 600;">Ver backlog completo</a>
-				</span>
-				<span th:if="${esModoTodas}">
-					<a th:href="@{/admin/tareas/visor(fecha=${fechaHoy})}" style="color: #2563eb; text-decoration: underline; font-weight: 600;">Volver a tareas de Hoy</a>
-				</span>
-			</div>
-		</div>
-
 		<!-- ===== TABLERO KANBAN ===== -->
 		<div class="kanban-board" id="kanban-board">
 
