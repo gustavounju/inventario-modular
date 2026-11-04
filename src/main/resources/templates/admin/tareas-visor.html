@@ -139,65 +139,87 @@
 			</div>
 		</div>
 
-		<!-- Filtros y Selector de Fecha (Tareas Diarias) -->
-		<form class="kanban-filters" th:action="@{/admin/tareas/visor}" method="get" role="search" id="form-kanban-filters">
-			<label class="kfilter-label" style="min-width: 170px;">
-				<span style="display:flex; align-items:center; gap:4px;">
-					📅 <strong>Fecha tareas</strong>
-				</span>
-				<input type="date" name="fecha" id="kfilter-fecha"
-				       th:value="${filtroFecha != null ? #temporals.format(filtroFecha, 'yyyy-MM-dd') : ''}"
-				       class="kfilter-input"
-				       th:disabled="${esModoTodas}"
-				       onchange="this.form.submit()">
-			</label>
+		<!-- Filtros y Selector de Fecha (Colapsable / Disimulado) -->
+		<details class="kanban-filters-details"
+		         id="kanban-filters-details"
+		         th:attr="data-has-active-filter=${esFiltroActivo ? 'true' : 'false'}"
+		         th:open="${esFiltroActivo}">
+			<summary class="kanban-filters-summary" title="Clic para desplegar u ocultar filtros de búsqueda">
+				<div class="kfilter-summary-left">
+					<span class="kfilter-summary-icon" aria-hidden="true">🔎</span>
+					<span class="kfilter-summary-title">Filtros y Búsqueda</span>
+					<span class="kfilter-summary-pill" th:if="${esModoTodas}">📋 Modo Backlog completo</span>
+					<span class="kfilter-summary-pill" th:if="${!esModoTodas and filtroFecha != null}" th:text="'📅 ' + ${#temporals.format(filtroFecha, 'dd/MM/yyyy')}">📅 03/11/2026</span>
+					<span class="kfilter-summary-badge" th:if="${esFiltroActivo}">Filtro aplicado</span>
+				</div>
+				<div class="kfilter-summary-right">
+					<span class="kfilter-summary-hint">Clic para desplegar u ocultar opciones</span>
+					<span class="kfilter-summary-toggle">
+						<span class="kfilter-toggle-label">Opciones</span>
+						<span class="kfilter-toggle-arrow" aria-hidden="true">▾</span>
+					</span>
+				</div>
+			</summary>
 
-			<!-- Controles rápidos de navegación de fecha -->
-			<div class="kfilter-date-nav" style="display: flex; align-items: flex-end; gap: 4px; padding-bottom: 2px;">
-				<a class="kbtn kbtn--secondary kbtn--sm"
-				   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.minusDays(1) : fechaHoy.minusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-				   title="Día anterior">◀</a>
-				<a class="kbtn kbtn--sm"
-				   th:href="@{/admin/tareas/visor(fecha=${fechaHoy}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-				   th:classappend="${filtroFecha != null and filtroFecha.equals(fechaHoy) and !esModoTodas ? 'kbtn--primary' : 'kbtn--secondary'}"
-				   title="Ir a tareas de hoy">Hoy</a>
-				<a class="kbtn kbtn--secondary kbtn--sm"
-				   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.plusDays(1) : fechaHoy.plusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-				   title="Día siguiente">▶</a>
-				<a class="kbtn kbtn--sm"
-				   th:href="@{/admin/tareas/visor(todas=true, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-				   th:classappend="${esModoTodas ? 'kbtn--primary' : 'kbtn--ghost'}"
-				   title="Ver todas las tareas activas acumuladas (backlog)">📋 Todas activas</a>
-			</div>
+			<form class="kanban-filters" th:action="@{/admin/tareas/visor}" method="get" role="search" id="form-kanban-filters">
+				<label class="kfilter-label" style="min-width: 170px;">
+					<span style="display:flex; align-items:center; gap:4px;">
+						📅 <strong>Fecha tareas</strong>
+					</span>
+					<input type="date" name="fecha" id="kfilter-fecha"
+					       th:value="${filtroFecha != null ? #temporals.format(filtroFecha, 'yyyy-MM-dd') : ''}"
+					       class="kfilter-input"
+					       th:disabled="${esModoTodas}"
+					       onchange="this.form.submit()">
+				</label>
 
-			<label class="kfilter-label">
-				<span>Estado</span>
-				<select name="estado" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
-					<option value="">Todos</option>
-					<option th:each="estado : ${estadosTarea}" th:value="${estado}"
-							th:text="${estado.name() == 'EN_PROCESO' ? 'EN PROCESO' : estado}"
-							th:selected="${estado == filtroEstado}">PENDIENTE</option>
-				</select>
-			</label>
-			<label class="kfilter-label">
-				<span>Equipo</span>
-				<select name="equipoId" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
-					<option value="">Todos</option>
-					<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
-							th:selected="${equipo.id == filtroEquipoId}">PC-INF-001</option>
-				</select>
-			</label>
-			<label class="kfilter-label kfilter-label--wide">
-				<span>Buscar</span>
-				<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120"
-					   class="kfilter-input" th:disabled="${!puedeEditarTareas}"
-					   th:placeholder="${puedeEditarTareas ? 'Tarea, usuario, equipo o comentario…' : 'Búsqueda disponible sólo para administradores'}">
-			</label>
-			<div class="kfilter-actions">
-				<button class="kbtn kbtn--primary" type="submit" th:disabled="${!puedeEditarTareas}" th:title="${!puedeEditarTareas ? 'Modo sólo lectura' : ''}">Filtrar</button>
-				<a class="kbtn kbtn--ghost" th:href="@{/admin/tareas/visor}" th:if="${puedeEditarTareas}">Limpiar</a>
-			</div>
-		</form>
+				<!-- Controles rápidos de navegación de fecha -->
+				<div class="kfilter-date-nav" style="display: flex; align-items: flex-end; gap: 4px; padding-bottom: 2px;">
+					<a class="kbtn kbtn--secondary kbtn--sm"
+					   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.minusDays(1) : fechaHoy.minusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+					   title="Día anterior">◀</a>
+					<a class="kbtn kbtn--sm"
+					   th:href="@{/admin/tareas/visor(fecha=${fechaHoy}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+					   th:classappend="${filtroFecha != null and filtroFecha.equals(fechaHoy) and !esModoTodas ? 'kbtn--primary' : 'kbtn--secondary'}"
+					   title="Ir a tareas de hoy">Hoy</a>
+					<a class="kbtn kbtn--secondary kbtn--sm"
+					   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.plusDays(1) : fechaHoy.plusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+					   title="Día siguiente">▶</a>
+					<a class="kbtn kbtn--sm"
+					   th:href="@{/admin/tareas/visor(todas=true, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+					   th:classappend="${esModoTodas ? 'kbtn--primary' : 'kbtn--ghost'}"
+					   title="Ver todas las tareas activas acumuladas (backlog)">📋 Todas activas</a>
+				</div>
+
+				<label class="kfilter-label">
+					<span>Estado</span>
+					<select name="estado" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
+						<option value="">Todos</option>
+						<option th:each="estado : ${estadosTarea}" th:value="${estado}"
+								th:text="${estado.name() == 'EN_PROCESO' ? 'EN PROCESO' : estado}"
+								th:selected="${estado == filtroEstado}">PENDIENTE</option>
+					</select>
+				</label>
+				<label class="kfilter-label">
+					<span>Equipo</span>
+					<select name="equipoId" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
+						<option value="">Todos</option>
+						<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
+								th:selected="${equipo.id == filtroEquipoId}">PC-INF-001</option>
+					</select>
+				</label>
+				<label class="kfilter-label kfilter-label--wide">
+					<span>Buscar</span>
+					<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120"
+						   class="kfilter-input" th:disabled="${!puedeEditarTareas}"
+						   th:placeholder="${puedeEditarTareas ? 'Tarea, usuario, equipo o comentario…' : 'Búsqueda disponible sólo para administradores'}">
+				</label>
+				<div class="kfilter-actions">
+					<button class="kbtn kbtn--primary" type="submit" th:disabled="${!puedeEditarTareas}" th:title="${!puedeEditarTareas ? 'Modo sólo lectura' : ''}">Filtrar</button>
+					<a class="kbtn kbtn--ghost" th:href="@{/admin/tareas/visor}" th:if="${puedeEditarTareas}">Limpiar</a>
+				</div>
+			</form>
+		</details>
 
 		<!-- ===== BARRA ELECTORAL DE RENDIMIENTO TÉCNICO ===== -->
 		<section class="electoral-tracker-card" id="electoral-tracker-card" aria-label="Rendimiento y distribución de tareas técnicas">
