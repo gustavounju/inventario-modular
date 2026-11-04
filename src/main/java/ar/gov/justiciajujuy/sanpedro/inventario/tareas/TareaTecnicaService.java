@@ -232,6 +232,7 @@ public class TareaTecnicaService {
 					.toList();
 
 			List<EstadisticasRendimientoTecnico.DistribucionItem> fueros = calcularDistribucionFueros(tareasTecnico, count);
+			List<EstadisticasRendimientoTecnico.DistribucionItem> usuarios = calcularDistribucionUsuarios(tareasTecnico, count);
 			List<EstadisticasRendimientoTecnico.DistribucionItem> tipos = calcularDistribucionTipos(tareasTecnico, count);
 
 			items.add(new EstadisticasRendimientoTecnico.RendimientoTecnicoItem(
@@ -242,6 +243,7 @@ public class TareaTecnicaService {
 					pctRealizadas,
 					color,
 					fueros,
+					usuarios,
 					tipos
 			));
 		}
@@ -251,11 +253,13 @@ public class TareaTecnicaService {
 
 		List<TareaTecnica> tareasPendientes = tareaTecnicaRepository.buscarActivasParaVisor();
 		List<EstadisticasRendimientoTecnico.DistribucionItem> pendFueros = calcularDistribucionFueros(tareasPendientes, totalPendientes);
+		List<EstadisticasRendimientoTecnico.DistribucionItem> pendUsuarios = calcularDistribucionUsuarios(tareasPendientes, totalPendientes);
 		List<EstadisticasRendimientoTecnico.DistribucionItem> pendTipos = calcularDistribucionTipos(tareasPendientes, totalPendientes);
 		EstadisticasRendimientoTecnico.PendientesMetricas pendientesDetalle = new EstadisticasRendimientoTecnico.PendientesMetricas(
 				totalPendientes,
 				Math.round(porcentajePendientes * 10.0) / 10.0,
 				pendFueros,
+				pendUsuarios,
 				pendTipos
 		);
 
@@ -319,6 +323,37 @@ public class TareaTecnicaService {
 		for (var entry : fuerosMap.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue(), a.getValue())).toList()) {
 			double pct = Math.round(((entry.getValue() * 100.0) / total) * 10.0) / 10.0;
 			String color = coloresFuero.get(idx % coloresFuero.size());
+			idx++;
+			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), entry.getValue(), pct, color));
+		}
+		return res;
+	}
+
+	private List<EstadisticasRendimientoTecnico.DistribucionItem> calcularDistribucionUsuarios(List<TareaTecnica> tareas, long total) {
+		if (tareas == null || tareas.isEmpty() || total <= 0) {
+			return List.of();
+		}
+		List<String> coloresUsuario = List.of(
+				"#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4", "#14b8a6", "#f97316", "#6366f1", "#84cc16"
+		);
+		Map<String, Long> usuariosMap = tareas.stream()
+				.collect(Collectors.groupingBy(
+						t -> {
+							String n = t.getSolicitanteNombre();
+							if (n != null && !n.isBlank()) return n.trim();
+							String u = t.getSolicitanteUsername();
+							if (u != null && !u.isBlank()) return u.trim();
+							if (t.getTipo() == TipoTareaTecnica.ALISTAMIENTO) return "Taller (Uso interno)";
+							return "Sin solicitante";
+						},
+						Collectors.counting()
+				));
+
+		List<EstadisticasRendimientoTecnico.DistribucionItem> res = new ArrayList<>();
+		int idx = 0;
+		for (var entry : usuariosMap.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue(), a.getValue())).toList()) {
+			double pct = Math.round(((entry.getValue() * 100.0) / total) * 10.0) / 10.0;
+			String color = coloresUsuario.get(idx % coloresUsuario.size());
 			idx++;
 			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), entry.getValue(), pct, color));
 		}

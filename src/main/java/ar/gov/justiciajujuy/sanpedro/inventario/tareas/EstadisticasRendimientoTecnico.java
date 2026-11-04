@@ -45,6 +45,7 @@ public record EstadisticasRendimientoTecnico(
 			double porcentajeDeRealizadas,
 			String color,
 			List<DistribucionItem> fueros,
+			List<DistribucionItem> usuarios,
 			List<DistribucionItem> tipos
 	) {
 		public RendimientoTecnicoItem(
@@ -53,9 +54,22 @@ public record EstadisticasRendimientoTecnico(
 				long realizadas,
 				double porcentajeDelTotal,
 				double porcentajeDeRealizadas,
+				String color,
+				List<DistribucionItem> fueros,
+				List<DistribucionItem> usuarios
+		) {
+			this(username, nombreVisible, realizadas, porcentajeDelTotal, porcentajeDeRealizadas, color, fueros, usuarios, List.of());
+		}
+
+		public RendimientoTecnicoItem(
+				String username,
+				String nombreVisible,
+				long realizadas,
+				double porcentajeDelTotal,
+				double porcentajeDeRealizadas,
 				String color
 		) {
-			this(username, nombreVisible, realizadas, porcentajeDelTotal, porcentajeDeRealizadas, color, List.of(), List.of());
+			this(username, nombreVisible, realizadas, porcentajeDelTotal, porcentajeDeRealizadas, color, List.of(), List.of(), List.of());
 		}
 	}
 
@@ -70,8 +84,18 @@ public record EstadisticasRendimientoTecnico(
 			long total,
 			double porcentaje,
 			List<DistribucionItem> fueros,
+			List<DistribucionItem> usuarios,
 			List<DistribucionItem> tipos
-	) {}
+	) {
+		public PendientesMetricas(
+				long total,
+				double porcentaje,
+				List<DistribucionItem> fueros,
+				List<DistribucionItem> usuarios
+		) {
+			this(total, porcentaje, fueros, usuarios, List.of());
+		}
+	}
 }
 
 

@@ -349,6 +349,13 @@
 			return html;
 		}
 
+		function formatDistributionSummary(items) {
+			if (!items || items.length === 0) return 'Sin datos';
+			if (items.length === 1) return `${items[0].etiqueta} (${items[0].cantidad})`;
+			if (items.length === 2) return `${items[0].etiqueta} (${items[0].cantidad}) · ${items[1].etiqueta} (${items[1].cantidad})`;
+			return `${items[0].etiqueta} (${items[0].cantidad}) +${items.length - 1} más`;
+		}
+
 		function mostrarTooltip(slice, e) {
 			const isPending = slice.getAttribute('data-pending') === 'true';
 			const username = slice.getAttribute('data-username');
@@ -358,112 +365,78 @@
 			if (isPending) {
 				const pend = currentData?.pendientesDetalle;
 				const fueros = pend?.fueros || [];
-				const tipos = pend?.tipos || [];
+				const usuarios = pend?.usuarios || [];
 				const count = currentData?.totalPendientes ?? 0;
 				const pct = currentData?.porcentajePendientes ?? 0;
 
 				tooltip.innerHTML = `
-					<div class="electoral-tooltip-header">
-						<div class="electoral-tooltip-identity">
-							<span class="electoral-dot" style="background-color: #94a3b8;"></span>
-							<div>
+					<div class="electoral-satellite-pod">
+						<div class="electoral-satellite" title="Distribución por Fuero de tareas pendientes">
+							<div class="electoral-satellite-donut">
+								${renderDonutSvg(fueros, '🏛️')}
+							</div>
+							<span class="electoral-satellite-tag">🏛️ Fuero</span>
+							<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(fueros))}</span>
+						</div>
+
+						<div class="electoral-satellite-core">
+							<div class="electoral-core-title-row">
+								<span class="electoral-dot" style="background-color: #94a3b8;"></span>
 								<span class="electoral-tooltip-title">Por Asignar / Pendientes</span>
-								<span class="electoral-tooltip-sub">${count} tareas pendientes (${pct}% del total)</span>
 							</div>
+							<span class="electoral-tooltip-sub">${count} tareas pendientes (${pct}% del total)</span>
 						</div>
-						<div class="electoral-tooltip-badge">${pct}% del tablero</div>
-					</div>
-					<div class="electoral-tooltip-charts">
-						<div class="electoral-chart-card">
-							<div class="electoral-chart-header">
-								<span>🏛️</span>
-								<span>Por Fuero</span>
+
+						<div class="electoral-satellite" title="Distribución por Solicitante de tareas pendientes">
+							<div class="electoral-satellite-donut">
+								${renderDonutSvg(usuarios, '👤')}
 							</div>
-							<div class="electoral-chart-body">
-								<div class="electoral-chart-donut-wrapper">
-									${renderDonutSvg(fueros, '🏛️')}
-								</div>
-								<div class="electoral-chart-legend">
-									${renderLegend(fueros)}
-								</div>
-							</div>
+							<span class="electoral-satellite-tag">👤 Solicitante</span>
+							<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(usuarios))}</span>
 						</div>
-						<div class="electoral-chart-card">
-							<div class="electoral-chart-header">
-								<span>🛠️</span>
-								<span>Por Tipo de Tarea</span>
-							</div>
-							<div class="electoral-chart-body">
-								<div class="electoral-chart-donut-wrapper">
-									${renderDonutSvg(tipos, '🛠️')}
-								</div>
-								<div class="electoral-chart-legend">
-									${renderLegend(tipos)}
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="electoral-tooltip-footer">
-						<span class="electoral-tooltip-hint">👆 Haz clic para filtrar solo pendientes en el tablero</span>
 					</div>
 				`;
 			} else {
 				const tec = currentData?.tecnicos?.find(t => t.username === username);
 				if (tec) {
 					const fueros = tec.fueros || [];
-					const tipos = tec.tipos || [];
+					const usuarios = tec.usuarios || [];
 
 					tooltip.innerHTML = `
-						<div class="electoral-tooltip-header">
-							<div class="electoral-tooltip-identity">
-								<span class="electoral-dot" style="background-color: ${tec.color};"></span>
-								<div>
+						<div class="electoral-satellite-pod">
+							<div class="electoral-satellite" title="Fueros donde resolvió tareas">
+								<div class="electoral-satellite-donut">
+									${renderDonutSvg(fueros, '🏛️')}
+								</div>
+								<span class="electoral-satellite-tag">🏛️ Fuero</span>
+								<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(fueros))}</span>
+							</div>
+
+							<div class="electoral-satellite-core">
+								<div class="electoral-core-title-row">
+									<span class="electoral-dot" style="background-color: ${tec.color};"></span>
 									<span class="electoral-tooltip-title">${escapeHtml(tec.nombreVisible)}</span>
-									<span class="electoral-tooltip-sub">${tec.realizadas} tareas realizadas (${tec.porcentajeDeRealizadas}% de cerradas)</span>
 								</div>
+								<span class="electoral-tooltip-sub">${tec.realizadas} tareas realizadas (${tec.porcentajeDelTotal}% del total)</span>
 							</div>
-							<div class="electoral-tooltip-badge">${tec.porcentajeDelTotal}% del total</div>
-						</div>
-						<div class="electoral-tooltip-charts">
-							<div class="electoral-chart-card">
-								<div class="electoral-chart-header">
-									<span>🏛️</span>
-									<span>Por Fuero</span>
+
+							<div class="electoral-satellite" title="Usuarios atendidos por este técnico">
+								<div class="electoral-satellite-donut">
+									${renderDonutSvg(usuarios, '👤')}
 								</div>
-								<div class="electoral-chart-body">
-									<div class="electoral-chart-donut-wrapper">
-										${renderDonutSvg(fueros, '🏛️')}
-									</div>
-									<div class="electoral-chart-legend">
-										${renderLegend(fueros)}
-									</div>
-								</div>
+								<span class="electoral-satellite-tag">👤 Usuario</span>
+								<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(usuarios))}</span>
 							</div>
-							<div class="electoral-chart-card">
-								<div class="electoral-chart-header">
-									<span>🛠️</span>
-									<span>Por Tipo de Tarea</span>
-								</div>
-								<div class="electoral-chart-body">
-									<div class="electoral-chart-donut-wrapper">
-										${renderDonutSvg(tipos, '🛠️')}
-									</div>
-									<div class="electoral-chart-legend">
-										${renderLegend(tipos)}
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="electoral-tooltip-footer">
-							<span class="electoral-tooltip-hint">👆 Haz clic para filtrar sus tareas en el tablero</span>
 						</div>
 					`;
 				} else {
 					tooltip.innerHTML = `
-						<div class="electoral-tooltip-header">
-							<span class="electoral-tooltip-title">${escapeHtml(titleFallback)}</span>
+						<div class="electoral-satellite-pod">
+							<div class="electoral-satellite-core">
+								<span class="electoral-tooltip-title">${escapeHtml(titleFallback)}</span>
+								<span class="electoral-tooltip-sub">${escapeHtml(subFallback)}</span>
+							</div>
 						</div>
-						<span class="electoral-tooltip-sub">${escapeHtml(subFallback)}</span>
 					`;
 				}
 			}
@@ -475,11 +448,11 @@
 		function posicionarTooltip(e) {
 			const barRect = bar.getBoundingClientRect();
 			const mouseX = e.clientX - barRect.left;
-			const tooltipWidth = 440;
-			const half = tooltipWidth / 2;
+			const tooltipRect = tooltip.getBoundingClientRect();
+			const half = (tooltipRect.width || 340) / 2;
 
 			let clampedX;
-			if (barRect.width <= tooltipWidth) {
+			if (barRect.width <= (tooltipRect.width || 340)) {
 				clampedX = barRect.width / 2;
 			} else {
 				clampedX = Math.max(half, Math.min(barRect.width - half, mouseX));
