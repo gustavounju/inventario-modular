@@ -19,6 +19,30 @@
 		let currentRange = activeRangeBtn ? (activeRangeBtn.getAttribute('data-range') || 'HOY') : 'HOY';
 		let currentData = null;
 		let activeTechFilter = null;
+		let hideTooltipTimer = null;
+
+		function cancelarOcultarTooltip() {
+			if (hideTooltipTimer) {
+				clearTimeout(hideTooltipTimer);
+				hideTooltipTimer = null;
+			}
+		}
+
+		function programarOcultarTooltip() {
+			cancelarOcultarTooltip();
+			hideTooltipTimer = setTimeout(() => {
+				ocultarTooltip();
+			}, 220);
+		}
+
+		if (tooltip) {
+			tooltip.addEventListener('mouseenter', () => {
+				cancelarOcultarTooltip();
+			});
+			tooltip.addEventListener('mouseleave', () => {
+				programarOcultarTooltip();
+			});
+		}
 
 		function obtenerFechaFiltro() {
 			const fechaInput = document.getElementById('kfilter-fecha');
@@ -228,15 +252,12 @@
 
 			slices.forEach(slice => {
 				slice.addEventListener('mouseenter', e => {
+					cancelarOcultarTooltip();
 					mostrarTooltip(slice, e);
 				});
 
-				slice.addEventListener('mousemove', e => {
-					posicionarTooltip(e);
-				});
-
 				slice.addEventListener('mouseleave', () => {
-					ocultarTooltip();
+					programarOcultarTooltip();
 				});
 
 				slice.addEventListener('click', () => {
@@ -256,6 +277,7 @@
 			const chips = legend.querySelectorAll('.electoral-chip');
 			chips.forEach((chip) => {
 				chip.addEventListener('mouseenter', e => {
+					cancelarOcultarTooltip();
 					chip.classList.add('is-active');
 					if (chip.getAttribute('data-pending') === 'true') {
 						const pendingSlice = bar.querySelector('.electoral-bar-slice.is-pending');
@@ -275,14 +297,10 @@
 					}
 				});
 
-				chip.addEventListener('mousemove', e => {
-					posicionarTooltip(e);
-				});
-
 				chip.addEventListener('mouseleave', () => {
 					chip.classList.remove('is-active');
 					slices.forEach(s => s.classList.remove('is-hovered'));
-					ocultarTooltip();
+					programarOcultarTooltip();
 				});
 
 				chip.addEventListener('click', () => {
@@ -300,135 +318,123 @@
 		}
 
 		function renderOrbitalSystem(items, centerIcon, orbitType) {
+			const labelTitle = orbitType === 'fuero' ? '🏛️ Fueros' : '👤 Usuarios';
+
 			if (!items || items.length === 0) {
 				return `
-					<div class="electoral-orbit-system" style="--orbit-size: 140px;">
-						<div class="electoral-orbit-ring"></div>
+					<div class="electoral-orbit-system" data-orbit-type="${orbitType}">
 						<div class="electoral-orbit-planet">
-							<svg viewBox="0 0 36 36" class="electoral-donut-svg">
-								<circle cx="18" cy="18" r="15.9155" fill="none" stroke="#cbd5e1" stroke-width="4" stroke-dasharray="100 0" stroke-dashoffset="25" opacity="0.3"></circle>
-								<text x="18" y="21" class="electoral-donut-center" text-anchor="middle" font-size="7">${escapeHtml(centerIcon || '—')}</text>
+							<svg viewBox="0 0 40 40" class="electoral-donut-svg">
+								<circle cx="20" cy="20" r="15.9155" fill="none" stroke="#cbd5e1" stroke-width="5" stroke-dasharray="100 0" stroke-dashoffset="25" opacity="0.3"></circle>
+								<text x="20" y="22.5" class="electoral-donut-center" text-anchor="middle" font-size="7.5">0</text>
 							</svg>
-							<span class="electoral-orbit-planet-label">${orbitType === 'fuero' ? '🏛️ Fueros' : '👤 Usuarios'}</span>
+							<span class="electoral-orbit-planet-label">${labelTitle}</span>
 						</div>
-						<span class="electoral-orbit-empty">Sin datos</span>
+						<div class="electoral-donut-hover-badge">Sin datos</div>
 					</div>
 				`;
 			}
 
 			const total = items.reduce((acc, it) => acc + it.cantidad, 0);
 
-			// Top-N + Agrupación profesional ("Cap & Cluster") para evitar amontonamiento
-			const MAX_VISIBLE_NODES = 6;
-			let orbitNodes = [];
-
-			if (items.length <= MAX_VISIBLE_NODES + 1) {
-				orbitNodes = items.map(it => ({
-					...it,
-					isCluster: false,
-					tooltipText: `${it.etiqueta}: ${it.cantidad} (${it.porcentaje}%)`
-				}));
-			} else {
-				const topItems = items.slice(0, MAX_VISIBLE_NODES);
-				const restItems = items.slice(MAX_VISIBLE_NODES);
-				const restQty = restItems.reduce((acc, it) => acc + it.cantidad, 0);
-				const restPct = total > 0 ? Math.round(((restQty * 100.0) / total) * 10.0) / 10.0 : 0.0;
-				const tipoPlural = orbitType === 'fuero' ? 'fueros más' : 'usuarios más';
-				const previewList = restItems
-					.slice(0, 12)
-					.map(r => `${r.etiqueta} (${r.cantidad})`)
-					.join(', ') + (restItems.length > 12 ? '…' : '');
-
-				orbitNodes = topItems.map(it => ({
-					...it,
-					isCluster: false,
-					tooltipText: `${it.etiqueta}: ${it.cantidad} (${it.porcentaje}%)`
-				}));
-
-				orbitNodes.push({
-					etiqueta: `+${restItems.length} ${tipoPlural}`,
-					cantidad: restQty,
-					porcentaje: restPct,
-					color: '#64748b',
-					isCluster: true,
-					tooltipText: `Otros ${restItems.length} (${restQty} tareas · ${restPct}%): ${previewList}`
-				});
-			}
-
-			// Planeta central (Donut SVG sincronizado con los nodos visibles)
-			let circlesHtml = `<circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="4.5" opacity="0.3"></circle>`;
+			// Anillo circular SVG con segmentos interactivos por porcentaje exacto
+			let circlesHtml = `<circle cx="20" cy="20" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="5.2" opacity="0.25"></circle>`;
 			let currentOffset = 25;
-			orbitNodes.forEach(item => {
-				const pct = Math.max(0, Math.min(100, item.porcentaje));
-				if (pct <= 0) return;
-				const dashArray = `${pct} ${100 - pct}`;
+			items.forEach(item => {
+				const exactPct = total > 0 ? (item.cantidad * 100.0) / total : 0;
+				if (exactPct <= 0) return;
+				const dashArray = `${exactPct} ${Math.max(0, 100 - exactPct)}`;
 				circlesHtml += `
-					<circle cx="18" cy="18" r="15.9155" fill="none"
+					<circle cx="20" cy="20" r="15.9155" fill="none"
 							stroke="${item.color}"
-							stroke-width="4.5"
+							stroke-width="5.2"
 							stroke-dasharray="${dashArray}"
 							stroke-dashoffset="${currentOffset}"
-							class="electoral-donut-slice">
-						<title>${escapeHtml(item.tooltipText || `${item.etiqueta}: ${item.cantidad} (${item.porcentaje}%)`)}</title>
+							class="electoral-donut-slice"
+							data-etiqueta="${escapeHtml(item.etiqueta)}"
+							data-cantidad="${item.cantidad}"
+							data-porcentaje="${item.porcentaje}"
+							data-color="${item.color}">
+						<title>${escapeHtml(item.etiqueta)}: ${item.cantidad} (${item.porcentaje}%)</title>
 					</circle>
 				`;
-				currentOffset -= pct;
+				currentOffset -= exactPct;
 			});
 
 			const planetSvg = `
-				<svg viewBox="0 0 36 36" class="electoral-donut-svg">
+				<svg viewBox="0 0 40 40" class="electoral-donut-svg">
 					${circlesHtml}
-					<text x="18" y="20.5" class="electoral-donut-center" text-anchor="middle" font-size="7.5">${total}</text>
+					<text x="20" y="22.5" class="electoral-donut-center" data-total="${total}" text-anchor="middle" font-size="7.5">${total}</text>
 				</svg>
 			`;
 
-			// Doble órbita escalonada (par/impar) cuando hay 5 o más nodos para evitar colisión de etiquetas
-			const n = orbitNodes.length;
-			const useDualRing = n >= 5;
-			const rInner = n <= 2 ? 58 : (n <= 4 ? 68 : 64);
-			const rOuter = useDualRing ? 94 : rInner;
-			const systemSize = (rOuter + 20) * 2;
-
-			const satellitesHtml = orbitNodes.map((it, idx) => {
-				const angleDeg = (360 / n) * idx - 90;
-				const rad = (angleDeg * Math.PI) / 180;
-				const nodeRadius = (useDualRing && idx % 2 === 1) ? rOuter : rInner;
-				const x = Math.round(nodeRadius * Math.cos(rad));
-				const y = Math.round(nodeRadius * Math.sin(rad));
-				const pillClass = it.isCluster
-					? 'electoral-satellite-pill electoral-satellite-pill--cluster'
-					: 'electoral-satellite-pill';
-
-				return `
-					<div class="electoral-satellite-node"
-					     style="--target-x: ${x}px; --target-y: ${y}px;"
-					     title="${escapeHtml(it.tooltipText)}">
-						<div class="${pillClass}" style="border-color: ${it.color};">
-							<span class="electoral-satellite-dot" style="background-color: ${it.color};"></span>
-							<span class="electoral-satellite-name">${escapeHtml(it.etiqueta)}</span>
-							<strong class="electoral-satellite-qty">${it.cantidad} <small>(${it.porcentaje}%)</small></strong>
-						</div>
-					</div>
-				`;
-			}).join('');
-
-			const innerRingHtml = useDualRing
-				? `<div class="electoral-orbit-ring electoral-orbit-ring--inner" style="--inner-ring-size: ${rInner * 2}px;"></div>`
-				: '';
-
 			return `
-				<div class="electoral-orbit-system" style="--orbit-size: ${systemSize}px;">
-					<div class="electoral-orbit-ring"></div>
-					${innerRingHtml}
+				<div class="electoral-orbit-system" data-orbit-type="${orbitType}">
 					<div class="electoral-orbit-planet">
 						${planetSvg}
-						<span class="electoral-orbit-planet-label">${orbitType === 'fuero' ? '🏛️ Fueros' : '👤 Usuarios'}</span>
+						<span class="electoral-orbit-planet-label">${labelTitle}</span>
 					</div>
-					<div class="electoral-orbit-track">
-						${satellitesHtml}
-					</div>
+					<div class="electoral-donut-hover-badge" aria-live="polite"></div>
 				</div>
 			`;
+		}
+
+		function vincularInteractividadDonuts() {
+			const systems = tooltip.querySelectorAll('.electoral-orbit-system');
+			systems.forEach(sys => {
+				const badge = sys.querySelector('.electoral-donut-hover-badge');
+				const centerText = sys.querySelector('.electoral-donut-center');
+				const total = centerText ? centerText.getAttribute('data-total') : '';
+				const donutSlices = sys.querySelectorAll('.electoral-donut-slice');
+
+				donutSlices.forEach(seg => {
+					seg.addEventListener('mouseenter', () => {
+						cancelarOcultarTooltip();
+						const etiqueta = seg.getAttribute('data-etiqueta') || '';
+						const cantidad = seg.getAttribute('data-cantidad') || '0';
+						const porcentaje = seg.getAttribute('data-porcentaje') || '0';
+						const color = seg.getAttribute('data-color') || '#3b82f6';
+
+						donutSlices.forEach(s => {
+							if (s === seg) {
+								s.classList.add('is-hovered');
+								s.classList.remove('is-dimmed');
+							} else {
+								s.classList.remove('is-hovered');
+								s.classList.add('is-dimmed');
+							}
+						});
+
+						if (centerText) {
+							centerText.textContent = cantidad;
+							centerText.style.fill = color;
+						}
+
+						if (badge) {
+							badge.innerHTML = `
+								<span class="electoral-satellite-dot" style="background-color: ${color};"></span>
+								<span class="electoral-donut-badge-name">${escapeHtml(etiqueta)}</span>
+								<strong class="electoral-donut-badge-qty">${cantidad} <small>(${porcentaje}%)</small></strong>
+							`;
+							badge.style.borderColor = color;
+							badge.classList.add('is-visible');
+						}
+					});
+
+					seg.addEventListener('mouseleave', () => {
+						donutSlices.forEach(s => {
+							s.classList.remove('is-hovered', 'is-dimmed');
+						});
+						if (centerText && total !== null) {
+							centerText.textContent = total;
+							centerText.style.fill = '';
+						}
+						if (badge) {
+							badge.classList.remove('is-visible');
+						}
+					});
+				});
+			});
 		}
 
 		function mostrarTooltip(slice, e) {
@@ -497,21 +503,26 @@
 				}
 			}
 
+			vincularInteractividadDonuts();
 			tooltip.classList.add('is-visible');
-			posicionarTooltip(e);
+			posicionarTooltip(e, slice);
 		}
 
-		function posicionarTooltip(e) {
+		function posicionarTooltip(e, anchorEl) {
 			const barRect = bar.getBoundingClientRect();
-			const mouseX = e.clientX - barRect.left;
+			let targetX = e ? (e.clientX - barRect.left) : (barRect.width / 2);
+			if (anchorEl) {
+				const anchorRect = anchorEl.getBoundingClientRect();
+				targetX = (anchorRect.left + anchorRect.width / 2) - barRect.left;
+			}
 			const tooltipRect = tooltip.getBoundingClientRect();
-			const half = (tooltipRect.width || 480) / 2;
+			const half = (tooltipRect.width || 420) / 2;
 
 			let clampedX;
-			if (barRect.width <= (tooltipRect.width || 480)) {
+			if (barRect.width <= (tooltipRect.width || 420)) {
 				clampedX = barRect.width / 2;
 			} else {
-				clampedX = Math.max(half, Math.min(barRect.width - half, mouseX));
+				clampedX = Math.max(half, Math.min(barRect.width - half, targetX));
 			}
 
 			tooltip.style.left = `${clampedX}px`;

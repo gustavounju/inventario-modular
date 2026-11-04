@@ -1182,7 +1182,7 @@ body[data-is-admin="false"] .kcard:active {
 /* Tooltip interactivo flotante en el aire (sin ventana contenedora) */
 .electoral-tooltip {
 	position: absolute;
-	bottom: calc(100% + 14px);
+	bottom: calc(100% + 12px);
 	left: 50%;
 	transform: translateX(-50%);
 	background: transparent !important;
@@ -1199,9 +1199,20 @@ body[data-is-admin="false"] .kcard:active {
 	visibility: hidden;
 	transition: opacity 0.2s ease, transform 0.2s ease;
 	width: max-content;
-	min-width: 480px;
+	min-width: 380px;
 	max-width: calc(100vw - 32px);
 	backdrop-filter: none !important;
+}
+
+/* Puente invisible para permitir mover el mouse desde la barra hacia los anillos circulares sin cerrar */
+.electoral-tooltip::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 0;
+	width: 100%;
+	height: 22px;
+	background: transparent;
 }
 
 :root[data-theme="dark"] .electoral-tooltip {
@@ -1215,79 +1226,79 @@ body[data-is-admin="false"] .kcard:active {
 	visibility: visible;
 }
 
-/* Contenedor del Universo Orbital */
+/* Contenedor de los gráficos circulares y tarjeta central */
 .electoral-orbit-universe {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 36px;
+	gap: 18px;
 	position: relative;
 	background: transparent;
 }
 
-/* Sistema Orbital individual (Izquierdo / Derecho) - Flota libre en el aire */
+/* Contenedor de cada Gráfico Circular (Izquierdo: Fueros / Derecho: Usuarios) */
 .electoral-orbit-system {
 	position: relative;
-	width: var(--orbit-size, 150px);
-	height: var(--orbit-size, 150px);
-	min-width: 150px;
-	min-height: 150px;
+	width: 104px;
+	height: 112px;
 	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
 	background: transparent;
 	border: none;
-	filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.12));
+	filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.14));
 }
 
-/* Anillo orbital punteado flotante */
-.electoral-orbit-ring {
-	position: absolute;
-	inset: 4px;
-	border: 1.5px dashed rgba(2, 132, 199, 0.35);
-	border-radius: 50%;
-	pointer-events: none;
-}
-
-/* Segundo anillo interior concéntrico para órbitas escalonadas */
-.electoral-orbit-ring--inner {
-	inset: auto;
-	width: var(--inner-ring-size, 128px);
-	height: var(--inner-ring-size, 128px);
-	border-color: rgba(100, 116, 139, 0.28);
-}
-
-:root[data-theme="dark"] .electoral-orbit-ring {
-	border-color: rgba(56, 189, 248, 0.3);
-}
-
-:root[data-theme="dark"] .electoral-orbit-ring--inner {
-	border-color: rgba(148, 163, 184, 0.22);
-}
-
-/* Planeta central (Donut SVG) */
+/* Gráfico Circular (Donut SVG) */
 .electoral-orbit-planet {
-	position: absolute;
-	width: 52px;
-	height: 52px;
+	position: relative;
+	width: 84px;
+	height: 84px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	z-index: 5;
-	filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.14));
+	background: rgba(255, 255, 255, 0.92);
+	border-radius: 50%;
+	padding: 3px;
+	box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+	backdrop-filter: blur(8px);
+}
+
+:root[data-theme="dark"] .electoral-orbit-planet {
+	background: rgba(15, 23, 42, 0.92);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .electoral-donut-svg {
 	width: 100%;
 	height: 100%;
+	overflow: visible;
+}
+
+.electoral-donut-slice {
+	pointer-events: stroke;
+	cursor: pointer;
+	transition: stroke-width 0.15s ease, opacity 0.15s ease;
+}
+
+.electoral-donut-slice.is-hovered {
+	stroke-width: 6.8;
+}
+
+.electoral-donut-slice.is-dimmed {
+	opacity: 0.35;
 }
 
 .electoral-donut-center {
 	fill: #0f172a;
 	font-weight: 800;
 	font-family: inherit;
+	pointer-events: none;
+	transition: fill 0.15s ease;
 }
 
 :root[data-theme="dark"] .electoral-donut-center {
@@ -1296,125 +1307,78 @@ body[data-is-admin="false"] .kcard:active {
 
 .electoral-orbit-planet-label {
 	position: absolute;
-	top: calc(100% + 2px);
-	font-size: 0.68rem;
+	top: calc(100% + 4px);
+	font-size: 0.7rem;
 	font-weight: 700;
-	color: #475569;
+	color: #334155;
 	white-space: nowrap;
-	background: rgba(255, 255, 255, 0.85);
-	padding: 1px 6px;
+	background: rgba(255, 255, 255, 0.95);
+	border: 1px solid #e2e8f0;
+	padding: 1px 8px;
 	border-radius: 9999px;
-	box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+	pointer-events: none;
 }
 
 :root[data-theme="dark"] .electoral-orbit-planet-label {
-	color: #94a3b8;
-	background: rgba(15, 23, 42, 0.85);
+	color: #cbd5e1;
+	background: rgba(30, 41, 59, 0.95);
+	border-color: #334155;
 }
 
-/* Pista de rotación orbital */
-.electoral-orbit-track {
+/* Etiqueta emergente al pasar el mouse sobre el anillo circular */
+.electoral-donut-hover-badge {
 	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	animation: orbitSpin 16s linear infinite;
-	z-index: 10;
-}
-
-.electoral-orbit-system:hover .electoral-orbit-track,
-.electoral-orbit-system:hover .electoral-satellite-pill {
-	animation-play-state: paused;
-}
-
-/* Nodo satélite posicionado por ángulo */
-.electoral-satellite-node {
-	position: absolute;
-	top: 50%;
+	bottom: calc(100% + 6px);
 	left: 50%;
-	transform: translate(calc(-50% + var(--target-x)), calc(-50% + var(--target-y)));
-	pointer-events: auto;
-	z-index: 12;
-}
-
-.electoral-satellite-node:hover {
-	z-index: 40;
-}
-
-/* Píldora del satélite que contrarresta el giro para ser 100% legible y flota en el aire */
-.electoral-satellite-pill {
+	transform: translate(-50%, 4px);
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
-	background: rgba(255, 255, 255, 0.96);
+	gap: 6px;
+	background: rgba(255, 255, 255, 0.98);
 	border: 1.5px solid #cbd5e1;
 	border-radius: 9999px;
-	padding: 3px 9px;
-	font-size: 0.72rem;
+	padding: 4px 11px;
+	font-size: 0.75rem;
 	font-weight: 600;
 	color: #0f172a;
 	white-space: nowrap;
-	box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
-	animation: counterSpin 16s linear infinite;
-	transition: transform 0.2s ease, box-shadow 0.2s ease;
-	cursor: pointer;
-	backdrop-filter: blur(8px);
+	box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+	z-index: 50;
 }
 
-/* Satélite agrupador "+N más" con estilo distintivo ejecutivo */
-.electoral-satellite-pill--cluster {
-	background: rgba(241, 245, 249, 0.98);
-	border-style: dashed;
-	color: #334155;
-}
-
-:root[data-theme="dark"] .electoral-satellite-pill {
-	background: rgba(30, 41, 59, 0.95);
-	color: #f8fafc;
-	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-}
-
-:root[data-theme="dark"] .electoral-satellite-pill--cluster {
+:root[data-theme="dark"] .electoral-donut-hover-badge {
 	background: rgba(15, 23, 42, 0.98);
-	color: #cbd5e1;
+	color: #f8fafc;
+	box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6);
 }
 
-.electoral-satellite-pill:hover {
-	transform: scale(1.1) !important;
-	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22) !important;
-	z-index: 40;
+.electoral-donut-hover-badge.is-visible {
+	opacity: 1;
+	visibility: visible;
+	transform: translate(-50%, 0);
 }
 
-.electoral-satellite-dot {
-	width: 7px;
-	height: 7px;
-	border-radius: 50%;
-	flex-shrink: 0;
-}
-
-.electoral-satellite-name {
-	max-width: 112px;
+.electoral-donut-badge-name {
+	max-width: 220px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	transition: max-width 0.2s ease;
 }
 
-.electoral-satellite-pill:hover .electoral-satellite-name {
-	max-width: 240px;
-}
-
-.electoral-satellite-qty {
+.electoral-donut-badge-qty {
 	font-weight: 700;
-	color: inherit;
-	opacity: 0.9;
 }
 
-.electoral-orbit-empty {
-	font-size: 0.72rem;
-	color: #94a3b8;
-	font-style: italic;
-	z-index: 10;
+.electoral-satellite-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
 }
 
 /* Núcleo Central: Píldora elegante flotante con nombre y tareas */
