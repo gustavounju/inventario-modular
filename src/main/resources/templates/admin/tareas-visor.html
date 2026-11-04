@@ -216,10 +216,11 @@
 							 th:if="${tec.porcentajeDelTotal > 0}"
 							 class="electoral-bar-slice"
 							 th:style="'width: ' + ${tec.porcentajeDelTotal} + '%; background-color: ' + ${tec.color} + ';'"
-							 th:attr="data-title=${tec.nombreVisible}, data-sub=${tec.realizadas} + ' tareas realizadas (' + ${tec.porcentajeDelTotal} + '% del total)', data-username=${tec.username}"></div>
+							 th:attr="data-title=${tec.nombreVisible}, data-sub=${tec.realizadas} + ' tareas realizadas (' + ${tec.porcentajeDelTotal} + '% del total)', data-username=${tec.username}, data-color=${tec.color}"></div>
 						<div th:if="${estadisticasRendimiento.porcentajePendientes > 0}"
 							 class="electoral-bar-slice is-pending"
 							 th:style="'width: ' + ${estadisticasRendimiento.porcentajePendientes} + '%;'"
+							 data-pending="true"
 							 th:attr="data-title='Por asignar / Pendientes', data-sub=${estadisticasRendimiento.totalPendientes} + ' tareas pendientes (' + ${estadisticasRendimiento.porcentajePendientes} + '% del total)'"></div>
 					</th:block>
 					<th:block th:unless="${estadisticasRendimiento != null and estadisticasRendimiento.totalTareas > 0}">

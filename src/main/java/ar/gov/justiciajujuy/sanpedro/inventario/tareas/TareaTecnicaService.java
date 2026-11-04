@@ -223,18 +223,41 @@ public class TareaTecnicaService {
 			String color = PALETA_COLORES.get(colorIdx % PALETA_COLORES.size());
 			colorIdx++;
 
+			List<TareaTecnica> tareasTecnico = cerradas.stream()
+					.filter(t -> {
+						String r = t.getResponsable();
+						String u = (r != null && !r.isBlank()) ? r.trim() : "Sin asignar";
+						return u.equalsIgnoreCase(username);
+					})
+					.toList();
+
+			List<EstadisticasRendimientoTecnico.DistribucionItem> fueros = calcularDistribucionFueros(tareasTecnico, count);
+			List<EstadisticasRendimientoTecnico.DistribucionItem> tipos = calcularDistribucionTipos(tareasTecnico, count);
+
 			items.add(new EstadisticasRendimientoTecnico.RendimientoTecnicoItem(
 					username,
 					nombreVisible,
 					count,
 					pctTotal,
 					pctRealizadas,
-					color
+					color,
+					fueros,
+					tipos
 			));
 		}
 
 		EstadisticasRendimientoTecnico.RendimientoTecnicoItem lider = !items.isEmpty() ? items.get(0) : null;
 		EstadisticasRendimientoTecnico.RendimientoTecnicoItem segundo = items.size() > 1 ? items.get(1) : null;
+
+		List<TareaTecnica> tareasPendientes = tareaTecnicaRepository.buscarActivasParaVisor();
+		List<EstadisticasRendimientoTecnico.DistribucionItem> pendFueros = calcularDistribucionFueros(tareasPendientes, totalPendientes);
+		List<EstadisticasRendimientoTecnico.DistribucionItem> pendTipos = calcularDistribucionTipos(tareasPendientes, totalPendientes);
+		EstadisticasRendimientoTecnico.PendientesMetricas pendientesDetalle = new EstadisticasRendimientoTecnico.PendientesMetricas(
+				totalPendientes,
+				Math.round(porcentajePendientes * 10.0) / 10.0,
+				pendFueros,
+				pendTipos
+		);
 
 		java.util.Set<String> telefonistas = new java.util.HashSet<>();
 		telefonistas.add("telefonista");
@@ -268,8 +291,62 @@ public class TareaTecnicaService {
 				items,
 				lider,
 				segundo,
-				telefonistaMetricas
+				telefonistaMetricas,
+				pendientesDetalle
 		);
+	}
+
+	private List<EstadisticasRendimientoTecnico.DistribucionItem> calcularDistribucionFueros(List<TareaTecnica> tareas, long total) {
+		if (tareas == null || tareas.isEmpty() || total <= 0) {
+			return List.of();
+		}
+		List<String> coloresFuero = List.of(
+				"#0284c7", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1", "#84cc16", "#06b6d4", "#f43f5e"
+		);
+		Map<String, Long> fuerosMap = tareas.stream()
+				.collect(Collectors.groupingBy(
+						t -> {
+							String f = t.getSolicitanteFuero();
+							if (f != null && !f.isBlank()) return f.trim();
+							if (t.getTipo() == TipoTareaTecnica.ALISTAMIENTO) return "Taller / Sistemas";
+							return "Sin fuero";
+						},
+						Collectors.counting()
+				));
+
+		List<EstadisticasRendimientoTecnico.DistribucionItem> res = new ArrayList<>();
+		int idx = 0;
+		for (var entry : fuerosMap.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue(), a.getValue())).toList()) {
+			double pct = Math.round(((entry.getValue() * 100.0) / total) * 10.0) / 10.0;
+			String color = coloresFuero.get(idx % coloresFuero.size());
+			idx++;
+			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), entry.getValue(), pct, color));
+		}
+		return res;
+	}
+
+	private List<EstadisticasRendimientoTecnico.DistribucionItem> calcularDistribucionTipos(List<TareaTecnica> tareas, long total) {
+		if (tareas == null || tareas.isEmpty() || total <= 0) {
+			return List.of();
+		}
+		List<String> coloresTipo = List.of(
+				"#3b82f6", "#f97316", "#10b981", "#a855f7", "#eab308", "#06b6d4"
+		);
+		Map<String, Long> tiposMap = tareas.stream()
+				.collect(Collectors.groupingBy(
+						t -> t.getTipo() != null ? t.getTipo().getEtiqueta() : "Incidente",
+						Collectors.counting()
+				));
+
+		List<EstadisticasRendimientoTecnico.DistribucionItem> res = new ArrayList<>();
+		int idx = 0;
+		for (var entry : tiposMap.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue(), a.getValue())).toList()) {
+			double pct = Math.round(((entry.getValue() * 100.0) / total) * 10.0) / 10.0;
+			String color = coloresTipo.get(idx % coloresTipo.size());
+			idx++;
+			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), entry.getValue(), pct, color));
+		}
+		return res;
 	}
 
 	private String resolverNombreVisibleTecnico(String username) {
