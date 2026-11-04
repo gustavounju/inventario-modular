@@ -111,31 +111,6 @@
     }
     window.escapeHtml = escapeHtml;
 
-    // Persistencia y control de la barra de filtros colapsable
-    const filterDetails = document.getElementById('kanban-filters-details');
-    if (filterDetails) {
-        const hasActiveFilter = filterDetails.getAttribute('data-has-active-filter') === 'true';
-        if (!hasActiveFilter) {
-            try {
-                const savedState = sessionStorage.getItem('visor_filtros_expanded');
-                if (savedState === '1') {
-                    filterDetails.open = true;
-                } else if (savedState === '0') {
-                    filterDetails.open = false;
-                }
-            } catch {
-                /* Almacenamiento restringido o deshabilitado */
-            }
-        }
-        filterDetails.addEventListener('toggle', () => {
-            try {
-                sessionStorage.setItem('visor_filtros_expanded', filterDetails.open ? '1' : '0');
-            } catch {
-                /* Silencioso ante restricciones de cuota o privacidad */
-            }
-        });
-    }
-
     setTimeout(update, 30000);
     setTimeout(updateApkPresencia, 10000);
 })();

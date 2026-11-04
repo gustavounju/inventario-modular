@@ -101,6 +101,16 @@
 				</span>
 				<label class="visor-live-control"><input id="visor-live" type="checkbox" checked> En vivo</label>
 				<span id="visor-live-status" class="kanban-live-status" role="status"></span>
+				<button type="button" class="kbtn kbtn--secondary"
+				        onclick="document.getElementById('modal-filtros-visor').showModal()"
+				        style="display:inline-flex; align-items:center; gap:6px; font-weight:600;"
+				        th:styleappend="${esFiltroActivo or esModoTodas or (filtroFecha != null and !filtroFecha.equals(fechaHoy)) ? 'border-color:#0284c7; color:#0284c7; background:rgba(2, 132, 199, 0.08);' : ''}"
+				        title="Filtrar por fecha, estado, equipo o búsqueda">
+					<span>🔍 Filtros</span>
+					<span th:if="${esFiltroActivo or esModoTodas or (filtroFecha != null and !filtroFecha.equals(fechaHoy))}"
+					      style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#0284c7;"
+					      title="Filtro activo"></span>
+				</button>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin}" th:if="${!esSoloMovil}">Panel general</a>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin/red-ips}" th:if="${currentUser != null or (username != null and !username.isEmpty())}" title="Consultar plano y asignación de direcciones IP">🌐 Plano de IPs</a>
 				<button type="button" class="kbtn kbtn--secondary" onclick="abrirHistorialLlamadas()">📞 Llamadas Recientes</button>
@@ -138,88 +148,6 @@
 				</div>
 			</div>
 		</div>
-
-		<!-- Filtros y Selector de Fecha (Colapsable / Disimulado) -->
-		<details class="kanban-filters-details"
-		         id="kanban-filters-details"
-		         th:attr="data-has-active-filter=${esFiltroActivo ? 'true' : 'false'}"
-		         th:open="${esFiltroActivo}">
-			<summary class="kanban-filters-summary" title="Clic para desplegar u ocultar filtros de búsqueda">
-				<div class="kfilter-summary-left">
-					<span class="kfilter-summary-icon" aria-hidden="true">🔎</span>
-					<span class="kfilter-summary-title">Filtros y Búsqueda</span>
-					<span class="kfilter-summary-pill" th:if="${esModoTodas}">📋 Modo Backlog completo</span>
-					<span class="kfilter-summary-pill" th:if="${!esModoTodas and filtroFecha != null}" th:text="'📅 ' + ${#temporals.format(filtroFecha, 'dd/MM/yyyy')}">📅 03/11/2026</span>
-					<span class="kfilter-summary-badge" th:if="${esFiltroActivo}">Filtro aplicado</span>
-				</div>
-				<div class="kfilter-summary-right">
-					<span class="kfilter-summary-hint">Clic para desplegar u ocultar opciones</span>
-					<span class="kfilter-summary-toggle">
-						<span class="kfilter-toggle-label">Opciones</span>
-						<span class="kfilter-toggle-arrow" aria-hidden="true">▾</span>
-					</span>
-				</div>
-			</summary>
-
-			<form class="kanban-filters" th:action="@{/admin/tareas/visor}" method="get" role="search" id="form-kanban-filters">
-				<label class="kfilter-label" style="min-width: 170px;">
-					<span style="display:flex; align-items:center; gap:4px;">
-						📅 <strong>Fecha tareas</strong>
-					</span>
-					<input type="date" name="fecha" id="kfilter-fecha"
-					       th:value="${filtroFecha != null ? #temporals.format(filtroFecha, 'yyyy-MM-dd') : ''}"
-					       class="kfilter-input"
-					       th:disabled="${esModoTodas}"
-					       onchange="this.form.submit()">
-				</label>
-
-				<!-- Controles rápidos de navegación de fecha -->
-				<div class="kfilter-date-nav" style="display: flex; align-items: flex-end; gap: 4px; padding-bottom: 2px;">
-					<a class="kbtn kbtn--secondary kbtn--sm"
-					   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.minusDays(1) : fechaHoy.minusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-					   title="Día anterior">◀</a>
-					<a class="kbtn kbtn--sm"
-					   th:href="@{/admin/tareas/visor(fecha=${fechaHoy}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-					   th:classappend="${filtroFecha != null and filtroFecha.equals(fechaHoy) and !esModoTodas ? 'kbtn--primary' : 'kbtn--secondary'}"
-					   title="Ir a tareas de hoy">Hoy</a>
-					<a class="kbtn kbtn--secondary kbtn--sm"
-					   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.plusDays(1) : fechaHoy.plusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-					   title="Día siguiente">▶</a>
-					<a class="kbtn kbtn--sm"
-					   th:href="@{/admin/tareas/visor(todas=true, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
-					   th:classappend="${esModoTodas ? 'kbtn--primary' : 'kbtn--ghost'}"
-					   title="Ver todas las tareas activas acumuladas (backlog)">📋 Todas activas</a>
-				</div>
-
-				<label class="kfilter-label">
-					<span>Estado</span>
-					<select name="estado" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
-						<option value="">Todos</option>
-						<option th:each="estado : ${estadosTarea}" th:value="${estado}"
-								th:text="${estado.name() == 'EN_PROCESO' ? 'EN PROCESO' : estado}"
-								th:selected="${estado == filtroEstado}">PENDIENTE</option>
-					</select>
-				</label>
-				<label class="kfilter-label">
-					<span>Equipo</span>
-					<select name="equipoId" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
-						<option value="">Todos</option>
-						<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
-								th:selected="${equipo.id == filtroEquipoId}">PC-INF-001</option>
-					</select>
-				</label>
-				<label class="kfilter-label kfilter-label--wide">
-					<span>Buscar</span>
-					<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120"
-						   class="kfilter-input" th:disabled="${!puedeEditarTareas}"
-						   th:placeholder="${puedeEditarTareas ? 'Tarea, usuario, equipo o comentario…' : 'Búsqueda disponible sólo para administradores'}">
-				</label>
-				<div class="kfilter-actions">
-					<button class="kbtn kbtn--primary" type="submit" th:disabled="${!puedeEditarTareas}" th:title="${!puedeEditarTareas ? 'Modo sólo lectura' : ''}">Filtrar</button>
-					<a class="kbtn kbtn--ghost" th:href="@{/admin/tareas/visor}" th:if="${puedeEditarTareas}">Limpiar</a>
-				</div>
-			</form>
-		</details>
 
 		<!-- ===== BARRA ELECTORAL DE RENDIMIENTO TÉCNICO ===== -->
 		<section class="electoral-tracker-card" id="electoral-tracker-card" aria-label="Rendimiento y distribución de tareas técnicas">
@@ -965,6 +893,93 @@
 			});
 		});
 	</script>
+	<!-- ============================================== -->
+	<!-- Modal de Filtros y Búsqueda de Tareas -->
+	<!-- ============================================== -->
+	<dialog id="modal-filtros-visor" class="kmodal kmodal--wide" aria-label="Filtros y Búsqueda de Tareas">
+		<div class="kmodal-content" style="padding: 22px; max-height: 85vh; overflow-y: auto;">
+			<header class="kmodal-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; border-bottom:1px solid var(--border-subtle); padding-bottom:12px;">
+				<div class="kmodal-header-text">
+					<h3 style="margin:0; font-size:1.18rem; font-weight:700; color:var(--text-primary);">🔍 Filtros y Búsqueda de Tareas</h3>
+					<span style="font-size:0.82rem; color:var(--text-muted);">Seleccioná fecha, estado, equipo o término de búsqueda</span>
+				</div>
+				<button type="button" class="kmodal-close" onclick="document.getElementById('modal-filtros-visor').close()" aria-label="Cerrar">✕</button>
+			</header>
+
+			<form th:action="@{/admin/tareas/visor}" method="get" role="search" id="form-kanban-filters" style="display:flex; flex-direction:column; gap:16px;">
+				<!-- Selector de Fecha y Atajos Rápidos -->
+				<div style="background:var(--bg-card-secondary, #f8fafc); border:1px solid var(--border-subtle, #e2e8f0); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
+					<label class="kfilter-label" style="margin:0;">
+						<span style="display:flex; align-items:center; gap:5px; font-weight:700; color:var(--text-primary);">
+							📅 Fecha de visualización
+						</span>
+						<input type="date" name="fecha" id="kfilter-fecha"
+						       th:value="${filtroFecha != null ? #temporals.format(filtroFecha, 'yyyy-MM-dd') : ''}"
+						       class="kfilter-input"
+						       th:disabled="${esModoTodas}"
+						       style="margin-top:4px;">
+					</label>
+
+					<!-- Controles rápidos de navegación de fecha -->
+					<div class="kfilter-date-nav" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+						<a class="kbtn kbtn--secondary kbtn--sm"
+						   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.minusDays(1) : fechaHoy.minusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   title="Día anterior">◀ Anterior</a>
+						<a class="kbtn kbtn--sm"
+						   th:href="@{/admin/tareas/visor(fecha=${fechaHoy}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   th:classappend="${filtroFecha != null and filtroFecha.equals(fechaHoy) and !esModoTodas ? 'kbtn--primary' : 'kbtn--secondary'}"
+						   title="Ir a tareas de hoy">Hoy</a>
+						<a class="kbtn kbtn--secondary kbtn--sm"
+						   th:href="@{/admin/tareas/visor(fecha=${filtroFecha != null ? filtroFecha.plusDays(1) : fechaHoy.plusDays(1)}, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   title="Día siguiente">Siguiente ▶</a>
+						<a class="kbtn kbtn--sm"
+						   th:href="@{/admin/tareas/visor(todas=true, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
+						   th:classappend="${esModoTodas ? 'kbtn--primary' : 'kbtn--ghost'}"
+						   title="Ver todas las tareas activas acumuladas (backlog completo)">📋 Todas activas (Backlog)</a>
+					</div>
+				</div>
+
+				<!-- Filtros por Estado y Equipo -->
+				<div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+					<label class="kfilter-label">
+						<span>Estado</span>
+						<select name="estado" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
+							<option value="">Todos los estados</option>
+							<option th:each="estado : ${estadosTarea}" th:value="${estado}"
+									th:text="${estado.name() == 'EN_PROCESO' ? 'EN PROCESO' : estado}"
+									th:selected="${estado == filtroEstado}">PENDIENTE</option>
+						</select>
+					</label>
+					<label class="kfilter-label">
+						<span>Equipo informático</span>
+						<select name="equipoId" class="kfilter-select" th:disabled="${!puedeEditarTareas}">
+							<option value="">Todos los equipos</option>
+							<option th:each="equipo : ${equipos}" th:value="${equipo.id}" th:text="${equipo.nombre}"
+									th:selected="${equipo.id == filtroEquipoId}">PC-INF-001</option>
+						</select>
+					</label>
+				</div>
+
+				<!-- Búsqueda libre -->
+				<label class="kfilter-label">
+					<span>Búsqueda por texto</span>
+					<input type="search" name="responsable" th:value="${filtroResponsable}" maxlength="120"
+						   class="kfilter-input" th:disabled="${!puedeEditarTareas}"
+						   th:placeholder="${puedeEditarTareas ? 'Título, solicitante, fuero, técnico, equipo o comentario…' : 'Búsqueda disponible sólo para administradores'}">
+				</label>
+
+				<!-- Botonera de acciones -->
+				<div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:14px; border-top:1px solid var(--border-subtle);">
+					<a class="kbtn kbtn--ghost" th:href="@{/admin/tareas/visor}" th:if="${puedeEditarTareas or esFiltroActivo or esModoTodas}">Restablecer / Limpiar</a>
+					<div style="display:flex; gap:8px; margin-left:auto;">
+						<button type="button" class="kbtn kbtn--secondary" onclick="document.getElementById('modal-filtros-visor').close()">Cerrar</button>
+						<button type="submit" class="kbtn kbtn--primary" th:disabled="${!puedeEditarTareas}">Aplicar Filtros</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</dialog>
+
 	<!-- ============================================== -->
 	<!-- Modal para Crear Nueva Tarea -->
 	<!-- ============================================== -->
