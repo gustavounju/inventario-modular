@@ -921,3 +921,431 @@ body[data-is-admin="false"] .kcard:active {
 	transform: translateY(-2px);
 	transition: all 0.2s ease;
 }
+
+
+/* =========================================================
+   Barra Electoral de Rendimiento y Distribución Técnica
+   ========================================================= */
+.electoral-tracker-card {
+	background: var(--bg-card, #ffffff);
+	border: 1px solid var(--border-subtle, #e2e8f0);
+	border-radius: 12px;
+	padding: 16px 22px;
+	margin: 8px 0 14px 0;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	position: relative;
+}
+
+.electoral-header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.electoral-title-block {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.electoral-title-icon {
+	font-size: 1.15rem;
+}
+
+.electoral-title-text {
+	font-size: 0.92rem;
+	font-weight: 700;
+	color: var(--text-primary, #0f172a);
+}
+
+.electoral-subtitle {
+	font-size: 0.78rem;
+	color: var(--text-secondary, #64748b);
+	margin-left: 4px;
+}
+
+.electoral-range-selector {
+	display: inline-flex;
+	background: var(--bg-card-secondary, #f1f5f9);
+	padding: 3px;
+	border-radius: 8px;
+	border: 1px solid var(--border-subtle, #e2e8f0);
+	gap: 2px;
+}
+
+.electoral-range-btn {
+	background: transparent;
+	border: none;
+	padding: 4px 11px;
+	border-radius: 6px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--text-secondary, #64748b);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.electoral-range-btn:hover {
+	color: var(--text-primary, #0f172a);
+}
+
+.electoral-range-btn.is-active {
+	background: #ffffff;
+	color: #0284c7;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+	font-weight: 700;
+}
+
+:root[data-theme="dark"] .electoral-range-btn.is-active {
+	background: #334155;
+	color: #38bdf8;
+}
+
+/* Fila de marcador superior (Estilo Elecciones EEUU) */
+.electoral-scoreboard {
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: center;
+	gap: 16px;
+	padding: 2px 4px;
+}
+
+.electoral-candidate-left {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	justify-content: flex-start;
+}
+
+.electoral-candidate-right {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	justify-content: flex-end;
+}
+
+.electoral-candidate-name {
+	font-size: 1.12rem;
+	font-weight: 600;
+	color: var(--text-primary, #1e293b);
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.electoral-candidate-num {
+	font-size: 1.55rem;
+	font-weight: 800;
+	color: var(--text-primary, #0f172a);
+	letter-spacing: -0.02em;
+}
+
+.electoral-target-marker {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	position: relative;
+}
+
+.electoral-target-num {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: var(--text-primary, #1e293b);
+	line-height: 1;
+}
+
+.electoral-target-arrow {
+	font-size: 0.68rem;
+	color: var(--text-secondary, #64748b);
+	line-height: 1;
+	margin-top: 2px;
+}
+
+/* Barra Segmentada */
+.electoral-bar-wrapper {
+	position: relative;
+	width: 100%;
+}
+
+.electoral-bar {
+	width: 100%;
+	height: 20px;
+	border-radius: 999px;
+	background: #e2e8f0;
+	display: flex;
+	overflow: hidden;
+	box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
+	position: relative;
+}
+
+:root[data-theme="dark"] .electoral-bar {
+	background: #334155;
+}
+
+.electoral-bar-slice {
+	height: 100%;
+	transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.15s ease;
+	cursor: pointer;
+	position: relative;
+}
+
+.electoral-bar-slice:hover,
+.electoral-bar-slice.is-hovered {
+	filter: brightness(1.18);
+	box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.7);
+}
+
+.electoral-bar-slice.is-pending {
+	background: #94a3b8;
+}
+
+:root[data-theme="dark"] .electoral-bar-slice.is-pending {
+	background: #64748b;
+}
+
+/* Tooltip interactivo flotante */
+.electoral-tooltip {
+	position: absolute;
+	bottom: calc(100% + 10px);
+	left: 50%;
+	transform: translateX(-50%);
+	background: #ffffff;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+	padding: 8px 14px;
+	font-size: 0.82rem;
+	text-align: center;
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 100;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+:root[data-theme="dark"] .electoral-tooltip {
+	background: #1e293b;
+	border-color: #475569;
+	color: #f1f5f9;
+}
+
+.electoral-tooltip.is-visible {
+	opacity: 1;
+	visibility: visible;
+}
+
+.electoral-tooltip-title {
+	font-weight: 700;
+	color: #0f172a;
+	display: block;
+	font-size: 0.86rem;
+}
+
+:root[data-theme="dark"] .electoral-tooltip-title {
+	color: #f8fafc;
+}
+
+.electoral-tooltip-sub {
+	color: #475569;
+	font-size: 0.76rem;
+	display: block;
+	margin-top: 2px;
+}
+
+:root[data-theme="dark"] .electoral-tooltip-sub {
+	color: #94a3b8;
+}
+
+.electoral-tooltip::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	border: 6px solid transparent;
+	border-top-color: #cbd5e1;
+}
+
+.electoral-tooltip::before {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	border: 5px solid transparent;
+	border-top-color: #ffffff;
+	z-index: 1;
+}
+
+:root[data-theme="dark"] .electoral-tooltip::after {
+	border-top-color: #475569;
+}
+
+:root[data-theme="dark"] .electoral-tooltip::before {
+	border-top-color: #1e293b;
+}
+
+/* Texto inferior del centro ("34 por asignar") */
+.electoral-sub-center {
+	text-align: center;
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: var(--text-secondary, #64748b);
+	margin-top: 4px;
+}
+
+/* Leyenda con chips de técnicos */
+.electoral-legend {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 4px;
+	padding-top: 8px;
+	border-top: 1px dashed var(--border-subtle, #f1f5f9);
+}
+
+.electoral-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: var(--bg-card-secondary, #f8fafc);
+	border: 1px solid var(--border-subtle, #e2e8f0);
+	font-size: 0.76rem;
+	color: var(--text-primary, #334155);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.electoral-chip:hover,
+.electoral-chip.is-active {
+	background: #ffffff;
+	border-color: #94a3b8;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+:root[data-theme="dark"] .electoral-chip {
+	background: #1e293b;
+	border-color: #334155;
+	color: #cbd5e1;
+}
+
+:root[data-theme="dark"] .electoral-chip:hover,
+:root[data-theme="dark"] .electoral-chip.is-active {
+	background: #334155;
+	border-color: #64748b;
+}
+
+.electoral-dot {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+	.electoral-scoreboard {
+		grid-template-columns: 1fr;
+		text-align: center;
+		gap: 6px;
+	}
+	.electoral-candidate-left,
+	.electoral-candidate-right {
+		justify-content: center;
+	}
+}
+
+/* Apartado Especial: Telefonista / Mesa de Entrada */
+.electoral-telefonia-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+	padding: 8px 14px;
+	background: linear-gradient(135deg, rgba(240, 253, 250, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%);
+	border: 1px solid #ccfbf1;
+	border-radius: 8px;
+	margin-top: 4px;
+	font-size: 0.8rem;
+}
+
+:root[data-theme="dark"] .electoral-telefonia-bar {
+	background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(19, 78, 74, 0.25) 100%);
+	border-color: #134e4a;
+}
+
+.electoral-telefonia-info {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.electoral-telefonia-icon {
+	font-size: 1.15rem;
+}
+
+.electoral-telefonia-text {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.25;
+}
+
+.electoral-telefonia-title {
+	font-weight: 700;
+	color: #0f766e;
+}
+
+:root[data-theme="dark"] .electoral-telefonia-title {
+	color: #2dd4bf;
+}
+
+.electoral-telefonia-operator {
+	font-size: 0.74rem;
+	color: var(--text-secondary, #64748b);
+}
+
+.electoral-telefonia-metrics {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.electoral-telefonia-stat {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.electoral-telefonia-stat-label {
+	color: var(--text-secondary, #64748b);
+	font-size: 0.76rem;
+}
+
+.electoral-telefonia-stat-val {
+	font-size: 0.88rem;
+	font-weight: 700;
+	color: #0f766e;
+}
+
+:root[data-theme="dark"] .electoral-telefonia-stat-val {
+	color: #5eead4;
+}
+
+.electoral-telefonia-divider {
+	color: #cbd5e1;
+	font-size: 0.75rem;
+}
+
+:root[data-theme="dark"] .electoral-telefonia-divider {
+	color: #475569;
+}

@@ -81,6 +81,32 @@ ALTA
 URGENTE
 ```
 
+## Visor Kanban y Barra Electoral de Rendimiento Técnico
+
+En la vista administrativa y modo TV `/admin/tareas/visor` se incorporó un componente visual inspirado en los tableros de resultados electorales para monitorear el desempeño del equipo técnico y el estado de resolución en tiempo real:
+
+- **Marcador Superior (Estilo Resultados):**
+  - **Lado Izquierdo:** Técnico líder con mayor cantidad de tareas resueltas en el período seleccionado y su color distintivo.
+  - **Centro:** Total de tareas resueltas y subtítulo con la cantidad de tareas por asignar / pendientes.
+  - **Lado Derecho:** Segundo técnico en volumen de resolución o equipo técnico general.
+- **Barra Segmentada Interactiva (100% de la carga de trabajo):**
+  - Cada técnico resolutor cuenta con un segmento proporcional a su aporte sobre el total de tareas, identificado con una paleta cromática armónica y accesible.
+  - El segmento gris/central (`#94a3b8`) representa las tareas pendientes y en proceso (backlog por asignar).
+  - **Tooltip contextual al desplazarse:** Al pasar el cursor por cualquier segmento o chip de leyenda, se muestra una tarjeta flotante con el nombre del técnico, cantidad de tareas resueltas y porcentaje respecto al total.
+- **Filtros Temporales Rápidos:**
+  - Selector con botones con estados accesibles (`aria-pressed`):
+    - `Hoy`: Productividad del día actual.
+    - `Esta Semana`: Desde el lunes de la semana en curso.
+    - `Este Mes`: Acumulado del mes calendario corriente.
+    - `Histórico`: Total acumulado registrado en el sistema.
+- **Apartado Especial: Telemetría de Mesa de Entrada / Telefonista (`🎧`):**
+  - Identifica el rol y nombre del operador/a que recepciona y crea los incidentes (ej. *Marta López*).
+  - Expone métricas de tareas ingresadas en el período seleccionado, tareas ingresadas hoy y total histórico.
+  - **Aislamiento métrico:** No se computa dentro de los segmentos de resolución técnica para evitar duplicar el total de incidencias del sistema.
+- **Endpoint REST:**
+  - `GET /api/v1/tareas/estadisticas-rendimiento?rango={HOY|SEMANA|MES|HISTORICO}`
+  - Devuelve JSON estructurado con totales, porcentajes, desglose por técnico, líder, segundo y métricas de telefonía.
+
 ## Pendientes naturales
 
 - Adjuntar actas, fotos o comprobantes.

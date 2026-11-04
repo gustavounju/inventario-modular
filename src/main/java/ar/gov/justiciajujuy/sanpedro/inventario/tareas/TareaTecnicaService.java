@@ -42,6 +42,22 @@ public class TareaTecnicaService {
 	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 	private final EquipoService equipoService;
 
+	@org.springframework.beans.factory.annotation.Autowired(required = false)
+	private ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioSistemaRepository usuarioSistemaRepository;
+
+	private static final List<String> PALETA_COLORES = List.of(
+			"#2563eb",
+			"#dc2626",
+			"#059669",
+			"#7c3aed",
+			"#d97706",
+			"#0891b2",
+			"#db2777",
+			"#4f46e5",
+			"#16a34a",
+			"#ea580c"
+	);
+
 	public TareaTecnicaService(
 			TareaTecnicaRepository tareaTecnicaRepository,
 			TareaTecnicaComentarioRepository comentarioRepository,
@@ -131,6 +147,136 @@ public class TareaTecnicaService {
 		long realizadasHoy = tareaTecnicaRepository.countByCerradoEnBetween(inicio, fin);
 		long creadasHoy = tareaTecnicaRepository.countByCreadoEnBetween(inicio, fin);
 		return new ResumenTareas(tareaTecnicaRepository.count(), pendientes, enProceso, realizadasHoy, creadasHoy);
+	}
+
+	@Transactional(readOnly = true)
+	public EstadisticasRendimientoTecnico obtenerRendimientoTecnicos(String rango) {
+		String rangoNorm = (rango != null && !rango.isBlank()) ? rango.trim().toUpperCase() : "HOY";
+		LocalDate hoy = LocalDate.now();
+		LocalDateTime desde = null;
+		LocalDateTime hasta = null;
+
+		switch (rangoNorm) {
+			case "HOY" -> {
+				desde = hoy.atStartOfDay();
+				hasta = hoy.plusDays(1).atStartOfDay();
+			}
+			case "SEMANA" -> {
+				LocalDate lunes = hoy.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+				desde = lunes.atStartOfDay();
+				hasta = hoy.plusDays(1).atStartOfDay();
+			}
+			case "MES" -> {
+				LocalDate primero = hoy.withDayOfMonth(1);
+				desde = primero.atStartOfDay();
+				hasta = hoy.plusDays(1).atStartOfDay();
+			}
+			case "HISTORICO" -> {
+				desde = null;
+				hasta = null;
+			}
+			default -> {
+				rangoNorm = "HOY";
+				desde = hoy.atStartOfDay();
+				hasta = hoy.plusDays(1).atStartOfDay();
+			}
+		}
+
+		List<TareaTecnica> cerradas = tareaTecnicaRepository.buscarCerradasPorRango(desde, hasta);
+		long totalPendientes = tareaTecnicaRepository.countByEstado(EstadoTareaTecnica.PENDIENTE)
+				+ tareaTecnicaRepository.countByEstado(EstadoTareaTecnica.EN_PROCESO);
+
+		long totalRealizadas = cerradas.size();
+		long totalTareas = totalRealizadas + totalPendientes;
+
+		double porcentajeRealizadas = totalTareas > 0 ? (totalRealizadas * 100.0) / totalTareas : 0.0;
+		double porcentajePendientes = totalTareas > 0 ? (totalPendientes * 100.0) / totalTareas : 0.0;
+
+		Map<String, Long> conteoPorResponsable = cerradas.stream()
+				.collect(Collectors.groupingBy(
+						t -> {
+							String r = t.getResponsable();
+							return (r != null && !r.isBlank()) ? r.trim() : "Sin asignar";
+						},
+						Collectors.counting()
+				));
+
+		List<Map.Entry<String, Long>> ordenados = conteoPorResponsable.entrySet().stream()
+				.sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue()))
+				.toList();
+
+		List<EstadisticasRendimientoTecnico.RendimientoTecnicoItem> items = new ArrayList<>();
+		int colorIdx = 0;
+
+		for (Map.Entry<String, Long> entry : ordenados) {
+			String username = entry.getKey();
+			long count = entry.getValue();
+			String nombreVisible = resolverNombreVisibleTecnico(username);
+			double pctTotal = totalTareas > 0 ? Math.round(((count * 100.0) / totalTareas) * 10.0) / 10.0 : 0.0;
+			double pctRealizadas = totalRealizadas > 0 ? Math.round(((count * 100.0) / totalRealizadas) * 10.0) / 10.0 : 0.0;
+			String color = PALETA_COLORES.get(colorIdx % PALETA_COLORES.size());
+			colorIdx++;
+
+			items.add(new EstadisticasRendimientoTecnico.RendimientoTecnicoItem(
+					username,
+					nombreVisible,
+					count,
+					pctTotal,
+					pctRealizadas,
+					color
+			));
+		}
+
+		EstadisticasRendimientoTecnico.RendimientoTecnicoItem lider = !items.isEmpty() ? items.get(0) : null;
+		EstadisticasRendimientoTecnico.RendimientoTecnicoItem segundo = items.size() > 1 ? items.get(1) : null;
+
+		java.util.Set<String> telefonistas = new java.util.HashSet<>();
+		telefonistas.add("telefonista");
+		String nombreOperador = "Mesa de Entrada / Telefonía";
+		if (usuarioSistemaRepository != null) {
+			java.util.List<ar.gov.justiciajujuy.sanpedro.inventario.security.UsuarioSistema> usuariosTel = usuarioSistemaRepository.findActivosByRolTelefonista();
+			for (var u : usuariosTel) {
+				if (u.getUsername() != null && !u.getUsername().isBlank()) {
+					telefonistas.add(u.getUsername().trim().toLowerCase());
+				}
+			}
+			if (!usuariosTel.isEmpty()) {
+				nombreOperador = usuariosTel.get(0).getNombreVisible();
+			}
+		}
+
+		long telPeriodo = tareaTecnicaRepository.contarCreadasPorUsuariosYRango(telefonistas, desde, hasta);
+		long telHoy = tareaTecnicaRepository.contarCreadasPorUsuariosYRango(telefonistas, hoy.atStartOfDay(), hoy.plusDays(1).atStartOfDay());
+		long telTotal = tareaTecnicaRepository.contarCreadasPorUsuariosYRango(telefonistas, null, null);
+
+		EstadisticasRendimientoTecnico.TelefonistaMetricas telefonistaMetricas =
+				new EstadisticasRendimientoTecnico.TelefonistaMetricas(telPeriodo, telHoy, telTotal, nombreOperador);
+
+		return new EstadisticasRendimientoTecnico(
+				rangoNorm,
+				totalTareas,
+				totalRealizadas,
+				totalPendientes,
+				Math.round(porcentajeRealizadas * 10.0) / 10.0,
+				Math.round(porcentajePendientes * 10.0) / 10.0,
+				items,
+				lider,
+				segundo,
+				telefonistaMetricas
+		);
+	}
+
+	private String resolverNombreVisibleTecnico(String username) {
+		if (username == null || username.isBlank() || "Sin asignar".equalsIgnoreCase(username)) {
+			return "Sin asignar";
+		}
+		if (usuarioSistemaRepository != null) {
+			var opt = usuarioSistemaRepository.findByUsernameIgnoreCase(username);
+			if (opt.isPresent() && StringUtils.hasText(opt.get().getNombreVisible())) {
+				return opt.get().getNombreVisible().trim();
+			}
+		}
+		return username;
 	}
 
 	@Transactional(readOnly = true)

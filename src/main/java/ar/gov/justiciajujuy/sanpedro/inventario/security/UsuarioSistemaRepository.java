@@ -31,4 +31,13 @@ public interface UsuarioSistemaRepository extends JpaRepository<UsuarioSistema, 
 
 	@Query("SELECT r.codigo FROM UsuarioSistema u JOIN u.roles r WHERE LOWER(u.username) = LOWER(:username) AND u.activo = true AND r.activo = true")
 	java.util.List<String> findRoleCodesByUsername(@org.springframework.data.repository.query.Param("username") String username);
+
+	@Query("""
+			SELECT DISTINCT u
+			FROM UsuarioSistema u
+			JOIN u.roles r
+			WHERE r.codigo = 'TELEFONISTA' AND u.activo = true
+			ORDER BY u.nombreVisible
+			""")
+	java.util.List<UsuarioSistema> findActivosByRolTelefonista();
 }

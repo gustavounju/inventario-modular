@@ -30,6 +30,9 @@
                 const current = document.querySelector(selector), fresh = next.querySelector(selector);
                 if (current && fresh) current.replaceWith(fresh);
             }
+            if (typeof window.actualizarBarraElectoral === 'function') {
+                window.actualizarBarraElectoral();
+            }
             status.textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-AR');
         } catch {
             status.textContent = 'Sin conexion. Reintentando...';

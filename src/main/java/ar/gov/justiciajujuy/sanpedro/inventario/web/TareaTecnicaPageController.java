@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestBody;
 import ar.gov.justiciajujuy.sanpedro.inventario.tareas.TareaConciliacionService;
+import ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadisticasRendimientoTecnico;
 
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.EquipoRepository;
 import ar.gov.justiciajujuy.sanpedro.inventario.equipos.FueroService;
@@ -143,6 +144,13 @@ public class TareaTecnicaPageController {
 			@RequestBody(required = false) List<Long> tareaIds) {
 		exigirPermiso(userDetails, PERMISO_EDITAR);
 		return tareaConciliacionService.aplicar(tareaIds);
+	}
+
+	@GetMapping("/api/v1/tareas/estadisticas-rendimiento")
+	@ResponseBody
+	public EstadisticasRendimientoTecnico obtenerEstadisticasRendimiento(
+			@org.springframework.web.bind.annotation.RequestParam(name = "rango", defaultValue = "HOY") String rango) {
+		return tareaTecnicaService.obtenerRendimientoTecnicos(rango);
 	}
 
 
@@ -360,6 +368,9 @@ public class TareaTecnicaPageController {
 		model.addAttribute("comentariosPorTarea", comentariosPorTarea);
 		model.addAttribute("stockPorTarea", stockPorTarea);
 		model.addAttribute("resumenTareas", tareaTecnicaService.resumenDelDia());
+		if (esVisor) {
+			model.addAttribute("estadisticasRendimiento", tareaTecnicaService.obtenerRendimientoTecnicos("HOY"));
+		}
 		model.addAttribute("tareaForm", tareaForm);
 		model.addAttribute("estadosTarea", EstadoTareaTecnica.values());
 		model.addAttribute("prioridadesTarea", PrioridadTareaTecnica.values());

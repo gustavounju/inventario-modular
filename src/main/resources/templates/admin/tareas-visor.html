@@ -32,6 +32,7 @@
 	</style>
 	<script defer th:src="@{/js/visor-live.js}"></script>
 	<script defer th:src="@{/js/visor-dnd.js}"></script>
+	<script defer th:src="@{/js/electoral-bar.js}"></script>
 </head>
 <body th:attr="data-base=@{/}, data-is-admin=${puedeEditarTareas}">
 	<header class="judicial-global-header">
@@ -197,6 +198,146 @@
 				<a class="kbtn kbtn--ghost" th:href="@{/admin/tareas/visor}" th:if="${puedeEditarTareas}">Limpiar</a>
 			</div>
 		</form>
+
+		<!-- ===== BARRA ELECTORAL DE RENDIMIENTO TÉCNICO ===== -->
+		<section class="electoral-tracker-card" id="electoral-tracker-card" aria-label="Rendimiento y distribución de tareas técnicas">
+			<div class="electoral-header-row">
+				<div class="electoral-title-block">
+					<span class="electoral-title-icon" aria-hidden="true">🗳️</span>
+					<span class="electoral-title-text">Rendimiento Técnico</span>
+					<span class="electoral-subtitle">Distribución de tareas resueltas y backlog en vivo</span>
+				</div>
+				<div class="electoral-range-selector" role="group" aria-label="Rango de fechas para rendimiento">
+					<button type="button" class="electoral-range-btn is-active" data-range="HOY" aria-pressed="true">Hoy</button>
+					<button type="button" class="electoral-range-btn" data-range="SEMANA" aria-pressed="false">Esta Semana</button>
+					<button type="button" class="electoral-range-btn" data-range="MES" aria-pressed="false">Este Mes</button>
+					<button type="button" class="electoral-range-btn" data-range="HISTORICO" aria-pressed="false">Histórico</button>
+				</div>
+			</div>
+
+			<!-- Marcador Estilo Elecciones (Candidato 1 / Meta / Candidato 2) -->
+			<div class="electoral-scoreboard">
+				<!-- Izquierda: Líder -->
+				<div class="electoral-candidate-left">
+					<th:block th:if="${estadisticasRendimiento != null and estadisticasRendimiento.lider != null}">
+						<span class="electoral-candidate-name">
+							<span class="electoral-dot" th:style="'background-color: ' + ${estadisticasRendimiento.lider.color}"></span>
+							<span th:text="${estadisticasRendimiento.lider.nombreVisible}">Técnico 1</span>
+						</span>
+						<strong class="electoral-candidate-num" th:text="${estadisticasRendimiento.lider.realizadas}">0</strong>
+					</th:block>
+					<th:block th:unless="${estadisticasRendimiento != null and estadisticasRendimiento.lider != null}">
+						<span class="electoral-candidate-name" style="opacity: 0.6;">Sin tareas cerradas</span>
+						<strong class="electoral-candidate-num">0</strong>
+					</th:block>
+				</div>
+
+				<!-- Centro: Meta / Total Realizadas -->
+				<div class="electoral-target-marker">
+					<div class="electoral-target-num" th:text="${estadisticasRendimiento != null ? estadisticasRendimiento.totalRealizadas : 0}">0</div>
+					<div class="electoral-target-arrow">▼</div>
+				</div>
+
+				<!-- Derecha: Segundo o equipo -->
+				<div class="electoral-candidate-right">
+					<th:block th:if="${estadisticasRendimiento != null and estadisticasRendimiento.segundo != null}">
+						<strong class="electoral-candidate-num" th:text="${estadisticasRendimiento.segundo.realizadas}">0</strong>
+						<span class="electoral-candidate-name">
+							<span th:text="${estadisticasRendimiento.segundo.nombreVisible}">Técnico 2</span>
+							<span class="electoral-dot" th:style="'background-color: ' + ${estadisticasRendimiento.segundo.color}"></span>
+						</span>
+					</th:block>
+					<th:block th:if="${estadisticasRendimiento != null and estadisticasRendimiento.segundo == null and estadisticasRendimiento.tecnicos != null and #lists.size(estadisticasRendimiento.tecnicos) == 1}">
+						<strong class="electoral-candidate-num">100%</strong>
+						<span class="electoral-candidate-name" style="font-size: 0.95rem; opacity: 0.85;">Total realizadas</span>
+					</th:block>
+					<th:block th:if="${estadisticasRendimiento == null or estadisticasRendimiento.tecnicos == null or (#lists.isEmpty(estadisticasRendimiento.tecnicos) and estadisticasRendimiento.segundo == null)}">
+						<strong class="electoral-candidate-num">0</strong>
+						<span class="electoral-candidate-name" style="opacity: 0.6;">Equipo técnico</span>
+					</th:block>
+				</div>
+			</div>
+
+			<!-- Barra Segmentada -->
+			<div class="electoral-bar-wrapper">
+				<div class="electoral-bar">
+					<th:block th:if="${estadisticasRendimiento != null and estadisticasRendimiento.totalTareas > 0}">
+						<div th:each="tec : ${estadisticasRendimiento.tecnicos}"
+							 th:if="${tec.porcentajeDelTotal > 0}"
+							 class="electoral-bar-slice"
+							 th:style="'width: ' + ${tec.porcentajeDelTotal} + '%; background-color: ' + ${tec.color} + ';'"
+							 th:attr="data-title=${tec.nombreVisible}, data-sub=${tec.realizadas} + ' tareas realizadas (' + ${tec.porcentajeDelTotal} + '% del total)', data-username=${tec.username}"></div>
+						<div th:if="${estadisticasRendimiento.porcentajePendientes > 0}"
+							 class="electoral-bar-slice is-pending"
+							 th:style="'width: ' + ${estadisticasRendimiento.porcentajePendientes} + '%;'"
+							 th:attr="data-title='Por asignar / Pendientes', data-sub=${estadisticasRendimiento.totalPendientes} + ' tareas pendientes (' + ${estadisticasRendimiento.porcentajePendientes} + '% del total)'"></div>
+					</th:block>
+					<th:block th:unless="${estadisticasRendimiento != null and estadisticasRendimiento.totalTareas > 0}">
+						<div class="electoral-bar-slice is-pending"
+							 style="width: 100%;"
+							 data-title="Sin tareas registradas"
+							 data-sub="0 tareas en este período"></div>
+					</th:block>
+				</div>
+
+				<!-- Tooltip interactivo flotante -->
+				<div class="electoral-tooltip" role="tooltip" aria-hidden="true">
+					<span class="electoral-tooltip-title">Técnico</span>
+					<span class="electoral-tooltip-sub">Detalle</span>
+				</div>
+			</div>
+
+			<!-- Subtítulo central: X por asignar / pendientes -->
+			<div class="electoral-sub-center" th:text="${estadisticasRendimiento != null ? (estadisticasRendimiento.totalPendientes + ' por asignar / pendientes') : '0 por asignar'}">0 por asignar / pendientes</div>
+
+			<!-- Leyenda con chips -->
+			<div class="electoral-legend">
+				<th:block th:if="${estadisticasRendimiento != null}">
+					<span th:each="tec, stat : ${estadisticasRendimiento.tecnicos}" class="electoral-chip" th:attr="data-idx=${stat.index}, data-username=${tec.username}">
+						<span class="electoral-dot" th:style="'background-color: ' + ${tec.color}"></span>
+						<strong th:text="${tec.nombreVisible} + ':'">Técnico:</strong>
+						<span th:text="${tec.realizadas} + ' (' + ${tec.porcentajeDeRealizadas} + '%)'">0 (0%)</span>
+					</span>
+					<span th:if="${estadisticasRendimiento.totalPendientes > 0}" class="electoral-chip" data-pending="true">
+						<span class="electoral-dot" style="background-color: #94a3b8;"></span>
+						<strong>Pendientes:</strong>
+						<span th:text="${estadisticasRendimiento.totalPendientes}">0</span>
+					</span>
+				</th:block>
+			</div>
+
+			<!-- Apartado Especial: Telefonía y Mesa de Entrada -->
+			<div class="electoral-telefonia-bar" id="electoral-telefonia-bar"
+				th:title="${estadisticasRendimiento != null and estadisticasRendimiento.telefonista != null ? 'Operador(a): ' + estadisticasRendimiento.telefonista.operadorNombre : 'Tareas creadas por Mesa de Entrada'}">
+				<div class="electoral-telefonia-info">
+					<span class="electoral-telefonia-icon" aria-hidden="true">🎧</span>
+					<div class="electoral-telefonia-text">
+						<span class="electoral-telefonia-title">Mesa de Entrada / Telefonista</span>
+						<span class="electoral-telefonia-operator" id="electoral-telefonia-operator"
+							th:text="${estadisticasRendimiento != null and estadisticasRendimiento.telefonista != null ? estadisticasRendimiento.telefonista.operadorNombre : 'Marta López (Telefonista)'}">Marta López</span>
+					</div>
+				</div>
+				<div class="electoral-telefonia-metrics">
+					<div class="electoral-telefonia-stat">
+						<span class="electoral-telefonia-stat-label">Ingresadas en período:</span>
+						<strong class="electoral-telefonia-stat-val" id="electoral-tel-periodo"
+							th:text="${estadisticasRendimiento != null and estadisticasRendimiento.telefonista != null ? estadisticasRendimiento.telefonista.ingresadasPeriodo : 0}">0</strong>
+					</div>
+					<div class="electoral-telefonia-divider" aria-hidden="true">•</div>
+					<div class="electoral-telefonia-stat">
+						<span class="electoral-telefonia-stat-label">Hoy:</span>
+						<strong class="electoral-telefonia-stat-val" id="electoral-tel-hoy"
+							th:text="${estadisticasRendimiento != null and estadisticasRendimiento.telefonista != null ? estadisticasRendimiento.telefonista.ingresadasHoy : 0}">0</strong>
+					</div>
+					<div class="electoral-telefonia-divider" aria-hidden="true">•</div>
+					<div class="electoral-telefonia-stat">
+						<span class="electoral-telefonia-stat-label">Histórico:</span>
+						<strong class="electoral-telefonia-stat-val" id="electoral-tel-total"
+							th:text="${estadisticasRendimiento != null and estadisticasRendimiento.telefonista != null ? estadisticasRendimiento.telefonista.ingresadasTotal : 0}">0</strong>
+					</div>
+				</div>
+			</div>
+		</section>
 
 		<!-- Banner indicador del modo actual de visualización -->
 		<div style="margin: 8px 0 14px 0; padding: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #475569;">

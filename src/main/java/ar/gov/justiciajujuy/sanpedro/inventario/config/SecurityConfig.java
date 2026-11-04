@@ -97,7 +97,7 @@ public class SecurityConfig {
 					"/manifest.json", "/icons/**"
 				).permitAll()
 				// El visor de tareas es de solo lectura y publico a proposito para monitores/pantallas en guardia o taller sin requerir inicio de sesion.
-				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor").permitAll()
+				.requestMatchers(HttpMethod.GET, "/admin/tareas/visor", "/api/v1/tareas/estadisticas-rendimiento").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/v1/movil/tecnicos-conectados").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/telefonia/webhook/llamada").permitAll()
 				.requestMatchers(HttpMethod.GET, "/api/telefonia/stream", "/api/telefonia/historial-hoy", "/api/telefonia/directorio").permitAll()
