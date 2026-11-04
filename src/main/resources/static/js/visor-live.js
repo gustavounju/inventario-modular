@@ -30,7 +30,7 @@
                 const current = document.querySelector(selector), fresh = next.querySelector(selector);
                 if (current && fresh) current.replaceWith(fresh);
             }
-            if (typeof window.actualizarBarraElectoral === 'function') {
+            if (typeof window.actualizarBarraElectoral === 'function' && !document.querySelector('.electoral-tooltip.is-visible')) {
                 window.actualizarBarraElectoral();
             }
             status.textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-AR');

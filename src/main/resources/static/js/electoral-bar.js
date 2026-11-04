@@ -19,6 +19,7 @@
 		let currentRange = activeRangeBtn ? (activeRangeBtn.getAttribute('data-range') || 'HOY') : 'HOY';
 		let currentData = null;
 		let activeTechFilter = null;
+		let activeSegmentFilter = null;
 		let hideTooltipTimer = null;
 
 		function cancelarOcultarTooltip() {
@@ -66,6 +67,7 @@
 				btn.classList.add('is-active');
 				btn.setAttribute('aria-pressed', 'true');
 				currentRange = range;
+				limpiarFiltroTablero();
 				cargarRendimiento(range);
 			});
 		});
@@ -236,8 +238,23 @@
 
 			vincularInteractividadBarra();
 
-			// Si había un filtro activo, reaplicarlo
-			if (activeTechFilter) {
+			// Si había un filtro activo (por segmento de anillo, por pendientes o por técnico), mantenerlo sin cerrarlo en el polling
+			if (activeSegmentFilter) {
+				const { ownerKey, ownerName, orbitType, etiqueta, itemObj } = activeSegmentFilter;
+				let updatedItem = null;
+				if (ownerKey === '__PENDING__') {
+					const pend = data.pendientesDetalle;
+					const list = orbitType === 'fuero' ? pend?.fueros : pend?.usuarios;
+					updatedItem = list?.find(it => (it.etiqueta || '').trim().toLowerCase() === etiqueta.toLowerCase());
+				} else {
+					const tec = tecnicos.find(t => t.username === ownerKey);
+					const list = orbitType === 'fuero' ? tec?.fueros : tec?.usuarios;
+					updatedItem = list?.find(it => (it.etiqueta || '').trim().toLowerCase() === etiqueta.toLowerCase());
+				}
+				filtrarYMostrarTareasPorSegmento(ownerKey, ownerName, orbitType, updatedItem || itemObj, false);
+			} else if (activeTechFilter === '__PENDING__') {
+				filtrarTableroPendientes(false);
+			} else if (activeTechFilter) {
 				const activeTec = tecnicos.find(t => t.username === activeTechFilter);
 				if (activeTec) {
 					filtrarTableroPorTecnico(activeTec.username, activeTec.nombreVisible, activeTec.color, false);
@@ -574,6 +591,7 @@
 				return;
 			}
 
+			activeSegmentFilter = null;
 			removerPanelSegmento();
 			activeTechFilter = username;
 
@@ -621,15 +639,16 @@
 			}
 		}
 
-		function filtrarTableroPendientes() {
+		function filtrarTableroPendientes(toggle = true) {
 			const cards = document.querySelectorAll('.kcard');
 			if (!cards.length) return;
 
-			if (activeTechFilter === '__PENDING__') {
+			if (toggle && activeTechFilter === '__PENDING__') {
 				limpiarFiltroTablero();
 				return;
 			}
 
+			activeSegmentFilter = null;
 			removerPanelSegmento();
 			activeTechFilter = '__PENDING__';
 
@@ -679,13 +698,14 @@
 			}
 		}
 
-		function filtrarYMostrarTareasPorSegmento(ownerKey, ownerName, orbitType, itemObj) {
+		function filtrarYMostrarTareasPorSegmento(ownerKey, ownerName, orbitType, itemObj, doScroll = true) {
 			const etiqueta = (itemObj.etiqueta || '').trim();
 			const color = itemObj.color || '#2563eb';
 			const tareasLista = itemObj.tareas || [];
 			const tipoLabel = orbitType === 'fuero' ? 'Fuero' : 'Usuario';
 
 			activeTechFilter = `${ownerKey}:${orbitType}:${etiqueta}`;
+			activeSegmentFilter = { ownerKey, ownerName, orbitType, etiqueta, itemObj };
 
 			// Marcar slice y chip del técnico activo
 			widget.querySelectorAll('.electoral-bar-slice').forEach(s => {
@@ -737,10 +757,12 @@
 			});
 
 			actualizarBannerFiltro(`${ownerName} · ${tipoLabel}: ${etiqueta}`, itemObj.cantidad);
-			mostrarPanelTareasSegmento(ownerName, orbitType, itemObj);
+			mostrarPanelTareasSegmento(ownerName, orbitType, itemObj, doScroll);
 		}
 
-		function mostrarPanelTareasSegmento(ownerName, orbitType, itemObj) {
+		function mostrarPanelTareasSegmento(ownerName, orbitType, itemObj, doScroll = true) {
+			const existingPanel = document.getElementById('electoral-segment-tasks-panel');
+			const prevScrollTop = existingPanel ? (existingPanel.querySelector('.electoral-segment-list')?.scrollTop || 0) : 0;
 			removerPanelSegmento();
 			const tareas = itemObj.tareas || [];
 			const color = itemObj.color || '#2563eb';
@@ -808,7 +830,13 @@
 			});
 
 			widget.appendChild(panel);
-			panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			const newList = panel.querySelector('.electoral-segment-list');
+			if (newList && prevScrollTop > 0) {
+				newList.scrollTop = prevScrollTop;
+			}
+			if (doScroll) {
+				panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+			}
 		}
 
 		function removerPanelSegmento() {
@@ -844,6 +872,7 @@
 
 		function limpiarFiltroTablero() {
 			activeTechFilter = null;
+			activeSegmentFilter = null;
 			const cards = document.querySelectorAll('.kcard');
 			cards.forEach(card => {
 				card.classList.remove('is-filtered-out');
