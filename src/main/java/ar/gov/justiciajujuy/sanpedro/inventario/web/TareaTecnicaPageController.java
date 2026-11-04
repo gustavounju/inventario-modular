@@ -149,8 +149,10 @@ public class TareaTecnicaPageController {
 	@GetMapping("/api/v1/tareas/estadisticas-rendimiento")
 	@ResponseBody
 	public EstadisticasRendimientoTecnico obtenerEstadisticasRendimiento(
-			@org.springframework.web.bind.annotation.RequestParam(name = "rango", defaultValue = "HOY") String rango) {
-		return tareaTecnicaService.obtenerRendimientoTecnicos(rango);
+			@org.springframework.web.bind.annotation.RequestParam(name = "rango", defaultValue = "HOY") String rango,
+			@org.springframework.web.bind.annotation.RequestParam(name = "fecha", required = false)
+			@org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate fecha) {
+		return tareaTecnicaService.obtenerRendimientoTecnicos(rango, fecha);
 	}
 
 
@@ -369,7 +371,8 @@ public class TareaTecnicaPageController {
 		model.addAttribute("stockPorTarea", stockPorTarea);
 		model.addAttribute("resumenTareas", tareaTecnicaService.resumenDelDia());
 		if (esVisor) {
-			model.addAttribute("estadisticasRendimiento", tareaTecnicaService.obtenerRendimientoTecnicos("HOY"));
+			String rangoInicial = esModoTodas ? "HISTORICO" : "HOY";
+			model.addAttribute("estadisticasRendimiento", tareaTecnicaService.obtenerRendimientoTecnicos(rangoInicial, fechaFiltro));
 		}
 		model.addAttribute("tareaForm", tareaForm);
 		model.addAttribute("estadosTarea", EstadoTareaTecnica.values());

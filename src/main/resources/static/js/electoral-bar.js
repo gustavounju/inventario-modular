@@ -17,7 +17,17 @@
 		const subCenter = widget.querySelector('.electoral-sub-center');
 		const legend = widget.querySelector('.electoral-legend');
 
-		let currentRange = 'HOY';
+		const activeRangeBtn = widget.querySelector('.electoral-range-btn.is-active');
+		let currentRange = activeRangeBtn ? (activeRangeBtn.getAttribute('data-range') || 'HOY') : 'HOY';
+
+		function obtenerFechaFiltro() {
+			const fechaInput = document.getElementById('kfilter-fecha');
+			if (fechaInput && fechaInput.value) {
+				return fechaInput.value;
+			}
+			const urlParams = new URLSearchParams(window.location.search);
+			return urlParams.get('fecha') || '';
+		}
 
 		// Interacción con los botones de rango (con soporte ARIA)
 		rangeButtons.forEach(btn => {
@@ -39,7 +49,12 @@
 		async function cargarRendimiento(rango) {
 			try {
 				widget.style.opacity = '0.75';
-				const resp = await fetch(`/api/v1/tareas/estadisticas-rendimiento?rango=${encodeURIComponent(rango)}`, {
+				const fecha = obtenerFechaFiltro();
+				let url = `/api/v1/tareas/estadisticas-rendimiento?rango=${encodeURIComponent(rango)}`;
+				if (fecha) {
+					url += `&fecha=${encodeURIComponent(fecha)}`;
+				}
+				const resp = await fetch(url, {
 					credentials: 'same-origin',
 					cache: 'no-store'
 				});

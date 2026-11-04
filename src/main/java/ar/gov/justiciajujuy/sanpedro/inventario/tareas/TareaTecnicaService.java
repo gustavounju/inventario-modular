@@ -151,25 +151,31 @@ public class TareaTecnicaService {
 
 	@Transactional(readOnly = true)
 	public EstadisticasRendimientoTecnico obtenerRendimientoTecnicos(String rango) {
+		return obtenerRendimientoTecnicos(rango, null);
+	}
+
+	@Transactional(readOnly = true)
+	public EstadisticasRendimientoTecnico obtenerRendimientoTecnicos(String rango, LocalDate fechaReferencia) {
 		String rangoNorm = (rango != null && !rango.isBlank()) ? rango.trim().toUpperCase() : "HOY";
+		LocalDate ref = (fechaReferencia != null) ? fechaReferencia : LocalDate.now();
 		LocalDate hoy = LocalDate.now();
 		LocalDateTime desde = null;
 		LocalDateTime hasta = null;
 
 		switch (rangoNorm) {
 			case "HOY" -> {
-				desde = hoy.atStartOfDay();
-				hasta = hoy.plusDays(1).atStartOfDay();
+				desde = ref.atStartOfDay();
+				hasta = ref.plusDays(1).atStartOfDay();
 			}
 			case "SEMANA" -> {
-				LocalDate lunes = hoy.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+				LocalDate lunes = ref.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
 				desde = lunes.atStartOfDay();
-				hasta = hoy.plusDays(1).atStartOfDay();
+				hasta = ref.plusDays(1).atStartOfDay();
 			}
 			case "MES" -> {
-				LocalDate primero = hoy.withDayOfMonth(1);
+				LocalDate primero = ref.withDayOfMonth(1);
 				desde = primero.atStartOfDay();
-				hasta = hoy.plusDays(1).atStartOfDay();
+				hasta = ref.plusDays(1).atStartOfDay();
 			}
 			case "HISTORICO" -> {
 				desde = null;
@@ -177,8 +183,8 @@ public class TareaTecnicaService {
 			}
 			default -> {
 				rangoNorm = "HOY";
-				desde = hoy.atStartOfDay();
-				hasta = hoy.plusDays(1).atStartOfDay();
+				desde = ref.atStartOfDay();
+				hasta = ref.plusDays(1).atStartOfDay();
 			}
 		}
 

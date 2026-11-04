@@ -158,10 +158,10 @@
 					<span class="electoral-subtitle">Distribución de tareas resueltas y backlog en vivo</span>
 				</div>
 				<div class="electoral-range-selector" role="group" aria-label="Rango de fechas para rendimiento">
-					<button type="button" class="electoral-range-btn is-active" data-range="HOY" aria-pressed="true">Hoy</button>
-					<button type="button" class="electoral-range-btn" data-range="SEMANA" aria-pressed="false">Esta Semana</button>
-					<button type="button" class="electoral-range-btn" data-range="MES" aria-pressed="false">Este Mes</button>
-					<button type="button" class="electoral-range-btn" data-range="HISTORICO" aria-pressed="false">Histórico</button>
+					<button type="button" class="electoral-range-btn" th:classappend="${estadisticasRendimiento == null or estadisticasRendimiento.rango == 'HOY' ? 'is-active' : ''}" data-range="HOY" th:attr="aria-pressed=${estadisticasRendimiento == null or estadisticasRendimiento.rango == 'HOY' ? 'true' : 'false'}">Hoy</button>
+					<button type="button" class="electoral-range-btn" th:classappend="${estadisticasRendimiento != null and estadisticasRendimiento.rango == 'SEMANA' ? 'is-active' : ''}" data-range="SEMANA" th:attr="aria-pressed=${estadisticasRendimiento != null and estadisticasRendimiento.rango == 'SEMANA' ? 'true' : 'false'}">Esta Semana</button>
+					<button type="button" class="electoral-range-btn" th:classappend="${estadisticasRendimiento != null and estadisticasRendimiento.rango == 'MES' ? 'is-active' : ''}" data-range="MES" th:attr="aria-pressed=${estadisticasRendimiento != null and estadisticasRendimiento.rango == 'MES' ? 'true' : 'false'}">Este Mes</button>
+					<button type="button" class="electoral-range-btn" th:classappend="${estadisticasRendimiento != null and estadisticasRendimiento.rango == 'HISTORICO' ? 'is-active' : ''}" data-range="HISTORICO" th:attr="aria-pressed=${estadisticasRendimiento != null and estadisticasRendimiento.rango == 'HISTORICO' ? 'true' : 'false'}">Histórico</button>
 				</div>
 			</div>
 
@@ -886,7 +886,9 @@
 				<div style="background:var(--bg-card-secondary, #f8fafc); border:1px solid var(--border-subtle, #e2e8f0); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
 					<label class="kfilter-label" style="margin:0;">
 						<span style="display:flex; align-items:center; gap:5px; font-weight:700; color:var(--text-primary);">
-							📅 Fecha de visualización
+							📅 <strong>Tareas del día:</strong>
+							<span th:if="${filtroFecha != null}" th:text="${#temporals.format(filtroFecha, 'dd/MM/yyyy')}">14/10/2026</span>
+							<span th:if="${esModoTodas}">(Backlog completo)</span>
 						</span>
 						<input type="date" name="fecha" id="kfilter-fecha"
 						       th:value="${filtroFecha != null ? #temporals.format(filtroFecha, 'yyyy-MM-dd') : ''}"
@@ -910,7 +912,7 @@
 						<a class="kbtn kbtn--sm"
 						   th:href="@{/admin/tareas/visor(todas=true, estado=${filtroEstado}, equipoId=${filtroEquipoId}, responsable=${filtroResponsable})}"
 						   th:classappend="${esModoTodas ? 'kbtn--primary' : 'kbtn--ghost'}"
-						   title="Ver todas las tareas activas acumuladas (backlog completo)">📋 Todas activas (Backlog)</a>
+						   title="Ver todas las tareas activas acumuladas (backlog completo)">📋 Todas activas (Backlog completo)</a>
 					</div>
 				</div>
 
