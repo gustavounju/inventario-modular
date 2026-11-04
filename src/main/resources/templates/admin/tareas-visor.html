@@ -313,7 +313,7 @@
 					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'PENDIENTE' and responsable == null])}">Sin tareas nuevas.</p>
 					<th:block th:each="tarea : ${tareas}"
 							  th:if="${tarea.estado.name() == 'PENDIENTE' and tarea.responsable == null}">
-						<article class="kcard kcard--new" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
+						<article class="kcard kcard--new" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, data-fuero=${tarea.solicitanteFuero ?: (tarea.esTrabajoInterno() ? 'Taller / Sistemas' : 'Sin fuero')}, data-usuario=${tarea.solicitanteNombre ?: (tarea.solicitanteUsername ?: (tarea.esTrabajoInterno() ? 'Taller (Uso interno)' : 'Sin solicitante'))}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
 							<div class="kcard-header">
 								<span class="kcard-id" th:text="'#' + ${tarea.id}">#1</span>
 								<div style="display: flex; gap: 4px; align-items: center;">
@@ -372,7 +372,7 @@
 					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'EN_PROCESO' or (estado.name() == 'PENDIENTE' and responsable != null)])}">Sin tareas en proceso.</p>
 					<th:block th:each="tarea : ${tareas}"
 							  th:if="${tarea.estado.name() == 'EN_PROCESO' or (tarea.estado.name() == 'PENDIENTE' and tarea.responsable != null)}">
-						<article class="kcard kcard--progress" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
+						<article class="kcard kcard--progress" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, data-fuero=${tarea.solicitanteFuero ?: (tarea.esTrabajoInterno() ? 'Taller / Sistemas' : 'Sin fuero')}, data-usuario=${tarea.solicitanteNombre ?: (tarea.solicitanteUsername ?: (tarea.esTrabajoInterno() ? 'Taller (Uso interno)' : 'Sin solicitante'))}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
 							<div class="kcard-header">
 								<span class="kcard-id" th:text="'#' + ${tarea.id}">#1</span>
 								<div style="display: flex; gap: 4px; align-items: center;">
@@ -446,7 +446,7 @@
 				<div class="kanban-col-content">
 					<p class="kanban-empty" th:if="${#lists.isEmpty(tareas.?[estado.name() == 'CERRADA'])}">Sin tareas cerradas en el filtro actual.</p>
 					<th:block th:each="tarea : ${tareas}" th:if="${tarea.estado.name() == 'CERRADA'}">
-						<article class="kcard kcard--done" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
+						<article class="kcard kcard--done" th:id="'kcard-' + ${tarea.id}" th:attr="data-id=${tarea.id}, data-responsable=${tarea.responsable ?: ''}, data-fuero=${tarea.solicitanteFuero ?: (tarea.esTrabajoInterno() ? 'Taller / Sistemas' : 'Sin fuero')}, data-usuario=${tarea.solicitanteNombre ?: (tarea.solicitanteUsername ?: (tarea.esTrabajoInterno() ? 'Taller (Uso interno)' : 'Sin solicitante'))}, draggable=${puedeEditarTareas ? 'true' : 'false'}">
 							<div class="kcard-header">
 								<span class="kcard-id" th:text="'#' + ${tarea.id}">#1</span>
 								<div style="display: flex; gap: 4px; align-items: center;">
@@ -462,6 +462,11 @@
 							   th:text="${tarea.observacionesCierre}">Nota de cierre</p>
 							<div class="kcard-meta">
 								<span class="kcard-meta-item" th:text="${tarea.equipoNombre ?: 'PC genérica'}">PC-INF-001</span>
+								<span class="kcard-meta-item kcard-meta-item--solicitante"
+									  th:text="${tarea.esTrabajoInterno() ? '🛠️ Taller' : (tarea.solicitanteNombre ?: tarea.solicitanteUsername ?: '—')}">Solicitante</span>
+								<span class="kcard-meta-item kcard-meta-item--fuero"
+									  th:if="${tarea.solicitanteFuero != null and !#strings.isEmpty(tarea.solicitanteFuero)}"
+									  th:text="${tarea.solicitanteFuero}">Fuero</span>
 								<span class="kcard-meta-item kcard-meta-item--assignee"
 									  th:if="${tarea.responsable != null}"
 									  th:text="'→ ' + ${tarea.responsable}">→ técnico</span>

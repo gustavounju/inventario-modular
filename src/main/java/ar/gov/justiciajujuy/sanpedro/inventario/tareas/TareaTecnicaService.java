@@ -303,6 +303,42 @@ public class TareaTecnicaService {
 		);
 	}
 
+	private String resolverEtiquetaFuero(TareaTecnica t) {
+		String f = t.getSolicitanteFuero();
+		if (f != null && !f.isBlank()) return f.trim();
+		if (t.getTipo() == TipoTareaTecnica.ALISTAMIENTO) return "Taller / Sistemas";
+		return "Sin fuero";
+	}
+
+	private String resolverEtiquetaUsuario(TareaTecnica t) {
+		String n = t.getSolicitanteNombre();
+		if (n != null && !n.isBlank()) return n.trim();
+		String u = t.getSolicitanteUsername();
+		if (u != null && !u.isBlank()) return u.trim();
+		if (t.getTipo() == TipoTareaTecnica.ALISTAMIENTO) return "Taller (Uso interno)";
+		return "Sin solicitante";
+	}
+
+	private EstadisticasRendimientoTecnico.TareaResumenItem toTareaResumenItem(TareaTecnica t) {
+		java.time.LocalDateTime refFecha = t.getCerradoEn() != null ? t.getCerradoEn() : t.getCreadoEn();
+		String fechaStr = refFecha != null
+				? refFecha.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+				: "";
+		String equipoNombre = (t.getEquipo() != null && t.getEquipo().getNombre() != null)
+				? t.getEquipo().getNombre()
+				: "PC genérica";
+		return new EstadisticasRendimientoTecnico.TareaResumenItem(
+				t.getId(),
+				t.getTitulo(),
+				resolverEtiquetaUsuario(t),
+				resolverEtiquetaFuero(t),
+				equipoNombre,
+				fechaStr,
+				t.getEstado() != null ? t.getEstado().name() : "CERRADA",
+				t.getObservacionesCierre()
+		);
+	}
+
 	private List<EstadisticasRendimientoTecnico.DistribucionItem> calcularDistribucionFueros(List<TareaTecnica> tareas, long total) {
 		if (tareas == null || tareas.isEmpty() || total <= 0) {
 			return List.of();
@@ -310,24 +346,23 @@ public class TareaTecnicaService {
 		List<String> coloresFuero = List.of(
 				"#0284c7", "#10b981", "#8b5cf6", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1", "#84cc16", "#06b6d4", "#f43f5e"
 		);
-		Map<String, Long> fuerosMap = tareas.stream()
-				.collect(Collectors.groupingBy(
-						t -> {
-							String f = t.getSolicitanteFuero();
-							if (f != null && !f.isBlank()) return f.trim();
-							if (t.getTipo() == TipoTareaTecnica.ALISTAMIENTO) return "Taller / Sistemas";
-							return "Sin fuero";
-						},
-						Collectors.counting()
-				));
+		Map<String, List<TareaTecnica>> fuerosGroup = tareas.stream()
+				.collect(Collectors.groupingBy(this::resolverEtiquetaFuero));
 
 		List<EstadisticasRendimientoTecnico.DistribucionItem> res = new ArrayList<>();
 		int idx = 0;
-		for (var entry : fuerosMap.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue(), a.getValue())).toList()) {
-			double pct = Math.round(((entry.getValue() * 100.0) / total) * 10.0) / 10.0;
+		for (var entry : fuerosGroup.entrySet().stream()
+				.sorted((a, b) -> Integer.compare(b.getValue().size(), a.getValue().size()))
+				.toList()) {
+			long count = entry.getValue().size();
+			double pct = Math.round(((count * 100.0) / total) * 10.0) / 10.0;
 			String color = coloresFuero.get(idx % coloresFuero.size());
 			idx++;
-			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), entry.getValue(), pct, color));
+			List<EstadisticasRendimientoTecnico.TareaResumenItem> resumenes = entry.getValue().stream()
+					.limit(100)
+					.map(this::toTareaResumenItem)
+					.toList();
+			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), count, pct, color, resumenes));
 		}
 		return res;
 	}
@@ -339,26 +374,23 @@ public class TareaTecnicaService {
 		List<String> coloresUsuario = List.of(
 				"#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#06b6d4", "#14b8a6", "#f97316", "#6366f1", "#84cc16"
 		);
-		Map<String, Long> usuariosMap = tareas.stream()
-				.collect(Collectors.groupingBy(
-						t -> {
-							String n = t.getSolicitanteNombre();
-							if (n != null && !n.isBlank()) return n.trim();
-							String u = t.getSolicitanteUsername();
-							if (u != null && !u.isBlank()) return u.trim();
-							if (t.getTipo() == TipoTareaTecnica.ALISTAMIENTO) return "Taller (Uso interno)";
-							return "Sin solicitante";
-						},
-						Collectors.counting()
-				));
+		Map<String, List<TareaTecnica>> usuariosGroup = tareas.stream()
+				.collect(Collectors.groupingBy(this::resolverEtiquetaUsuario));
 
 		List<EstadisticasRendimientoTecnico.DistribucionItem> res = new ArrayList<>();
 		int idx = 0;
-		for (var entry : usuariosMap.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue(), a.getValue())).toList()) {
-			double pct = Math.round(((entry.getValue() * 100.0) / total) * 10.0) / 10.0;
+		for (var entry : usuariosGroup.entrySet().stream()
+				.sorted((a, b) -> Integer.compare(b.getValue().size(), a.getValue().size()))
+				.toList()) {
+			long count = entry.getValue().size();
+			double pct = Math.round(((count * 100.0) / total) * 10.0) / 10.0;
 			String color = coloresUsuario.get(idx % coloresUsuario.size());
 			idx++;
-			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), entry.getValue(), pct, color));
+			List<EstadisticasRendimientoTecnico.TareaResumenItem> resumenes = entry.getValue().stream()
+					.limit(100)
+					.map(this::toTareaResumenItem)
+					.toList();
+			res.add(new EstadisticasRendimientoTecnico.DistribucionItem(entry.getKey(), count, pct, color, resumenes));
 		}
 		return res;
 	}

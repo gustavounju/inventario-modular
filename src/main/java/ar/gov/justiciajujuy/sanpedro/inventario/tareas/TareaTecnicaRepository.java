@@ -71,9 +71,11 @@ public interface TareaTecnicaRepository extends JpaRepository<TareaTecnica, Long
 	@Query("""
 			SELECT t
 			FROM TareaTecnica t
+			LEFT JOIN FETCH t.equipo e
 			WHERE t.estado = ar.gov.justiciajujuy.sanpedro.inventario.tareas.EstadoTareaTecnica.CERRADA
 			  AND (:desde IS NULL OR COALESCE(t.cerradoEn, t.creadoEn) >= :desde)
 			  AND (:hasta IS NULL OR COALESCE(t.cerradoEn, t.creadoEn) < :hasta)
+			ORDER BY COALESCE(t.cerradoEn, t.creadoEn) DESC, t.id DESC
 			""")
 	List<TareaTecnica> buscarCerradasPorRango(
 			@Param("desde") java.time.LocalDateTime desde,

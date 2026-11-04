@@ -317,7 +317,7 @@
 			});
 		}
 
-		function renderOrbitalSystem(items, centerIcon, orbitType) {
+		function renderOrbitalSystem(items, centerIcon, orbitType, ownerKey = '', ownerName = '') {
 			const labelTitle = orbitType === 'fuero' ? '🏛️ Fueros' : '👤 Usuarios';
 
 			if (!items || items.length === 0) {
@@ -340,7 +340,7 @@
 			// Anillo circular SVG con segmentos interactivos por porcentaje exacto
 			let circlesHtml = `<circle cx="20" cy="20" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="5.2" opacity="0.25"></circle>`;
 			let currentOffset = 25;
-			items.forEach(item => {
+			items.forEach((item, idx) => {
 				const exactPct = total > 0 ? (item.cantidad * 100.0) / total : 0;
 				if (exactPct <= 0) return;
 				const dashArray = `${exactPct} ${Math.max(0, 100 - exactPct)}`;
@@ -351,11 +351,15 @@
 							stroke-dasharray="${dashArray}"
 							stroke-dashoffset="${currentOffset}"
 							class="electoral-donut-slice"
+							data-idx="${idx}"
+							data-orbit-type="${orbitType}"
+							data-owner="${escapeHtml(ownerKey)}"
+							data-owner-name="${escapeHtml(ownerName)}"
 							data-etiqueta="${escapeHtml(item.etiqueta)}"
 							data-cantidad="${item.cantidad}"
 							data-porcentaje="${item.porcentaje}"
 							data-color="${item.color}">
-						<title>${escapeHtml(item.etiqueta)}: ${item.cantidad} (${item.porcentaje}%)</title>
+						<title>${escapeHtml(item.etiqueta)}: ${item.cantidad} (${item.porcentaje}%) — Clic para ver tareas</title>
 					</circle>
 				`;
 				currentOffset -= exactPct;
@@ -433,6 +437,34 @@
 							badge.classList.remove('is-visible');
 						}
 					});
+
+					seg.addEventListener('click', e => {
+						e.stopPropagation();
+						const idx = parseInt(seg.getAttribute('data-idx') || '-1', 10);
+						const orbitType = seg.getAttribute('data-orbit-type') || 'fuero';
+						const ownerKey = seg.getAttribute('data-owner') || '';
+						const ownerName = seg.getAttribute('data-owner-name') || '';
+
+						let itemObj = null;
+						if (ownerKey === '__PENDING__') {
+							const pend = currentData?.pendientesDetalle;
+							const list = orbitType === 'fuero' ? pend?.fueros : pend?.usuarios;
+							if (list && idx >= 0 && idx < list.length) {
+								itemObj = list[idx];
+							}
+						} else {
+							const tec = currentData?.tecnicos?.find(t => t.username === ownerKey);
+							const list = orbitType === 'fuero' ? tec?.fueros : tec?.usuarios;
+							if (list && idx >= 0 && idx < list.length) {
+								itemObj = list[idx];
+							}
+						}
+
+						if (itemObj) {
+							ocultarTooltip();
+							filtrarYMostrarTareasPorSegmento(ownerKey, ownerName, orbitType, itemObj);
+						}
+					});
 				});
 			});
 		}
@@ -455,7 +487,7 @@
 
 				tooltip.innerHTML = `
 					<div class="electoral-orbit-universe">
-						${renderOrbitalSystem(fueros, '🏛️', 'fuero')}
+						${renderOrbitalSystem(fueros, '🏛️', 'fuero', '__PENDING__', 'Tareas Activas / Pendientes')}
 
 						<div class="electoral-orbit-center-core">
 							<div class="electoral-core-title-row">
@@ -463,10 +495,10 @@
 								<span class="electoral-tooltip-title">Tareas Activas / Pendientes</span>
 							</div>
 							<span class="electoral-tooltip-sub">${detalleSub} (${pct}% del total)</span>
-							<span class="electoral-orbit-hint">👆 Haz clic para ver las ${count} tareas en el tablero</span>
+							<span class="electoral-orbit-hint">👆 Clic en un color del anillo para ver sus tareas</span>
 						</div>
 
-						${renderOrbitalSystem(usuarios, '👤', 'usuario')}
+						${renderOrbitalSystem(usuarios, '👤', 'usuario', '__PENDING__', 'Tareas Activas / Pendientes')}
 					</div>
 				`;
 			} else {
@@ -477,7 +509,7 @@
 
 					tooltip.innerHTML = `
 						<div class="electoral-orbit-universe">
-							${renderOrbitalSystem(fueros, '🏛️', 'fuero')}
+							${renderOrbitalSystem(fueros, '🏛️', 'fuero', tec.username, tec.nombreVisible)}
 
 							<div class="electoral-orbit-center-core">
 								<div class="electoral-core-title-row">
@@ -485,10 +517,10 @@
 									<span class="electoral-tooltip-title">${escapeHtml(tec.nombreVisible)}</span>
 								</div>
 								<span class="electoral-tooltip-sub">${tec.realizadas} tareas realizadas (${tec.porcentajeDelTotal}% del total)</span>
-								<span class="electoral-orbit-hint">👆 Haz clic para filtrar en el tablero</span>
+								<span class="electoral-orbit-hint">👆 Clic en un color del anillo para ver sus tareas</span>
 							</div>
 
-							${renderOrbitalSystem(usuarios, '👤', 'usuario')}
+							${renderOrbitalSystem(usuarios, '👤', 'usuario', tec.username, tec.nombreVisible)}
 						</div>
 					`;
 				} else {
@@ -542,6 +574,7 @@
 				return;
 			}
 
+			removerPanelSegmento();
 			activeTechFilter = username;
 
 			// Marcar slice y chips activos
@@ -597,6 +630,7 @@
 				return;
 			}
 
+			removerPanelSegmento();
 			activeTechFilter = '__PENDING__';
 
 			widget.querySelectorAll('.electoral-bar-slice').forEach(s => {
@@ -645,6 +679,145 @@
 			}
 		}
 
+		function filtrarYMostrarTareasPorSegmento(ownerKey, ownerName, orbitType, itemObj) {
+			const etiqueta = (itemObj.etiqueta || '').trim();
+			const color = itemObj.color || '#2563eb';
+			const tareasLista = itemObj.tareas || [];
+			const tipoLabel = orbitType === 'fuero' ? 'Fuero' : 'Usuario';
+
+			activeTechFilter = `${ownerKey}:${orbitType}:${etiqueta}`;
+
+			// Marcar slice y chip del técnico activo
+			widget.querySelectorAll('.electoral-bar-slice').forEach(s => {
+				const matchSlice = ownerKey === '__PENDING__'
+					? s.getAttribute('data-pending') === 'true'
+					: s.getAttribute('data-username') === ownerKey;
+				s.classList.toggle('is-active-filter', matchSlice);
+			});
+
+			widget.querySelectorAll('.electoral-chip').forEach(c => {
+				const matchChip = ownerKey === '__PENDING__'
+					? c.getAttribute('data-pending') === 'true'
+					: c.getAttribute('data-username') === ownerKey;
+				c.classList.toggle('is-active-filter', matchChip);
+			});
+
+			// 1. Filtrar y resaltar en el tablero Kanban las tarjetas que coincidan
+			const idsSegmento = new Set(tareasLista.map(t => String(t.id)));
+			const cards = document.querySelectorAll('.kcard');
+			let firstMatch = null;
+			let matchCount = 0;
+
+			cards.forEach(card => {
+				const cardId = (card.getAttribute('data-id') || '').trim();
+				const cardResp = (card.getAttribute('data-responsable') || '').trim().toLowerCase();
+				const cardVal = (card.getAttribute(orbitType === 'fuero' ? 'data-fuero' : 'data-usuario') || '').trim().toLowerCase();
+
+				let matches = false;
+				if (idsSegmento.size > 0 && idsSegmento.has(cardId)) {
+					matches = true;
+				} else if (ownerKey === '__PENDING__') {
+					const isPending = card.classList.contains('kcard--new') || card.classList.contains('kcard--progress') || !cardResp;
+					matches = isPending && cardVal === etiqueta.toLowerCase();
+				} else {
+					matches = cardResp === ownerKey.toLowerCase() && cardVal === etiqueta.toLowerCase();
+				}
+
+				if (matches) {
+					card.classList.remove('is-filtered-out');
+					card.classList.add('is-highlighted-tech');
+					card.style.setProperty('--tech-highlight-color', color);
+					matchCount++;
+					if (!firstMatch) firstMatch = card;
+				} else {
+					card.classList.add('is-filtered-out');
+					card.classList.remove('is-highlighted-tech');
+					card.style.removeProperty('--tech-highlight-color');
+				}
+			});
+
+			actualizarBannerFiltro(`${ownerName} · ${tipoLabel}: ${etiqueta}`, itemObj.cantidad);
+			mostrarPanelTareasSegmento(ownerName, orbitType, itemObj);
+		}
+
+		function mostrarPanelTareasSegmento(ownerName, orbitType, itemObj) {
+			removerPanelSegmento();
+			const tareas = itemObj.tareas || [];
+			const color = itemObj.color || '#2563eb';
+			const iconoTipo = orbitType === 'fuero' ? '🏛️ Fuero' : '👤 Usuario';
+
+			const panel = document.createElement('div');
+			panel.className = 'electoral-segment-panel';
+			panel.id = 'electoral-segment-tasks-panel';
+			panel.style.setProperty('--segment-accent', color);
+
+			let rowsHtml = '';
+			if (tareas.length === 0) {
+				rowsHtml = `<p class="electoral-segment-empty">No se encontraron tareas detalladas para este segmento.</p>`;
+			} else {
+				rowsHtml = `
+					<div class="electoral-segment-list">
+						${tareas.map(t => `
+							<div class="electoral-segment-item" data-task-id="${t.id}">
+								<div class="electoral-segment-item-top">
+									<span class="electoral-segment-id">#${t.id}</span>
+									<strong class="electoral-segment-title">${escapeHtml(t.titulo || 'Sin título')}</strong>
+									<span class="electoral-segment-date">${escapeHtml(t.fecha || '')}</span>
+								</div>
+								<div class="electoral-segment-item-meta">
+									<span>💻 ${escapeHtml(t.equipo || 'PC genérica')}</span>
+									<span>👤 ${escapeHtml(t.solicitante || '—')}</span>
+									<span>🏛️ ${escapeHtml(t.fuero || '—')}</span>
+									${t.observacionesCierre ? `<span class="electoral-segment-note">✔ ${escapeHtml(t.observacionesCierre)}</span>` : ''}
+								</div>
+							</div>
+						`).join('')}
+					</div>
+				`;
+			}
+
+			panel.innerHTML = `
+				<div class="electoral-segment-header">
+					<div class="electoral-segment-header-info">
+						<span class="electoral-dot" style="background-color: ${color};"></span>
+						<span class="electoral-segment-tech">${escapeHtml(ownerName)}</span>
+						<span class="electoral-segment-sep">→</span>
+						<span class="electoral-segment-badge" style="border-color: ${color};">
+							${iconoTipo}: <strong>${escapeHtml(itemObj.etiqueta)}</strong>
+						</span>
+						<span class="electoral-segment-count">${itemObj.cantidad} ${itemObj.cantidad === 1 ? 'tarea' : 'tareas'} (${itemObj.porcentaje}%)</span>
+					</div>
+					<button type="button" class="electoral-segment-close-btn" title="Cerrar listado y quitar filtro">✕ Cerrar</button>
+				</div>
+				${rowsHtml}
+			`;
+
+			panel.querySelector('.electoral-segment-close-btn').addEventListener('click', () => {
+				limpiarFiltroTablero();
+			});
+
+			// Al hacer clic en una tarea del listado, si está en el tablero actual, hacer scroll hacia ella
+			panel.querySelectorAll('.electoral-segment-item').forEach(row => {
+				row.addEventListener('click', () => {
+					const tid = row.getAttribute('data-task-id');
+					const cardEl = document.getElementById(`kcard-${tid}`);
+					if (cardEl) {
+						cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					}
+				});
+			});
+
+			widget.appendChild(panel);
+			panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		}
+
+		function removerPanelSegmento() {
+			const existing = document.getElementById('electoral-segment-tasks-panel');
+			if (existing) {
+				existing.remove();
+			}
+		}
+
 		function actualizarBannerFiltro(nombre, cantidad) {
 			removerBannerFiltro();
 			const banner = document.createElement('span');
@@ -682,6 +855,7 @@
 			widget.querySelectorAll('.electoral-chip').forEach(c => c.classList.remove('is-active-filter'));
 
 			removerBannerFiltro();
+			removerPanelSegmento();
 		}
 
 		function escapeHtml(text) {

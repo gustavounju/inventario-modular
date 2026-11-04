@@ -30,12 +30,33 @@ public record EstadisticasRendimientoTecnico(
 		this(rango, totalTareas, totalRealizadas, totalPendientes, porcentajeRealizadas, porcentajePendientes, tecnicos, lider, segundo, telefonista, null);
 	}
 
+	public record TareaResumenItem(
+			Long id,
+			String titulo,
+			String solicitante,
+			String fuero,
+			String equipo,
+			String fecha,
+			String estado,
+			String observacionesCierre
+	) {}
+
 	public record DistribucionItem(
 			String etiqueta,
 			long cantidad,
 			double porcentaje,
-			String color
-	) {}
+			String color,
+			List<TareaResumenItem> tareas
+	) {
+		public DistribucionItem(
+				String etiqueta,
+				long cantidad,
+				double porcentaje,
+				String color
+		) {
+			this(etiqueta, cantidad, porcentaje, color, List.of());
+		}
+	}
 
 	public record RendimientoTecnicoItem(
 			String username,
