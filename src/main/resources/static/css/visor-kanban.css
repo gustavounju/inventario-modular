@@ -1220,7 +1220,7 @@ body[data-is-admin="false"] .kcard:active {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	gap: 20px;
+	gap: 36px;
 	position: relative;
 	background: transparent;
 }
@@ -1250,8 +1250,20 @@ body[data-is-admin="false"] .kcard:active {
 	pointer-events: none;
 }
 
+/* Segundo anillo interior concéntrico para órbitas escalonadas */
+.electoral-orbit-ring--inner {
+	inset: auto;
+	width: var(--inner-ring-size, 128px);
+	height: var(--inner-ring-size, 128px);
+	border-color: rgba(100, 116, 139, 0.28);
+}
+
 :root[data-theme="dark"] .electoral-orbit-ring {
 	border-color: rgba(56, 189, 248, 0.3);
+}
+
+:root[data-theme="dark"] .electoral-orbit-ring--inner {
+	border-color: rgba(148, 163, 184, 0.22);
 }
 
 /* Planeta central (Donut SVG) */
@@ -1322,6 +1334,11 @@ body[data-is-admin="false"] .kcard:active {
 	left: 50%;
 	transform: translate(calc(-50% + var(--target-x)), calc(-50% + var(--target-y)));
 	pointer-events: auto;
+	z-index: 12;
+}
+
+.electoral-satellite-node:hover {
+	z-index: 40;
 }
 
 /* Píldora del satélite que contrarresta el giro para ser 100% legible y flota en el aire */
@@ -1329,7 +1346,7 @@ body[data-is-admin="false"] .kcard:active {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	background: rgba(255, 255, 255, 0.95);
+	background: rgba(255, 255, 255, 0.96);
 	border: 1.5px solid #cbd5e1;
 	border-radius: 9999px;
 	padding: 3px 9px;
@@ -1344,16 +1361,28 @@ body[data-is-admin="false"] .kcard:active {
 	backdrop-filter: blur(8px);
 }
 
+/* Satélite agrupador "+N más" con estilo distintivo ejecutivo */
+.electoral-satellite-pill--cluster {
+	background: rgba(241, 245, 249, 0.98);
+	border-style: dashed;
+	color: #334155;
+}
+
 :root[data-theme="dark"] .electoral-satellite-pill {
 	background: rgba(30, 41, 59, 0.95);
 	color: #f8fafc;
 	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
+:root[data-theme="dark"] .electoral-satellite-pill--cluster {
+	background: rgba(15, 23, 42, 0.98);
+	color: #cbd5e1;
+}
+
 .electoral-satellite-pill:hover {
 	transform: scale(1.1) !important;
 	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22) !important;
-	z-index: 25;
+	z-index: 40;
 }
 
 .electoral-satellite-dot {
@@ -1364,10 +1393,15 @@ body[data-is-admin="false"] .kcard:active {
 }
 
 .electoral-satellite-name {
-	max-width: 135px;
+	max-width: 112px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	transition: max-width 0.2s ease;
+}
+
+.electoral-satellite-pill:hover .electoral-satellite-name {
+	max-width: 240px;
 }
 
 .electoral-satellite-qty {

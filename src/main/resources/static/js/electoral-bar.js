@@ -318,10 +318,47 @@
 
 			const total = items.reduce((acc, it) => acc + it.cantidad, 0);
 
-			// Planeta central (Donut SVG con colores)
+			// Top-N + Agrupación profesional ("Cap & Cluster") para evitar amontonamiento
+			const MAX_VISIBLE_NODES = 6;
+			let orbitNodes = [];
+
+			if (items.length <= MAX_VISIBLE_NODES + 1) {
+				orbitNodes = items.map(it => ({
+					...it,
+					isCluster: false,
+					tooltipText: `${it.etiqueta}: ${it.cantidad} (${it.porcentaje}%)`
+				}));
+			} else {
+				const topItems = items.slice(0, MAX_VISIBLE_NODES);
+				const restItems = items.slice(MAX_VISIBLE_NODES);
+				const restQty = restItems.reduce((acc, it) => acc + it.cantidad, 0);
+				const restPct = total > 0 ? Math.round(((restQty * 100.0) / total) * 10.0) / 10.0 : 0.0;
+				const tipoPlural = orbitType === 'fuero' ? 'fueros más' : 'usuarios más';
+				const previewList = restItems
+					.slice(0, 12)
+					.map(r => `${r.etiqueta} (${r.cantidad})`)
+					.join(', ') + (restItems.length > 12 ? '…' : '');
+
+				orbitNodes = topItems.map(it => ({
+					...it,
+					isCluster: false,
+					tooltipText: `${it.etiqueta}: ${it.cantidad} (${it.porcentaje}%)`
+				}));
+
+				orbitNodes.push({
+					etiqueta: `+${restItems.length} ${tipoPlural}`,
+					cantidad: restQty,
+					porcentaje: restPct,
+					color: '#64748b',
+					isCluster: true,
+					tooltipText: `Otros ${restItems.length} (${restQty} tareas · ${restPct}%): ${previewList}`
+				});
+			}
+
+			// Planeta central (Donut SVG sincronizado con los nodos visibles)
 			let circlesHtml = `<circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="4.5" opacity="0.3"></circle>`;
 			let currentOffset = 25;
-			items.forEach(item => {
+			orbitNodes.forEach(item => {
 				const pct = Math.max(0, Math.min(100, item.porcentaje));
 				if (pct <= 0) return;
 				const dashArray = `${pct} ${100 - pct}`;
@@ -332,7 +369,7 @@
 							stroke-dasharray="${dashArray}"
 							stroke-dashoffset="${currentOffset}"
 							class="electoral-donut-slice">
-						<title>${escapeHtml(item.etiqueta)}: ${item.cantidad} (${item.porcentaje}%)</title>
+						<title>${escapeHtml(item.tooltipText || `${item.etiqueta}: ${item.cantidad} (${item.porcentaje}%)`)}</title>
 					</circle>
 				`;
 				currentOffset -= pct;
@@ -345,21 +382,28 @@
 				</svg>
 			`;
 
-			// Satélites que giran alrededor del planeta central
-			const n = items.length;
-			const radius = n <= 2 ? 58 : (n === 3 ? 66 : 74);
+			// Doble órbita escalonada (par/impar) cuando hay 5 o más nodos para evitar colisión de etiquetas
+			const n = orbitNodes.length;
+			const useDualRing = n >= 5;
+			const rInner = n <= 2 ? 58 : (n <= 4 ? 68 : 64);
+			const rOuter = useDualRing ? 94 : rInner;
+			const systemSize = (rOuter + 20) * 2;
 
-			const satellitesHtml = items.map((it, idx) => {
+			const satellitesHtml = orbitNodes.map((it, idx) => {
 				const angleDeg = (360 / n) * idx - 90;
 				const rad = (angleDeg * Math.PI) / 180;
-				const x = Math.round(radius * Math.cos(rad));
-				const y = Math.round(radius * Math.sin(rad));
+				const nodeRadius = (useDualRing && idx % 2 === 1) ? rOuter : rInner;
+				const x = Math.round(nodeRadius * Math.cos(rad));
+				const y = Math.round(nodeRadius * Math.sin(rad));
+				const pillClass = it.isCluster
+					? 'electoral-satellite-pill electoral-satellite-pill--cluster'
+					: 'electoral-satellite-pill';
 
 				return `
 					<div class="electoral-satellite-node"
 					     style="--target-x: ${x}px; --target-y: ${y}px;"
-					     title="${escapeHtml(it.etiqueta)}: ${it.cantidad} (${it.porcentaje}%)">
-						<div class="electoral-satellite-pill" style="border-color: ${it.color};">
+					     title="${escapeHtml(it.tooltipText)}">
+						<div class="${pillClass}" style="border-color: ${it.color};">
 							<span class="electoral-satellite-dot" style="background-color: ${it.color};"></span>
 							<span class="electoral-satellite-name">${escapeHtml(it.etiqueta)}</span>
 							<strong class="electoral-satellite-qty">${it.cantidad} <small>(${it.porcentaje}%)</small></strong>
@@ -368,9 +412,14 @@
 				`;
 			}).join('');
 
+			const innerRingHtml = useDualRing
+				? `<div class="electoral-orbit-ring electoral-orbit-ring--inner" style="--inner-ring-size: ${rInner * 2}px;"></div>`
+				: '';
+
 			return `
-				<div class="electoral-orbit-system" style="--orbit-size: ${(radius + 18) * 2}px;">
+				<div class="electoral-orbit-system" style="--orbit-size: ${systemSize}px;">
 					<div class="electoral-orbit-ring"></div>
+					${innerRingHtml}
 					<div class="electoral-orbit-planet">
 						${planetSvg}
 						<span class="electoral-orbit-planet-label">${orbitType === 'fuero' ? '🏛️ Fueros' : '👤 Usuarios'}</span>
