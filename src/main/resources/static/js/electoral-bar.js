@@ -286,21 +286,28 @@
 			});
 		}
 
-		function renderDonutSvg(items, centerIcon) {
+		function renderOrbitalSystem(items, centerIcon, orbitType) {
 			if (!items || items.length === 0) {
 				return `
-					<svg viewBox="0 0 36 36" class="electoral-donut-svg">
-						<circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="4.5" stroke-dasharray="100 0" stroke-dashoffset="25" opacity="0.4"></circle>
-						<text x="18" y="21" class="electoral-donut-center" text-anchor="middle" font-size="7">${escapeHtml(centerIcon || '—')}</text>
-					</svg>
+					<div class="electoral-orbit-system" style="--orbit-size: 140px;">
+						<div class="electoral-orbit-ring"></div>
+						<div class="electoral-orbit-planet">
+							<svg viewBox="0 0 36 36" class="electoral-donut-svg">
+								<circle cx="18" cy="18" r="15.9155" fill="none" stroke="#cbd5e1" stroke-width="4" stroke-dasharray="100 0" stroke-dashoffset="25" opacity="0.3"></circle>
+								<text x="18" y="21" class="electoral-donut-center" text-anchor="middle" font-size="7">${escapeHtml(centerIcon || '—')}</text>
+							</svg>
+							<span class="electoral-orbit-planet-label">${orbitType === 'fuero' ? '🏛️ Fueros' : '👤 Usuarios'}</span>
+						</div>
+						<span class="electoral-orbit-empty">Sin datos</span>
+					</div>
 				`;
 			}
 
-			let circlesHtml = `
-				<circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="4.5" opacity="0.3"></circle>
-			`;
+			const total = items.reduce((acc, it) => acc + it.cantidad, 0);
 
-			let currentOffset = 25; // Inicia arriba a las 12 horas
+			// Planeta central (Donut SVG con colores)
+			let circlesHtml = `<circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e2e8f0" stroke-width="4.5" opacity="0.3"></circle>`;
+			let currentOffset = 25;
 			items.forEach(item => {
 				const pct = Math.max(0, Math.min(100, item.porcentaje));
 				if (pct <= 0) return;
@@ -318,42 +325,48 @@
 				currentOffset -= pct;
 			});
 
-			const total = items.reduce((acc, it) => acc + it.cantidad, 0);
-
-			return `
+			const planetSvg = `
 				<svg viewBox="0 0 36 36" class="electoral-donut-svg">
 					${circlesHtml}
 					<text x="18" y="20.5" class="electoral-donut-center" text-anchor="middle" font-size="7.5">${total}</text>
 				</svg>
 			`;
-		}
 
-		function renderLegend(items) {
-			if (!items || items.length === 0) {
-				return `<span class="electoral-legend-empty">Sin datos</span>`;
-			}
+			// Satélites que giran alrededor del planeta central
+			const n = items.length;
+			const radius = n <= 2 ? 58 : (n === 3 ? 66 : 74);
 
-			const visible = items.slice(0, 3);
-			let html = visible.map(it => `
-				<div class="electoral-legend-item" title="${escapeHtml(it.etiqueta)}: ${it.cantidad} (${it.porcentaje}%)">
-					<span class="electoral-legend-bullet" style="background-color: ${it.color};"></span>
-					<span class="electoral-legend-label">${escapeHtml(it.etiqueta)}</span>
-					<span class="electoral-legend-val">${it.cantidad} <small>(${it.porcentaje}%)</small></span>
+			const satellitesHtml = items.map((it, idx) => {
+				const angleDeg = (360 / n) * idx - 90;
+				const rad = (angleDeg * Math.PI) / 180;
+				const x = Math.round(radius * Math.cos(rad));
+				const y = Math.round(radius * Math.sin(rad));
+
+				return `
+					<div class="electoral-satellite-node"
+					     style="--target-x: ${x}px; --target-y: ${y}px;"
+					     title="${escapeHtml(it.etiqueta)}: ${it.cantidad} (${it.porcentaje}%)">
+						<div class="electoral-satellite-pill" style="border-color: ${it.color};">
+							<span class="electoral-satellite-dot" style="background-color: ${it.color};"></span>
+							<span class="electoral-satellite-name">${escapeHtml(it.etiqueta)}</span>
+							<strong class="electoral-satellite-qty">${it.cantidad} <small>(${it.porcentaje}%)</small></strong>
+						</div>
+					</div>
+				`;
+			}).join('');
+
+			return `
+				<div class="electoral-orbit-system" style="--orbit-size: ${(radius + 18) * 2}px;">
+					<div class="electoral-orbit-ring"></div>
+					<div class="electoral-orbit-planet">
+						${planetSvg}
+						<span class="electoral-orbit-planet-label">${orbitType === 'fuero' ? '🏛️ Fueros' : '👤 Usuarios'}</span>
+					</div>
+					<div class="electoral-orbit-track">
+						${satellitesHtml}
+					</div>
 				</div>
-			`).join('');
-
-			if (items.length > 3) {
-				const remaining = items.slice(3).reduce((acc, it) => acc + it.cantidad, 0);
-				html += `<div class="electoral-legend-more">+${items.length - 3} más (${remaining})</div>`;
-			}
-			return html;
-		}
-
-		function formatDistributionSummary(items) {
-			if (!items || items.length === 0) return 'Sin datos';
-			if (items.length === 1) return `${items[0].etiqueta} (${items[0].cantidad})`;
-			if (items.length === 2) return `${items[0].etiqueta} (${items[0].cantidad}) · ${items[1].etiqueta} (${items[1].cantidad})`;
-			return `${items[0].etiqueta} (${items[0].cantidad}) +${items.length - 1} más`;
+			`;
 		}
 
 		function mostrarTooltip(slice, e) {
@@ -370,30 +383,19 @@
 				const pct = currentData?.porcentajePendientes ?? 0;
 
 				tooltip.innerHTML = `
-					<div class="electoral-satellite-pod">
-						<div class="electoral-satellite" title="Distribución por Fuero de tareas pendientes">
-							<div class="electoral-satellite-donut">
-								${renderDonutSvg(fueros, '🏛️')}
-							</div>
-							<span class="electoral-satellite-tag">🏛️ Fuero</span>
-							<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(fueros))}</span>
-						</div>
+					<div class="electoral-orbit-universe">
+						${renderOrbitalSystem(fueros, '🏛️', 'fuero')}
 
-						<div class="electoral-satellite-core">
+						<div class="electoral-orbit-center-core">
 							<div class="electoral-core-title-row">
 								<span class="electoral-dot" style="background-color: #94a3b8;"></span>
 								<span class="electoral-tooltip-title">Por Asignar / Pendientes</span>
 							</div>
 							<span class="electoral-tooltip-sub">${count} tareas pendientes (${pct}% del total)</span>
+							<span class="electoral-orbit-hint">👆 Haz clic para filtrar pendientes</span>
 						</div>
 
-						<div class="electoral-satellite" title="Distribución por Solicitante de tareas pendientes">
-							<div class="electoral-satellite-donut">
-								${renderDonutSvg(usuarios, '👤')}
-							</div>
-							<span class="electoral-satellite-tag">👤 Solicitante</span>
-							<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(usuarios))}</span>
-						</div>
+						${renderOrbitalSystem(usuarios, '👤', 'usuario')}
 					</div>
 				`;
 			} else {
@@ -403,36 +405,25 @@
 					const usuarios = tec.usuarios || [];
 
 					tooltip.innerHTML = `
-						<div class="electoral-satellite-pod">
-							<div class="electoral-satellite" title="Fueros donde resolvió tareas">
-								<div class="electoral-satellite-donut">
-									${renderDonutSvg(fueros, '🏛️')}
-								</div>
-								<span class="electoral-satellite-tag">🏛️ Fuero</span>
-								<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(fueros))}</span>
-							</div>
+						<div class="electoral-orbit-universe">
+							${renderOrbitalSystem(fueros, '🏛️', 'fuero')}
 
-							<div class="electoral-satellite-core">
+							<div class="electoral-orbit-center-core">
 								<div class="electoral-core-title-row">
 									<span class="electoral-dot" style="background-color: ${tec.color};"></span>
 									<span class="electoral-tooltip-title">${escapeHtml(tec.nombreVisible)}</span>
 								</div>
 								<span class="electoral-tooltip-sub">${tec.realizadas} tareas realizadas (${tec.porcentajeDelTotal}% del total)</span>
+								<span class="electoral-orbit-hint">👆 Haz clic para filtrar en el tablero</span>
 							</div>
 
-							<div class="electoral-satellite" title="Usuarios atendidos por este técnico">
-								<div class="electoral-satellite-donut">
-									${renderDonutSvg(usuarios, '👤')}
-								</div>
-								<span class="electoral-satellite-tag">👤 Usuario</span>
-								<span class="electoral-satellite-summary">${escapeHtml(formatDistributionSummary(usuarios))}</span>
-							</div>
+							${renderOrbitalSystem(usuarios, '👤', 'usuario')}
 						</div>
 					`;
 				} else {
 					tooltip.innerHTML = `
-						<div class="electoral-satellite-pod">
-							<div class="electoral-satellite-core">
+						<div class="electoral-orbit-universe">
+							<div class="electoral-orbit-center-core">
 								<span class="electoral-tooltip-title">${escapeHtml(titleFallback)}</span>
 								<span class="electoral-tooltip-sub">${escapeHtml(subFallback)}</span>
 							</div>
@@ -449,10 +440,10 @@
 			const barRect = bar.getBoundingClientRect();
 			const mouseX = e.clientX - barRect.left;
 			const tooltipRect = tooltip.getBoundingClientRect();
-			const half = (tooltipRect.width || 340) / 2;
+			const half = (tooltipRect.width || 480) / 2;
 
 			let clampedX;
-			if (barRect.width <= (tooltipRect.width || 340)) {
+			if (barRect.width <= (tooltipRect.width || 480)) {
 				clampedX = barRect.width / 2;
 			} else {
 				clampedX = Math.max(half, Math.min(barRect.width - half, mouseX));
