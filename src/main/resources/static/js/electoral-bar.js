@@ -93,7 +93,12 @@
 
 			// 2. Marcador Central
 			targetNum.textContent = data.totalRealizadas;
-			subCenter.textContent = `${data.totalPendientes} por asignar / pendientes`;
+			const pendInfo = data.pendientesDetalle;
+			if (pendInfo && pendInfo.enProceso > 0) {
+				subCenter.textContent = `${data.totalPendientes} activas (${pendInfo.sinAsignar} nuevas + ${pendInfo.enProceso} en proceso)`;
+			} else {
+				subCenter.textContent = `${data.totalPendientes} por asignar / pendientes`;
+			}
 
 			// 3. Segundo Derecha
 			if (data.segundo) {
@@ -142,11 +147,15 @@
 				});
 
 				if (data.porcentajePendientes > 0) {
+					const pend = data.pendientesDetalle;
+					const subDesc = (pend && pend.enProceso > 0)
+						? `${data.totalPendientes} tareas activas (${pend.sinAsignar} nuevas + ${pend.enProceso} en proceso, ${data.porcentajePendientes}% del total)`
+						: `${data.totalPendientes} tareas pendientes (${data.porcentajePendientes}% del total)`;
 					slicesHtml += `
 						<div class="electoral-bar-slice is-pending"
 							 style="width: ${data.porcentajePendientes}%;"
-							 data-title="Por asignar / Pendientes"
-							 data-sub="${data.totalPendientes} tareas pendientes (${data.porcentajePendientes}% del total)"
+							 data-title="Tareas Activas (Pendientes / En Proceso)"
+							 data-sub="${subDesc}"
 							 data-pending="true"></div>
 					`;
 				}
@@ -166,10 +175,14 @@
 			});
 
 			if (data.totalPendientes > 0) {
+				const pend = data.pendientesDetalle;
+				const pendChipLabel = (pend && pend.enProceso > 0)
+					? `${data.totalPendientes} (${pend.sinAsignar} nuevas, ${pend.enProceso} en proceso)`
+					: `${data.totalPendientes}`;
 				legendHtml += `
-					<span class="electoral-chip" data-pending="true">
+					<span class="electoral-chip" data-pending="true" title="Tareas activas del tablero (Nuevas y En proceso)">
 						<span class="electoral-dot" style="background-color: #94a3b8;"></span>
-						<strong>Pendientes:</strong> ${data.totalPendientes}
+						<strong>Activas / Pendientes:</strong> ${pendChipLabel}
 					</span>
 				`;
 			}
@@ -381,6 +394,9 @@
 				const usuarios = pend?.usuarios || [];
 				const count = currentData?.totalPendientes ?? 0;
 				const pct = currentData?.porcentajePendientes ?? 0;
+				const detalleSub = (pend && pend.enProceso > 0)
+					? `${count} tareas activas (${pend.sinAsignar} nuevas + ${pend.enProceso} en proceso)`
+					: `${count} tareas pendientes`;
 
 				tooltip.innerHTML = `
 					<div class="electoral-orbit-universe">
@@ -389,10 +405,10 @@
 						<div class="electoral-orbit-center-core">
 							<div class="electoral-core-title-row">
 								<span class="electoral-dot" style="background-color: #94a3b8;"></span>
-								<span class="electoral-tooltip-title">Por Asignar / Pendientes</span>
+								<span class="electoral-tooltip-title">Tareas Activas / Pendientes</span>
 							</div>
-							<span class="electoral-tooltip-sub">${count} tareas pendientes (${pct}% del total)</span>
-							<span class="electoral-orbit-hint">👆 Haz clic para filtrar pendientes</span>
+							<span class="electoral-tooltip-sub">${detalleSub} (${pct}% del total)</span>
+							<span class="electoral-orbit-hint">👆 Haz clic para ver las ${count} tareas en el tablero</span>
 						</div>
 
 						${renderOrbitalSystem(usuarios, '👤', 'usuario')}
@@ -544,7 +560,10 @@
 
 			cards.forEach(card => {
 				const cardResp = (card.getAttribute('data-responsable') || '').trim();
-				const isPending = !cardResp || card.classList.contains('kcard--new');
+				// Una tarea activa/pendiente incluye tanto las Nuevas (sin asignar) como las que están En Proceso
+				const isPending = card.classList.contains('kcard--new')
+					|| card.classList.contains('kcard--progress')
+					|| !cardResp;
 
 				if (isPending) {
 					card.classList.remove('is-filtered-out');
@@ -559,7 +578,7 @@
 				}
 			});
 
-			actualizarBannerFiltro('Por asignar / Pendientes', matchCount);
+			actualizarBannerFiltro('Tareas Activas (Nuevas y En Proceso)', matchCount);
 
 			if (firstMatch) {
 				firstMatch.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

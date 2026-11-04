@@ -189,8 +189,9 @@ public class TareaTecnicaService {
 		}
 
 		List<TareaTecnica> cerradas = tareaTecnicaRepository.buscarCerradasPorRango(desde, hasta);
-		long totalPendientes = tareaTecnicaRepository.countByEstado(EstadoTareaTecnica.PENDIENTE)
-				+ tareaTecnicaRepository.countByEstado(EstadoTareaTecnica.EN_PROCESO);
+		long countPendientes = tareaTecnicaRepository.countByEstado(EstadoTareaTecnica.PENDIENTE);
+		long countEnProceso = tareaTecnicaRepository.countByEstado(EstadoTareaTecnica.EN_PROCESO);
+		long totalPendientes = countPendientes + countEnProceso;
 
 		long totalRealizadas = cerradas.size();
 		long totalTareas = totalRealizadas + totalPendientes;
@@ -260,7 +261,9 @@ public class TareaTecnicaService {
 				Math.round(porcentajePendientes * 10.0) / 10.0,
 				pendFueros,
 				pendUsuarios,
-				pendTipos
+				pendTipos,
+				countPendientes,
+				countEnProceso
 		);
 
 		java.util.Set<String> telefonistas = new java.util.HashSet<>();

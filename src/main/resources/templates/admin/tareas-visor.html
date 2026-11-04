@@ -230,7 +230,7 @@
 							 class="electoral-bar-slice is-pending"
 							 th:style="'width: ' + ${estadisticasRendimiento.porcentajePendientes} + '%;'"
 							 data-pending="true"
-							 th:attr="data-title='Por asignar / Pendientes', data-sub=${estadisticasRendimiento.totalPendientes} + ' tareas pendientes (' + ${estadisticasRendimiento.porcentajePendientes} + '% del total)'"></div>
+							 th:attr="data-title='Tareas Activas (Pendientes / En Proceso)', data-sub=${estadisticasRendimiento.pendientesDetalle != null and estadisticasRendimiento.pendientesDetalle.enProceso > 0 ? (estadisticasRendimiento.totalPendientes + ' tareas activas (' + estadisticasRendimiento.pendientesDetalle.sinAsignar + ' nuevas + ' + estadisticasRendimiento.pendientesDetalle.enProceso + ' en proceso)') : (estadisticasRendimiento.totalPendientes + ' tareas pendientes (' + estadisticasRendimiento.porcentajePendientes + '% del total)')}"></div>
 					</th:block>
 					<th:block th:unless="${estadisticasRendimiento != null and estadisticasRendimiento.totalTareas > 0}">
 						<div class="electoral-bar-slice is-pending"
@@ -248,7 +248,7 @@
 			</div>
 
 			<!-- Subtítulo central: X por asignar / pendientes -->
-			<div class="electoral-sub-center" th:text="${estadisticasRendimiento != null ? (estadisticasRendimiento.totalPendientes + ' por asignar / pendientes') : '0 por asignar'}">0 por asignar / pendientes</div>
+			<div class="electoral-sub-center" th:text="${estadisticasRendimiento != null ? (estadisticasRendimiento.pendientesDetalle != null and estadisticasRendimiento.pendientesDetalle.enProceso > 0 ? (estadisticasRendimiento.totalPendientes + ' activas (' + estadisticasRendimiento.pendientesDetalle.sinAsignar + ' nuevas + ' + estadisticasRendimiento.pendientesDetalle.enProceso + ' en proceso)') : (estadisticasRendimiento.totalPendientes + ' por asignar / pendientes')) : '0 por asignar'}">0 por asignar / pendientes</div>
 
 			<!-- Leyenda con chips -->
 			<div class="electoral-legend">
@@ -258,10 +258,10 @@
 						<strong th:text="${tec.nombreVisible} + ':'">Técnico:</strong>
 						<span th:text="${tec.realizadas} + ' (' + ${tec.porcentajeDeRealizadas} + '%)'">0 (0%)</span>
 					</span>
-					<span th:if="${estadisticasRendimiento.totalPendientes > 0}" class="electoral-chip" data-pending="true">
+					<span th:if="${estadisticasRendimiento.totalPendientes > 0}" class="electoral-chip" data-pending="true" title="Tareas activas (Nuevas y En proceso)">
 						<span class="electoral-dot" style="background-color: #94a3b8;"></span>
-						<strong>Pendientes:</strong>
-						<span th:text="${estadisticasRendimiento.totalPendientes}">0</span>
+						<strong>Activas:</strong>
+						<span th:text="${estadisticasRendimiento.pendientesDetalle != null and estadisticasRendimiento.pendientesDetalle.enProceso > 0 ? (estadisticasRendimiento.totalPendientes + ' (' + estadisticasRendimiento.pendientesDetalle.sinAsignar + ' nuevas, ' + estadisticasRendimiento.pendientesDetalle.enProceso + ' en proceso)') : estadisticasRendimiento.totalPendientes}">0</span>
 					</span>
 				</th:block>
 			</div>

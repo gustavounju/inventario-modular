@@ -85,15 +85,27 @@ public record EstadisticasRendimientoTecnico(
 			double porcentaje,
 			List<DistribucionItem> fueros,
 			List<DistribucionItem> usuarios,
-			List<DistribucionItem> tipos
+			List<DistribucionItem> tipos,
+			long sinAsignar,
+			long enProceso
 	) {
+		public PendientesMetricas(
+				long total,
+				double porcentaje,
+				List<DistribucionItem> fueros,
+				List<DistribucionItem> usuarios,
+				List<DistribucionItem> tipos
+		) {
+			this(total, porcentaje, fueros, usuarios, tipos, 0, 0);
+		}
+
 		public PendientesMetricas(
 				long total,
 				double porcentaje,
 				List<DistribucionItem> fueros,
 				List<DistribucionItem> usuarios
 		) {
-			this(total, porcentaje, fueros, usuarios, List.of());
+			this(total, porcentaje, fueros, usuarios, List.of(), 0, 0);
 		}
 	}
 }
