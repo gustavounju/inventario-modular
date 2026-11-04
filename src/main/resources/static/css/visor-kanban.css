@@ -1179,17 +1179,17 @@ body[data-is-admin="false"] .kcard:active {
 	background: #64748b;
 }
 
-/* Tooltip interactivo flotante con Universo Orbital */
+/* Tooltip interactivo flotante en el aire (sin ventana contenedora) */
 .electoral-tooltip {
 	position: absolute;
 	bottom: calc(100% + 14px);
 	left: 50%;
 	transform: translateX(-50%);
-	background: rgba(255, 255, 255, 0.98);
-	border: 1px solid #cbd5e1;
-	border-radius: 18px;
-	box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.22), 0 4px 14px -2px rgba(0, 0, 0, 0.08);
-	padding: 12px 18px;
+	background: transparent !important;
+	border: none !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	padding: 0 !important;
 	font-size: 0.82rem;
 	text-align: center;
 	white-space: normal;
@@ -1201,14 +1201,13 @@ body[data-is-admin="false"] .kcard:active {
 	width: max-content;
 	min-width: 480px;
 	max-width: calc(100vw - 32px);
-	backdrop-filter: blur(12px);
+	backdrop-filter: none !important;
 }
 
 :root[data-theme="dark"] .electoral-tooltip {
-	background: rgba(15, 23, 42, 0.97);
-	border-color: #334155;
-	color: #f1f5f9;
-	box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.65);
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
 }
 
 .electoral-tooltip.is-visible {
@@ -1223,9 +1222,10 @@ body[data-is-admin="false"] .kcard:active {
 	justify-content: center;
 	gap: 20px;
 	position: relative;
+	background: transparent;
 }
 
-/* Sistema Orbital individual (Izquierdo / Derecho) */
+/* Sistema Orbital individual (Izquierdo / Derecho) - Flota libre en el aire */
 .electoral-orbit-system {
 	position: relative;
 	width: var(--orbit-size, 150px);
@@ -1236,19 +1236,22 @@ body[data-is-admin="false"] .kcard:active {
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
+	background: transparent;
+	border: none;
+	filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.12));
 }
 
-/* Anillo orbital punteado */
+/* Anillo orbital punteado flotante */
 .electoral-orbit-ring {
 	position: absolute;
-	inset: 6px;
-	border: 1.5px dashed rgba(203, 213, 225, 0.8);
+	inset: 4px;
+	border: 1.5px dashed rgba(2, 132, 199, 0.35);
 	border-radius: 50%;
 	pointer-events: none;
 }
 
 :root[data-theme="dark"] .electoral-orbit-ring {
-	border-color: rgba(71, 85, 105, 0.8);
+	border-color: rgba(56, 189, 248, 0.3);
 }
 
 /* Planeta central (Donut SVG) */
@@ -1261,7 +1264,7 @@ body[data-is-admin="false"] .kcard:active {
 	align-items: center;
 	justify-content: center;
 	z-index: 5;
-	filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
+	filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.14));
 }
 
 .electoral-donut-svg {
@@ -1284,12 +1287,17 @@ body[data-is-admin="false"] .kcard:active {
 	top: calc(100% + 2px);
 	font-size: 0.68rem;
 	font-weight: 700;
-	color: #64748b;
+	color: #475569;
 	white-space: nowrap;
+	background: rgba(255, 255, 255, 0.85);
+	padding: 1px 6px;
+	border-radius: 9999px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 :root[data-theme="dark"] .electoral-orbit-planet-label {
 	color: #94a3b8;
+	background: rgba(15, 23, 42, 0.85);
 }
 
 /* Pista de rotación orbital */
@@ -1316,35 +1324,36 @@ body[data-is-admin="false"] .kcard:active {
 	pointer-events: auto;
 }
 
-/* Píldora del satélite que contrarresta el giro para ser 100% legible */
+/* Píldora del satélite que contrarresta el giro para ser 100% legible y flota en el aire */
 .electoral-satellite-pill {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	background: #ffffff;
+	background: rgba(255, 255, 255, 0.95);
 	border: 1.5px solid #cbd5e1;
 	border-radius: 9999px;
-	padding: 3px 8px;
+	padding: 3px 9px;
 	font-size: 0.72rem;
 	font-weight: 600;
 	color: #0f172a;
 	white-space: nowrap;
-	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+	box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16);
 	animation: counterSpin 16s linear infinite;
 	transition: transform 0.2s ease, box-shadow 0.2s ease;
 	cursor: pointer;
+	backdrop-filter: blur(8px);
 }
 
 :root[data-theme="dark"] .electoral-satellite-pill {
-	background: #1e293b;
+	background: rgba(30, 41, 59, 0.95);
 	color: #f8fafc;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
 .electoral-satellite-pill:hover {
-	transform: scale(1.08) !important;
-	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18) !important;
-	z-index: 20;
+	transform: scale(1.1) !important;
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22) !important;
+	z-index: 25;
 }
 
 .electoral-satellite-dot {
@@ -1355,7 +1364,7 @@ body[data-is-admin="false"] .kcard:active {
 }
 
 .electoral-satellite-name {
-	max-width: 130px;
+	max-width: 135px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -1374,24 +1383,58 @@ body[data-is-admin="false"] .kcard:active {
 	z-index: 10;
 }
 
-/* Núcleo Central: Nombre del técnico, tareas y porcentaje */
+/* Núcleo Central: Píldora elegante flotante con nombre y tareas */
 .electoral-orbit-center-core {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: 0 16px;
-	border-left: 1px solid #e2e8f0;
-	border-right: 1px solid #e2e8f0;
+	padding: 9px 18px;
+	background: rgba(255, 255, 255, 0.96);
+	border: 1px solid rgba(203, 213, 225, 0.9);
+	border-radius: 16px;
+	box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.2), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+	backdrop-filter: blur(12px);
 	text-align: center;
-	min-width: 170px;
+	min-width: 175px;
 	flex-shrink: 0;
-	z-index: 2;
+	z-index: 20;
+	position: relative;
 }
 
 :root[data-theme="dark"] .electoral-orbit-center-core {
-	border-left-color: #334155;
-	border-right-color: #334155;
+	background: rgba(15, 23, 42, 0.96);
+	border-color: #334155;
+	box-shadow: 0 14px 30px -6px rgba(0, 0, 0, 0.65);
+}
+
+.electoral-orbit-center-core::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	border: 6px solid transparent;
+	border-top-color: #cbd5e1;
+}
+
+.electoral-orbit-center-core::before {
+	content: '';
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	border: 5px solid transparent;
+	border-top-color: #ffffff;
+	z-index: 1;
+}
+
+:root[data-theme="dark"] .electoral-orbit-center-core::after {
+	border-top-color: #334155;
+}
+
+:root[data-theme="dark"] .electoral-orbit-center-core::before {
+	border-top-color: #0f172a;
 }
 
 .electoral-core-title-row {
@@ -1448,35 +1491,6 @@ body[data-is-admin="false"] .kcard:active {
 	to {
 		transform: rotate(-360deg);
 	}
-}
-
-.electoral-tooltip::after {
-	content: '';
-	position: absolute;
-	top: 100%;
-	left: 50%;
-	transform: translateX(-50%);
-	border: 6px solid transparent;
-	border-top-color: #cbd5e1;
-}
-
-.electoral-tooltip::before {
-	content: '';
-	position: absolute;
-	top: 100%;
-	left: 50%;
-	transform: translateX(-50%);
-	border: 5px solid transparent;
-	border-top-color: #ffffff;
-	z-index: 1;
-}
-
-:root[data-theme="dark"] .electoral-tooltip::after {
-	border-top-color: #334155;
-}
-
-:root[data-theme="dark"] .electoral-tooltip::before {
-	border-top-color: #0f172a;
 }
 
 /* Filtrado y resaltado interactivo en el Tablero Kanban al hacer clic */
