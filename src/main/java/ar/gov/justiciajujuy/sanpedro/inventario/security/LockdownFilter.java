@@ -73,3 +73,4 @@ public class LockdownFilter extends OncePerRequestFilter {
 				|| uri.equals("/error");
 	}
 }
+
