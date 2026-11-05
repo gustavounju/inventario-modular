@@ -787,6 +787,7 @@
 									<span class="electoral-segment-date">${escapeHtml(t.fecha || '')}</span>
 								</div>
 								<div class="electoral-segment-item-meta">
+									<span class="electoral-segment-item-tech">🛠️ Técnico: <strong>${escapeHtml(t.responsable || 'Sin asignar')}</strong></span>
 									<span>💻 ${escapeHtml(t.equipo || 'PC genérica')}</span>
 									<span>👤 ${escapeHtml(t.solicitante || '—')}</span>
 									<span>🏛️ ${escapeHtml(t.fuero || '—')}</span>

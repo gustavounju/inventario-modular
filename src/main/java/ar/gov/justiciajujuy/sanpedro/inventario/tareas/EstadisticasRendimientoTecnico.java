@@ -38,8 +38,22 @@ public record EstadisticasRendimientoTecnico(
 			String equipo,
 			String fecha,
 			String estado,
-			String observacionesCierre
-	) {}
+			String observacionesCierre,
+			String responsable
+	) {
+		public TareaResumenItem(
+				Long id,
+				String titulo,
+				String solicitante,
+				String fuero,
+				String equipo,
+				String fecha,
+				String estado,
+				String observacionesCierre
+		) {
+			this(id, titulo, solicitante, fuero, equipo, fecha, estado, observacionesCierre, null);
+		}
+	}
 
 	public record DistribucionItem(
 			String etiqueta,

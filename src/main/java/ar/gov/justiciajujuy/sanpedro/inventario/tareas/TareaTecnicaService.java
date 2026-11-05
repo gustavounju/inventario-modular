@@ -327,6 +327,10 @@ public class TareaTecnicaService {
 		String equipoNombre = (t.getEquipo() != null && t.getEquipo().getNombre() != null)
 				? t.getEquipo().getNombre()
 				: "PC genérica";
+		String respRaw = t.getResponsable();
+		String respVisible = (respRaw != null && !respRaw.isBlank())
+				? resolverNombreVisibleTecnico(respRaw.trim())
+				: "Sin asignar";
 		return new EstadisticasRendimientoTecnico.TareaResumenItem(
 				t.getId(),
 				t.getTitulo(),
@@ -335,7 +339,8 @@ public class TareaTecnicaService {
 				equipoNombre,
 				fechaStr,
 				t.getEstado() != null ? t.getEstado().name() : "CERRADA",
-				t.getObservacionesCierre()
+				t.getObservacionesCierre(),
+				respVisible
 		);
 	}
 

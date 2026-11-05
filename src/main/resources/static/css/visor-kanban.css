@@ -1905,6 +1905,21 @@ body[data-is-admin="false"] .kcard:active {
 	color: var(--text-secondary, #475569);
 }
 
+.electoral-segment-item-tech {
+	background: rgba(2, 132, 199, 0.1);
+	color: #0369a1;
+	border: 1px solid rgba(2, 132, 199, 0.28);
+	padding: 1px 7px;
+	border-radius: 9999px;
+	font-weight: 600;
+}
+
+:root[data-theme="dark"] .electoral-segment-item-tech {
+	background: rgba(56, 189, 248, 0.15);
+	color: #38bdf8;
+	border-color: rgba(56, 189, 248, 0.3);
+}
+
 :root[data-theme="dark"] .electoral-segment-item-meta {
 	color: #94a3b8;
 }
