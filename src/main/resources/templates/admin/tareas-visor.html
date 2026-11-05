@@ -153,6 +153,7 @@
 				<a class="kbtn kbtn--secondary" th:href="@{/admin}" th:if="${!esSoloMovil}">Panel general</a>
 				<a class="kbtn kbtn--secondary" th:href="@{/admin/red-ips}" th:if="${currentUser != null or (username != null and !username.isEmpty())}" title="Consultar plano y asignación de direcciones IP">🌐 Plano de IPs</a>
 				<button type="button" class="kbtn kbtn--secondary" onclick="abrirHistorialLlamadas()">📞 Llamadas Recientes</button>
+				<button type="button" class="kbtn kbtn--secondary" onclick="sincronizarActiveDirectoryManual(this)" th:if="${puedeEditarTareas}" title="Sincronizar Fueros y Solicitantes desde Active Directory a demanda">🔄 Sincronizar AD</button>
 				<button type="button" class="kbtn kbtn--secondary" onclick="abrirModalConciliacion()" th:if="${puedeEditarTareas}" style="font-weight: 700; color: #15803d; border: 1.5px solid #86efac; background: #f0fdf4;" title="Vincular tareas en PC genérica con sus equipos reales por usuario">⚡ Vincular PCs por Solicitante</button>
 				<button type="button" class="kbtn kbtn--primary" onclick="document.getElementById('modal-nueva-tarea').showModal()" th:if="${puedeEditarTareas}">➕ Nueva Tarea</button>
 			</div>
@@ -1710,6 +1711,62 @@
 				btn.disabled = false;
 				actualizarBotonAplicar();
 			}
+		}
+
+		async function sincronizarActiveDirectoryManual(btn) {
+			if (!btn) btn = event?.currentTarget;
+			const originalHtml = btn ? btn.innerHTML : '';
+			if (btn) {
+				btn.disabled = true;
+				btn.innerHTML = '⏳ Sincronizando...';
+			}
+
+			const csrfToken = document.querySelector('input[name="_csrf"]')?.value
+				|| document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+			const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content')
+				|| 'X-CSRF-TOKEN';
+
+			const headers = {
+				'Content-Type': 'application/json',
+				'X-Requested-With': 'XMLHttpRequest'
+			};
+			if (csrfToken) {
+				headers[csrfHeader] = csrfToken;
+			}
+
+			try {
+				const resp = await fetch('/api/v1/sistema/ad/sincronizar', {
+					method: 'POST',
+					headers: headers
+				});
+				const data = await resp.json();
+				if (resp.ok && data.ok) {
+					mostrarToastNotificacion('✅ ' + (data.mensaje || 'Active Directory sincronizado exitosamente.'), 'success');
+				} else {
+					mostrarToastNotificacion('⚠️ ' + (data.mensaje || 'No se pudo sincronizar con Active Directory.'), 'error');
+				}
+			} catch (err) {
+				mostrarToastNotificacion('❌ Error de red al sincronizar con Active Directory: ' + err.message, 'error');
+			} finally {
+				if (btn) {
+					btn.disabled = false;
+					btn.innerHTML = originalHtml;
+				}
+			}
+		}
+
+		function mostrarToastNotificacion(mensaje, tipo) {
+			const container = document.querySelector('.kanban-toast-container') || document.body;
+			const toast = document.createElement('div');
+			toast.className = 'kanban-toast ' + (tipo === 'error' ? 'toast-error' : 'toast-success');
+			toast.textContent = mensaje;
+			toast.style.zIndex = '9999';
+			container.appendChild(toast);
+			setTimeout(() => {
+				toast.style.transition = 'opacity 0.4s ease';
+				toast.style.opacity = '0';
+				setTimeout(() => toast.remove(), 400);
+			}, 5000);
 		}
 
 		function escapeHtmlConcil(str) {

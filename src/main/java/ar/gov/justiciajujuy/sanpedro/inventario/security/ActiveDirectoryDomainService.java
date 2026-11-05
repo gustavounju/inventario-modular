@@ -38,7 +38,8 @@ public class ActiveDirectoryDomainService {
 	private static final int MIN_QUERY_LENGTH = 2;
 	private static final String ATTRIBUTE_NAME_PATTERN = "[a-zA-Z][a-zA-Z0-9-]*";
 	private static final long CIRCUIT_BREAKER_COOLDOWN_MS = 5_000L;
-	private static final long LISTAR_TAREAS_CACHE_TTL_MS = 60_000L;
+	private static final long LISTAR_TAREAS_CACHE_TTL_MS = 3_600_000L; // 1 hora de cache para proteger Active Directory
+	private static final long LISTAR_FUEROS_AD_CACHE_TTL_MS = 4 * 3_600_000L; // 4 horas de cache para OUs/Fueros
 
 	private final ActiveDirectoryProperties properties;
 	private final LdapOperations ldapOperations;
@@ -49,6 +50,8 @@ public class ActiveDirectoryDomainService {
 	private final ConcurrentMap<String, String> nombreVisibleCache = new ConcurrentHashMap<>();
 	private volatile DominioUsuarios cachedUsuariosTareas;
 	private volatile long cachedUsuariosTareasUntilMs = 0L;
+	private volatile List<String> cachedOusAd;
+	private volatile long cachedOusAdUntilMs = 0L;
 	private volatile long circuitOpenUntilMs = 0L;
 
 	@Autowired
@@ -458,12 +461,15 @@ public class ActiveDirectoryDomainService {
 	 * Obtiene todas las Unidades Organizativas (OUs) de Active Directory que representan fueros, juzgados y áreas.
 	 */
 	public List<String> listarFuerosDesdeAd() {
+		long now = System.currentTimeMillis();
+		if (this.cachedOusAd != null && now < this.cachedOusAdUntilMs) {
+			return this.cachedOusAd;
+		}
 		LdapRuntimeConfig config = currentConfig();
 		LdapOperations operations = currentOperations(config);
 		if (!config.enabled() || operations == null) {
 			return List.of();
 		}
-		long now = System.currentTimeMillis();
 		if (runtimeLdapClientFactory != null && now < this.circuitOpenUntilMs) {
 			return List.of();
 		}
@@ -482,12 +488,15 @@ public class ActiveDirectoryDomainService {
 						}
 						return ouAttr != null && ouAttr.get() != null ? String.valueOf(ouAttr.get()).trim() : null;
 					});
-			return ous.stream()
+			List<String> result = ous.stream()
 					.filter(StringUtils::hasText)
 					.filter(ou -> !OUS_IGNORADAS.contains(ou.toUpperCase()))
 					.distinct()
 					.sorted(String.CASE_INSENSITIVE_ORDER)
 					.toList();
+			this.cachedOusAd = result;
+			this.cachedOusAdUntilMs = now + LISTAR_FUEROS_AD_CACHE_TTL_MS;
+			return result;
 		} catch (RuntimeException exception) {
 			if (runtimeLdapClientFactory != null) {
 				this.circuitOpenUntilMs = now + CIRCUIT_BREAKER_COOLDOWN_MS;
@@ -719,5 +728,25 @@ public class ActiveDirectoryDomainService {
 	}
 
 	public record UsuarioDominio(String username, String nombreVisible, String fuero) {
+	}
+	/**
+	 * Invalida todos los caches en memoria de Active Directory para forzar una sincronizacion fresca.
+	 */
+	public synchronized void invalidarCache() {
+		this.cachedUsuariosTareas = null;
+		this.cachedUsuariosTareasUntilMs = 0L;
+		this.cachedOusAd = null;
+		this.cachedOusAdUntilMs = 0L;
+		this.circuitOpenUntilMs = 0L;
+		this.fueroUsuarioCache.clear();
+		this.nombreVisibleCache.clear();
+	}
+
+	/**
+	 * Fuerza la sincronizacion y recarga inmediata de usuarios/solicitantes desde Active Directory.
+	 */
+	public DominioUsuarios forzarRecargaUsuariosParaTareas() {
+		invalidarCache();
+		return listarUsuariosParaTareas();
 	}
 }

@@ -146,6 +146,40 @@ public class TareaTecnicaPageController {
 		return tareaConciliacionService.aplicar(tareaIds);
 	}
 
+	@PostMapping("/api/v1/sistema/ad/sincronizar")
+	@ResponseBody
+	public org.springframework.http.ResponseEntity<Map<String, Object>> sincronizarActiveDirectory(
+			@AuthenticationPrincipal UserDetails userDetails) {
+		if (userDetails == null) {
+			return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED)
+					.body(Map.of("ok", false, "mensaje", "Debe iniciar sesion."));
+		}
+		boolean esAdmin = authorizationService.esAdministrador(userDetails);
+		boolean puedeTareas = authorizationService.tienePermiso(userDetails, "TAREAS", PERMISO_EDITAR)
+				|| authorizationService.tienePermiso(userDetails, "TAREAS", "ADMINISTRAR")
+				|| authorizationService.tienePermiso(userDetails, "SISTEMA", "ADMINISTRAR");
+		if (!esAdmin && !puedeTareas) {
+			return org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+					.body(Map.of("ok", false, "mensaje", "No posee permisos para sincronizar con Active Directory."));
+		}
+
+		fueroService.invalidarCache();
+		activeDirectoryDomainService.invalidarCache();
+
+		List<String> fueros = fueroService.listarFueros();
+		var usuariosDominio = activeDirectoryDomainService.listarUsuariosParaTareas();
+		int totalUsuarios = (usuariosDominio != null && usuariosDominio.usuarios() != null)
+				? usuariosDominio.usuarios().size()
+				: 0;
+
+		return org.springframework.http.ResponseEntity.ok(Map.of(
+				"ok", true,
+				"fuerosCount", fueros.size(),
+				"usuariosCount", totalUsuarios,
+				"mensaje", "Active Directory sincronizado exitosamente (" + fueros.size() + " fueros/OUs y " + totalUsuarios + " solicitantes actualizados)."
+		));
+	}
+
 	@GetMapping("/api/v1/tareas/estadisticas-rendimiento")
 	@ResponseBody
 	public EstadisticasRendimientoTecnico obtenerEstadisticasRendimiento(

@@ -78,7 +78,7 @@ public class FueroService {
 			Map.entry("SIGJ", "Sistemas SIGJ")
 	);
 
-	private static final long CACHE_TTL_SECONDS = 60;
+	private static final long CACHE_TTL_SECONDS = 4 * 3600; // 4 horas para proteger Active Directory
 
 	private final ActiveDirectoryDomainService activeDirectoryDomainService;
 	private final UbicacionRepository ubicacionRepository;
@@ -152,6 +152,22 @@ public class FueroService {
 		cachedFueros = resultado;
 		cacheLoadedAt = now;
 		return resultado;
+	}
+
+	/**
+	 * Invalida el cache en memoria para permitir una recarga fresca desde Active Directory.
+	 */
+	public synchronized void invalidarCache() {
+		this.cachedFueros = null;
+		this.cacheLoadedAt = Instant.EPOCH;
+	}
+
+	/**
+	 * Fuerza la sincronizacion y recarga inmediata de fueros y OUs desde Active Directory.
+	 */
+	public List<String> forzarRecargaFueros() {
+		invalidarCache();
+		return listarFueros();
 	}
 
 	/**
