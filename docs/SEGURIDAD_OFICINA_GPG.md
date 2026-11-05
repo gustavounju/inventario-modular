@@ -73,3 +73,4 @@ Copia el bloque completo `-----BEGIN PGP PUBLIC KEY BLOCK----- ... -----END PGP 
 * **⚡ Optimización Active Directory:**
   * Cache automático de 4 horas para fueros y 1 hora para usuarios.
   * Botón manual de sincronización en el visor y panel general para cuando quieras refrescar al instante.
+
