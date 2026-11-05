@@ -51,7 +51,9 @@ public class SecurityConfig {
 			ObjectProvider<AuthenticationProvider> authenticationProviders,
 			LoginAttemptService loginAttemptService,
 			AuthorizationService authorizationService,
-			SetupFilter setupFilter) throws Exception {
+			SetupFilter setupFilter,
+			ar.gov.justiciajujuy.sanpedro.inventario.security.LockdownService lockdownService,
+			ObjectProvider<ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService> auditoriaServiceProvider) throws Exception {
 		authenticationProviders.orderedStream().forEach(http::authenticationProvider);
 
 		http
@@ -59,6 +61,7 @@ public class SecurityConfig {
 			.addFilterBefore(new LanOnlyAccessFilter(networkAccessProperties), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new TokenAuthenticationFilter(reportToken), UsernamePasswordAuthenticationFilter.class)
 			.addFilterBefore(new LoginRateLimitFilter(loginAttemptService), UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(new ar.gov.justiciajujuy.sanpedro.inventario.security.LockdownFilter(lockdownService, authorizationService), UsernamePasswordAuthenticationFilter.class)
 			.csrf(csrf -> csrf
 				.ignoringRequestMatchers(
 					"/api/v1/equipos/inventario",
@@ -125,11 +128,21 @@ public class SecurityConfig {
 					response.sendRedirect(request.getContextPath() + destino);
 				})
 				.failureHandler((request, response, exception) -> {
-					loginAttemptService.loginFailed(request.getParameter("username"), request.getRemoteAddr());
-					LOGGER.warn("Login fallido para usuario {} desde {}: {}",
-							request.getParameter("username"),
-							request.getRemoteAddr(),
-							exception.getMessage());
+					String username = request.getParameter("username");
+					String remoteAddr = request.getRemoteAddr();
+					loginAttemptService.loginFailed(username, remoteAddr);
+					if (loginAttemptService.isBlocked(username, remoteAddr)) {
+						LOGGER.error("ALERTA SEGURIDAD: IP {} bloqueada temporalmente por intentos fallidos de login para usuario {}", remoteAddr, username);
+						try {
+							var audit = auditoriaServiceProvider.getIfAvailable();
+							if (audit != null) {
+								audit.registrar("SEGURIDAD", "BLOQUEO_BRUTE_FORCE", "IP", null,
+										"IP " + remoteAddr + " bloqueada por 5 minutos tras reiterados intentos fallidos de login (usuario intentado: " + username + ")");
+							}
+						} catch (Exception ignored) {}
+					} else {
+						LOGGER.warn("Login fallido para usuario {} desde {}: {}", username, remoteAddr, exception.getMessage());
+					}
 					response.sendRedirect(request.getContextPath()
 							+ ("movil".equals(request.getParameter("destino")) ? "/movil/login?error" : "/login?error"));
 				})

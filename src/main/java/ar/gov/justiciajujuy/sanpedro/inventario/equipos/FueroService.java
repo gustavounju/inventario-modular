@@ -247,8 +247,4 @@ public class FueroService {
 		return fueroNormalizado;
 	}
 
-	public void invalidarCache() {
-		this.cachedFueros = null;
-		this.cacheLoadedAt = Instant.EPOCH;
-	}
 }

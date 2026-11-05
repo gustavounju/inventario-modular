@@ -33,16 +33,57 @@ public class SistemaConfigController {
 	private final LdapConfigurationService ldapConfigurationService;
 	private final RuntimeLdapClientFactory runtimeLdapClientFactory;
 	private final UsuarioManagementService usuarioManagementService;
+	private final ar.gov.justiciajujuy.sanpedro.inventario.security.LockdownService lockdownService;
+	private final ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService auditoriaService;
 
 	public SistemaConfigController(
 			AuthorizationService authorizationService,
 			LdapConfigurationService ldapConfigurationService,
 			RuntimeLdapClientFactory runtimeLdapClientFactory,
-			UsuarioManagementService usuarioManagementService) {
+			UsuarioManagementService usuarioManagementService,
+			ar.gov.justiciajujuy.sanpedro.inventario.security.LockdownService lockdownService,
+			ar.gov.justiciajujuy.sanpedro.inventario.auditoria.AuditoriaService auditoriaService) {
 		this.authorizationService = authorizationService;
 		this.ldapConfigurationService = ldapConfigurationService;
 		this.runtimeLdapClientFactory = runtimeLdapClientFactory;
 		this.usuarioManagementService = usuarioManagementService;
+		this.lockdownService = lockdownService;
+		this.auditoriaService = auditoriaService;
+	}
+
+	@PostMapping("/api/v1/sistema/lockdown")
+	@org.springframework.web.bind.annotation.ResponseBody
+	public org.springframework.http.ResponseEntity<java.util.Map<String, Object>> toggleLockdown(
+			@org.springframework.web.bind.annotation.RequestParam(required = false) Boolean active,
+			@org.springframework.web.bind.annotation.RequestParam(required = false) String reason,
+			@AuthenticationPrincipal UserDetails userDetails) {
+		requireAdmin(userDetails);
+		boolean activar = active != null ? active : !lockdownService.isActive();
+		String usuario = userDetails != null ? userDetails.getUsername() : "Administrador";
+		String motivo = (reason != null && !reason.isBlank()) ? reason.trim() : "Activación preventiva de seguridad";
+
+		if (activar) {
+			lockdownService.activate(usuario, motivo);
+			auditoriaService.registrar("SEGURIDAD", "LOCKDOWN_ACTIVADO", "Sistema", null,
+					"Modo Lockdown / Pánico ACTIVADO por @" + usuario + ". Motivo: " + motivo);
+		} else {
+			lockdownService.deactivate(usuario);
+			auditoriaService.registrar("SEGURIDAD", "LOCKDOWN_DESACTIVADO", "Sistema", null,
+					"Modo Lockdown / Pánico DESACTIVADO por @" + usuario);
+		}
+
+		return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+				"ok", true,
+				"lockdown", lockdownService.isActive(),
+				"mensaje", activar ? "🚨 MODO LOCKDOWN ACTIVADO: El sistema quedó restringido exclusivamente a Administradores."
+				                   : "✅ MODO LOCKDOWN DESACTIVADO: El sistema volvió a operar con normalidad."
+		));
+	}
+
+	@GetMapping("/api/v1/sistema/lockdown/estado")
+	@org.springframework.web.bind.annotation.ResponseBody
+	public java.util.Map<String, Object> estadoLockdown() {
+		return lockdownService.estado();
 	}
 
 	@GetMapping("/admin/sistema/ad")

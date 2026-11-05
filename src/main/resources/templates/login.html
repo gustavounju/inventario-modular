@@ -31,6 +31,7 @@
 			<p class="error-message" th:if="${hasError}">Usuario o clave incorrectos.</p>
 			<p class="error-message" th:if="${blocked}">Demasiados intentos fallidos. Espere unos minutos antes de
 				volver a ingresar.</p>
+			<p class="error-message" th:if="${param.lockdown != null}" style="background:#fee2e2; border-left:4px solid #ef4444; padding:10px; color:#991b1b; font-weight:700;">🚨 MODO LOCKDOWN / SEGURIDAD ACTIVO: El sistema se encuentra en resguardo preventivo. Solo administradores autorizados pueden acceder.</p>
 
 			<form class="login-form" th:action="@{/login}" method="post">
 				<label>
