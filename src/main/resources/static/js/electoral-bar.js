@@ -767,6 +767,7 @@
 			const tareas = itemObj.tareas || [];
 			const color = itemObj.color || '#2563eb';
 			const iconoTipo = orbitType === 'fuero' ? '🏛️ Fuero' : '👤 Usuario';
+			const isAdmin = document.body.dataset.isAdmin === 'true';
 
 			const panel = document.createElement('div');
 			panel.className = 'electoral-segment-panel';
@@ -779,11 +780,24 @@
 			} else {
 				rowsHtml = `
 					<div class="electoral-segment-list">
-						${tareas.map(t => `
-							<div class="electoral-segment-item" data-task-id="${t.id}">
+						${tareas.map(t => {
+							const isClosedOrCancelled = t.estado === 'CERRADA' || t.estado === 'CANCELADA';
+							const hasTech = t.responsable && t.responsable !== 'Sin asignar';
+							const inDom = !!document.getElementById(`kcard-${t.id}`);
+							const estadoBadge = t.estado === 'CERRADA'
+								? `<span class="electoral-segment-status is-closed">✔ Terminada</span>`
+								: (t.estado === 'CANCELADA'
+									? `<span class="electoral-segment-status is-cancelled">✕ Cancelada</span>`
+									: (t.estado === 'EN_PROCESO'
+										? `<span class="electoral-segment-status is-in-progress">⚙️ En proceso</span>`
+										: `<span class="electoral-segment-status is-pending">🆕 Nueva</span>`));
+
+							return `
+							<div class="electoral-segment-item" data-task-id="${t.id}" data-task-fecha="${escapeHtml(t.fecha || '')}" data-task-resp="${escapeHtml(t.responsable || '')}">
 								<div class="electoral-segment-item-top">
 									<span class="electoral-segment-id">#${t.id}</span>
-									<strong class="electoral-segment-title">${escapeHtml(t.titulo || 'Sin título')}</strong>
+									<strong class="electoral-segment-title" title="${escapeHtml(t.titulo || 'Sin título')}">${escapeHtml(t.titulo || 'Sin título')}</strong>
+									${estadoBadge}
 									<span class="electoral-segment-date">${escapeHtml(t.fecha || '')}</span>
 								</div>
 								<div class="electoral-segment-item-meta">
@@ -793,8 +807,29 @@
 									<span>🏛️ ${escapeHtml(t.fuero || '—')}</span>
 									${t.observacionesCierre ? `<span class="electoral-segment-note">✔ ${escapeHtml(t.observacionesCierre)}</span>` : ''}
 								</div>
+								<div class="electoral-segment-item-actions">
+									<button type="button" class="electoral-segment-btn is-board" data-action="ver-tablero" title="${inDom ? 'Resaltar y desplazarse a esta tarea en el tablero' : 'Abrir el tablero en la fecha de esta tarea'}">
+										📌 ${inDom ? 'Ver en tablero' : 'Ir a fecha en tablero'}
+									</button>
+									${isAdmin && !isClosedOrCancelled ? `
+										<button type="button" class="electoral-segment-btn is-resolve" data-action="terminar" title="Marcar tarea como terminada / resuelta">✔ Terminar</button>
+										<button type="button" class="electoral-segment-btn is-assign" data-action="asignar" title="Asignar o cambiar técnico responsable">✋ ${hasTech ? 'Reasignar' : 'Tomar / Asignar'}</button>
+										${hasTech ? `<button type="button" class="electoral-segment-btn is-release" data-action="soltar" title="Devolver a columna Nuevas (sin asignar)">⏏ Soltar</button>` : ''}
+										<button type="button" class="electoral-segment-btn is-cancel" data-action="cancelar" title="Cancelar tarea">✕ Cancelar</button>
+									` : ''}
+									${isAdmin ? `
+										<button type="button" class="electoral-segment-btn is-comment" data-action="comentar" title="Agregar un comentario o avance a la tarea">💬 Comentar</button>
+									` : ''}
+								</div>
+								${isAdmin ? `
+								<form class="electoral-segment-comment-box" data-comment-form="${t.id}" hidden>
+									<input type="text" name="comentario" class="electoral-segment-comment-input" placeholder="Escribí un comentario o avance para #${t.id}..." required maxlength="500" />
+									<button type="submit" class="electoral-segment-comment-send">Enviar</button>
+								</form>
+								` : ''}
 							</div>
-						`).join('')}
+							`;
+						}).join('')}
 					</div>
 				`;
 			}
@@ -819,15 +854,150 @@
 				limpiarFiltroTablero();
 			});
 
-			// Al hacer clic en una tarea del listado, si está en el tablero actual, hacer scroll hacia ella
-			panel.querySelectorAll('.electoral-segment-item').forEach(row => {
-				row.addEventListener('click', () => {
-					const tid = row.getAttribute('data-task-id');
-					const cardEl = document.getElementById(`kcard-${tid}`);
-					if (cardEl) {
-						cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			const getCsrfHeaders = () => {
+				const token = document.querySelector('meta[name="csrf-token"]')?.content;
+				const header = document.querySelector('meta[name="csrf-header"]')?.content;
+				const headers = {};
+				if (token && header) headers[header] = token;
+				return headers;
+			};
+
+			const enfocarTareaEnTablero = (tid, rawFecha) => {
+				const cardEl = document.getElementById(`kcard-${tid}`);
+				if (cardEl) {
+					cardEl.classList.remove('is-filtered-out');
+					cardEl.classList.add('is-highlighted-tech');
+					cardEl.style.setProperty('--tech-highlight-color', color);
+					document.querySelectorAll('.kcard.is-focused-card').forEach(c => c.classList.remove('is-focused-card'));
+					cardEl.classList.add('is-focused-card');
+					cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					setTimeout(() => cardEl.classList.remove('is-focused-card'), 3500);
+					return;
+				}
+				// Si no está en el DOM actual (ej. tarea cerrada de otra fecha en vista Semana/Mes/Histórico), ir a esa fecha
+				const base = document.body.dataset.base || '/';
+				if (rawFecha) {
+					const m = rawFecha.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+					if (m) {
+						const isoDate = `${m[3]}-${m[2]}-${m[1]}`;
+						window.location.href = `${base}admin/tareas/visor?fecha=${isoDate}#kcard-${tid}`;
+						return;
 					}
+				}
+				window.location.href = `${base}admin/tareas/visor?todas=true#kcard-${tid}`;
+			};
+
+			panel.querySelectorAll('.electoral-segment-item').forEach(row => {
+				const tid = row.getAttribute('data-task-id');
+				const rawFecha = row.getAttribute('data-task-fecha') || '';
+				const rawResp = row.getAttribute('data-task-resp') || '';
+				const currentResp = rawResp !== 'Sin asignar' ? rawResp : '';
+				const base = document.body.dataset.base || '/';
+
+				// Clic en el cuerpo de la tarjeta enfoca en el tablero
+				row.addEventListener('click', e => {
+					if (e.target.closest('button') || e.target.closest('form') || e.target.closest('input')) {
+						return;
+					}
+					enfocarTareaEnTablero(tid, rawFecha);
 				});
+
+				// Botones de acción rápida
+				row.querySelectorAll('.electoral-segment-btn').forEach(btn => {
+					btn.addEventListener('click', e => {
+						e.stopPropagation();
+						const action = btn.getAttribute('data-action');
+
+						if (action === 'ver-tablero') {
+							enfocarTareaEnTablero(tid, rawFecha);
+						} else if (action === 'terminar') {
+							const modal = document.getElementById('modal-dnd-resolver');
+							const form = document.getElementById('form-dnd-resolver');
+							if (modal && form) {
+								form.action = `${base}admin/tareas/${tid}/estado`;
+								form.reset();
+								if (currentResp) {
+									const select = form.querySelector('select[name="responsable"]');
+									if (select && Array.from(select.options).some(o => o.value === currentResp)) {
+										select.value = currentResp;
+									}
+								}
+								modal.showModal();
+							}
+						} else if (action === 'asignar') {
+							const modal = document.getElementById('modal-dnd-asignar');
+							const form = document.getElementById('form-dnd-asignar');
+							if (modal && form) {
+								form.action = `${base}admin/tareas/${tid}/tomar`;
+								form.reset();
+								if (currentResp) {
+									const select = form.querySelector('select[name="responsable"]');
+									if (select && Array.from(select.options).some(o => o.value === currentResp)) {
+										select.value = currentResp;
+									}
+								}
+								modal.showModal();
+							}
+						} else if (action === 'soltar') {
+							if (confirm(`¿Devolver la tarea #${tid} al estado Nueva (sin asignar)?`)) {
+								fetch(`${base}admin/tareas/${tid}/soltar`, {
+									method: 'POST',
+									headers: getCsrfHeaders(),
+									body: new URLSearchParams({ origen: 'visor' })
+								}).then(r => {
+									if (r.ok) location.reload();
+									else alert('Error al soltar la tarea.');
+								});
+							}
+						} else if (action === 'cancelar') {
+							const modal = document.getElementById('modal-dnd-cancelar');
+							const form = document.getElementById('form-dnd-cancelar');
+							if (modal && form) {
+								form.action = `${base}admin/tareas/${tid}/estado`;
+								form.reset();
+								modal.showModal();
+							}
+						} else if (action === 'comentar') {
+							const commentForm = row.querySelector('.electoral-segment-comment-box');
+							if (commentForm) {
+								commentForm.hidden = !commentForm.hidden;
+								if (!commentForm.hidden) {
+									commentForm.querySelector('input[name="comentario"]')?.focus();
+								}
+							}
+						}
+					});
+				});
+
+				// Envío de comentario inline
+				const commentForm = row.querySelector('.electoral-segment-comment-box');
+				if (commentForm) {
+					commentForm.addEventListener('submit', e => {
+						e.preventDefault();
+						e.stopPropagation();
+						const input = commentForm.querySelector('input[name="comentario"]');
+						const texto = input ? input.value.trim() : '';
+						if (!texto) return;
+						const submitBtn = commentForm.querySelector('button[type="submit"]');
+						if (submitBtn) submitBtn.disabled = true;
+
+						fetch(`${base}admin/tareas/${tid}/comentarios`, {
+							method: 'POST',
+							headers: getCsrfHeaders(),
+							body: new URLSearchParams({ comentario: texto, origen: 'visor' })
+						}).then(r => {
+							if (r.ok) {
+								location.reload();
+							} else {
+								alert('No se pudo guardar el comentario.');
+								if (submitBtn) submitBtn.disabled = false;
+							}
+						}).catch(() => {
+							alert('Error de red al guardar el comentario.');
+							if (submitBtn) submitBtn.disabled = false;
+						});
+					});
+				}
 			});
 
 			widget.appendChild(panel);
@@ -900,5 +1070,17 @@
 
 		// Carga inicial de datos enriquecidos
 		cargarRendimiento(currentRange);
+
+		// Si se navegó hacia una tarjeta específica (#kcard-123), enfocarla y hacer scroll
+		if (window.location.hash && window.location.hash.startsWith('#kcard-')) {
+			const targetCard = document.querySelector(window.location.hash);
+			if (targetCard) {
+				setTimeout(() => {
+					targetCard.classList.add('is-highlighted-tech', 'is-focused-card');
+					targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					setTimeout(() => targetCard.classList.remove('is-focused-card'), 4000);
+				}, 250);
+			}
+		}
 	});
 })();

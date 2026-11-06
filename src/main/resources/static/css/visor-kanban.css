@@ -1938,3 +1938,187 @@ body[data-is-admin="false"] .kcard:active {
 	color: #64748b;
 	margin: 4px 0;
 }
+
+.electoral-segment-status {
+	font-size: 0.68rem;
+	font-weight: 700;
+	padding: 1px 6px;
+	border-radius: 9999px;
+	flex-shrink: 0;
+}
+
+.electoral-segment-status.is-closed {
+	background: rgba(16, 185, 129, 0.14);
+	color: #047857;
+}
+
+.electoral-segment-status.is-cancelled {
+	background: rgba(239, 68, 68, 0.14);
+	color: #b91c1c;
+}
+
+.electoral-segment-status.is-in-progress {
+	background: rgba(245, 158, 11, 0.16);
+	color: #b45309;
+}
+
+.electoral-segment-status.is-pending {
+	background: rgba(59, 130, 246, 0.14);
+	color: #1d4ed8;
+}
+
+:root[data-theme="dark"] .electoral-segment-status.is-closed {
+	color: #34d399;
+}
+:root[data-theme="dark"] .electoral-segment-status.is-cancelled {
+	color: #f87171;
+}
+:root[data-theme="dark"] .electoral-segment-status.is-in-progress {
+	color: #fbbf24;
+}
+:root[data-theme="dark"] .electoral-segment-status.is-pending {
+	color: #60a5fa;
+}
+
+.electoral-segment-item-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 5px;
+	margin-top: 4px;
+	padding-top: 5px;
+	border-top: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.electoral-segment-btn {
+	appearance: none;
+	border: 1px solid #cbd5e1;
+	background: #f8fafc;
+	color: #1e293b;
+	font-size: 0.7rem;
+	font-weight: 600;
+	padding: 2px 7px;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: all 0.14s ease;
+}
+
+.electoral-segment-btn:hover {
+	transform: translateY(-1px);
+	filter: brightness(0.97);
+}
+
+.electoral-segment-btn.is-board {
+	border-color: rgba(37, 99, 235, 0.35);
+	background: rgba(37, 99, 235, 0.08);
+	color: #1d4ed8;
+}
+
+.electoral-segment-btn.is-resolve {
+	border-color: rgba(16, 185, 129, 0.4);
+	background: rgba(16, 185, 129, 0.12);
+	color: #047857;
+}
+
+.electoral-segment-btn.is-assign {
+	border-color: rgba(245, 158, 11, 0.4);
+	background: rgba(245, 158, 11, 0.12);
+	color: #b45309;
+}
+
+.electoral-segment-btn.is-release {
+	border-color: rgba(100, 116, 139, 0.4);
+	background: rgba(100, 116, 139, 0.1);
+	color: #475569;
+}
+
+.electoral-segment-btn.is-cancel {
+	border-color: rgba(239, 68, 68, 0.35);
+	background: rgba(239, 68, 68, 0.09);
+	color: #b91c1c;
+}
+
+.electoral-segment-btn.is-comment {
+	border-color: rgba(139, 92, 246, 0.35);
+	background: rgba(139, 92, 246, 0.09);
+	color: #6d28d9;
+}
+
+:root[data-theme="dark"] .electoral-segment-btn {
+	background: #0f172a;
+	border-color: #334155;
+	color: #e2e8f0;
+}
+:root[data-theme="dark"] .electoral-segment-btn.is-board {
+	color: #60a5fa;
+	border-color: rgba(96, 165, 250, 0.4);
+}
+:root[data-theme="dark"] .electoral-segment-btn.is-resolve {
+	color: #34d399;
+	border-color: rgba(52, 211, 153, 0.4);
+}
+:root[data-theme="dark"] .electoral-segment-btn.is-assign {
+	color: #fbbf24;
+	border-color: rgba(251, 191, 36, 0.4);
+}
+:root[data-theme="dark"] .electoral-segment-btn.is-cancel {
+	color: #f87171;
+	border-color: rgba(248, 113, 113, 0.4);
+}
+:root[data-theme="dark"] .electoral-segment-btn.is-comment {
+	color: #c4b5fd;
+	border-color: rgba(196, 181, 253, 0.4);
+}
+
+.electoral-segment-comment-box {
+	display: flex;
+	gap: 6px;
+	margin-top: 5px;
+}
+
+.electoral-segment-comment-box[hidden] {
+	display: none !important;
+}
+
+.electoral-segment-comment-input {
+	flex: 1;
+	font-size: 0.74rem;
+	padding: 4px 8px;
+	border: 1px solid #cbd5e1;
+	border-radius: 5px;
+	background: #ffffff;
+	color: #0f172a;
+}
+
+:root[data-theme="dark"] .electoral-segment-comment-input {
+	background: #0f172a;
+	border-color: #475569;
+	color: #f8fafc;
+}
+
+.electoral-segment-comment-send {
+	background: #2563eb;
+	color: #ffffff;
+	border: none;
+	border-radius: 5px;
+	padding: 4px 10px;
+	font-size: 0.72rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+@keyframes kcardFocusPulse {
+	0%, 100% {
+		box-shadow: 0 0 0 3px #2563eb, 0 8px 20px rgba(37, 99, 235, 0.28);
+		transform: scale(1.015);
+	}
+	50% {
+		box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.55), 0 12px 26px rgba(37, 99, 235, 0.4);
+		transform: scale(1.025);
+	}
+}
+
+.kcard.is-focused-card {
+	animation: kcardFocusPulse 0.9s ease-in-out 3;
+	z-index: 15;
+}

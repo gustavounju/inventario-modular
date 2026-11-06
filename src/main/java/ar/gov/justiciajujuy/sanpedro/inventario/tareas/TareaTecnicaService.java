@@ -116,12 +116,43 @@ public class TareaTecnicaService {
 
 	@Transactional(readOnly = true)
 	public List<TareaTecnicaDetalle> buscarPorFecha(LocalDate fecha, EstadoTareaTecnica estado, Long equipoId, String responsable) {
-		LocalDate targetFecha = (fecha != null) ? fecha : LocalDate.now();
+		LocalDate hoy = LocalDate.now();
+		LocalDate targetFecha = (fecha != null) ? fecha : hoy;
 		LocalDateTime desde = targetFecha.atStartOfDay();
 		LocalDateTime hasta = targetFecha.plusDays(1).atStartOfDay();
 		String filtroResponsable = StringUtils.hasText(responsable) ? responsable.trim() : null;
-		return tareaTecnicaRepository.buscarPorFecha(desde, hasta, estado, equipoId, filtroResponsable)
-				.stream()
+		List<TareaTecnica> delDia = tareaTecnicaRepository.buscarPorFecha(desde, hasta, estado, equipoId, filtroResponsable);
+
+		// Si se consulta el día de HOY, incluir también las tareas activas (PENDIENTE / EN_PROCESO) de días anteriores
+		// para que el tablero Kanban muestre siempre las tareas abiertas que aún no se terminaron.
+		if (targetFecha.equals(hoy) && estado != EstadoTareaTecnica.CERRADA && estado != EstadoTareaTecnica.CANCELADA) {
+			List<TareaTecnica> activas = tareaTecnicaRepository.buscarActivasParaVisor();
+			java.util.Map<Long, TareaTecnica> unificadas = new java.util.LinkedHashMap<>();
+			for (TareaTecnica t : delDia) {
+				unificadas.put(t.getId(), t);
+			}
+			for (TareaTecnica t : activas) {
+				if (estado != null && t.getEstado() != estado) continue;
+				if (equipoId != null && (t.getEquipo() == null || !equipoId.equals(t.getEquipo().getId()))) continue;
+				if (filtroResponsable != null) {
+					String q = filtroResponsable.toLowerCase();
+					boolean match = (t.getTitulo() != null && t.getTitulo().toLowerCase().contains(q))
+							|| (t.getDescripcion() != null && t.getDescripcion().toLowerCase().contains(q))
+							|| (t.getSolicitanteUsername() != null && t.getSolicitanteUsername().toLowerCase().contains(q))
+							|| (t.getSolicitanteNombre() != null && t.getSolicitanteNombre().toLowerCase().contains(q))
+							|| (t.getSolicitanteFuero() != null && t.getSolicitanteFuero().toLowerCase().contains(q))
+							|| (t.getResponsable() != null && t.getResponsable().toLowerCase().contains(q))
+							|| (t.getEquipo() != null && t.getEquipo().getNombre() != null && t.getEquipo().getNombre().toLowerCase().contains(q));
+					if (!match) continue;
+				}
+				unificadas.putIfAbsent(t.getId(), t);
+			}
+			return unificadas.values().stream()
+					.map(this::toDetalle)
+					.toList();
+		}
+
+		return delDia.stream()
 				.map(this::toDetalle)
 				.toList();
 	}
