@@ -51,6 +51,7 @@ public class ActiveDirectoryDomainService {
 	private volatile DominioUsuarios cachedUsuariosTareas;
 	private volatile long cachedUsuariosTareasUntilMs = 0L;
 	private volatile List<String> cachedOusAd;
+	private volatile Map<String, List<String>> cachedJerarquiaOus = Map.of();
 	private volatile long cachedOusAdUntilMs = 0L;
 	private volatile long circuitOpenUntilMs = 0L;
 
@@ -459,6 +460,7 @@ public class ActiveDirectoryDomainService {
 
 	/**
 	 * Obtiene todas las Unidades Organizativas (OUs) de Active Directory que representan fueros, juzgados y áreas.
+	 * En la misma única consulta LDAP reconstruye también la jerarquía padre -> subdependencias (ej. Juzgado de Familia -> Vocalía 7, 8, 9).
 	 */
 	public List<String> listarFuerosDesdeAd() {
 		long now = System.currentTimeMillis();
@@ -476,25 +478,52 @@ public class ActiveDirectoryDomainService {
 		try {
 			SearchControls controls = new SearchControls();
 			controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-			controls.setReturningAttributes(new String[] { "ou", "name" });
-			List<String> ous = operations.search(
+			controls.setReturningAttributes(new String[] { "ou", "name", "distinguishedName" });
+			List<String[]> rawEntries = operations.search(
 					"",
 					"(objectClass=organizationalUnit)",
 					controls,
-					(AttributesMapper<String>) attrs -> {
+					(AttributesMapper<String[]>) attrs -> {
 						Attribute ouAttr = attrs.get("ou");
 						if (ouAttr == null || ouAttr.get() == null) {
 							ouAttr = attrs.get("name");
 						}
-						return ouAttr != null && ouAttr.get() != null ? String.valueOf(ouAttr.get()).trim() : null;
+						String name = ouAttr != null && ouAttr.get() != null ? String.valueOf(ouAttr.get()).trim() : null;
+						String dn = firstText(attrs, "distinguishedName", null);
+						return new String[] { name, dn };
 					});
+
+			List<String> ous = new ArrayList<>();
+			Map<String, List<String>> jerarquia = new HashMap<>();
+
+			for (String[] entry : rawEntries) {
+				String ouName = entry[0];
+				String dn = entry[1];
+				if (StringUtils.hasText(ouName) && !OUS_IGNORADAS.contains(ouName.toUpperCase())) {
+					ous.add(ouName);
+				}
+				if (StringUtils.hasText(dn)) {
+					List<String> ruta = extraerRutaJerarquicaDesdeDn(dn);
+					if (!ruta.isEmpty()) {
+						String fueroPadre = ruta.get(0);
+						String subDep = ruta.size() > 1
+								? String.join(" - ", ruta.subList(1, ruta.size()))
+								: "";
+						List<String> par = List.of(fueroPadre, subDep);
+						String hoja = ruta.get(ruta.size() - 1).toLowerCase();
+						jerarquia.putIfAbsent(hoja, par);
+						String rutaCompleta = String.join(" - ", ruta).toLowerCase();
+						jerarquia.put(rutaCompleta, par);
+					}
+				}
+			}
+
 			List<String> result = ous.stream()
-					.filter(StringUtils::hasText)
-					.filter(ou -> !OUS_IGNORADAS.contains(ou.toUpperCase()))
 					.distinct()
 					.sorted(String.CASE_INSENSITIVE_ORDER)
 					.toList();
 			this.cachedOusAd = result;
+			this.cachedJerarquiaOus = Map.copyOf(jerarquia);
 			this.cachedOusAdUntilMs = now + LISTAR_FUEROS_AD_CACHE_TTL_MS;
 			return result;
 		} catch (RuntimeException exception) {
@@ -504,6 +533,52 @@ public class ActiveDirectoryDomainService {
 			LOGGER.warn("No se pudieron consultar las Unidades Organizativas (OUs) en Active Directory: {}", exception.getMessage());
 			return List.of();
 		}
+	}
+
+	/**
+	 * Devuelve la jerarquía cacheada de OUs de Active Directory (clave normalizada -> [fueroPadre, subDependencia]).
+	 * No dispara nuevas consultas al AD si el caché de 4 horas ya está vigente.
+	 */
+	public Map<String, List<String>> obtenerJerarquiaOusDesdeAd() {
+		long now = System.currentTimeMillis();
+		if (this.cachedOusAd == null || now >= this.cachedOusAdUntilMs) {
+			listarFuerosDesdeAd();
+		}
+		return this.cachedJerarquiaOus != null ? this.cachedJerarquiaOus : Map.of();
+	}
+
+	/**
+	 * Fuerza una única recarga manual de la estructura jerárquica de OUs/Fueros desde Active Directory.
+	 */
+	public Map<String, List<String>> forzarRecargaJerarquiaOus() {
+		this.cachedOusAd = null;
+		this.cachedJerarquiaOus = Map.of();
+		this.cachedOusAdUntilMs = 0L;
+		this.circuitOpenUntilMs = 0L;
+		listarFuerosDesdeAd();
+		return this.cachedJerarquiaOus != null ? this.cachedJerarquiaOus : Map.of();
+	}
+
+	/**
+	 * Extrae la lista ordenada de OUs (de padre general a hijo específico) desde un distinguishedName.
+	 */
+	public static List<String> extraerRutaJerarquicaDesdeDn(String dn) {
+		if (!StringUtils.hasText(dn)) {
+			return List.of();
+		}
+		String[] parts = dn.split(",");
+		List<String> ous = new ArrayList<>();
+		for (String part : parts) {
+			String p = part.trim();
+			if (p.toUpperCase().startsWith("OU=")) {
+				String ouName = p.substring(3).trim();
+				if (!OUS_IGNORADAS.contains(ouName.toUpperCase())) {
+					ous.add(ouName);
+				}
+			}
+		}
+		java.util.Collections.reverse(ous);
+		return ous;
 	}
 
 	/**
@@ -736,6 +811,7 @@ public class ActiveDirectoryDomainService {
 		this.cachedUsuariosTareas = null;
 		this.cachedUsuariosTareasUntilMs = 0L;
 		this.cachedOusAd = null;
+		this.cachedJerarquiaOus = Map.of();
 		this.cachedOusAdUntilMs = 0L;
 		this.circuitOpenUntilMs = 0L;
 		this.fueroUsuarioCache.clear();

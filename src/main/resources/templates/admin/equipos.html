@@ -7,6 +7,7 @@
 	<meta name="_csrf_header" th:content="${_csrf.headerName}">
 	<title>Equipos - Inventario Modular</title>
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
+	<link rel="stylesheet" th:href="@{/css/plano-equipos.css}">
 </head>
 <body>
 	<main class="shell shell-wide">
@@ -67,7 +68,11 @@
 						<a class="secondary-action" th:if="${(estadoFiltro != null and estadoFiltro != '') or (query != null and query != '')}" th:href="@{/admin/equipos}" style="height: 42px; display: inline-flex; align-items: center;">Limpiar Filtro</a>
 					</form>
 
-					<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+					<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+						<div class="view-switcher-bar" role="group" aria-label="Modo de visualización">
+							<button type="button" id="btn-vista-plano" class="view-switch-btn is-active" title="Ver croquis visual por edificios, pisos y oficinas">🏢 Plano Físico</button>
+							<button type="button" id="btn-vista-tabla" class="view-switch-btn" title="Ver listado detallado en tabla">📋 Tabla Clásica</button>
+						</div>
 						<button class="primary-action" onclick="document.getElementById('modal-impresora').showModal()" style="background-color: #3b82f6; color: #fff;">🖨️ Registrar Impresora</button>
 						<button class="primary-action" onclick="document.getElementById('modal-taller').showModal()" style="background-color: #fb923c; color: #fff;">🛠️ Armar PC Taller</button>
 					</div>
@@ -77,7 +82,39 @@
 					Todavía no hay equipos para mostrar con los filtros aplicados.
 				</p>
 
-				<div class="responsive-table" th:if="${!#lists.isEmpty(equipos.equipos)}">
+				<!-- Vista 1: Plano Físico / Estructura por Fuero y Oficinas (Croquis Visual) -->
+				<div id="vista-plano-container" class="plano-wrapper" th:if="${!#lists.isEmpty(equipos.equipos)}">
+					<div class="plano-toolbar">
+						<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+							<div class="view-switcher-bar" role="group" aria-label="Agrupación principal del plano">
+								<button type="button" id="btn-group-fuero" class="view-switch-btn is-active" title="Agrupar por Fuero dominante (ej. Juzgado de Familia → Vocalías 7, 8, 9)">🏛️ Por Fuero</button>
+								<button type="button" id="btn-group-piso" class="view-switch-btn" title="Agrupar por disposición física (Edificios y Pisos)">🏢 Por Piso</button>
+							</div>
+							<div id="plano-floor-tabs" class="plano-floor-tabs" aria-label="Selector rápido de grupos"></div>
+						</div>
+						<div class="plano-controls-right">
+							<input id="plano-quick-search" type="search" class="plano-quick-search" placeholder="🔎 Filtrar en vivo en el plano..." aria-label="Filtrar en vivo en el plano">
+							<button type="button" id="btn-plano-connections" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem; border-color: #0ea5e9; color: #0284c7;" title="Mostrar u ocultar líneas de conexión entre PCs e Impresoras de Red">🔗 Conexiones</button>
+							<button type="button" id="btn-plano-compact" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem;">📐 Modo Compacto</button>
+							<button type="button" id="btn-sync-ad-estructura" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem; border-color: #0284c7; color: #0284c7;" title="Sincronizar manualmente la jerarquía de Fueros y Vocalías desde Active Directory (caché de 4h)">🔄 Sincronizar Estructura AD</button>
+							<div class="plano-legend" aria-label="Leyenda de estados">
+								<span class="plano-legend-item"><span class="plano-led is-sincronizado"></span> Sincronizado</span>
+								<span class="plano-legend-item"><span class="plano-led is-pendiente"></span> Pendiente</span>
+								<span class="plano-legend-item"><span class="plano-led is-impresora"></span> Impresora</span>
+								<span class="plano-legend-item"><span class="plano-led is-taller"></span> Taller</span>
+							</div>
+						</div>
+					</div>
+					<div id="plano-sync-banner" style="display:none; padding: 8px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;"></div>
+					<div id="plano-fuero-bar" class="plano-fuero-bar" aria-label="Filtro rápido"></div>
+					<div id="plano-stage" class="plano-stage">
+						<svg id="plano-connections-svg" class="plano-connections-svg" aria-hidden="true"></svg>
+						<div id="plano-canvas" style="display: flex; flex-direction: column; gap: 18px;"></div>
+					</div>
+				</div>
+
+				<!-- Vista 2: Tabla Clásica -->
+				<div id="vista-tabla-container" class="responsive-table" style="display: none;" th:if="${!#lists.isEmpty(equipos.equipos)}">
 					<table>
 						<thead>
 							<tr>
@@ -457,5 +494,11 @@
 			window.location.href = url.toString();
 		}
 	</script>
+	<script th:inline="javascript">
+		/*<![CDATA[*/
+		window.PLANO_EQUIPOS_DATA = /*[[${planoEquipos}]]*/ [];
+		/*]]>*/
+	</script>
+	<script th:src="@{/js/plano-equipos.js}"></script>
 </body>
 </html>

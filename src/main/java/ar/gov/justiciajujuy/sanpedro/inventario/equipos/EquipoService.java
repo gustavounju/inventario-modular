@@ -580,6 +580,41 @@ public class EquipoService {
 				equipo.getEstadoCiclo());
 	}
 
+	@Transactional(readOnly = true)
+	public java.util.Map<Long, ConexionImpresoraResumen> obtenerConexionesImpresora() {
+		var mapa = new java.util.HashMap<Long, ConexionImpresoraResumen>();
+		for (Equipo eq : equipoRepository.findAll()) {
+			if (eq.getId() == null) continue;
+			Equipo impRed = eq.getImpresoraRedAsignada();
+			Long impRedId = impRed != null ? impRed.getId() : null;
+			String impRedNombre = impRed != null ? impRed.getNombre() : null;
+			String impRedIp = impRed != null ? impRed.getIp() : null;
+			boolean enRed = eq.isImpresoraEnRed() || impRedId != null || StringUtils.hasText(eq.getImpresoraIp());
+			String nombreImp = StringUtils.hasText(impRedNombre)
+					? impRedNombre
+					: (StringUtils.hasText(eq.getImpresora()) ? eq.getImpresora().trim() : null);
+			String ipImp = StringUtils.hasText(impRedIp)
+					? impRedIp
+					: (StringUtils.hasText(eq.getImpresoraIp()) ? eq.getImpresoraIp().trim() : null);
+
+			if (enRed || StringUtils.hasText(nombreImp)) {
+				mapa.put(eq.getId(), new ConexionImpresoraResumen(
+						enRed ? "RED" : "LOCAL",
+						nombreImp,
+						ipImp,
+						impRedId));
+			}
+		}
+		return mapa;
+	}
+
+	public record ConexionImpresoraResumen(
+			String tipo,
+			String nombre,
+			String ip,
+			Long impresoraRedId) {
+	}
+
 	private String normalizarNombre(String nombre) {
 		return nombre.trim().toUpperCase();
 	}

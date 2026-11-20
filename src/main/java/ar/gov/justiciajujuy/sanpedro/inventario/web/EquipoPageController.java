@@ -313,11 +313,204 @@ public class EquipoPageController {
 		model.addAttribute("puedeVerStock", authorizationService.tienePermiso(userDetails, "STOCK", PERMISO_VER));
 		model.addAttribute("puedeVerActas", authorizationService.tienePermiso(userDetails, "ACTAS", PERMISO_VER));
 		model.addAttribute("puedeVerDiferencias", authorizationService.tienePermiso(userDetails, MODULO_COMPONENTES, PERMISO_VER));
+		var ubicacionesActivas = ubicacionService.activas();
+		var jerarquiaAd = activeDirectoryDomainService != null
+				? activeDirectoryDomainService.obtenerJerarquiaOusDesdeAd()
+				: Map.<String, List<String>>of();
+		var conexionesImpresora = equipoService.obtenerConexionesImpresora();
+		var planoEquipos = construirPlanoEquipos(listaOrdenada, ubicacionesActivas, equiposConGemelo, nombresUsuarios, jerarquiaAd, conexionesImpresora);
+
 		model.addAttribute("fuerosDisponibles", fueroService.listarFueros());
-		model.addAttribute("ubicacionesActivas", ubicacionService.activas());
+		model.addAttribute("ubicacionesActivas", ubicacionesActivas);
 		model.addAttribute("nombresUsuarios", nombresUsuarios);
 		model.addAttribute("tecnicos", usuarioManagementService.listarTecnicosAsignables());
+		model.addAttribute("planoEquipos", planoEquipos);
 		return "admin/equipos";
+	}
+
+	@PostMapping("/admin/equipos/sincronizar-estructura-ad")
+	@org.springframework.web.bind.annotation.ResponseBody
+	public org.springframework.http.ResponseEntity<Map<String, Object>> sincronizarEstructuraAd(
+			@AuthenticationPrincipal UserDetails userDetails) {
+		if (!authorizationService.tienePermiso(userDetails, MODULO_EQUIPOS, PERMISO_VER)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permiso para sincronizar estructura AD.");
+		}
+		Map<String, List<String>> jerarquia = Map.of();
+		if (activeDirectoryDomainService != null) {
+			jerarquia = activeDirectoryDomainService.forzarRecargaJerarquiaOus();
+		}
+		fueroService.forzarRecargaFueros();
+		long fuerosPadre = jerarquia.values().stream()
+				.filter(p -> p != null && !p.isEmpty())
+				.map(p -> p.get(0))
+				.distinct()
+				.count();
+		String msg = jerarquia.isEmpty()
+				? "Active Directory no devolvió OUs (entorno local o LDAP desactivado). Se mantiene la estructura por fuero y ubicación."
+				: "Estructura AD sincronizada: " + fuerosPadre + " fueros principales y " + jerarquia.size() + " nodos jerárquicos actualizados en caché (4h).";
+		return org.springframework.http.ResponseEntity.ok(Map.of(
+				"ok", true,
+				"ousEncontradas", jerarquia.size(),
+				"fuerosPadre", fuerosPadre,
+				"mensaje", msg));
+	}
+
+	private List<Map<String, Object>> construirPlanoEquipos(
+			List<EquipoService.EquipoResumen> listaOrdenada,
+			List<UbicacionService.UbicacionDetalle> ubicacionesActivas,
+			Set<Long> equiposConGemelo,
+			Map<String, String> nombresUsuarios,
+			Map<String, List<String>> jerarquiaAd,
+			Map<Long, EquipoService.ConexionImpresoraResumen> conexionesImpresora) {
+		var porNombreUbicacion = new java.util.HashMap<String, UbicacionService.UbicacionDetalle>();
+		var porFueroUbicacion = new java.util.HashMap<String, UbicacionService.UbicacionDetalle>();
+		if (ubicacionesActivas != null) {
+			for (var u : ubicacionesActivas) {
+				if (org.springframework.util.StringUtils.hasText(u.nombre())) {
+					porNombreUbicacion.putIfAbsent(u.nombre().trim().toLowerCase(Locale.ROOT), u);
+				}
+				if (org.springframework.util.StringUtils.hasText(u.fuero())) {
+					porFueroUbicacion.putIfAbsent(u.fuero().trim().toLowerCase(Locale.ROOT), u);
+				}
+			}
+		}
+
+		var fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm");
+		List<Map<String, Object>> items = new ArrayList<>(listaOrdenada.size());
+		for (var eq : listaOrdenada) {
+			String ubRaw = org.springframework.util.StringUtils.hasText(eq.ubicacion()) ? eq.ubicacion().trim() : "";
+			String fueroRaw = org.springframework.util.StringUtils.hasText(eq.fuero()) ? eq.fuero().trim() : "Sin fuero";
+
+			UbicacionService.UbicacionDetalle ubMatch = null;
+			if (!ubRaw.isEmpty()) {
+				ubMatch = porNombreUbicacion.get(ubRaw.toLowerCase(Locale.ROOT));
+			}
+			if (ubMatch == null && !fueroRaw.isEmpty()) {
+				ubMatch = porFueroUbicacion.get(fueroRaw.toLowerCase(Locale.ROOT));
+			}
+
+			String edificio;
+			String piso;
+			String responsableOficina = "";
+			String ubicacionFisica = "";
+			if (ubMatch != null && (org.springframework.util.StringUtils.hasText(ubMatch.edificio()) || org.springframework.util.StringUtils.hasText(ubMatch.piso()))) {
+				edificio = org.springframework.util.StringUtils.hasText(ubMatch.edificio()) ? ubMatch.edificio().trim() : "Edificio Principal";
+				piso = org.springframework.util.StringUtils.hasText(ubMatch.piso()) ? ubMatch.piso().trim() : "Planta General";
+				responsableOficina = org.springframework.util.StringUtils.hasText(ubMatch.responsable()) ? ubMatch.responsable().trim() : "";
+				ubicacionFisica = edificio + " · " + piso;
+			} else {
+				edificio = "Distribución General";
+				piso = "Oficinas por Fuero";
+				if (ubMatch != null && org.springframework.util.StringUtils.hasText(ubMatch.responsable())) {
+					responsableOficina = ubMatch.responsable().trim();
+				}
+			}
+
+			// Resolución de Estructura Dominante: Fuero Padre -> Sub-dependencia / Vocalía
+			String fueroPadre = fueroRaw;
+			String subDependencia = !ubRaw.isEmpty() ? ubRaw : "General";
+
+			List<String> rutaAd = null;
+			if (jerarquiaAd != null && !jerarquiaAd.isEmpty()) {
+				if (!fueroRaw.isEmpty()) {
+					rutaAd = jerarquiaAd.get(fueroRaw.toLowerCase(Locale.ROOT));
+				}
+				if (rutaAd == null && !ubRaw.isEmpty()) {
+					rutaAd = jerarquiaAd.get(ubRaw.toLowerCase(Locale.ROOT));
+				}
+			}
+
+			if (rutaAd != null && !rutaAd.isEmpty()) {
+				fueroPadre = rutaAd.get(0);
+				if (rutaAd.size() > 1 && org.springframework.util.StringUtils.hasText(rutaAd.get(1))) {
+					subDependencia = rutaAd.get(1);
+				} else if (!ubRaw.isEmpty() && !ubRaw.equalsIgnoreCase(fueroPadre)) {
+					subDependencia = ubRaw;
+				} else {
+					subDependencia = "Sede Principal";
+				}
+			} else if (fueroRaw.contains(" - ")) {
+				int idx = fueroRaw.indexOf(" - ");
+				fueroPadre = fueroRaw.substring(0, idx).trim();
+				String resto = fueroRaw.substring(idx + 3).trim();
+				subDependencia = !resto.isEmpty() ? resto : (!ubRaw.isEmpty() ? ubRaw : "General");
+			} else if (fueroRaw.contains(" / ")) {
+				int idx = fueroRaw.indexOf(" / ");
+				fueroPadre = fueroRaw.substring(0, idx).trim();
+				String resto = fueroRaw.substring(idx + 3).trim();
+				subDependencia = !resto.isEmpty() ? resto : (!ubRaw.isEmpty() ? ubRaw : "General");
+			} else if (ubRaw.isEmpty() || ubRaw.equalsIgnoreCase(fueroRaw)) {
+				subDependencia = "Sede Principal";
+			}
+
+			String oficina = !ubRaw.isEmpty() ? ubRaw : fueroRaw;
+			boolean esImpresora = "Impresora de Red".equals(eq.sistemaOperativo());
+			boolean tieneGemelo = equiposConGemelo != null && equiposConGemelo.contains(eq.id());
+
+			String estadoCodigo;
+			String estadoLabel;
+			if (esImpresora) {
+				estadoCodigo = "IMPRESORA";
+				estadoLabel = "Impresora de Red";
+			} else if (eq.ultimoReporteEn() != null && tieneGemelo) {
+				estadoCodigo = "SINCRONIZADO";
+				estadoLabel = "Gemelo Sincronizado";
+			} else if (eq.ultimoReporteEn() != null) {
+				estadoCodigo = "PENDIENTE";
+				estadoLabel = "Pendiente Gemelo";
+			} else if (eq.estadoCiclo() != null && "EN_ARMADO".equals(eq.estadoCiclo().name())) {
+				estadoCodigo = "TALLER";
+				estadoLabel = "En Armado";
+			} else if (eq.estadoCiclo() != null && "DISPONIBLE".equals(eq.estadoCiclo().name())) {
+				estadoCodigo = "DISPONIBLE";
+				estadoLabel = "PC Disponible";
+			} else {
+				estadoCodigo = "ESPERANDO";
+				estadoLabel = "Esperando Script";
+			}
+
+			String usuarioRaw = org.springframework.util.StringUtils.hasText(eq.ultimoUsuario()) ? eq.ultimoUsuario().trim() : "";
+			String usuarioVisible = "";
+			if (!esImpresora && !usuarioRaw.isEmpty() && !"Sin asignar".equalsIgnoreCase(usuarioRaw)) {
+				usuarioVisible = (nombresUsuarios != null && nombresUsuarios.containsKey(usuarioRaw))
+						? nombresUsuarios.get(usuarioRaw)
+						: usuarioRaw;
+			}
+
+			var m = new java.util.LinkedHashMap<String, Object>();
+			m.put("id", eq.id());
+			m.put("nombre", eq.nombre() != null ? eq.nombre() : "Sin nombre");
+			m.put("fuero", fueroRaw);
+			m.put("fueroPadre", fueroPadre);
+			m.put("subDependencia", subDependencia);
+			m.put("oficina", oficina);
+			m.put("edificio", edificio);
+			m.put("piso", piso);
+			m.put("ubicacionFisica", ubicacionFisica);
+			m.put("responsableOficina", responsableOficina);
+			m.put("usuario", usuarioVisible);
+			m.put("usuarioRaw", usuarioRaw);
+			m.put("ip", eq.ip() != null ? eq.ip() : "");
+			m.put("mac", eq.mac() != null ? eq.mac() : "");
+			m.put("so", eq.sistemaOperativo() != null ? eq.sistemaOperativo() : "Sin dato");
+			m.put("sn", eq.motherboardSerial() != null ? eq.motherboardSerial() : "");
+			m.put("esImpresora", esImpresora);
+			m.put("tieneGemelo", tieneGemelo);
+			m.put("estadoCodigo", estadoCodigo);
+			m.put("estadoLabel", estadoLabel);
+			m.put("ultimoReporte", eq.ultimoReporteEn() != null ? eq.ultimoReporteEn().format(fmt) : "");
+
+			EquipoService.ConexionImpresoraResumen impConn = (!esImpresora && conexionesImpresora != null)
+					? conexionesImpresora.get(eq.id())
+					: null;
+			m.put("impresoraTipo", impConn != null ? impConn.tipo() : "");
+			m.put("impresoraNombre", impConn != null && impConn.nombre() != null ? impConn.nombre() : "");
+			m.put("impresoraIp", impConn != null && impConn.ip() != null ? impConn.ip() : "");
+			m.put("impresoraRedId", impConn != null ? impConn.impresoraRedId() : null);
+
+			items.add(m);
+		}
+		return items;
 	}
 
 	@org.springframework.web.bind.annotation.GetMapping("/admin/equipos/{id:\\d+}/acta")
