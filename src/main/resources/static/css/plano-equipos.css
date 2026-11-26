@@ -290,9 +290,52 @@
 /* Grilla de Oficinas / Salas dentro del piso */
 .plano-rooms-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
 	gap: 16px;
 	align-items: start;
+}
+
+/* Grilla de Puestos de Trabajo dentro de cada Oficina */
+.plano-desks-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+	gap: 12px;
+}
+
+.plano-wrapper.is-compact .plano-desks-grid {
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: 8px;
+}
+
+/* Puesto de Trabajo (Tarjeta Técnica Organizada) */
+.plano-desk {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 12px 14px;
+	border-radius: 10px !important;
+	background: var(--bg-card, #ffffff);
+	border: 1px solid var(--border-color, #cbd5e1);
+	border-left: 4px solid #0284c7;
+	text-decoration: none;
+	color: inherit;
+	position: relative;
+	cursor: pointer;
+	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+	transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.plano-desk.is-state-sincronizado {
+	border-left-color: #16a34a;
+}
+
+.plano-desk.is-state-pendiente {
+	border-left-color: #d97706;
+}
+
+.plano-desk.is-state-taller {
+	border-left-color: #ea580c;
 }
 
 /* Recinto / Habitación arquitectónica (Oficina) */
@@ -900,52 +943,65 @@ body.equipos-fullscreen-active .summary-grid .metric-card-value {
 
 /* En pantalla completa: más espacio para Fueros, Dependencias y Características */
 body.equipos-fullscreen-active .plano-rooms-grid {
-	grid-template-columns: repeat(auto-fill, minmax(410px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
 	gap: 16px;
 }
 
 body.equipos-fullscreen-active .plano-desks-grid {
-	grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
-	gap: 10px;
+	grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+	gap: 12px;
 }
 
 body.equipos-fullscreen-active .plano-wrapper.is-compact .plano-desks-grid {
-	grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
-	gap: 6px;
+	grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+	gap: 8px;
 }
 
-/* Bloque de características técnicas visibles directamente dentro de cada tarjeta de equipo */
-.plano-desk-specs {
+/* Grilla interna 2x2 de especificaciones dentro de cada tarjeta de equipo */
+.plano-desk-specs-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 5px 10px;
+	padding: 7px 9px;
+	background: var(--bg-subtle, #f1f5f9);
+	border: 1px solid rgba(148, 163, 184, 0.22);
+	border-radius: 7px;
+	font-size: 0.72rem;
+}
+
+:root[data-theme="dark"] .plano-desk-specs-grid {
+	background: rgba(15, 23, 42, 0.55);
+	border-color: rgba(148, 163, 184, 0.2);
+}
+
+.plano-desk-spec-item {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-	margin-top: 2px;
+	flex-direction: column;
+	min-width: 0;
 }
 
-.plano-desk-spec-pill {
-	display: inline-flex;
-	align-items: center;
-	gap: 3px;
-	font-size: 0.65rem;
+.plano-desk-spec-label {
+	font-size: 0.62rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	color: var(--text-muted, #64748b);
+	letter-spacing: 0.03em;
+}
+
+.plano-desk-spec-value {
+	font-size: 0.74rem;
 	font-weight: 700;
-	padding: 1px 6px;
-	border-radius: 5px;
-	background: rgba(148, 163, 184, 0.14);
-	color: var(--text-secondary, #334155);
-	border: 1px solid rgba(148, 163, 184, 0.25);
-	max-width: 100%;
+	color: var(--text-primary, #0f172a);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
-:root[data-theme="dark"] .plano-desk-spec-pill {
-	background: rgba(15, 23, 42, 0.65);
-	color: #cbd5e1;
-	border-color: rgba(148, 163, 184, 0.24);
+.plano-desk-spec-value.is-mono {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.plano-wrapper.is-compact .plano-desk-specs {
+.plano-wrapper.is-compact .plano-desk-specs-grid {
 	display: none;
 }
 
@@ -1365,35 +1421,61 @@ body.equipos-fullscreen-active .plano-wrapper.is-compact .plano-desks-grid {
 
 .taller-matrix-table {
 	width: 100%;
+	min-width: 860px;
 	border-collapse: collapse;
 	font-size: 0.82rem;
+	table-layout: auto;
+}
+
+.taller-matrix-table th,
+.taller-matrix-table td {
+	overflow-wrap: normal !important;
+	word-break: normal !important;
+	hyphens: none !important;
 }
 
 .taller-matrix-table th {
 	text-align: left;
-	padding: 8px 12px;
-	font-size: 0.72rem;
-	font-weight: 800;
+	padding: 9px 12px !important;
+	font-size: 0.72rem !important;
+	font-weight: 800 !important;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	color: var(--text-muted, #526a78);
-	background: rgba(148, 163, 184, 0.08);
-	border-bottom: 1px solid var(--table-border, #d4e3e9);
+	color: var(--text-muted, #526a78) !important;
+	background: rgba(148, 163, 184, 0.08) !important;
+	border-bottom: 1px solid var(--table-border, #d4e3e9) !important;
+	white-space: nowrap;
 }
 
 .taller-matrix-table td {
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--table-border, #d4e3e9);
-	vertical-align: middle;
-	color: var(--text-primary, #102b3a);
+	padding: 10px 12px !important;
+	border-bottom: 1px solid var(--table-border, #d4e3e9) !important;
+	vertical-align: middle !important;
+	color: var(--text-primary, #102b3a) !important;
+}
+
+/* Evitar que nombres de host, IPs, estados o botones se partan en sílabas verticales */
+.taller-matrix-table td:nth-child(1),
+.taller-matrix-table td:nth-child(3),
+.taller-matrix-table td:nth-child(6),
+.taller-matrix-table td:nth-child(7) {
+	white-space: nowrap;
+}
+
+.taller-matrix-table td:nth-child(4) {
+	min-width: 150px;
+}
+
+.taller-matrix-table td:nth-child(5) {
+	min-width: 200px;
 }
 
 .taller-matrix-table tbody tr:last-child td {
-	border-bottom: none;
+	border-bottom: none !important;
 }
 
 .taller-matrix-table tbody tr:hover {
-	background: var(--table-row-hover, #f2f9fc);
+	background: var(--table-row-hover, #f2f9fc) !important;
 }
 
 .taller-host-link {
@@ -1403,6 +1485,7 @@ body.equipos-fullscreen-active .plano-wrapper.is-compact .plano-desks-grid {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
+	white-space: nowrap;
 }
 
 .taller-host-link:hover {

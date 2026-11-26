@@ -65,7 +65,7 @@
 		const btnCompact = document.getElementById('btn-plano-compact');
 
 		let groupBy = localStorage.getItem(STORAGE_GROUP_KEY) || 'fuero';
-		let subMode = localStorage.getItem(STORAGE_SUBMODE_KEY) || 'matriz'; // 'matriz' | 'croquis'
+		let subMode = 'croquis'; // Por defecto tarjetas técnicas organizadas con conexiones SVG
 		let showMosaico = true; // Nivel 1 por defecto: Mosaico general de tarjetas de fueros
 		let activeFloor = 'ALL';
 		let activeFuero = 'ALL';
@@ -679,8 +679,14 @@
 
 		function buildDeskTile(item) {
 			const isPinned = pinnedPrinterItem && String(pinnedPrinterItem.id) === String(item.id);
+			const stateClass = item.esImpresora
+				? ' is-impresora'
+				: (item.estadoCodigo === 'SINCRONIZADO' || item.estadoCodigo === 'DISPONIBLE'
+					? ' is-state-sincronizado'
+					: (item.estadoCodigo === 'PENDIENTE' ? ' is-state-pendiente' : (item.estadoCodigo === 'TALLER' ? ' is-state-taller' : '')));
+
 			const desk = document.createElement(item.esImpresora ? 'button' : 'a');
-			desk.className = 'plano-desk' + (item.esImpresora ? ' is-impresora' : '') + (isPinned ? ' is-pinned-printer' : '');
+			desk.className = 'plano-desk' + stateClass + (isPinned ? ' is-pinned-printer' : '');
 			desk.setAttribute('data-equipo-id', String(item.id));
 			if (item.esImpresora) {
 				desk.type = 'button';
@@ -697,49 +703,48 @@
 
 			const connectedPcsCount = item.esImpresora ? getConnectedPcItemsGlobal(item).length : 0;
 			const userText = item.esImpresora
-				? ('🌐 Impresora de Red · 🔗 ' + connectedPcsCount + ' PC' + (connectedPcsCount === 1 ? ' conectada' : 's conectadas'))
-				: (item.usuario ? item.usuario : '⚠️ Sin asignar');
+				? ('🌐 Impresora en Red · 🔗 ' + connectedPcsCount + ' PC' + (connectedPcsCount === 1 ? ' conectada' : 's conectadas'))
+				: (item.usuario ? ('👤 ' + item.usuario) : '⚠️ Sin usuario asignado');
 			const userClass = (!item.esImpresora && !item.usuario) ? 'plano-desk-user is-unassigned' : 'plano-desk-user';
 
-			let specsHtml = '<div class="plano-desk-specs">';
-			if (!item.esImpresora && item.so && item.so !== 'Sin dato') {
-				specsHtml += '<span class="plano-desk-spec-pill" title="Sistema Operativo">💿 ' + esc(item.so) + '</span>';
-			}
-			if (item.mac) {
-				specsHtml += '<span class="plano-desk-spec-pill" title="Dirección MAC">🔌 ' + esc(item.mac) + '</span>';
-			} else if (item.sn) {
-				specsHtml += '<span class="plano-desk-spec-pill" title="Serie Motherboard / Activo">🔢 ' + esc(item.sn) + '</span>';
-			}
-			if (item.ultimoReporte) {
-				specsHtml += '<span class="plano-desk-spec-pill" title="Último reporte">🕒 ' + esc(item.ultimoReporte) + '</span>';
-			}
-			specsHtml += '</div>';
+			const ipVal = item.ip || 'Sin IP';
+			const soVal = item.esImpresora ? 'Impresora Red' : (item.so && item.so !== 'Sin dato' ? item.so.replace('Microsoft ', '') : 'Sin SO');
+			const hwLabel = item.mac ? 'MAC' : 'S/N';
+			const hwVal = item.mac ? item.mac : (item.sn || '—');
+			const repVal = item.ultimoReporte ? item.ultimoReporte : item.estadoLabel;
+
+			const specsGridHtml = ''
+				+ '<div class="plano-desk-specs-grid">'
+				+ '  <div class="plano-desk-spec-item"><span class="plano-desk-spec-label">Dirección IP</span><span class="plano-desk-spec-value is-mono" title="' + esc(ipVal) + '">' + esc(ipVal) + '</span></div>'
+				+ '  <div class="plano-desk-spec-item"><span class="plano-desk-spec-label">Sistema</span><span class="plano-desk-spec-value" title="' + esc(soVal) + '">' + esc(soVal) + '</span></div>'
+				+ '  <div class="plano-desk-spec-item"><span class="plano-desk-spec-label">' + hwLabel + '</span><span class="plano-desk-spec-value is-mono" title="' + esc(hwVal) + '">' + esc(hwVal) + '</span></div>'
+				+ '  <div class="plano-desk-spec-item"><span class="plano-desk-spec-label">Estado / Rep.</span><span class="plano-desk-spec-value" title="' + esc(repVal) + '">' + esc(repVal) + '</span></div>'
+				+ '</div>';
 
 			let prBadge = '';
-			if (!item.esImpresora && item.impresoraTipo === 'RED') {
+			if (item.esImpresora) {
+				prBadge = '<div class="plano-desk-printer is-red" title="Clic para resaltar qué PCs están conectadas a esta impresora">🔍 <span>Clic para resaltar PCs conectadas (' + connectedPcsCount + ')</span></div>';
+			} else if (item.impresoraTipo === 'RED') {
 				const target = item.impresoraNombre || item.impresoraIp || 'En Red';
-				prBadge = '<div class="plano-desk-printer is-red" title="Imprime por RED en: ' + esc(target) + '">🌐 <span>RED: ' + esc(target) + '</span></div>';
-			} else if (!item.esImpresora && item.impresoraTipo === 'LOCAL') {
+				prBadge = '<div class="plano-desk-printer is-red" title="Imprime por RED en: ' + esc(target) + '">🌐 <span>RED → ' + esc(target) + '</span></div>';
+			} else if (item.impresoraTipo === 'LOCAL') {
 				const target = item.impresoraNombre || 'USB Local';
-				prBadge = '<div class="plano-desk-printer is-local" title="Impresora USB conectada a esta PC: ' + esc(target) + '">🔌 <span>USB: ' + esc(target) + '</span></div>';
+				prBadge = '<div class="plano-desk-printer is-local" title="Impresora USB conectada a esta PC: ' + esc(target) + '">🔌 <span>USB → ' + esc(target) + '</span></div>';
+			} else {
+				prBadge = '<div class="plano-desk-printer" style="background:rgba(148,163,184,0.1);color:var(--text-muted);border:1px dashed rgba(148,163,184,0.3);"><span>Sin impresora asociada</span></div>';
 			}
 
 			desk.innerHTML = ''
 				+ '<div class="plano-desk-top">'
 				+ '  <div class="plano-desk-name-wrap">'
 				+ '    <span class="plano-desk-icon">' + iconFor(item) + '</span>'
-				+ '    <span class="plano-desk-name">' + esc(item.nombre) + '</span>'
+				+ '    <span class="plano-desk-name" title="' + esc(item.nombre) + '">' + esc(item.nombre) + '</span>'
 				+ '  </div>'
 				+ '  <span class="plano-led ' + ledClassFor(item) + '" title="' + esc(item.estadoLabel) + '"></span>'
 				+ '</div>'
-				+ '<div class="' + userClass + '">' + esc(userText) + '</div>'
-				+ specsHtml
-				+ prBadge
-				+ '<div class="plano-desk-footer">'
-				+ '  <span class="plano-desk-ip">' + esc(item.ip || 'Sin IP') + '</span>'
-				+ (item.esImpresora ? '<span class="plano-desk-tag" style="background:rgba(2,132,199,0.18);color:#0284c7;">Ver PCs</span>' : '')
-				+ (item.estadoCodigo === 'PENDIENTE' ? '<span class="plano-desk-tag">Gemelo</span>' : '')
-				+ '</div>';
+				+ '<div class="' + userClass + '" title="' + esc(userText) + '">' + esc(userText) + '</div>'
+				+ specsGridHtml
+				+ prBadge;
 
 			deskElementsById.set(String(item.id), desk);
 			if (item.esImpresora && item.ip && item.ip.trim()) {
