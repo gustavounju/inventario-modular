@@ -500,6 +500,20 @@
 				: (item.usuario ? item.usuario : '⚠️ Sin asignar');
 			const userClass = (!item.esImpresora && !item.usuario) ? 'plano-desk-user is-unassigned' : 'plano-desk-user';
 
+			let specsHtml = '<div class="plano-desk-specs">';
+			if (!item.esImpresora && item.so && item.so !== 'Sin dato') {
+				specsHtml += '<span class="plano-desk-spec-pill" title="Sistema Operativo">💿 ' + esc(item.so) + '</span>';
+			}
+			if (item.mac) {
+				specsHtml += '<span class="plano-desk-spec-pill" title="Dirección MAC">🔌 ' + esc(item.mac) + '</span>';
+			} else if (item.sn) {
+				specsHtml += '<span class="plano-desk-spec-pill" title="Serie Motherboard / Activo">🔢 ' + esc(item.sn) + '</span>';
+			}
+			if (item.ultimoReporte) {
+				specsHtml += '<span class="plano-desk-spec-pill" title="Último reporte">🕒 ' + esc(item.ultimoReporte) + '</span>';
+			}
+			specsHtml += '</div>';
+
 			desk.innerHTML = ''
 				+ '<div class="plano-desk-top">'
 				+ '  <div class="plano-desk-name-wrap">'
@@ -509,6 +523,7 @@
 				+ '  <span class="plano-led ' + ledClassFor(item) + '" title="' + esc(item.estadoLabel) + '"></span>'
 				+ '</div>'
 				+ '<div class="' + userClass + '">' + esc(userText) + '</div>'
+				+ specsHtml
 				+ buildPrinterBadgeHtml(item)
 				+ '<div class="plano-desk-footer">'
 				+ '  <span class="plano-desk-ip">' + esc(item.ip || 'Sin IP') + '</span>'
@@ -842,7 +857,42 @@
 			}
 		});
 
-		// Inicialización
+		// SPEC-001: Control del Modal a Pantalla Completa para Equipos
+		const btnToggleFs = document.getElementById('btn-toggle-fullscreen-equipos');
+		function setFullscreenEquipos(enable) {
+			document.body.classList.toggle('equipos-fullscreen-active', enable);
+			if (btnToggleFs) {
+				btnToggleFs.classList.toggle('is-active', enable);
+				btnToggleFs.innerHTML = enable ? '🗗 Salir de Pantalla Completa' : '⛶ Pantalla Completa';
+			}
+			setTimeout(function () {
+				requestAnimationFrame(drawAmbientConnections);
+			}, 60);
+		}
+
+		if (btnToggleFs) {
+			btnToggleFs.addEventListener('click', function () {
+				const isCurrentlyFs = document.body.classList.contains('equipos-fullscreen-active');
+				setFullscreenEquipos(!isCurrentlyFs);
+			});
+		}
+
+		document.addEventListener('keydown', function (ev) {
+			if (ev.key === 'Escape') {
+				const anyDialogOpen = document.querySelector('dialog[open]');
+				if (!anyDialogOpen && document.body.classList.contains('equipos-fullscreen-active')) {
+					const sb = document.getElementById('app-sidebar');
+					if (sb && sb.classList.contains('is-open')) {
+						if (typeof window.toggleSidebar === 'function') window.toggleSidebar();
+					} else {
+						setFullscreenEquipos(false);
+					}
+				}
+			}
+		});
+
+		// Inicialización (por defecto siempre abre en modal a pantalla completa al hacer clic en Equipos)
+		setFullscreenEquipos(true);
 		applyCompactState();
 		applyConnButtonState();
 		setGroupBy(groupBy);

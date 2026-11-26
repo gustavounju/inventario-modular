@@ -9,10 +9,34 @@
 	<link rel="stylesheet" th:href="@{/css/admin.css}">
 	<link rel="stylesheet" th:href="@{/css/plano-equipos.css}">
 </head>
-<body>
-	<main class="shell shell-wide">
+<body class="equipos-fullscreen-active">
+	<main class="shell shell-wide equipos-modal-shell" id="equipos-modal-shell">
 		<section class="status-panel admin-users-panel" aria-labelledby="equipos-title">
 			<header th:replace="~{admin/nav :: topbar('', 'Inventario de Equipos', 'equipos')}"></header>
+
+			<!-- Cabecera del Modal a Pantalla Completa (SPEC-001) -->
+			<div class="equipos-fs-topbar" role="region" aria-label="Barra de control de pantalla completa">
+				<div class="equipos-fs-topbar-left">
+					<button type="button" class="equipos-fs-menu-btn" onclick="toggleSidebar()" title="Abrir menú de módulos">
+						☰ Menú
+					</button>
+					<a th:href="@{/admin}" class="equipos-fs-back-btn" title="Volver al Panel General">
+						⬅ Panel
+					</a>
+					<div class="equipos-fs-title-group">
+						<h2 class="equipos-fs-title">🖥️ Inventario de Equipos por Fueros</h2>
+						<span class="equipos-fs-subtitle">Vista expandida de Fueros, Dependencias y Características Técnicas</span>
+					</div>
+				</div>
+				<div class="equipos-fs-topbar-right">
+					<button type="button" class="equipos-fs-theme-btn" onclick="toggleTheme()" title="Alternar Tema Claro / Nocturno">
+						🌓 Tema
+					</button>
+					<button type="button" id="btn-toggle-fullscreen-equipos" class="equipos-fs-toggle-btn is-active" title="Alternar modal a pantalla completa (Tecla Esc)">
+						🗗 Salir de Pantalla Completa
+					</button>
+				</div>
+			</div>
 
 			<!-- Barra de Métricas Interactivas Compactas (Filtros directos por estado del gemelo digital) -->
 			<section class="summary-grid" aria-label="Resumen de equipos">
