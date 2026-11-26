@@ -950,136 +950,509 @@ body.equipos-fullscreen-active .plano-wrapper.is-compact .plano-desks-grid {
 }
 
 /* ==========================================================================
-   ACORDEÓN DESPLEGABLE POR CADA FUERO Y SELECTOR COMPACTO (SPEC-001 v2)
+   CONSOLA DE TALLER COMBINADA (SPEC-001 v3):
+   1) Mosaico de Tarjetas de Fueros (Propuesta B)
+   2) Explorador Maestro-Detalle Lateral (Propuesta A)
+   3) Matriz Técnica de Alta Densidad por Oficina + Croquis SVG (Propuesta C)
+   Paleta 100% Institucional Judicial (Azul Marino / Pizarra / Celeste Sobrio)
    ========================================================================== */
 
-.plano-fuero-bar {
+.plano-mosaico-nav-btn {
+	border: 1.5px solid #0284c7;
+	background: var(--bg-card, #ffffff);
+	color: #0284c7;
+	padding: 7px 14px;
+	border-radius: 9px;
+	font-size: 0.83rem;
+	font-weight: 800;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	transition: all 0.16s ease;
+}
+
+.plano-mosaico-nav-btn:hover,
+.plano-mosaico-nav-btn.is-active {
+	background: #0284c7;
+	color: #ffffff;
+	box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28);
+}
+
+:root[data-theme="dark"] .plano-mosaico-nav-btn {
+	background: #0b4258;
+	border-color: #38bdf8;
+	color: #7dd3fc;
+}
+
+:root[data-theme="dark"] .plano-mosaico-nav-btn:hover,
+:root[data-theme="dark"] .plano-mosaico-nav-btn.is-active {
+	background: #0284c7;
+	color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   NIVEL 1: MOSAICO GENERAL DE FUEROS (Sin scroll largo)
+   -------------------------------------------------------------------------- */
+.fuero-mosaico-wrapper {
 	display: flex;
-	flex-wrap: wrap;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.fuero-mosaico-header-bar {
+	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	flex-wrap: wrap;
 	gap: 10px;
-	padding: 8px 14px;
+	padding: 10px 16px;
 	background: var(--bg-card, #ffffff);
-	border: 1px solid var(--border-color, #e2e8f0);
+	border: 1px solid var(--border-color, #cbd5e1);
 	border-radius: 10px;
 }
 
-.plano-fuero-selector-group {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	flex-wrap: wrap;
-	flex: 1 1 320px;
-}
-
-.plano-fuero-selector-label {
-	font-size: 0.8rem;
+.fuero-mosaico-header-title {
+	font-size: 0.92rem;
 	font-weight: 800;
-	color: var(--text-secondary, #334155);
-	white-space: nowrap;
-}
-
-.plano-fuero-select {
-	padding: 7px 12px;
-	border-radius: 8px;
-	border: 1px solid var(--border-color, #cbd5e1);
-	background: var(--bg-subtle, #f8fafc);
 	color: var(--text-primary, #0f172a);
-	font-size: 0.84rem;
-	font-weight: 700;
-	min-width: 280px;
-	max-width: 100%;
-	cursor: pointer;
-}
-
-.plano-fuero-select:focus {
-	outline: none;
-	border-color: #0284c7;
-	box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
-}
-
-.plano-accordion-actions {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	flex-wrap: wrap;
 }
 
-.plano-acc-btn {
+.fuero-mosaico-header-hint {
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: var(--text-muted, #64748b);
+}
+
+.fuero-mosaico-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(305px, 1fr));
+	gap: 14px;
+	align-items: stretch;
+}
+
+.fuero-mosaico-card {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 16px 18px;
+	background: var(--bg-card, #ffffff);
 	border: 1px solid var(--border-color, #cbd5e1);
-	background: var(--bg-subtle, #f1f5f9);
-	color: var(--text-secondary, #334155);
-	padding: 6px 12px;
-	border-radius: 8px;
-	font-size: 0.77rem;
-	font-weight: 700;
+	border-top: 4px solid #0284c7;
+	border-radius: 12px;
 	cursor: pointer;
+	text-align: left;
+	transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.fuero-mosaico-card:hover {
+	transform: translateY(-2px);
+	border-color: #0284c7;
+	box-shadow: 0 10px 22px rgba(2, 132, 199, 0.15);
+}
+
+.fuero-mosaico-card.has-pending {
+	border-top-color: #d97706;
+}
+
+:root[data-theme="dark"] .fuero-mosaico-card {
+	background: #0b4258;
+	border-color: #2c6a82;
+	border-top-color: #38bdf8;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme="dark"] .fuero-mosaico-card.has-pending {
+	border-top-color: #f59e0b;
+}
+
+:root[data-theme="dark"] .fuero-mosaico-card:hover {
+	background: #105371;
+	border-color: #38bdf8;
+}
+
+.fuero-mosaico-card-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.fuero-mosaico-name {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 800;
+	color: var(--text-primary, #0f172a);
+	line-height: 1.28;
+}
+
+.fuero-mosaico-sub {
+	font-size: 0.74rem;
+	font-weight: 700;
+	color: var(--text-muted, #64748b);
+	margin-top: 2px;
+}
+
+.fuero-mosaico-total-badge {
+	background: rgba(2, 132, 199, 0.11);
+	color: #0369a1;
+	border: 1px solid rgba(2, 132, 199, 0.25);
+	padding: 4px 10px;
+	border-radius: 999px;
+	font-size: 0.76rem;
+	font-weight: 800;
+	white-space: nowrap;
+}
+
+:root[data-theme="dark"] .fuero-mosaico-total-badge {
+	background: rgba(56, 189, 248, 0.16);
+	color: #e0f2fe;
+	border-color: rgba(56, 189, 248, 0.35);
+}
+
+.fuero-mosaico-stats {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 7px;
+	padding: 9px 11px;
+	background: var(--bg-subtle, #f1f5f9);
+	border-radius: 9px;
+	border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+:root[data-theme="dark"] .fuero-mosaico-stats {
+	background: rgba(7, 54, 74, 0.85);
+	border-color: rgba(148, 163, 184, 0.2);
+}
+
+.fuero-stat-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.78rem;
+	font-weight: 700;
+	color: var(--text-secondary, #334155);
+}
+
+.fuero-mosaico-deps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.fuero-dep-chip {
+	font-size: 0.69rem;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: 6px;
+	background: rgba(148, 163, 184, 0.14);
+	color: var(--text-secondary, #334155);
+	border: 1px solid rgba(148, 163, 184, 0.25);
+	max-width: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+:root[data-theme="dark"] .fuero-dep-chip {
+	background: rgba(15, 23, 42, 0.55);
+	color: #cbd5e1;
+}
+
+/* --------------------------------------------------------------------------
+   NIVEL 2: EXPLORADOR MAESTRO-DETALLE (2 COLUMNAS)
+   -------------------------------------------------------------------------- */
+.plano-explorer-layout {
+	display: grid;
+	grid-template-columns: 270px minmax(0, 1fr);
+	gap: 16px;
+	align-items: start;
+}
+
+@media (max-width: 960px) {
+	.plano-explorer-layout {
+		grid-template-columns: 1fr;
+	}
+}
+
+.plano-sidebar-fueros {
+	background: var(--bg-card, #ffffff);
+	border: 1px solid var(--border-color, #cbd5e1);
+	border-radius: 12px;
+	padding: 12px;
+	position: sticky;
+	top: 12px;
+	max-height: calc(100vh - 110px);
+	overflow-y: auto;
+	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+:root[data-theme="dark"] .plano-sidebar-fueros {
+	background: #0b4258;
+	border-color: #2c6a82;
+}
+
+.plano-sidebar-title {
+	font-size: 0.74rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-muted, #64748b);
+	padding: 4px 8px 6px;
+	border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+	margin-bottom: 2px;
+}
+
+.plano-sidebar-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--text-primary, #0f172a);
+	font-size: 0.81rem;
+	font-weight: 700;
+	text-align: left;
+	cursor: pointer;
+	transition: all 0.14s ease;
+}
+
+.plano-sidebar-item:hover {
+	background: var(--bg-card-hover, #eaf5fa);
+	border-color: rgba(2, 132, 199, 0.25);
+}
+
+.plano-sidebar-item.is-active {
+	background: #0f172a;
+	color: #ffffff;
+	border-color: #0f172a;
+	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22);
+}
+
+:root[data-theme="dark"] .plano-sidebar-item.is-active {
+	background: #0284c7;
+	border-color: #38bdf8;
+	color: #ffffff;
+}
+
+.plano-sidebar-item-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	flex: 1;
+}
+
+.plano-sidebar-item-badges {
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	transition: all 0.15s ease;
-}
-
-.plano-acc-btn:hover {
-	border-color: #0284c7;
-	color: #0284c7;
-	background: var(--bg-card, #ffffff);
-}
-
-/* Cabecera clicable de cada Fuero / Piso (Desplegable) */
-.plano-floor-header.is-collapsible {
-	cursor: pointer;
-	user-select: none;
-	margin-bottom: 14px;
-	padding: 6px 10px;
-	border-radius: 10px;
-	transition: background 0.15s ease;
-}
-
-.plano-floor-header.is-collapsible:hover {
-	background: rgba(2, 132, 199, 0.07);
-}
-
-:root[data-theme="dark"] .plano-floor-header.is-collapsible:hover {
-	background: rgba(56, 189, 248, 0.1);
-}
-
-.plano-floor-chevron {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 22px;
-	height: 22px;
-	border-radius: 6px;
-	background: rgba(15, 23, 42, 0.07);
-	font-size: 0.74rem;
-	transition: transform 0.2s ease, background 0.15s ease;
 	flex-shrink: 0;
 }
 
-:root[data-theme="dark"] .plano-floor-chevron {
-	background: rgba(255, 255, 255, 0.1);
+.plano-sidebar-count {
+	font-size: 0.72rem;
+	font-weight: 800;
+	padding: 1px 7px;
+	border-radius: 999px;
+	background: rgba(148, 163, 184, 0.18);
+	color: inherit;
 }
 
-/* Estado plegado del Fuero */
-.plano-floor-section.is-collapsed {
-	padding: 10px 14px;
+.plano-sidebar-item.is-active .plano-sidebar-count {
+	background: rgba(255, 255, 255, 0.22);
+	color: #ffffff;
+}
+
+/* Cabecera sobria e institucional para cada Fuero/Piso en el panel derecho */
+.plano-floor-section {
+	background-color: var(--bg-card, #ffffff);
 	background-image: none;
+	border: 1px solid var(--border-color, #cbd5e1);
+	border-left: 5px solid #0284c7;
+	border-radius: 12px;
+	padding: 16px 18px;
+	box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 
-.plano-floor-section.is-collapsed .plano-floor-header.is-collapsible {
-	margin-bottom: 0;
-	padding-bottom: 6px;
-	border-bottom-color: transparent !important;
+:root[data-theme="dark"] .plano-floor-section {
+	background-color: #0b4258;
+	background-image: none;
+	border-color: #2c6a82;
+	border-left-color: #38bdf8;
 }
 
-.plano-floor-section.is-collapsed .plano-floor-chevron {
-	transform: rotate(-90deg);
+.plano-floor-title {
+	color: var(--text-primary, #0f172a) !important;
+	font-size: 1.02rem;
+	font-weight: 800;
+	text-transform: none;
+	letter-spacing: 0.01em;
 }
 
-.plano-floor-section.is-collapsed .plano-rooms-grid {
-	display: none !important;
+:root[data-theme="dark"] .plano-floor-title {
+	color: #f8fafc !important;
 }
+
+.plano-floor-badge {
+	background: var(--bg-subtle, #f1f5f9) !important;
+	color: var(--text-secondary, #334155) !important;
+	border: 1px solid var(--border-color, #cbd5e1) !important;
+	padding: 4px 10px;
+	border-radius: 8px;
+	font-size: 0.76rem;
+	font-weight: 700;
+}
+
+:root[data-theme="dark"] .plano-floor-badge {
+	background: rgba(7, 54, 74, 0.9) !important;
+	color: #e2e8f0 !important;
+	border-color: #2c6a82 !important;
+}
+
+/* --------------------------------------------------------------------------
+   NIVEL 3: MATRIZ TÉCNICA DE ALTA DENSIDAD PARA TALLER (Propuesta C)
+   -------------------------------------------------------------------------- */
+.taller-room-box {
+	background: var(--bg-card, #ffffff);
+	border: 1px solid var(--border-color, #cbd5e1);
+	border-radius: 10px;
+	overflow: hidden;
+	margin-bottom: 12px;
+}
+
+:root[data-theme="dark"] .taller-room-box {
+	background: #07364a;
+	border-color: #2c6a82;
+}
+
+.taller-room-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding: 9px 14px;
+	background: var(--table-head-bg, #eaf5fa);
+	border-bottom: 1px solid var(--border-color, #cbd5e1);
+}
+
+:root[data-theme="dark"] .taller-room-bar {
+	background: #062c3d;
+	border-bottom-color: #2c6a82;
+}
+
+.taller-room-title {
+	font-size: 0.9rem;
+	font-weight: 800;
+	color: var(--text-primary, #0f172a);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+}
+
+.taller-matrix-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.82rem;
+}
+
+.taller-matrix-table th {
+	text-align: left;
+	padding: 8px 12px;
+	font-size: 0.72rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-muted, #526a78);
+	background: rgba(148, 163, 184, 0.08);
+	border-bottom: 1px solid var(--table-border, #d4e3e9);
+}
+
+.taller-matrix-table td {
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--table-border, #d4e3e9);
+	vertical-align: middle;
+	color: var(--text-primary, #102b3a);
+}
+
+.taller-matrix-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.taller-matrix-table tbody tr:hover {
+	background: var(--table-row-hover, #f2f9fc);
+}
+
+.taller-host-link {
+	font-weight: 800;
+	color: var(--text-link, #006f99);
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.taller-host-link:hover {
+	text-decoration: underline;
+}
+
+.taller-mono {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.77rem;
+	font-weight: 700;
+}
+
+.taller-sub-mono {
+	display: block;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.69rem;
+	color: var(--text-muted, #64748b);
+}
+
+.taller-action-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 4px 10px;
+	border-radius: 6px;
+	font-size: 0.74rem;
+	font-weight: 700;
+	text-decoration: none;
+	border: 1px solid var(--border-color, #cbd5e1);
+	background: var(--bg-card, #ffffff);
+	color: var(--text-primary, #0f172a);
+	cursor: pointer;
+	transition: all 0.14s ease;
+}
+
+.taller-action-btn:hover {
+	border-color: #0284c7;
+	color: #0284c7;
+}
+
+.taller-action-btn.is-gemelo {
+	background: #16a34a;
+	border-color: #15803d;
+	color: #ffffff;
+}
+
+.taller-action-btn.is-gemelo:hover {
+	background: #15803d;
+	color: #ffffff;
+}
+
 
 

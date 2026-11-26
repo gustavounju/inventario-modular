@@ -3,31 +3,12 @@
 
 	const STORAGE_VIEW_KEY = 'inventario_equipos_vista_modo';
 	const STORAGE_GROUP_KEY = 'inventario_equipos_plano_agrupacion';
+	const STORAGE_SUBMODE_KEY = 'inventario_equipos_taller_submodo';
 	const STORAGE_COMPACT_KEY = 'inventario_equipos_plano_compacto';
 	const STORAGE_CONN_KEY = 'inventario_equipos_plano_conexiones';
 
-	const FUERO_PALETTE = [
-		'#0284c7', // Azul judicial
-		'#7c3aed', // Violeta
-		'#059669', // Esmeralda
-		'#d97706', // Ámbar
-		'#e11d48', // Carmesí
-		'#0891b2', // Cian
-		'#4f46e5', // Índigo
-		'#65a30d', // Lima oscuro
-		'#c026d3', // Fucsia
-		'#ea580c'  // Naranja
-	];
-
-	function colorForFuero(fuero) {
-		const str = (fuero || 'Sin fuero').trim().toLowerCase();
-		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
-			hash = ((hash << 5) - hash) + str.charCodeAt(i);
-			hash |= 0;
-		}
-		return FUERO_PALETTE[Math.abs(hash) % FUERO_PALETTE.length];
-	}
+	// Color institucional único y sobrio (sin paleta arcoíris)
+	const INSTITUTIONAL_ACCENT = '#0284c7';
 
 	function esc(str) {
 		if (str == null) return '';
@@ -73,13 +54,18 @@
 			return;
 		}
 
+		const btnVolverMosaico = document.getElementById('btn-volver-mosaico');
+		const btnSubMatriz = document.getElementById('btn-submodo-matriz');
+		const btnSubCroquis = document.getElementById('btn-submodo-croquis');
 		const btnGroupFuero = document.getElementById('btn-group-fuero');
 		const btnGroupPiso = document.getElementById('btn-group-piso');
 		const btnSyncAd = document.getElementById('btn-sync-ad-estructura');
 		const btnConn = document.getElementById('btn-plano-connections');
 		const syncBanner = document.getElementById('plano-sync-banner');
 		const floorTabsEl = document.getElementById('plano-floor-tabs');
-		const fueroBarEl = document.getElementById('plano-fuero-bar');
+		const mosaicoContainer = document.getElementById('plano-mosaico-container');
+		const explorerContainer = document.getElementById('plano-explorer-container');
+		const sidebarFuerosEl = document.getElementById('plano-sidebar-fueros');
 		const stageEl = document.getElementById('plano-stage');
 		const svgEl = document.getElementById('plano-connections-svg');
 		const canvasEl = document.getElementById('plano-canvas');
@@ -87,21 +73,18 @@
 		const btnCompact = document.getElementById('btn-plano-compact');
 
 		let groupBy = localStorage.getItem(STORAGE_GROUP_KEY) || 'fuero';
+		let subMode = localStorage.getItem(STORAGE_SUBMODE_KEY) || 'matriz'; // 'matriz' | 'croquis'
+		let showMosaico = true; // Nivel 1 por defecto: Mosaico general de tarjetas de fueros
 		let activeFloor = 'ALL';
 		let activeFuero = 'ALL';
 		let quickFilter = '';
 		let isCompact = localStorage.getItem(STORAGE_COMPACT_KEY) === 'true';
 		let showAllConnections = localStorage.getItem(STORAGE_CONN_KEY) === 'true';
 
-		// Registro de elementos visibles en el DOM para trazar líneas SVG
 		let deskElementsById = new Map();
 		let printerElementsByIp = new Map();
 		let currentFilteredItems = [];
-		// Estado de fueros desplegados (por defecto plegados para que la lista no sea larga)
-		let expandedSections = new Set();
-		let defaultCollapseAll = true;
 
-		// Tooltip flotante único
 		let tooltipEl = document.getElementById('plano-floating-tooltip');
 		if (!tooltipEl) {
 			tooltipEl = document.createElement('div');
@@ -122,19 +105,50 @@
 			}
 		}
 
+		function setSubMode(mode) {
+			subMode = mode === 'croquis' ? 'croquis' : 'matriz';
+			localStorage.setItem(STORAGE_SUBMODE_KEY, subMode);
+			if (btnSubMatriz) btnSubMatriz.classList.toggle('is-active', subMode === 'matriz');
+			if (btnSubCroquis) btnSubCroquis.classList.toggle('is-active', subMode === 'croquis');
+			if (btnConn) btnConn.style.display = subMode === 'croquis' ? 'inline-flex' : 'none';
+			if (btnCompact) btnCompact.style.display = subMode === 'croquis' ? 'inline-flex' : 'none';
+			renderWorkspace();
+		}
+
 		function setGroupBy(mode) {
 			groupBy = mode === 'piso' ? 'piso' : 'fuero';
 			localStorage.setItem(STORAGE_GROUP_KEY, groupBy);
 			if (btnGroupFuero) btnGroupFuero.classList.toggle('is-active', groupBy === 'fuero');
 			if (btnGroupPiso) btnGroupPiso.classList.toggle('is-active', groupBy === 'piso');
-			renderTopSelectors();
-			renderCanvas();
+			if (groupBy === 'piso') {
+				showMosaico = false;
+			}
+			renderWorkspace();
+		}
+
+		function openMosaicoView() {
+			showMosaico = true;
+			activeFuero = 'ALL';
+			groupBy = 'fuero';
+			if (btnGroupFuero) btnGroupFuero.classList.add('is-active');
+			if (btnGroupPiso) btnGroupPiso.classList.remove('is-active');
+			if (quickSearchEl && quickFilter) {
+				quickFilter = '';
+				quickSearchEl.value = '';
+			}
+			renderWorkspace();
+		}
+
+		function selectFueroInExplorer(fueroName) {
+			activeFuero = fueroName || 'ALL';
+			showMosaico = false;
+			renderWorkspace();
 		}
 
 		function applyCompactState() {
 			containerPlano.classList.toggle('is-compact', isCompact);
 			if (btnCompact) {
-				btnCompact.textContent = isCompact ? '🔍 Vista Detallada' : '📐 Modo Compacto';
+				btnCompact.textContent = isCompact ? '🔍 Detallado' : '📐 Compacto';
 			}
 			requestAnimationFrame(drawAmbientConnections);
 		}
@@ -145,13 +159,13 @@
 			btnConn.textContent = showAllConnections ? '🔗 Conexiones: ON' : '🔗 Conexiones';
 		}
 
-		function getFilteredItems() {
+		function getFilteredItems(ignoreActiveFuero) {
 			const q = quickFilter.trim().toLowerCase();
 			return data.filter(function (item) {
 				if (activeFloor !== 'ALL' && floorKey(item) !== activeFloor) {
 					return false;
 				}
-				if (activeFuero !== 'ALL' && fueroPadreOf(item) !== activeFuero) {
+				if (!ignoreActiveFuero && activeFuero !== 'ALL' && fueroPadreOf(item) !== activeFuero) {
 					return false;
 				}
 				if (q) {
@@ -164,6 +178,9 @@
 						item.subDependencia,
 						item.oficina,
 						item.ip,
+						item.mac,
+						item.sn,
+						item.so,
 						item.edificio,
 						item.piso,
 						item.impresoraNombre,
@@ -263,7 +280,7 @@
 		function drawAmbientConnections() {
 			if (!svgEl) return;
 			svgEl.innerHTML = '';
-			if (!showAllConnections) return;
+			if (!showAllConnections || showMosaico || subMode !== 'croquis') return;
 
 			currentFilteredItems.forEach(function (item) {
 				if (item.esImpresora || item.impresoraTipo !== 'RED') return;
@@ -277,7 +294,7 @@
 		}
 
 		function highlightConnectionsFor(item, sourceEl) {
-			if (!svgEl) return;
+			if (!svgEl || subMode !== 'croquis') return;
 			clearHighlights();
 			drawAmbientConnections();
 
@@ -302,124 +319,177 @@
 			}
 		}
 
-		function renderTopSelectors() {
-			if (floorTabsEl) {
-				const counts = new Map();
-				data.forEach(function (item) {
-					const k = floorKey(item);
-					if (!counts.has(k)) {
-						counts.set(k, {
-							key: k,
-							edificio: item.edificio || 'Distribución General',
-							piso: item.piso || 'Oficinas por Fuero',
-							count: 0
-						});
-					}
-					counts.get(k).count++;
-				});
-
-				const floors = Array.from(counts.values()).sort(function (a, b) {
-					if (a.edificio === 'Distribución General' && b.edificio !== 'Distribución General') return 1;
-					if (b.edificio === 'Distribución General' && a.edificio !== 'Distribución General') return -1;
-					const ed = a.edificio.localeCompare(b.edificio, 'es', { sensitivity: 'base' });
-					if (ed !== 0) return ed;
-					return a.piso.localeCompare(b.piso, 'es', { sensitivity: 'base', numeric: true });
-				});
-
-				if (floors.length <= 1) {
-					floorTabsEl.innerHTML = '';
+		function buildFuerosSummaryMap(itemsList) {
+			const fuerosMap = new Map();
+			itemsList.forEach(function (item) {
+				const fp = fueroPadreOf(item);
+				if (!fuerosMap.has(fp)) {
+					fuerosMap.set(fp, {
+						fueroPadre: fp,
+						rooms: new Map(),
+						totalEquipos: 0,
+						pcs: 0,
+						impresoras: 0,
+						sincronizados: 0,
+						pendientes: 0,
+						taller: 0
+					});
+				}
+				const fObj = fuerosMap.get(fp);
+				fObj.totalEquipos++;
+				if (item.esImpresora) {
+					fObj.impresoras++;
 				} else {
-					let html = '<button type="button" class="plano-floor-tab' + (activeFloor === 'ALL' ? ' is-active' : '') + '" data-floor="ALL">'
-						+ '🗺️ Todos los Pisos <span class="plano-floor-count">' + data.length + '</span></button>';
+					fObj.pcs++;
+					if (item.estadoCodigo === 'SINCRONIZADO' || item.estadoCodigo === 'DISPONIBLE') {
+						fObj.sincronizados++;
+					} else if (item.estadoCodigo === 'PENDIENTE') {
+						fObj.pendientes++;
+					} else if (item.estadoCodigo === 'TALLER') {
+						fObj.taller++;
+					}
+				}
 
-					floors.forEach(function (f) {
-						html += '<button type="button" class="plano-floor-tab' + (activeFloor === f.key ? ' is-active' : '') + '" data-floor="' + esc(f.key) + '">'
-							+ esc(floorShortLabel(f.edificio, f.piso))
-							+ ' <span class="plano-floor-count">' + f.count + '</span></button>';
-					});
-
-					floorTabsEl.innerHTML = html;
-					floorTabsEl.querySelectorAll('.plano-floor-tab').forEach(function (btn) {
-						btn.addEventListener('click', function () {
-							activeFloor = btn.getAttribute('data-floor') || 'ALL';
-							renderTopSelectors();
-							renderCanvas();
-						});
+				const sub = subDependenciaOf(item);
+				const rk = sub.toLowerCase();
+				if (!fObj.rooms.has(rk)) {
+					fObj.rooms.set(rk, {
+						titulo: sub,
+						ubicacionFisica: item.ubicacionFisica || '',
+						responsable: item.responsableOficina || '',
+						items: [],
+						pcs: 0,
+						impresoras: 0
 					});
 				}
+				const rObj = fObj.rooms.get(rk);
+				if (!rObj.ubicacionFisica && item.ubicacionFisica) rObj.ubicacionFisica = item.ubicacionFisica;
+				if (!rObj.responsable && item.responsableOficina) rObj.responsable = item.responsableOficina;
+				rObj.items.push(item);
+				if (item.esImpresora) rObj.impresoras++; else rObj.pcs++;
+			});
+
+			return Array.from(fuerosMap.values()).sort(function (a, b) {
+				if (a.fueroPadre.toLowerCase() === 'sin fuero') return 1;
+				if (b.fueroPadre.toLowerCase() === 'sin fuero') return -1;
+				return a.fueroPadre.localeCompare(b.fueroPadre, 'es', { sensitivity: 'base', numeric: true });
+			});
+		}
+
+		// =========================================================================
+		// NIVEL 1: RENDERIZADO DEL MOSAICO DE FUEROS (Propuesta B)
+		// =========================================================================
+		function renderMosaicoFueros() {
+			if (!mosaicoContainer) return;
+			const allFueros = buildFuerosSummaryMap(data);
+
+			if (allFueros.length === 0) {
+				mosaicoContainer.innerHTML = '<div class="plano-empty">🏛️ No hay equipos registrados para mostrar en el mosaico de fueros.</div>';
+				return;
 			}
 
-			if (fueroBarEl) {
-				const fueroCounts = new Map();
-				data.forEach(function (item) {
-					const f = fueroPadreOf(item);
-					fueroCounts.set(f, (fueroCounts.get(f) || 0) + 1);
+			let html = ''
+				+ '<div class="fuero-mosaico-header-bar">'
+				+ '  <div class="fuero-mosaico-header-title">🏛️ Mapa General por Fueros (' + allFueros.length + ' fueros · ' + data.length + ' activos)</div>'
+				+ '  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">'
+				+ '    <span class="fuero-mosaico-header-hint">👆 Haga clic en cualquier tarjeta de Fuero para abrir su consola técnica de taller</span>'
+				+ '    <button type="button" id="btn-ver-todos-explorador" class="plano-action-all-btn" style="padding:5px 11px; border-radius:7px; border:1px solid var(--border-color); background:var(--bg-subtle); color:var(--text-primary); font-size:0.77rem; font-weight:700; cursor:pointer;">📋 Ver todos los fueros juntos</button>'
+				+ '  </div>'
+				+ '</div>'
+				+ '<div class="fuero-mosaico-grid">';
+
+			allFueros.forEach(function (fObj) {
+				const roomList = Array.from(fObj.rooms.values()).sort(function (a, b) {
+					return a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base', numeric: true });
 				});
-
-				const fueros = Array.from(fueroCounts.entries()).sort(function (a, b) {
-					return a[0].localeCompare(b[0], 'es', { sensitivity: 'base', numeric: true });
+				const maxChips = 4;
+				let chipsHtml = '';
+				roomList.slice(0, maxChips).forEach(function (r) {
+					chipsHtml += '<span class="fuero-dep-chip">' + esc(r.titulo) + ' (' + r.items.length + ')</span>';
 				});
-
-				if (fueros.length <= 1) {
-					fueroBarEl.style.display = 'none';
-					return;
+				if (roomList.length > maxChips) {
+					chipsHtml += '<span class="fuero-dep-chip">+' + (roomList.length - maxChips) + ' más</span>';
 				}
-				fueroBarEl.style.display = 'flex';
 
-				let selectOptions = '<option value="ALL"' + (activeFuero === 'ALL' ? ' selected' : '') + '>🏛️ Todos los Fueros (' + fueros.length + ' fueros · ' + data.length + ' equipos)</option>';
-				fueros.forEach(function (entry) {
-					const name = entry[0];
-					const count = entry[1];
-					selectOptions += '<option value="' + esc(name) + '"' + (activeFuero === name ? ' selected' : '') + '>🏛️ ' + esc(name) + ' (' + count + ' equipos)</option>';
+				const hasPending = fObj.pendientes > 0;
+				html += ''
+					+ '<button type="button" class="fuero-mosaico-card' + (hasPending ? ' has-pending' : '') + '" data-fuero-target="' + esc(fObj.fueroPadre) + '">'
+					+ '  <div>'
+					+ '    <div class="fuero-mosaico-card-top">'
+					+ '      <div>'
+					+ '        <h3 class="fuero-mosaico-name">🏛️ ' + esc(fObj.fueroPadre) + '</h3>'
+					+ '        <div class="fuero-mosaico-sub">' + roomList.length + (roomList.length === 1 ? ' dependencia' : ' dependencias') + '</div>'
+					+ '      </div>'
+					+ '      <span class="fuero-mosaico-total-badge">' + fObj.totalEquipos + (fObj.totalEquipos === 1 ? ' activo' : ' activos') + '</span>'
+					+ '    </div>'
+					+ '  </div>'
+					+ '  <div class="fuero-mosaico-stats">'
+					+ '    <div class="fuero-stat-item">🖥️ <span>' + fObj.pcs + ' PC' + (fObj.pcs === 1 ? '' : 's') + '</span></div>'
+					+ '    <div class="fuero-stat-item">🖨️ <span>' + fObj.impresoras + ' Impresora' + (fObj.impresoras === 1 ? '' : 's') + '</span></div>'
+					+ '    <div class="fuero-stat-item"><span class="plano-led is-sincronizado"></span> <span>' + fObj.sincronizados + ' Sincr.</span></div>'
+					+ '    <div class="fuero-stat-item">'
+					+        (hasPending
+								? '<span class="plano-led is-pendiente"></span> <span style="color:#d97706;font-weight:800;">' + fObj.pendientes + ' Pend. Gemelo</span>'
+								: '<span class="plano-led is-esperando"></span> <span>0 Pendientes</span>')
+					+ '    </div>'
+					+ '  </div>'
+					+ '  <div class="fuero-mosaico-deps">' + chipsHtml + '</div>'
+					+ '</button>';
+			});
+
+			html += '</div>';
+			mosaicoContainer.innerHTML = html;
+
+			mosaicoContainer.querySelectorAll('.fuero-mosaico-card').forEach(function (card) {
+				card.addEventListener('click', function () {
+					const target = card.getAttribute('data-fuero-target');
+					selectFueroInExplorer(target);
 				});
+			});
 
-				fueroBarEl.innerHTML = ''
-					+ '<div class="plano-fuero-selector-group">'
-					+ '  <label for="plano-fuero-select" class="plano-fuero-selector-label">🏛️ Fuero:</label>'
-					+ '  <select id="plano-fuero-select" class="plano-fuero-select">' + selectOptions + '</select>'
-					+ '</div>'
-					+ '<div class="plano-accordion-actions">'
-					+ '  <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Clic en cada fuero para desplegar/plegar:</span>'
-					+ '  <button type="button" id="btn-expand-all-fueros" class="plano-acc-btn" title="Desplegar todos los fueros">📂 Desplegar Todos</button>'
-					+ '  <button type="button" id="btn-collapse-all-fueros" class="plano-acc-btn" title="Plegar todos los fueros">📁 Plegar Todos</button>'
-					+ '</div>';
-
-				const selectEl = document.getElementById('plano-fuero-select');
-				if (selectEl) {
-					selectEl.addEventListener('change', function () {
-						activeFuero = selectEl.value || 'ALL';
-						if (activeFuero !== 'ALL') {
-							expandedSections.add('fuero:' + activeFuero);
-						}
-						renderCanvas();
-					});
-				}
-
-				const btnExpAll = document.getElementById('btn-expand-all-fueros');
-				if (btnExpAll) {
-					btnExpAll.addEventListener('click', function () {
-						defaultCollapseAll = false;
-						canvasEl.querySelectorAll('.plano-floor-section').forEach(function (sec) {
-							sec.classList.remove('is-collapsed');
-							const key = sec.getAttribute('data-section-key');
-							if (key) expandedSections.add(key);
-						});
-						requestAnimationFrame(drawAmbientConnections);
-					});
-				}
-
-				const btnColAll = document.getElementById('btn-collapse-all-fueros');
-				if (btnColAll) {
-					btnColAll.addEventListener('click', function () {
-						defaultCollapseAll = true;
-						expandedSections.clear();
-						canvasEl.querySelectorAll('.plano-floor-section').forEach(function (sec) {
-							sec.classList.add('is-collapsed');
-						});
-						requestAnimationFrame(drawAmbientConnections);
-					});
-				}
+			const btnAllExp = document.getElementById('btn-ver-todos-explorador');
+			if (btnAllExp) {
+				btnAllExp.addEventListener('click', function () {
+					selectFueroInExplorer('ALL');
+				});
 			}
+		}
+
+		// =========================================================================
+		// NIVEL 2: DIRECTORIO LATERAL DE FUEROS (Propuesta A)
+		// =========================================================================
+		function renderSidebarFueros() {
+			if (!sidebarFuerosEl) return;
+			const baseItems = getFilteredItems(true);
+			const fuerosList = buildFuerosSummaryMap(baseItems);
+
+			let html = ''
+				+ '<div class="plano-sidebar-title">🏛️ Directorio de Fueros</div>'
+				+ '<button type="button" class="plano-sidebar-item' + (activeFuero === 'ALL' ? ' is-active' : '') + '" data-sidebar-fuero="ALL">'
+				+ '  <span class="plano-sidebar-item-name">📋 Todos los Fueros</span>'
+				+ '  <span class="plano-sidebar-item-badges"><span class="plano-sidebar-count">' + baseItems.length + '</span></span>'
+				+ '</button>';
+
+			fuerosList.forEach(function (fObj) {
+				const isAct = activeFuero === fObj.fueroPadre;
+				const pendingDot = fObj.pendientes > 0
+					? '<span class="plano-led is-pendiente" title="' + fObj.pendientes + ' equipos pendientes de gemelo"></span>'
+					: '';
+				html += ''
+					+ '<button type="button" class="plano-sidebar-item' + (isAct ? ' is-active' : '') + '" data-sidebar-fuero="' + esc(fObj.fueroPadre) + '" title="' + esc(fObj.fueroPadre) + '">'
+					+ '  <span class="plano-sidebar-item-name">' + esc(fObj.fueroPadre) + '</span>'
+					+ '  <span class="plano-sidebar-item-badges">' + pendingDot + '<span class="plano-sidebar-count">' + fObj.totalEquipos + '</span></span>'
+					+ '</button>';
+			});
+
+			sidebarFuerosEl.innerHTML = html;
+			sidebarFuerosEl.querySelectorAll('.plano-sidebar-item').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					activeFuero = btn.getAttribute('data-sidebar-fuero') || 'ALL';
+					renderSidebarFueros();
+					renderDetailCanvas();
+				});
+			});
 		}
 
 		function ledClassFor(item) {
@@ -511,7 +581,7 @@
 				const target = item.impresoraNombre || 'USB Local';
 				return '<div class="plano-desk-printer is-local" title="Impresora Local (USB): ' + esc(target) + '">🔌 <span>USB · ' + esc(target) + '</span></div>';
 			}
-			return '';
+			return '<span style="font-size:0.72rem; color:var(--text-muted);">—</span>';
 		}
 
 		function buildDeskTile(item) {
@@ -552,6 +622,8 @@
 			}
 			specsHtml += '</div>';
 
+			const prBadge = item.esImpresora ? '' : (item.impresoraTipo ? buildPrinterBadgeHtml(item) : '');
+
 			desk.innerHTML = ''
 				+ '<div class="plano-desk-top">'
 				+ '  <div class="plano-desk-name-wrap">'
@@ -562,7 +634,7 @@
 				+ '</div>'
 				+ '<div class="' + userClass + '">' + esc(userText) + '</div>'
 				+ specsHtml
-				+ buildPrinterBadgeHtml(item)
+				+ prBadge
 				+ '<div class="plano-desk-footer">'
 				+ '  <span class="plano-desk-ip">' + esc(item.ip || 'Sin IP') + '</span>'
 				+ (item.estadoCodigo === 'PENDIENTE' ? '<span class="plano-desk-tag">Gemelo</span>' : '')
@@ -586,144 +658,191 @@
 			return desk;
 		}
 
+		// =========================================================================
+		// NIVEL 3: MATRIZ TÉCNICA DE TALLER POR VOCALÍA / OFICINA (Propuesta C)
+		// =========================================================================
+		function buildRoomMatrixElement(roomTitle, ubicacionFisica, responsable, items, pcsCount, impCount) {
+			const box = document.createElement('article');
+			box.className = 'taller-room-box';
+
+			let metaHtml = '';
+			if (ubicacionFisica) {
+				metaHtml += '<span class="plano-floor-badge">📍 ' + esc(ubicacionFisica) + '</span>';
+			}
+			if (responsable) {
+				metaHtml += '<span class="plano-floor-badge">👤 ' + esc(responsable) + '</span>';
+			}
+			if (pcsCount > 0) {
+				metaHtml += '<span class="plano-floor-badge">🖥️ ' + pcsCount + ' PC' + (pcsCount === 1 ? '' : 's') + '</span>';
+			}
+			if (impCount > 0) {
+				metaHtml += '<span class="plano-floor-badge">🖨️ ' + impCount + ' Imp.</span>';
+			}
+
+			let rowsHtml = '';
+			items.forEach(function (item) {
+				const href = item.estadoCodigo === 'PENDIENTE'
+					? ('/admin/equipos/' + item.id + '#tab-gemelo')
+					: ('/admin/equipos/' + item.id);
+
+				const hostCell = item.esImpresora
+					? '<button type="button" class="taller-host-link" style="background:none;border:none;padding:0;cursor:pointer;" onclick="abrirModalVinculados(' + Number(item.id) + ')">'
+					  + '<span>' + iconFor(item) + '</span><span>' + esc(item.nombre) + '</span></button>'
+					: '<a class="taller-host-link" href="' + esc(href) + '"><span>' + iconFor(item) + '</span><span>' + esc(item.nombre) + '</span></a>';
+
+				const userCell = item.esImpresora
+					? '<span style="color:var(--text-muted); font-size:0.78rem;">Impresora en Red</span>'
+					: (item.usuario
+						? '<strong>' + esc(item.usuario) + '</strong>' + (item.usuarioRaw && item.usuarioRaw !== item.usuario ? '<span class="taller-sub-mono">@' + esc(item.usuarioRaw) + '</span>' : '')
+						: '<span style="color:#d97706; font-weight:700; font-size:0.78rem;">⚠️ Sin asignar</span>');
+
+				const netCell = '<span class="taller-mono">' + esc(item.ip || 'Sin IP') + '</span>'
+					+ (item.mac ? '<span class="taller-sub-mono">MAC: ' + esc(item.mac) + '</span>' : '');
+
+				const sysCell = '<span>' + esc(item.so || 'Sin dato') + '</span>'
+					+ (item.sn ? '<span class="taller-sub-mono">S/N: ' + esc(item.sn) + '</span>' : '');
+
+				const prCell = item.esImpresora
+					? '<button type="button" class="taller-action-btn" onclick="abrirModalVinculados(' + Number(item.id) + ')">🔗 Ver PCs vinculadas</button>'
+					: buildPrinterBadgeHtml(item);
+
+				const stateCell = '<div style="display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.77rem;">'
+					+ '<span class="plano-led ' + ledClassFor(item) + '"></span>'
+					+ '<span>' + esc(item.estadoLabel) + '</span>'
+					+ '</div>'
+					+ (item.ultimoReporte ? '<span class="taller-sub-mono">🕒 ' + esc(item.ultimoReporte) + '</span>' : '');
+
+				let actionCell = '';
+				if (item.esImpresora) {
+					actionCell = '<button type="button" class="taller-action-btn" onclick="abrirModalVinculados(' + Number(item.id) + ')">🔗 Vinculados</button>';
+				} else if (item.estadoCodigo === 'PENDIENTE') {
+					actionCell = '<a class="taller-action-btn is-gemelo" href="/admin/equipos/' + Number(item.id) + '#tab-gemelo">🤖 Registrar Gemelo</a>';
+				} else {
+					actionCell = '<div style="display:flex; gap:5px; flex-wrap:wrap;">'
+						+ '<a class="taller-action-btn" href="/admin/equipos/' + Number(item.id) + '">🖥️ Ficha</a>'
+						+ '<a class="taller-action-btn" href="/admin/equipos/' + Number(item.id) + '/acta" target="_blank">🖨️ Acta</a>'
+						+ '</div>';
+				}
+
+				rowsHtml += ''
+					+ '<tr>'
+					+ '  <td>' + hostCell + '</td>'
+					+ '  <td>' + userCell + '</td>'
+					+ '  <td>' + netCell + '</td>'
+					+ '  <td>' + sysCell + '</td>'
+					+ '  <td>' + prCell + '</td>'
+					+ '  <td>' + stateCell + '</td>'
+					+ '  <td>' + actionCell + '</td>'
+					+ '</tr>';
+			});
+
+			box.innerHTML = ''
+				+ '<div class="taller-room-bar">'
+				+ '  <h3 class="taller-room-title">🏢 ' + esc(roomTitle) + '</h3>'
+				+ '  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' + metaHtml + '</div>'
+				+ '</div>'
+				+ '<div style="overflow-x:auto;">'
+				+ '  <table class="taller-matrix-table">'
+				+ '    <thead>'
+				+ '      <tr>'
+				+ '        <th>Equipo / Host</th>'
+				+ '        <th>Usuario Asignado</th>'
+				+ '        <th>Red (IP / MAC)</th>'
+				+ '        <th>Sistema / Serie</th>'
+				+ '        <th>Impresora</th>'
+				+ '        <th>Estado Gemelo</th>'
+				+ '        <th>Acción Taller</th>'
+				+ '      </tr>'
+				+ '    </thead>'
+				+ '    <tbody>' + rowsHtml + '</tbody>'
+				+ '  </table>'
+				+ '</div>';
+
+			return box;
+		}
+
 		function renderByFuero(filtered) {
-			const fuerosMap = new Map();
-			filtered.forEach(function (item) {
-				const fp = fueroPadreOf(item);
-				if (!fuerosMap.has(fp)) {
-					fuerosMap.set(fp, {
-						fueroPadre: fp,
-						rooms: new Map(),
-						totalEquipos: 0,
-						pcs: 0,
-						impresoras: 0
-					});
-				}
-				const fObj = fuerosMap.get(fp);
-				fObj.totalEquipos++;
-				if (item.esImpresora) fObj.impresoras++; else fObj.pcs++;
-
-				const sub = subDependenciaOf(item);
-				const rk = sub.toLowerCase();
-				if (!fObj.rooms.has(rk)) {
-					fObj.rooms.set(rk, {
-						titulo: sub,
-						ubicacionFisica: item.ubicacionFisica || '',
-						responsable: item.responsableOficina || '',
-						items: [],
-						pcs: 0,
-						impresoras: 0
-					});
-				}
-				const rObj = fObj.rooms.get(rk);
-				if (!rObj.ubicacionFisica && item.ubicacionFisica) rObj.ubicacionFisica = item.ubicacionFisica;
-				if (!rObj.responsable && item.responsableOficina) rObj.responsable = item.responsableOficina;
-				rObj.items.push(item);
-				if (item.esImpresora) rObj.impresoras++; else rObj.pcs++;
-			});
-
-			const sortedFueros = Array.from(fuerosMap.values()).sort(function (a, b) {
-				if (a.fueroPadre.toLowerCase() === 'sin fuero') return 1;
-				if (b.fueroPadre.toLowerCase() === 'sin fuero') return -1;
-				return a.fueroPadre.localeCompare(b.fueroPadre, 'es', { sensitivity: 'base', numeric: true });
-			});
-
+			const sortedFueros = buildFuerosSummaryMap(filtered);
 			const frag = document.createDocumentFragment();
 
 			sortedFueros.forEach(function (fObj) {
-				const accent = colorForFuero(fObj.fueroPadre);
-				const sectionKey = 'fuero:' + fObj.fueroPadre;
-				const forceOpen = activeFuero !== 'ALL' || quickFilter.trim().length > 0 || sortedFueros.length === 1;
-				const isExpanded = forceOpen || !defaultCollapseAll || expandedSections.has(sectionKey);
-
 				const section = document.createElement('section');
-				section.className = 'plano-floor-section' + (isExpanded ? '' : ' is-collapsed');
-				section.setAttribute('data-section-key', sectionKey);
-				section.style.borderColor = accent + '55';
+				section.className = 'plano-floor-section';
 
 				const roomCount = fObj.rooms.size;
 				const headerEl = document.createElement('div');
-				headerEl.className = 'plano-floor-header is-collapsible';
-				headerEl.style.borderBottomColor = accent + '44';
-				headerEl.setAttribute('role', 'button');
-				headerEl.setAttribute('tabindex', '0');
-				headerEl.setAttribute('title', 'Clic para desplegar o plegar este fuero');
+				headerEl.className = 'plano-floor-header';
 				headerEl.innerHTML = ''
-					+ '  <div class="plano-floor-title" style="color:' + accent + ';">'
-					+ '    <span class="plano-floor-chevron">▼</span>'
-					+ '    <span style="width:12px;height:12px;border-radius:3px;background:' + accent + ';display:inline-block;"></span>'
+					+ '  <div class="plano-floor-title">'
 					+ '    🏛️ ' + esc(fObj.fueroPadre)
 					+ '  </div>'
 					+ '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'
-					+ (fObj.pcs > 0 ? '<span class="plano-floor-badge" style="border-color:' + accent + '44;color:' + accent + ';">🖥️ ' + fObj.pcs + ' PC' + (fObj.pcs === 1 ? '' : 's') + '</span>' : '')
-					+ (fObj.impresoras > 0 ? '<span class="plano-floor-badge" style="border-color:#0ea5e955;color:#0284c7;">🖨️ ' + fObj.impresoras + ' Imp.</span>' : '')
-					+ '    <div class="plano-floor-badge" style="border-color:' + accent + '44;color:' + accent + ';">'
+					+ (fObj.pcs > 0 ? '<span class="plano-floor-badge">🖥️ ' + fObj.pcs + ' PC' + (fObj.pcs === 1 ? '' : 's') + '</span>' : '')
+					+ (fObj.impresoras > 0 ? '<span class="plano-floor-badge">🖨️ ' + fObj.impresoras + ' Imp.</span>' : '')
+					+ (fObj.pendientes > 0 ? '<span class="plano-floor-badge" style="color:#d97706 !important; border-color:#f59e0b !important;">🟡 ' + fObj.pendientes + ' Pend. Gemelo</span>' : '')
+					+ '    <span class="plano-floor-badge">'
 					+        roomCount + (roomCount === 1 ? ' dependencia' : ' dependencias')
-					+ '      · ' + fObj.totalEquipos + (fObj.totalEquipos === 1 ? ' equipo' : ' equipos')
-					+ '    </div>'
+					+ '      · ' + fObj.totalEquipos + (fObj.totalEquipos === 1 ? ' activo' : ' activos')
+					+ '    </span>'
 					+ '  </div>';
 
-				function toggleFueroSection() {
-					const nowCollapsed = section.classList.toggle('is-collapsed');
-					if (nowCollapsed) {
-						expandedSections.delete(sectionKey);
-					} else {
-						expandedSections.add(sectionKey);
-					}
-					requestAnimationFrame(drawAmbientConnections);
-				}
-
-				headerEl.addEventListener('click', toggleFueroSection);
-				headerEl.addEventListener('keydown', function (ev) {
-					if (ev.key === 'Enter' || ev.key === ' ') {
-						ev.preventDefault();
-						toggleFueroSection();
-					}
-				});
-
 				section.appendChild(headerEl);
-
-				const roomsGrid = document.createElement('div');
-				roomsGrid.className = 'plano-rooms-grid';
 
 				const sortedRooms = Array.from(fObj.rooms.values()).sort(function (a, b) {
 					return a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base', numeric: true });
 				});
 
-				sortedRooms.forEach(function (room) {
-					const roomEl = document.createElement('article');
-					roomEl.className = 'plano-room';
-					roomEl.style.setProperty('--room-accent', accent);
-
-					let countsHtml = '';
-					if (room.pcs > 0) countsHtml += '<span title="Computadoras">🖥️ ' + room.pcs + '</span>';
-					if (room.impresoras > 0) countsHtml += '<span title="Impresoras de Red">🖨️ ' + room.impresoras + '</span>';
-
-					roomEl.innerHTML = ''
-						+ '<div class="plano-room-header">'
-						+ '  <div>'
-						+ '    <h3 class="plano-room-name">' + esc(room.titulo) + '</h3>'
-						+ '    <div class="plano-room-meta">'
-						+ (room.ubicacionFisica
-							? '<span class="plano-room-fuero">📍 ' + esc(room.ubicacionFisica) + '</span>'
-							: '<span class="plano-room-resp">📍 Ubicación física pendiente</span>')
-						+ (room.responsable ? '<span class="plano-room-resp">👤 ' + esc(room.responsable) + '</span>' : '')
-						+ '    </div>'
-						+ '  </div>'
-						+ '  <div class="plano-room-counts">' + countsHtml + '</div>'
-						+ '</div>';
-
-					const desksGrid = document.createElement('div');
-					desksGrid.className = 'plano-desks-grid';
-					room.items.forEach(function (item) {
-						desksGrid.appendChild(buildDeskTile(item));
+				if (subMode === 'matriz') {
+					const matrixWrap = document.createElement('div');
+					sortedRooms.forEach(function (room) {
+						matrixWrap.appendChild(buildRoomMatrixElement(
+							room.titulo,
+							room.ubicacionFisica,
+							room.responsable,
+							room.items,
+							room.pcs,
+							room.impresoras
+						));
 					});
+					section.appendChild(matrixWrap);
+				} else {
+					const roomsGrid = document.createElement('div');
+					roomsGrid.className = 'plano-rooms-grid';
+					sortedRooms.forEach(function (room) {
+						const roomEl = document.createElement('article');
+						roomEl.className = 'plano-room';
+						roomEl.style.setProperty('--room-accent', INSTITUTIONAL_ACCENT);
 
-					roomEl.appendChild(desksGrid);
-					roomsGrid.appendChild(roomEl);
-				});
+						let countsHtml = '';
+						if (room.pcs > 0) countsHtml += '<span title="Computadoras">🖥️ ' + room.pcs + '</span>';
+						if (room.impresoras > 0) countsHtml += '<span title="Impresoras de Red">🖨️ ' + room.impresoras + '</span>';
 
-				section.appendChild(roomsGrid);
+						roomEl.innerHTML = ''
+							+ '<div class="plano-room-header">'
+							+ '  <div>'
+							+ '    <h3 class="plano-room-name">' + esc(room.titulo) + '</h3>'
+							+ '    <div class="plano-room-meta">'
+							+ (room.ubicacionFisica
+								? '<span class="plano-room-fuero">📍 ' + esc(room.ubicacionFisica) + '</span>'
+								: '<span class="plano-room-resp">📍 Ubicación física pendiente</span>')
+							+ (room.responsable ? '<span class="plano-room-resp">👤 ' + esc(room.responsable) + '</span>' : '')
+							+ '    </div>'
+							+ '  </div>'
+							+ '  <div class="plano-room-counts">' + countsHtml + '</div>'
+							+ '</div>';
+
+						const desksGrid = document.createElement('div');
+						desksGrid.className = 'plano-desks-grid';
+						room.items.forEach(function (item) {
+							desksGrid.appendChild(buildDeskTile(item));
+						});
+
+						roomEl.appendChild(desksGrid);
+						roomsGrid.appendChild(roomEl);
+					});
+					section.appendChild(roomsGrid);
+				}
+
 				frag.appendChild(section);
 			});
 
@@ -773,34 +892,17 @@
 			const frag = document.createDocumentFragment();
 
 			sortedFloors.forEach(function (floor) {
-				const sectionKey = 'piso:' + floor.key;
-				const forceOpen = activeFloor !== 'ALL' || quickFilter.trim().length > 0 || sortedFloors.length === 1;
-				const isExpanded = forceOpen || !defaultCollapseAll || expandedSections.has(sectionKey);
-
 				const section = document.createElement('section');
-				section.className = 'plano-floor-section' + (isExpanded ? '' : ' is-collapsed');
-				section.setAttribute('data-section-key', sectionKey);
+				section.className = 'plano-floor-section';
 
 				const roomCount = floor.rooms.size;
 				const headerEl = document.createElement('div');
-				headerEl.className = 'plano-floor-header is-collapsible';
-				headerEl.setAttribute('role', 'button');
-				headerEl.setAttribute('tabindex', '0');
-				headerEl.setAttribute('title', 'Clic para desplegar o plegar este piso');
+				headerEl.className = 'plano-floor-header';
 				headerEl.innerHTML = ''
-					+ '  <div class="plano-floor-title"><span class="plano-floor-chevron">▼</span> ' + esc(floorLabel(floor.edificio, floor.piso)) + '</div>'
+					+ '  <div class="plano-floor-title">' + esc(floorLabel(floor.edificio, floor.piso)) + '</div>'
 					+ '  <div class="plano-floor-badge">' + roomCount + (roomCount === 1 ? ' oficina' : ' oficinas') + ' · ' + floor.totalEquipos + (floor.totalEquipos === 1 ? ' equipo' : ' equipos') + '</div>';
 
-				headerEl.addEventListener('click', function () {
-					const nowCollapsed = section.classList.toggle('is-collapsed');
-					if (nowCollapsed) expandedSections.delete(sectionKey); else expandedSections.add(sectionKey);
-					requestAnimationFrame(drawAmbientConnections);
-				});
-
 				section.appendChild(headerEl);
-
-				const roomsGrid = document.createElement('div');
-				roomsGrid.className = 'plano-rooms-grid';
 
 				const sortedRooms = Array.from(floor.rooms.values()).sort(function (a, b) {
 					const fc = a.fuero.localeCompare(b.fuero, 'es', { sensitivity: 'base', numeric: true });
@@ -808,54 +910,70 @@
 					return a.oficina.localeCompare(b.oficina, 'es', { sensitivity: 'base', numeric: true });
 				});
 
-				sortedRooms.forEach(function (room) {
-					const accent = colorForFuero(room.fuero);
-					const roomEl = document.createElement('article');
-					roomEl.className = 'plano-room';
-					roomEl.style.setProperty('--room-accent', accent);
-
-					let countsHtml = '';
-					if (room.pcs > 0) countsHtml += '<span title="Computadoras">🖥️ ' + room.pcs + '</span>';
-					if (room.impresoras > 0) countsHtml += '<span title="Impresoras de Red">🖨️ ' + room.impresoras + '</span>';
-
-					roomEl.innerHTML = ''
-						+ '<div class="plano-room-header">'
-						+ '  <div>'
-						+ '    <h3 class="plano-room-name">' + esc(room.oficina) + '</h3>'
-						+ '    <div class="plano-room-meta">'
-						+ '      <span class="plano-room-fuero">🏛️ ' + esc(room.fuero) + '</span>'
-						+ (room.responsable ? '<span class="plano-room-resp">👤 ' + esc(room.responsable) + '</span>' : '')
-						+ '    </div>'
-						+ '  </div>'
-						+ '  <div class="plano-room-counts">' + countsHtml + '</div>'
-						+ '</div>';
-
-					const desksGrid = document.createElement('div');
-					desksGrid.className = 'plano-desks-grid';
-					room.items.forEach(function (item) {
-						desksGrid.appendChild(buildDeskTile(item));
+				if (subMode === 'matriz') {
+					const matrixWrap = document.createElement('div');
+					sortedRooms.forEach(function (room) {
+						matrixWrap.appendChild(buildRoomMatrixElement(
+							room.oficina + ' (' + room.fuero + ')',
+							'',
+							room.responsable,
+							room.items,
+							room.pcs,
+							room.impresoras
+						));
 					});
+					section.appendChild(matrixWrap);
+				} else {
+					const roomsGrid = document.createElement('div');
+					roomsGrid.className = 'plano-rooms-grid';
+					sortedRooms.forEach(function (room) {
+						const roomEl = document.createElement('article');
+						roomEl.className = 'plano-room';
+						roomEl.style.setProperty('--room-accent', INSTITUTIONAL_ACCENT);
 
-					roomEl.appendChild(desksGrid);
-					roomsGrid.appendChild(roomEl);
-				});
+						let countsHtml = '';
+						if (room.pcs > 0) countsHtml += '<span title="Computadoras">🖥️ ' + room.pcs + '</span>';
+						if (room.impresoras > 0) countsHtml += '<span title="Impresoras de Red">🖨️ ' + room.impresoras + '</span>';
 
-				section.appendChild(roomsGrid);
+						roomEl.innerHTML = ''
+							+ '<div class="plano-room-header">'
+							+ '  <div>'
+							+ '    <h3 class="plano-room-name">' + esc(room.oficina) + '</h3>'
+							+ '    <div class="plano-room-meta">'
+							+ '      <span class="plano-room-fuero">🏛️ ' + esc(room.fuero) + '</span>'
+							+ (room.responsable ? '<span class="plano-room-resp">👤 ' + esc(room.responsable) + '</span>' : '')
+							+ '    </div>'
+							+ '  </div>'
+							+ '  <div class="plano-room-counts">' + countsHtml + '</div>'
+							+ '</div>';
+
+						const desksGrid = document.createElement('div');
+						desksGrid.className = 'plano-desks-grid';
+						room.items.forEach(function (item) {
+							desksGrid.appendChild(buildDeskTile(item));
+						});
+
+						roomEl.appendChild(desksGrid);
+						roomsGrid.appendChild(roomEl);
+					});
+					section.appendChild(roomsGrid);
+				}
+
 				frag.appendChild(section);
 			});
 
 			return frag;
 		}
 
-		function renderCanvas() {
+		function renderDetailCanvas() {
 			if (!canvasEl) return;
 			deskElementsById = new Map();
 			printerElementsByIp = new Map();
-			const filtered = getFilteredItems();
+			const filtered = getFilteredItems(false);
 			currentFilteredItems = filtered;
 
 			if (filtered.length === 0) {
-				canvasEl.innerHTML = '<div class="plano-empty">🏛️ No hay equipos que coincidan con el filtro aplicado en el plano.</div>';
+				canvasEl.innerHTML = '<div class="plano-empty">🏛️ No hay equipos que coincidan con el filtro aplicado.</div>';
 				if (svgEl) svgEl.innerHTML = '';
 				return;
 			}
@@ -864,6 +982,27 @@
 			canvasEl.innerHTML = '';
 			canvasEl.appendChild(frag);
 			requestAnimationFrame(drawAmbientConnections);
+		}
+
+		function renderWorkspace() {
+			const hasSearch = quickFilter.trim().length > 0;
+			const shouldShowMosaico = showMosaico && !hasSearch && groupBy === 'fuero';
+
+			if (btnVolverMosaico) {
+				btnVolverMosaico.classList.toggle('is-active', shouldShowMosaico);
+			}
+
+			if (shouldShowMosaico) {
+				if (mosaicoContainer) mosaicoContainer.style.display = 'flex';
+				if (explorerContainer) explorerContainer.style.display = 'none';
+				if (svgEl) svgEl.innerHTML = '';
+				renderMosaicoFueros();
+			} else {
+				if (mosaicoContainer) mosaicoContainer.style.display = 'none';
+				if (explorerContainer) explorerContainer.style.display = 'grid';
+				renderSidebarFueros();
+				renderDetailCanvas();
+			}
 		}
 
 		// Sincronización manual de estructura AD
@@ -912,6 +1051,15 @@
 		// Eventos de controles
 		btnPlano.addEventListener('click', function () { setViewMode('plano'); });
 		btnTabla.addEventListener('click', function () { setViewMode('tabla'); });
+		if (btnVolverMosaico) btnVolverMosaico.addEventListener('click', openMosaicoView);
+		if (btnSubMatriz) btnSubMatriz.addEventListener('click', function () {
+			showMosaico = false;
+			setSubMode('matriz');
+		});
+		if (btnSubCroquis) btnSubCroquis.addEventListener('click', function () {
+			showMosaico = false;
+			setSubMode('croquis');
+		});
 		if (btnGroupFuero) btnGroupFuero.addEventListener('click', function () { setGroupBy('fuero'); });
 		if (btnGroupPiso) btnGroupPiso.addEventListener('click', function () { setGroupBy('piso'); });
 
@@ -927,7 +1075,10 @@
 		if (quickSearchEl) {
 			quickSearchEl.addEventListener('input', function () {
 				quickFilter = quickSearchEl.value || '';
-				renderCanvas();
+				if (quickFilter.trim().length > 0) {
+					showMosaico = false;
+				}
+				renderWorkspace();
 			});
 		}
 
@@ -979,11 +1130,11 @@
 			}
 		});
 
-		// Inicialización (por defecto siempre abre en modal a pantalla completa al hacer clic en Equipos)
+		// Inicialización
 		setFullscreenEquipos(true);
 		applyCompactState();
 		applyConnButtonState();
-		setGroupBy(groupBy);
+		setSubMode(subMode);
 
 		const savedMode = localStorage.getItem(STORAGE_VIEW_KEY) || 'plano';
 		setViewMode(savedMode);

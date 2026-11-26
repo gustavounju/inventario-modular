@@ -106,21 +106,28 @@
 					Todavía no hay equipos para mostrar con los filtros aplicados.
 				</p>
 
-				<!-- Vista 1: Plano Físico / Estructura por Fuero y Oficinas (Croquis Visual) -->
+				<!-- Vista 1: Consola de Taller por Fueros (Mosaico General + Explorador Maestro-Detalle + Matriz / Croquis) -->
 				<div id="vista-plano-container" class="plano-wrapper" th:if="${!#lists.isEmpty(equipos.equipos)}">
 					<div class="plano-toolbar">
 						<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-							<div class="view-switcher-bar" role="group" aria-label="Agrupación principal del plano">
-								<button type="button" id="btn-group-fuero" class="view-switch-btn is-active" title="Agrupar por Fuero dominante (ej. Juzgado de Familia → Vocalías 7, 8, 9)">🏛️ Por Fuero</button>
-								<button type="button" id="btn-group-piso" class="view-switch-btn" title="Agrupar por disposición física (Edificios y Pisos)">🏢 Por Piso</button>
+							<button type="button" id="btn-volver-mosaico" class="plano-mosaico-nav-btn is-active" title="Ver tablero general de todos los Fueros en una sola pantalla">
+								🏛️ Mosaico de Fueros
+							</button>
+							<div class="view-switcher-bar" role="group" aria-label="Modo de visualización de equipos del fuero">
+								<button type="button" id="btn-submodo-matriz" class="view-switch-btn is-active" title="Vista de alta densidad para taller con columnas técnicas alineadas">📊 Matriz de Taller</button>
+								<button type="button" id="btn-submodo-croquis" class="view-switch-btn" title="Croquis gráfico de puestos y líneas de conexión a impresoras">🔌 Croquis y Conexiones</button>
 							</div>
-							<div id="plano-floor-tabs" class="plano-floor-tabs" aria-label="Selector rápido de grupos"></div>
+							<div class="view-switcher-bar" role="group" aria-label="Agrupación principal">
+								<button type="button" id="btn-group-fuero" class="view-switch-btn is-active" title="Organizar por Fuero y Vocalías/Dependencias">🏛️ Por Fuero</button>
+								<button type="button" id="btn-group-piso" class="view-switch-btn" title="Organizar por Edificio y Piso físico">🏢 Por Piso</button>
+							</div>
+							<div id="plano-floor-tabs" class="plano-floor-tabs" aria-label="Selector rápido de pisos" style="display: none;"></div>
 						</div>
 						<div class="plano-controls-right">
-							<input id="plano-quick-search" type="search" class="plano-quick-search" placeholder="🔎 Filtrar en vivo en el plano..." aria-label="Filtrar en vivo en el plano">
-							<button type="button" id="btn-plano-connections" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem; border-color: #0ea5e9; color: #0284c7;" title="Mostrar u ocultar líneas de conexión entre PCs e Impresoras de Red">🔗 Conexiones</button>
-							<button type="button" id="btn-plano-compact" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem;">📐 Modo Compacto</button>
-							<button type="button" id="btn-sync-ad-estructura" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem; border-color: #0284c7; color: #0284c7;" title="Sincronizar manualmente la jerarquía de Fueros y Vocalías desde Active Directory (caché de 4h)">🔄 Sincronizar Estructura AD</button>
+							<input id="plano-quick-search" type="search" class="plano-quick-search" placeholder="🔎 Buscar PC, usuario, IP, MAC o fuero..." aria-label="Filtrar en vivo">
+							<button type="button" id="btn-plano-connections" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem; border-color: #0284c7; color: #0284c7;" title="Mostrar u ocultar líneas de conexión entre PCs e Impresoras de Red en el croquis">🔗 Conexiones</button>
+							<button type="button" id="btn-plano-compact" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem; display: none;">📐 Compacto</button>
+							<button type="button" id="btn-sync-ad-estructura" class="secondary-action" style="padding: 6px 10px; font-size: 0.78rem; border-color: #0284c7; color: #0284c7;" title="Sincronizar manualmente la jerarquía de Fueros y Vocalías desde Active Directory (caché de 4h)">🔄 Sincronizar AD</button>
 							<div class="plano-legend" aria-label="Leyenda de estados">
 								<span class="plano-legend-item"><span class="plano-led is-sincronizado"></span> Sincronizado</span>
 								<span class="plano-legend-item"><span class="plano-led is-pendiente"></span> Pendiente</span>
@@ -130,10 +137,17 @@
 						</div>
 					</div>
 					<div id="plano-sync-banner" style="display:none; padding: 8px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;"></div>
-					<div id="plano-fuero-bar" class="plano-fuero-bar" aria-label="Filtro rápido"></div>
-					<div id="plano-stage" class="plano-stage">
-						<svg id="plano-connections-svg" class="plano-connections-svg" aria-hidden="true"></svg>
-						<div id="plano-canvas" style="display: flex; flex-direction: column; gap: 18px;"></div>
+
+					<!-- NIVEL 1: Mosaico General de Tarjetas de Fueros (Vista Ejecutiva de Taller sin scroll largo) -->
+					<div id="plano-mosaico-container" class="fuero-mosaico-wrapper"></div>
+
+					<!-- NIVEL 2: Explorador Maestro-Detalle (Índice Lateral de Fueros + Detalle Técnico a la derecha) -->
+					<div id="plano-explorer-container" class="plano-explorer-layout" style="display: none;">
+						<aside id="plano-sidebar-fueros" class="plano-sidebar-fueros" aria-label="Directorio lateral de fueros"></aside>
+						<div id="plano-stage" class="plano-stage plano-detail-stage">
+							<svg id="plano-connections-svg" class="plano-connections-svg" aria-hidden="true"></svg>
+							<div id="plano-canvas" style="display: flex; flex-direction: column; gap: 16px;"></div>
+						</div>
 					</div>
 				</div>
 
