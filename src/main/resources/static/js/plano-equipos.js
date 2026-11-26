@@ -28,13 +28,6 @@
 		return '🏢 ' + edificio + ' — ' + piso;
 	}
 
-	function floorShortLabel(edificio, piso) {
-		if (edificio === 'Distribución General') {
-			return '📍 Sin Piso';
-		}
-		return edificio + ' · ' + piso;
-	}
-
 	function fueroPadreOf(item) {
 		return (item.fueroPadre || item.fuero || 'Sin fuero').trim();
 	}
@@ -62,7 +55,6 @@
 		const btnSyncAd = document.getElementById('btn-sync-ad-estructura');
 		const btnConn = document.getElementById('btn-plano-connections');
 		const syncBanner = document.getElementById('plano-sync-banner');
-		const floorTabsEl = document.getElementById('plano-floor-tabs');
 		const mosaicoContainer = document.getElementById('plano-mosaico-container');
 		const explorerContainer = document.getElementById('plano-explorer-container');
 		const sidebarFuerosEl = document.getElementById('plano-sidebar-fueros');
@@ -81,7 +73,11 @@
 		let isCompact = localStorage.getItem(STORAGE_COMPACT_KEY) === 'true';
 		let showAllConnections = localStorage.getItem(STORAGE_CONN_KEY) === 'true';
 
+		// Impresora de red actualmente seleccionada con clic para resaltar sus equipos conectados
+		let pinnedPrinterItem = null;
+
 		let deskElementsById = new Map();
+		let matrixRowsById = new Map();
 		let printerElementsByIp = new Map();
 		let currentFilteredItems = [];
 
@@ -93,6 +89,43 @@
 			document.body.appendChild(tooltipEl);
 		}
 
+		// Mapa global de impresoras de red por ID y por IP
+		const networkPrintersById = new Map();
+		const networkPrintersByIp = new Map();
+		data.forEach(function (it) {
+			if (it.esImpresora) {
+				networkPrintersById.set(String(it.id), it);
+				if (it.ip && it.ip.trim()) {
+					networkPrintersByIp.set(it.ip.trim().toLowerCase(), it);
+				}
+			}
+		});
+
+		// Devuelve todas las PCs de `data` conectadas a una impresora de red (por ID o por IP)
+		function getConnectedPcItemsGlobal(printerItem) {
+			if (!printerItem || !printerItem.esImpresora) return [];
+			const pIdStr = String(printerItem.id);
+			const pIp = (printerItem.ip || '').trim().toLowerCase();
+			return data.filter(function (it) {
+				if (it.esImpresora || it.impresoraTipo !== 'RED') return false;
+				const byId = it.impresoraRedId != null && String(it.impresoraRedId) === pIdStr;
+				const byIp = pIp && it.impresoraIp && it.impresoraIp.trim().toLowerCase() === pIp;
+				return byId || byIp;
+			});
+		}
+
+		// Devuelve el objeto de impresora de red al que está vinculada una PC
+		function getTargetPrinterItemForPc(pcItem) {
+			if (!pcItem || pcItem.esImpresora || pcItem.impresoraTipo !== 'RED') return null;
+			if (pcItem.impresoraRedId != null && networkPrintersById.has(String(pcItem.impresoraRedId))) {
+				return networkPrintersById.get(String(pcItem.impresoraRedId));
+			}
+			if (pcItem.impresoraIp && networkPrintersByIp.has(pcItem.impresoraIp.trim().toLowerCase())) {
+				return networkPrintersByIp.get(pcItem.impresoraIp.trim().toLowerCase());
+			}
+			return null;
+		}
+
 		function setViewMode(mode) {
 			const isPlano = mode === 'plano';
 			containerPlano.style.display = isPlano ? 'flex' : 'none';
@@ -101,7 +134,7 @@
 			btnTabla.classList.toggle('is-active', !isPlano);
 			localStorage.setItem(STORAGE_VIEW_KEY, mode);
 			if (isPlano) {
-				requestAnimationFrame(drawAmbientConnections);
+				requestAnimationFrame(refreshConnectionsAndHighlights);
 			}
 		}
 
@@ -129,6 +162,7 @@
 		function openMosaicoView() {
 			showMosaico = true;
 			activeFuero = 'ALL';
+			pinnedPrinterItem = null;
 			groupBy = 'fuero';
 			if (btnGroupFuero) btnGroupFuero.classList.add('is-active');
 			if (btnGroupPiso) btnGroupPiso.classList.remove('is-active');
@@ -145,12 +179,22 @@
 			renderWorkspace();
 		}
 
+		function togglePinNetworkPrinter(printerItem) {
+			if (!printerItem || !printerItem.esImpresora) return;
+			if (pinnedPrinterItem && String(pinnedPrinterItem.id) === String(printerItem.id)) {
+				pinnedPrinterItem = null;
+			} else {
+				pinnedPrinterItem = printerItem;
+			}
+			renderDetailCanvas();
+		}
+
 		function applyCompactState() {
 			containerPlano.classList.toggle('is-compact', isCompact);
 			if (btnCompact) {
 				btnCompact.textContent = isCompact ? '🔍 Detallado' : '📐 Compacto';
 			}
-			requestAnimationFrame(drawAmbientConnections);
+			requestAnimationFrame(refreshConnectionsAndHighlights);
 		}
 
 		function applyConnButtonState() {
@@ -202,8 +246,8 @@
 			if (pcItem.impresoraRedId != null && deskElementsById.has(String(pcItem.impresoraRedId))) {
 				return deskElementsById.get(String(pcItem.impresoraRedId));
 			}
-			if (pcItem.impresoraIp && printerElementsByIp.has(pcItem.impresoraIp.trim())) {
-				return printerElementsByIp.get(pcItem.impresoraIp.trim());
+			if (pcItem.impresoraIp && printerElementsByIp.has(pcItem.impresoraIp.trim().toLowerCase())) {
+				return printerElementsByIp.get(pcItem.impresoraIp.trim().toLowerCase());
 			}
 			return null;
 		}
@@ -211,13 +255,13 @@
 		function findConnectedPcElements(printerItem) {
 			if (!printerItem || !printerItem.esImpresora) return [];
 			const printerIdStr = String(printerItem.id);
-			const printerIp = (printerItem.ip || '').trim();
+			const printerIp = (printerItem.ip || '').trim().toLowerCase();
 			const matched = [];
 
 			currentFilteredItems.forEach(function (it) {
 				if (it.esImpresora || it.impresoraTipo !== 'RED') return;
 				const matchById = it.impresoraRedId != null && String(it.impresoraRedId) === printerIdStr;
-				const matchByIp = printerIp && it.impresoraIp && it.impresoraIp.trim() === printerIp;
+				const matchByIp = printerIp && it.impresoraIp && it.impresoraIp.trim().toLowerCase() === printerIp;
 				if (matchById || matchByIp) {
 					const el = deskElementsById.get(String(it.id));
 					if (el) matched.push(el);
@@ -272,14 +316,37 @@
 
 		function clearHighlights() {
 			if (!canvasEl) return;
-			canvasEl.querySelectorAll('.plano-desk.is-conn-highlight').forEach(function (el) {
+			canvasEl.querySelectorAll('.is-conn-highlight').forEach(function (el) {
 				el.classList.remove('is-conn-highlight');
 			});
 		}
 
-		function drawAmbientConnections() {
+		function refreshConnectionsAndHighlights() {
 			if (!svgEl) return;
 			svgEl.innerHTML = '';
+			clearHighlights();
+
+			// 1. Si hay una impresora seleccionada con clic (pinnedPrinterItem), resaltar siempre sus equipos conectados
+			if (pinnedPrinterItem) {
+				const connectedPcs = getConnectedPcItemsGlobal(pinnedPrinterItem);
+				const prCard = deskElementsById.get(String(pinnedPrinterItem.id));
+				const prRow = matrixRowsById.get(String(pinnedPrinterItem.id));
+				if (prCard) prCard.classList.add('is-conn-highlight');
+				if (prRow) prRow.classList.add('is-conn-highlight');
+
+				connectedPcs.forEach(function (pc) {
+					const pcCard = deskElementsById.get(String(pc.id));
+					const pcRow = matrixRowsById.get(String(pc.id));
+					if (pcCard) pcCard.classList.add('is-conn-highlight');
+					if (pcRow) pcRow.classList.add('is-conn-highlight');
+					if (subMode === 'croquis' && prCard && pcCard) {
+						const g = createCurveSvg(pcCard, prCard, false);
+						if (g) svgEl.appendChild(g);
+					}
+				});
+			}
+
+			// 2. Conexiones ambientales en modo croquis
 			if (!showAllConnections || showMosaico || subMode !== 'croquis') return;
 
 			currentFilteredItems.forEach(function (item) {
@@ -294,26 +361,31 @@
 		}
 
 		function highlightConnectionsFor(item, sourceEl) {
-			if (!svgEl || subMode !== 'croquis') return;
-			clearHighlights();
-			drawAmbientConnections();
+			if (!svgEl) return;
+			refreshConnectionsAndHighlights();
 
 			if (item.esImpresora) {
-				const pcs = findConnectedPcElements(item);
-				if (pcs.length > 0) {
-					sourceEl.classList.add('is-conn-highlight');
-					pcs.forEach(function (pcEl) {
-						pcEl.classList.add('is-conn-highlight');
-						const g = createCurveSvg(pcEl, sourceEl, false);
+				const pcs = getConnectedPcItemsGlobal(item);
+				sourceEl.classList.add('is-conn-highlight');
+				pcs.forEach(function (pc) {
+					const pcCard = deskElementsById.get(String(pc.id));
+					const pcRow = matrixRowsById.get(String(pc.id));
+					if (pcCard) pcCard.classList.add('is-conn-highlight');
+					if (pcRow) pcRow.classList.add('is-conn-highlight');
+					if (subMode === 'croquis' && pcCard) {
+						const g = createCurveSvg(pcCard, sourceEl, false);
 						if (g) svgEl.appendChild(g);
-					});
-				}
+					}
+				});
 			} else if (item.impresoraTipo === 'RED') {
-				const prEl = findTargetPrinterElement(item);
-				if (prEl) {
-					sourceEl.classList.add('is-conn-highlight');
-					prEl.classList.add('is-conn-highlight');
-					const g = createCurveSvg(sourceEl, prEl, false);
+				const prItem = getTargetPrinterItemForPc(item);
+				const prCard = findTargetPrinterElement(item);
+				const prRow = prItem ? matrixRowsById.get(String(prItem.id)) : null;
+				sourceEl.classList.add('is-conn-highlight');
+				if (prCard) prCard.classList.add('is-conn-highlight');
+				if (prRow) prRow.classList.add('is-conn-highlight');
+				if (subMode === 'croquis' && prCard) {
+					const g = createCurveSvg(sourceEl, prCard, false);
 					if (g) svgEl.appendChild(g);
 				}
 			}
@@ -329,7 +401,8 @@
 						rooms: new Map(),
 						totalEquipos: 0,
 						pcs: 0,
-						impresoras: 0,
+						impresorasRed: 0,
+						impresorasUsb: 0,
 						sincronizados: 0,
 						pendientes: 0,
 						taller: 0
@@ -338,9 +411,12 @@
 				const fObj = fuerosMap.get(fp);
 				fObj.totalEquipos++;
 				if (item.esImpresora) {
-					fObj.impresoras++;
+					fObj.impresorasRed++;
 				} else {
 					fObj.pcs++;
+					if (item.impresoraTipo === 'LOCAL') {
+						fObj.impresorasUsb++;
+					}
 					if (item.estadoCodigo === 'SINCRONIZADO' || item.estadoCodigo === 'DISPONIBLE') {
 						fObj.sincronizados++;
 					} else if (item.estadoCodigo === 'PENDIENTE') {
@@ -359,14 +435,22 @@
 						responsable: item.responsableOficina || '',
 						items: [],
 						pcs: 0,
-						impresoras: 0
+						impresorasRed: 0,
+						impresorasUsb: 0
 					});
 				}
 				const rObj = fObj.rooms.get(rk);
 				if (!rObj.ubicacionFisica && item.ubicacionFisica) rObj.ubicacionFisica = item.ubicacionFisica;
 				if (!rObj.responsable && item.responsableOficina) rObj.responsable = item.responsableOficina;
 				rObj.items.push(item);
-				if (item.esImpresora) rObj.impresoras++; else rObj.pcs++;
+				if (item.esImpresora) {
+					rObj.impresorasRed++;
+				} else {
+					rObj.pcs++;
+					if (item.impresoraTipo === 'LOCAL') {
+						rObj.impresorasUsb++;
+					}
+				}
 			});
 
 			return Array.from(fuerosMap.values()).sort(function (a, b) {
@@ -425,7 +509,9 @@
 					+ '  </div>'
 					+ '  <div class="fuero-mosaico-stats">'
 					+ '    <div class="fuero-stat-item">🖥️ <span>' + fObj.pcs + ' PC' + (fObj.pcs === 1 ? '' : 's') + '</span></div>'
-					+ '    <div class="fuero-stat-item">🖨️ <span>' + fObj.impresoras + ' Impresora' + (fObj.impresoras === 1 ? '' : 's') + '</span></div>'
+					+ '    <div class="fuero-stat-item" title="Impresoras de Red vs Impresoras USB locales">'
+					+ '      🌐 <span>' + fObj.impresorasRed + ' Red</span> · 🔌 <span>' + fObj.impresorasUsb + ' USB</span>'
+					+ '    </div>'
 					+ '    <div class="fuero-stat-item"><span class="plano-led is-sincronizado"></span> <span>' + fObj.sincronizados + ' Sincr.</span></div>'
 					+ '    <div class="fuero-stat-item">'
 					+        (hasPending
@@ -486,6 +572,7 @@
 			sidebarFuerosEl.querySelectorAll('.plano-sidebar-item').forEach(function (btn) {
 				btn.addEventListener('click', function () {
 					activeFuero = btn.getAttribute('data-sidebar-fuero') || 'ALL';
+					pinnedPrinterItem = null;
 					renderSidebarFueros();
 					renderDetailCanvas();
 				});
@@ -511,15 +598,17 @@
 
 		function formatPrinterTooltip(item) {
 			if (item.esImpresora) {
-				const pcs = findConnectedPcElements(item);
-				return pcs.length + (pcs.length === 1 ? ' PC conectada en plano' : ' PCs conectadas en plano');
+				const pcs = getConnectedPcItemsGlobal(item);
+				if (pcs.length === 0) return '🌐 Impresora de Red (0 PCs vinculadas)';
+				const names = pcs.slice(0, 5).map(function (p) { return p.nombre; }).join(', ');
+				return '🌐 Red · ' + pcs.length + (pcs.length === 1 ? ' PC conectada: ' : ' PCs conectadas: ') + names + (pcs.length > 5 ? '...' : '');
 			}
 			if (item.impresoraTipo === 'RED') {
 				const label = item.impresoraNombre || 'Impresora en Red';
-				return '🌐 Red → ' + label + (item.impresoraIp ? ' (' + item.impresoraIp + ')' : '');
+				return '🌐 IMPRESORA EN RED → ' + label + (item.impresoraIp ? ' (' + item.impresoraIp + ')' : '');
 			}
 			if (item.impresoraTipo === 'LOCAL') {
-				return '🔌 Local (USB) — ' + (item.impresoraNombre || 'Conectada');
+				return '🔌 IMPRESORA USB LOCAL → ' + (item.impresoraNombre || 'Conectada por USB');
 			}
 			return '';
 		}
@@ -527,7 +616,7 @@
 		function showTooltip(item, event) {
 			const estadoDot = '<span class="plano-led ' + ledClassFor(item) + '"></span>';
 			const hint = item.esImpresora
-				? 'Clic para ver equipos vinculados a esta impresora'
+				? 'Clic para resaltar y ver qué equipos imprimen en esta impresora de red'
 				: (item.estadoCodigo === 'PENDIENTE'
 					? 'Clic para abrir ficha y registrar Gemelo Digital'
 					: 'Clic para abrir ficha técnica completa');
@@ -536,11 +625,11 @@
 			tooltipEl.innerHTML = ''
 				+ '<div class="plano-tooltip-title"><span>' + iconFor(item) + ' ' + esc(item.nombre) + '</span>' + estadoDot + '</div>'
 				+ '<div class="plano-tooltip-row"><span class="plano-tooltip-label">Estado:</span><span class="plano-tooltip-val">' + esc(item.estadoLabel) + '</span></div>'
-				+ '<div class="plano-tooltip-row"><span class="plano-tooltip-label">Usuario:</span><span class="plano-tooltip-val">' + esc(item.esImpresora ? 'Compartida en Red' : (item.usuario || 'Sin asignar')) + '</span></div>'
+				+ '<div class="plano-tooltip-row"><span class="plano-tooltip-label">Usuario:</span><span class="plano-tooltip-val">' + esc(item.esImpresora ? 'Impresora Compartida en Red' : (item.usuario || 'Sin asignar')) + '</span></div>'
 				+ '<div class="plano-tooltip-row"><span class="plano-tooltip-label">Fuero:</span><span class="plano-tooltip-val">' + esc(fueroPadreOf(item)) + '</span></div>'
 				+ '<div class="plano-tooltip-row"><span class="plano-tooltip-label">Dependencia:</span><span class="plano-tooltip-val">' + esc(subDependenciaOf(item)) + '</span></div>'
 				+ (item.ubicacionFisica ? '<div class="plano-tooltip-row"><span class="plano-tooltip-label">Ubic. Física:</span><span class="plano-tooltip-val">' + esc(item.ubicacionFisica) + '</span></div>' : '')
-				+ (printerInfo ? '<div class="plano-tooltip-row"><span class="plano-tooltip-label">' + (item.esImpresora ? 'Conexiones:' : 'Impresora:') + '</span><span class="plano-tooltip-val" style="color:#7dd3fc;">' + esc(printerInfo) + '</span></div>' : '')
+				+ (printerInfo ? '<div class="plano-tooltip-row"><span class="plano-tooltip-label">' + (item.esImpresora ? 'Equipos:' : 'Impresora:') + '</span><span class="plano-tooltip-val" style="color:#7dd3fc;">' + esc(printerInfo) + '</span></div>' : '')
 				+ (item.ip ? '<div class="plano-tooltip-row"><span class="plano-tooltip-label">IP:</span><span class="plano-tooltip-val" style="font-family:monospace;">' + esc(item.ip) + '</span></div>' : '')
 				+ (item.mac ? '<div class="plano-tooltip-row"><span class="plano-tooltip-label">MAC:</span><span class="plano-tooltip-val" style="font-family:monospace;">' + esc(item.mac) + '</span></div>' : '')
 				+ '<div class="plano-tooltip-row"><span class="plano-tooltip-label">Sistema:</span><span class="plano-tooltip-val">' + esc(item.so) + '</span></div>'
@@ -572,30 +661,33 @@
 		}
 
 		function buildPrinterBadgeHtml(item) {
-			if (item.esImpresora) return '';
+			if (item.esImpresora) {
+				const pcs = getConnectedPcItemsGlobal(item);
+				return '<span class="printer-type-badge is-red" title="Haga clic para ver y resaltar los equipos conectados">🌐 IMPRESORA EN RED · 🔗 ' + pcs.length + ' PC' + (pcs.length === 1 ? '' : 's') + '</span>';
+			}
 			if (item.impresoraTipo === 'RED') {
-				const target = item.impresoraNombre || item.impresoraIp || 'En Red';
-				return '<div class="plano-desk-printer is-red" title="Imprime en Red: ' + esc(target) + (item.impresoraIp ? ' (' + esc(item.impresoraIp) + ')' : '') + '">🌐 <span>' + esc(target) + '</span></div>';
+				const target = item.impresoraNombre || item.impresoraIp || 'Impresora en Red';
+				const ipSuffix = (item.impresoraIp && item.impresoraNombre) ? ' (' + item.impresoraIp + ')' : '';
+				return '<span class="printer-type-badge is-red" title="Conectada por RED a: ' + esc(target + ipSuffix) + '">🌐 RED → ' + esc(target + ipSuffix) + '</span>';
 			}
 			if (item.impresoraTipo === 'LOCAL') {
-				const target = item.impresoraNombre || 'USB Local';
-				return '<div class="plano-desk-printer is-local" title="Impresora Local (USB): ' + esc(target) + '">🔌 <span>USB · ' + esc(target) + '</span></div>';
+				const target = item.impresoraNombre || 'Conectada por USB';
+				return '<span class="printer-type-badge is-usb" title="Impresora conectada por cable USB a esta PC: ' + esc(target) + '">🔌 USB → ' + esc(target) + '</span>';
 			}
-			return '<span style="font-size:0.72rem; color:var(--text-muted);">—</span>';
+			return '<span style="font-size:0.72rem; color:var(--text-muted);">Sin impresora</span>';
 		}
 
 		function buildDeskTile(item) {
+			const isPinned = pinnedPrinterItem && String(pinnedPrinterItem.id) === String(item.id);
 			const desk = document.createElement(item.esImpresora ? 'button' : 'a');
-			desk.className = 'plano-desk' + (item.esImpresora ? ' is-impresora' : '');
+			desk.className = 'plano-desk' + (item.esImpresora ? ' is-impresora' : '') + (isPinned ? ' is-pinned-printer' : '');
 			desk.setAttribute('data-equipo-id', String(item.id));
 			if (item.esImpresora) {
 				desk.type = 'button';
 				desk.style.textAlign = 'left';
 				desk.addEventListener('click', function () {
 					hideTooltip();
-					if (typeof window.abrirModalVinculados === 'function') {
-						window.abrirModalVinculados(item.id);
-					}
+					togglePinNetworkPrinter(item);
 				});
 			} else {
 				desk.href = item.estadoCodigo === 'PENDIENTE'
@@ -603,8 +695,9 @@
 					: ('/admin/equipos/' + item.id);
 			}
 
+			const connectedPcsCount = item.esImpresora ? getConnectedPcItemsGlobal(item).length : 0;
 			const userText = item.esImpresora
-				? 'Impresora compartida'
+				? ('🌐 Impresora de Red · 🔗 ' + connectedPcsCount + ' PC' + (connectedPcsCount === 1 ? ' conectada' : 's conectadas'))
 				: (item.usuario ? item.usuario : '⚠️ Sin asignar');
 			const userClass = (!item.esImpresora && !item.usuario) ? 'plano-desk-user is-unassigned' : 'plano-desk-user';
 
@@ -622,7 +715,14 @@
 			}
 			specsHtml += '</div>';
 
-			const prBadge = item.esImpresora ? '' : (item.impresoraTipo ? buildPrinterBadgeHtml(item) : '');
+			let prBadge = '';
+			if (!item.esImpresora && item.impresoraTipo === 'RED') {
+				const target = item.impresoraNombre || item.impresoraIp || 'En Red';
+				prBadge = '<div class="plano-desk-printer is-red" title="Imprime por RED en: ' + esc(target) + '">🌐 <span>RED: ' + esc(target) + '</span></div>';
+			} else if (!item.esImpresora && item.impresoraTipo === 'LOCAL') {
+				const target = item.impresoraNombre || 'USB Local';
+				prBadge = '<div class="plano-desk-printer is-local" title="Impresora USB conectada a esta PC: ' + esc(target) + '">🔌 <span>USB: ' + esc(target) + '</span></div>';
+			}
 
 			desk.innerHTML = ''
 				+ '<div class="plano-desk-top">'
@@ -637,12 +737,13 @@
 				+ prBadge
 				+ '<div class="plano-desk-footer">'
 				+ '  <span class="plano-desk-ip">' + esc(item.ip || 'Sin IP') + '</span>'
+				+ (item.esImpresora ? '<span class="plano-desk-tag" style="background:rgba(2,132,199,0.18);color:#0284c7;">Ver PCs</span>' : '')
 				+ (item.estadoCodigo === 'PENDIENTE' ? '<span class="plano-desk-tag">Gemelo</span>' : '')
 				+ '</div>';
 
 			deskElementsById.set(String(item.id), desk);
 			if (item.esImpresora && item.ip && item.ip.trim()) {
-				printerElementsByIp.set(item.ip.trim(), desk);
+				printerElementsByIp.set(item.ip.trim().toLowerCase(), desk);
 			}
 
 			desk.addEventListener('mouseenter', function (ev) {
@@ -652,16 +753,75 @@
 			desk.addEventListener('mousemove', function (ev) { positionTooltip(ev); });
 			desk.addEventListener('mouseleave', function () {
 				hideTooltip();
-				clearHighlights();
-				drawAmbientConnections();
+				refreshConnectionsAndHighlights();
 			});
 			return desk;
 		}
 
 		// =========================================================================
+		// BANNER INTERACTIVO DE EQUIPOS CONECTADOS A LA IMPRESORA SELECCIONADA
+		// =========================================================================
+		function buildPinnedPrinterBannerElement() {
+			if (!pinnedPrinterItem) return null;
+			const connectedPcs = getConnectedPcItemsGlobal(pinnedPrinterItem);
+			const banner = document.createElement('div');
+			banner.className = 'printer-active-connection-bar';
+
+			let chipsHtml = '';
+			if (connectedPcs.length === 0) {
+				chipsHtml = '<span style="font-style:italic; color:var(--text-muted);">Ninguna PC reporta estar conectada a esta impresora de red actualmente.</span>';
+			} else {
+				connectedPcs.forEach(function (pc) {
+					const userLabel = pc.usuario ? (' · 👤 ' + pc.usuario) : '';
+					const depLabel = subDependenciaOf(pc) ? (' · 🏢 ' + subDependenciaOf(pc)) : '';
+					chipsHtml += '<a class="printer-connected-pc-chip" href="/admin/equipos/' + Number(pc.id) + '" title="Abrir ficha de ' + esc(pc.nombre) + '">'
+						+ '🖥️ <strong>' + esc(pc.nombre) + '</strong>'
+						+ (pc.ip ? ' <span style="font-family:monospace;opacity:0.8;">(' + esc(pc.ip) + ')</span>' : '')
+						+ esc(userLabel + depLabel)
+						+ '</a>';
+				});
+			}
+
+			banner.innerHTML = ''
+				+ '<div style="flex:1; min-width:260px;">'
+				+ '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'
+				+ '    <span class="printer-type-badge is-red">🌐 IMPRESORA EN RED SELECCIONADA</span>'
+				+ '    <strong style="font-size:0.95rem;">🖨️ ' + esc(pinnedPrinterItem.nombre) + '</strong>'
+				+      (pinnedPrinterItem.ip ? '<span class="taller-mono" style="color:#0284c7;">IP: ' + esc(pinnedPrinterItem.ip) + '</span>' : '')
+				+ '    <span>— <strong>' + connectedPcs.length + (connectedPcs.length === 1 ? ' equipo conectado' : ' equipos conectados') + '</strong> (resaltados abajo):</span>'
+				+ '  </div>'
+				+ '  <div class="printer-connected-pcs-chips">' + chipsHtml + '</div>'
+				+ '</div>'
+				+ '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'
+				+ '  <button type="button" class="taller-action-btn" id="btn-open-modal-vinculados-pinned">⚙️ Administrar / Desvincular</button>'
+				+ '  <button type="button" class="taller-action-btn" id="btn-close-pinned-printer">✖ Quitar selección</button>'
+				+ '</div>';
+
+			setTimeout(function () {
+				const btnModal = document.getElementById('btn-open-modal-vinculados-pinned');
+				if (btnModal) {
+					btnModal.addEventListener('click', function () {
+						if (typeof window.abrirModalVinculados === 'function') {
+							window.abrirModalVinculados(pinnedPrinterItem.id);
+						}
+					});
+				}
+				const btnClose = document.getElementById('btn-close-pinned-printer');
+				if (btnClose) {
+					btnClose.addEventListener('click', function () {
+						pinnedPrinterItem = null;
+						renderDetailCanvas();
+					});
+				}
+			}, 0);
+
+			return banner;
+		}
+
+		// =========================================================================
 		// NIVEL 3: MATRIZ TÉCNICA DE TALLER POR VOCALÍA / OFICINA (Propuesta C)
 		// =========================================================================
-		function buildRoomMatrixElement(roomTitle, ubicacionFisica, responsable, items, pcsCount, impCount) {
+		function buildRoomMatrixElement(roomTitle, ubicacionFisica, responsable, items, pcsCount, impRedCount, impUsbCount) {
 			const box = document.createElement('article');
 			box.className = 'taller-room-box';
 
@@ -675,23 +835,56 @@
 			if (pcsCount > 0) {
 				metaHtml += '<span class="plano-floor-badge">🖥️ ' + pcsCount + ' PC' + (pcsCount === 1 ? '' : 's') + '</span>';
 			}
-			if (impCount > 0) {
-				metaHtml += '<span class="plano-floor-badge">🖨️ ' + impCount + ' Imp.</span>';
+			if (impRedCount > 0) {
+				metaHtml += '<span class="plano-floor-badge">🌐 ' + impRedCount + ' Imp. Red</span>';
+			}
+			if (impUsbCount > 0) {
+				metaHtml += '<span class="plano-floor-badge">🔌 ' + impUsbCount + ' Imp. USB</span>';
 			}
 
-			let rowsHtml = '';
+			const headerDiv = document.createElement('div');
+			headerDiv.className = 'taller-room-bar';
+			headerDiv.innerHTML = ''
+				+ '<h3 class="taller-room-title">🏢 ' + esc(roomTitle) + '</h3>'
+				+ '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' + metaHtml + '</div>';
+			box.appendChild(headerDiv);
+
+			const tableWrap = document.createElement('div');
+			tableWrap.style.overflowX = 'auto';
+
+			const table = document.createElement('table');
+			table.className = 'taller-matrix-table';
+			table.innerHTML = ''
+				+ '<thead>'
+				+ '  <tr>'
+				+ '    <th>Equipo / Host</th>'
+				+ '    <th>Usuario Asignado</th>'
+				+ '    <th>Red (IP / MAC)</th>'
+				+ '    <th>Sistema / Serie</th>'
+				+ '    <th>Impresora (Red 🌐 vs USB 🔌)</th>'
+				+ '    <th>Estado Gemelo</th>'
+				+ '    <th>Acción Taller</th>'
+				+ '  </tr>'
+				+ '</thead>';
+
+			const tbody = document.createElement('tbody');
+
 			items.forEach(function (item) {
+				const tr = document.createElement('tr');
+				tr.setAttribute('data-row-equipo-id', String(item.id));
+				matrixRowsById.set(String(item.id), tr);
+
 				const href = item.estadoCodigo === 'PENDIENTE'
 					? ('/admin/equipos/' + item.id + '#tab-gemelo')
 					: ('/admin/equipos/' + item.id);
 
 				const hostCell = item.esImpresora
-					? '<button type="button" class="taller-host-link" style="background:none;border:none;padding:0;cursor:pointer;" onclick="abrirModalVinculados(' + Number(item.id) + ')">'
+					? '<button type="button" class="taller-host-link btn-pin-printer" style="background:none;border:none;padding:0;cursor:pointer;" title="Clic para resaltar las PCs conectadas a esta impresora de red">'
 					  + '<span>' + iconFor(item) + '</span><span>' + esc(item.nombre) + '</span></button>'
 					: '<a class="taller-host-link" href="' + esc(href) + '"><span>' + iconFor(item) + '</span><span>' + esc(item.nombre) + '</span></a>';
 
 				const userCell = item.esImpresora
-					? '<span style="color:var(--text-muted); font-size:0.78rem;">Impresora en Red</span>'
+					? '<span class="printer-type-badge is-red">🌐 Dispositivo Compartido en Red</span>'
 					: (item.usuario
 						? '<strong>' + esc(item.usuario) + '</strong>' + (item.usuarioRaw && item.usuarioRaw !== item.usuario ? '<span class="taller-sub-mono">@' + esc(item.usuarioRaw) + '</span>' : '')
 						: '<span style="color:#d97706; font-weight:700; font-size:0.78rem;">⚠️ Sin asignar</span>');
@@ -702,9 +895,23 @@
 				const sysCell = '<span>' + esc(item.so || 'Sin dato') + '</span>'
 					+ (item.sn ? '<span class="taller-sub-mono">S/N: ' + esc(item.sn) + '</span>' : '');
 
-				const prCell = item.esImpresora
-					? '<button type="button" class="taller-action-btn" onclick="abrirModalVinculados(' + Number(item.id) + ')">🔗 Ver PCs vinculadas</button>'
-					: buildPrinterBadgeHtml(item);
+				let prCell = '';
+				if (item.esImpresora) {
+					const pcs = getConnectedPcItemsGlobal(item);
+					prCell = '<button type="button" class="taller-action-btn btn-pin-printer" style="border-color:#0284c7;color:#0284c7;" title="Clic para resaltar en pantalla qué PCs imprimen aquí">'
+						+ '🔗 <strong>' + pcs.length + ' PC' + (pcs.length === 1 ? ' conectada' : 's conectadas') + '</strong> (Ver cuáles son)</button>';
+				} else if (item.impresoraTipo === 'RED') {
+					const targetPr = getTargetPrinterItemForPc(item);
+					if (targetPr) {
+						prCell = '<button type="button" class="printer-type-badge is-red btn-pin-target-printer" style="cursor:pointer;" title="Clic para resaltar la impresora ' + esc(targetPr.nombre) + ' y todas sus PCs">'
+							+ '🌐 RED → ' + esc(item.impresoraNombre || targetPr.nombre) + (item.impresoraIp ? ' (' + esc(item.impresoraIp) + ')' : '')
+							+ '</button>';
+					} else {
+						prCell = buildPrinterBadgeHtml(item);
+					}
+				} else {
+					prCell = buildPrinterBadgeHtml(item);
+				}
 
 				const stateCell = '<div style="display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:0.77rem;">'
 					+ '<span class="plano-led ' + ledClassFor(item) + '"></span>'
@@ -714,7 +921,10 @@
 
 				let actionCell = '';
 				if (item.esImpresora) {
-					actionCell = '<button type="button" class="taller-action-btn" onclick="abrirModalVinculados(' + Number(item.id) + ')">🔗 Vinculados</button>';
+					actionCell = '<div style="display:flex; gap:5px; flex-wrap:wrap;">'
+						+ '<button type="button" class="taller-action-btn btn-pin-printer" style="border-color:#0284c7;color:#0284c7;">🔍 Resaltar PCs</button>'
+						+ '<button type="button" class="taller-action-btn" onclick="abrirModalVinculados(' + Number(item.id) + ')">⚙️ Desvincular</button>'
+						+ '</div>';
 				} else if (item.estadoCodigo === 'PENDIENTE') {
 					actionCell = '<a class="taller-action-btn is-gemelo" href="/admin/equipos/' + Number(item.id) + '#tab-gemelo">🤖 Registrar Gemelo</a>';
 				} else {
@@ -724,46 +934,52 @@
 						+ '</div>';
 				}
 
-				rowsHtml += ''
-					+ '<tr>'
-					+ '  <td>' + hostCell + '</td>'
-					+ '  <td>' + userCell + '</td>'
-					+ '  <td>' + netCell + '</td>'
-					+ '  <td>' + sysCell + '</td>'
-					+ '  <td>' + prCell + '</td>'
-					+ '  <td>' + stateCell + '</td>'
-					+ '  <td>' + actionCell + '</td>'
-					+ '</tr>';
+				tr.innerHTML = ''
+					+ '<td>' + hostCell + '</td>'
+					+ '<td>' + userCell + '</td>'
+					+ '<td>' + netCell + '</td>'
+					+ '<td>' + sysCell + '</td>'
+					+ '<td>' + prCell + '</td>'
+					+ '<td>' + stateCell + '</td>'
+					+ '<td>' + actionCell + '</td>';
+
+				tr.querySelectorAll('.btn-pin-printer').forEach(function (b) {
+					b.addEventListener('click', function () {
+						togglePinNetworkPrinter(item);
+					});
+				});
+
+				tr.querySelectorAll('.btn-pin-target-printer').forEach(function (b) {
+					b.addEventListener('click', function () {
+						const targetPr = getTargetPrinterItemForPc(item);
+						if (targetPr) togglePinNetworkPrinter(targetPr);
+					});
+				});
+
+				tr.addEventListener('mouseenter', function () {
+					highlightConnectionsFor(item, tr);
+				});
+				tr.addEventListener('mouseleave', function () {
+					refreshConnectionsAndHighlights();
+				});
+
+				tbody.appendChild(tr);
 			});
 
-			box.innerHTML = ''
-				+ '<div class="taller-room-bar">'
-				+ '  <h3 class="taller-room-title">🏢 ' + esc(roomTitle) + '</h3>'
-				+ '  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' + metaHtml + '</div>'
-				+ '</div>'
-				+ '<div style="overflow-x:auto;">'
-				+ '  <table class="taller-matrix-table">'
-				+ '    <thead>'
-				+ '      <tr>'
-				+ '        <th>Equipo / Host</th>'
-				+ '        <th>Usuario Asignado</th>'
-				+ '        <th>Red (IP / MAC)</th>'
-				+ '        <th>Sistema / Serie</th>'
-				+ '        <th>Impresora</th>'
-				+ '        <th>Estado Gemelo</th>'
-				+ '        <th>Acción Taller</th>'
-				+ '      </tr>'
-				+ '    </thead>'
-				+ '    <tbody>' + rowsHtml + '</tbody>'
-				+ '  </table>'
-				+ '</div>';
-
+			table.appendChild(tbody);
+			tableWrap.appendChild(table);
+			box.appendChild(tableWrap);
 			return box;
 		}
 
 		function renderByFuero(filtered) {
 			const sortedFueros = buildFuerosSummaryMap(filtered);
 			const frag = document.createDocumentFragment();
+
+			const bannerEl = buildPinnedPrinterBannerElement();
+			if (bannerEl) {
+				frag.appendChild(bannerEl);
+			}
 
 			sortedFueros.forEach(function (fObj) {
 				const section = document.createElement('section');
@@ -778,7 +994,8 @@
 					+ '  </div>'
 					+ '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'
 					+ (fObj.pcs > 0 ? '<span class="plano-floor-badge">🖥️ ' + fObj.pcs + ' PC' + (fObj.pcs === 1 ? '' : 's') + '</span>' : '')
-					+ (fObj.impresoras > 0 ? '<span class="plano-floor-badge">🖨️ ' + fObj.impresoras + ' Imp.</span>' : '')
+					+ '<span class="plano-floor-badge" title="Impresoras de Red en este fuero">🌐 ' + fObj.impresorasRed + ' Imp. Red</span>'
+					+ '<span class="plano-floor-badge" title="Impresoras USB conectadas a PCs en este fuero">🔌 ' + fObj.impresorasUsb + ' Imp. USB</span>'
 					+ (fObj.pendientes > 0 ? '<span class="plano-floor-badge" style="color:#d97706 !important; border-color:#f59e0b !important;">🟡 ' + fObj.pendientes + ' Pend. Gemelo</span>' : '')
 					+ '    <span class="plano-floor-badge">'
 					+        roomCount + (roomCount === 1 ? ' dependencia' : ' dependencias')
@@ -801,7 +1018,8 @@
 							room.responsable,
 							room.items,
 							room.pcs,
-							room.impresoras
+							room.impresorasRed,
+							room.impresorasUsb
 						));
 					});
 					section.appendChild(matrixWrap);
@@ -815,7 +1033,8 @@
 
 						let countsHtml = '';
 						if (room.pcs > 0) countsHtml += '<span title="Computadoras">🖥️ ' + room.pcs + '</span>';
-						if (room.impresoras > 0) countsHtml += '<span title="Impresoras de Red">🖨️ ' + room.impresoras + '</span>';
+						if (room.impresorasRed > 0) countsHtml += '<span title="Impresoras de Red">🌐 ' + room.impresorasRed + '</span>';
+						if (room.impresorasUsb > 0) countsHtml += '<span title="Impresoras USB Locales">🔌 ' + room.impresorasUsb + '</span>';
 
 						roomEl.innerHTML = ''
 							+ '<div class="plano-room-header">'
@@ -873,12 +1092,18 @@
 						responsable: item.responsableOficina || '',
 						items: [],
 						pcs: 0,
-						impresoras: 0
+						impresorasRed: 0,
+						impresorasUsb: 0
 					});
 				}
 				const roomObj = floorObj.rooms.get(roomKey);
 				roomObj.items.push(item);
-				if (item.esImpresora) roomObj.impresoras++; else roomObj.pcs++;
+				if (item.esImpresora) {
+					roomObj.impresorasRed++;
+				} else {
+					roomObj.pcs++;
+					if (item.impresoraTipo === 'LOCAL') roomObj.impresorasUsb++;
+				}
 			});
 
 			const sortedFloors = Array.from(floorsMap.values()).sort(function (a, b) {
@@ -890,6 +1115,10 @@
 			});
 
 			const frag = document.createDocumentFragment();
+			const bannerEl = buildPinnedPrinterBannerElement();
+			if (bannerEl) {
+				frag.appendChild(bannerEl);
+			}
 
 			sortedFloors.forEach(function (floor) {
 				const section = document.createElement('section');
@@ -919,7 +1148,8 @@
 							room.responsable,
 							room.items,
 							room.pcs,
-							room.impresoras
+							room.impresorasRed,
+							room.impresorasUsb
 						));
 					});
 					section.appendChild(matrixWrap);
@@ -933,7 +1163,8 @@
 
 						let countsHtml = '';
 						if (room.pcs > 0) countsHtml += '<span title="Computadoras">🖥️ ' + room.pcs + '</span>';
-						if (room.impresoras > 0) countsHtml += '<span title="Impresoras de Red">🖨️ ' + room.impresoras + '</span>';
+						if (room.impresorasRed > 0) countsHtml += '<span title="Impresoras de Red">🌐 ' + room.impresorasRed + '</span>';
+						if (room.impresorasUsb > 0) countsHtml += '<span title="Impresoras USB Locales">🔌 ' + room.impresorasUsb + '</span>';
 
 						roomEl.innerHTML = ''
 							+ '<div class="plano-room-header">'
@@ -968,6 +1199,7 @@
 		function renderDetailCanvas() {
 			if (!canvasEl) return;
 			deskElementsById = new Map();
+			matrixRowsById = new Map();
 			printerElementsByIp = new Map();
 			const filtered = getFilteredItems(false);
 			currentFilteredItems = filtered;
@@ -981,7 +1213,7 @@
 			const frag = groupBy === 'piso' ? renderByPiso(filtered) : renderByFuero(filtered);
 			canvasEl.innerHTML = '';
 			canvasEl.appendChild(frag);
-			requestAnimationFrame(drawAmbientConnections);
+			requestAnimationFrame(refreshConnectionsAndHighlights);
 		}
 
 		function renderWorkspace() {
@@ -1068,7 +1300,7 @@
 				showAllConnections = !showAllConnections;
 				localStorage.setItem(STORAGE_CONN_KEY, String(showAllConnections));
 				applyConnButtonState();
-				drawAmbientConnections();
+				refreshConnectionsAndHighlights();
 			});
 		}
 
@@ -1092,7 +1324,7 @@
 
 		window.addEventListener('resize', function () {
 			if (containerPlano.style.display !== 'none') {
-				drawAmbientConnections();
+				refreshConnectionsAndHighlights();
 			}
 		});
 
@@ -1105,7 +1337,7 @@
 				btnToggleFs.innerHTML = enable ? '🗗 Salir de Pantalla Completa' : '⛶ Pantalla Completa';
 			}
 			setTimeout(function () {
-				requestAnimationFrame(drawAmbientConnections);
+				requestAnimationFrame(refreshConnectionsAndHighlights);
 			}, 60);
 		}
 

@@ -1454,5 +1454,110 @@ body.equipos-fullscreen-active .plano-wrapper.is-compact .plano-desks-grid {
 	color: #ffffff;
 }
 
+/* Badges distintivos para Impresoras de Red vs Impresoras USB */
+.printer-type-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 8px;
+	border-radius: 6px;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+}
+
+.printer-type-badge.is-red {
+	background: rgba(2, 132, 199, 0.14);
+	color: #0369a1;
+	border: 1px solid rgba(2, 132, 199, 0.38);
+}
+
+.printer-type-badge.is-usb {
+	background: rgba(124, 58, 237, 0.13);
+	color: #6d28d9;
+	border: 1px solid rgba(124, 58, 237, 0.35);
+}
+
+:root[data-theme="dark"] .printer-type-badge.is-red {
+	background: rgba(56, 189, 248, 0.18);
+	color: #7dd3fc;
+	border-color: rgba(56, 189, 248, 0.42);
+}
+
+:root[data-theme="dark"] .printer-type-badge.is-usb {
+	background: rgba(167, 139, 250, 0.2);
+	color: #ddd6fe;
+	border-color: rgba(167, 139, 250, 0.42);
+}
+
+/* Resaltado interactivo de fila en Matriz cuando se hace clic en una Impresora de Red */
+.taller-matrix-table tbody tr.is-conn-highlight {
+	background: rgba(14, 165, 233, 0.18) !important;
+	box-shadow: inset 4px 0 0 #0284c7;
+}
+
+:root[data-theme="dark"] .taller-matrix-table tbody tr.is-conn-highlight {
+	background: rgba(56, 189, 248, 0.22) !important;
+	box-shadow: inset 4px 0 0 #38bdf8;
+}
+
+.plano-desk.is-pinned-printer {
+	border-color: #0284c7 !important;
+	box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.4), 0 8px 20px rgba(2, 132, 199, 0.25) !important;
+}
+
+/* Panel flotante/banner de conexión activa al hacer clic en una Impresora en Red */
+.printer-active-connection-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding: 10px 16px;
+	margin-bottom: 12px;
+	background: rgba(14, 165, 233, 0.12);
+	border: 1.5px solid #0284c7;
+	border-left: 6px solid #0284c7;
+	border-radius: 10px;
+	color: var(--text-primary, #0f172a);
+	font-size: 0.82rem;
+}
+
+:root[data-theme="dark"] .printer-active-connection-bar {
+	background: rgba(14, 165, 233, 0.18);
+	border-color: #38bdf8;
+	color: #f8fafc;
+}
+
+.printer-connected-pcs-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	margin-top: 4px;
+}
+
+.printer-connected-pc-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 9px;
+	border-radius: 999px;
+	background: var(--bg-card, #ffffff);
+	border: 1px solid #0284c7;
+	color: var(--text-primary, #0f172a);
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+:root[data-theme="dark"] .printer-connected-pc-chip {
+	background: #0f172a;
+	border-color: #38bdf8;
+	color: #e0f2fe;
+}
+
+
 
 

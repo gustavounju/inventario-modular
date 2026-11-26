@@ -755,10 +755,25 @@ public class EquipoService {
 	public record EquipoVinculado(Long id, String nombre, String ultimoUsuario, String ubicacion) {}
 
 	public List<EquipoVinculado> obtenerEquiposVinculadosAImpresora(Long impresoraId) {
-		return equipoRepository.findByImpresoraRedAsignadaId(impresoraId)
-				.stream()
-				.map(e -> new EquipoVinculado(e.getId(), e.getNombre(), e.getUltimoUsuario(), e.getUbicacion()))
-				.toList();
+		var impresoraOpt = equipoRepository.findById(impresoraId);
+		String ipImpresora = (impresoraOpt.isPresent() && StringUtils.hasText(impresoraOpt.get().getIp()))
+				? impresoraOpt.get().getIp().trim()
+				: null;
+
+		var vinculadosMap = new java.util.LinkedHashMap<Long, EquipoVinculado>();
+		for (Equipo e : equipoRepository.findByImpresoraRedAsignadaId(impresoraId)) {
+			vinculadosMap.put(e.getId(), new EquipoVinculado(e.getId(), e.getNombre(), e.getUltimoUsuario(), e.getUbicacion()));
+		}
+		if (ipImpresora != null) {
+			for (Equipo e : equipoRepository.findAll()) {
+				if (e.getId() == null || e.getId().equals(impresoraId)) continue;
+				if ("Impresora de Red".equals(e.getSistemaOperativo())) continue;
+				if (StringUtils.hasText(e.getImpresoraIp()) && ipImpresora.equalsIgnoreCase(e.getImpresoraIp().trim())) {
+					vinculadosMap.putIfAbsent(e.getId(), new EquipoVinculado(e.getId(), e.getNombre(), e.getUltimoUsuario(), e.getUbicacion()));
+				}
+			}
+		}
+		return new java.util.ArrayList<>(vinculadosMap.values());
 	}
 
 	@Transactional
