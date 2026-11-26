@@ -97,6 +97,9 @@
 		let deskElementsById = new Map();
 		let printerElementsByIp = new Map();
 		let currentFilteredItems = [];
+		// Estado de fueros desplegados (por defecto plegados para que la lista no sea larga)
+		let expandedSections = new Set();
+		let defaultCollapseAll = true;
 
 		// Tooltip flotante único
 		let tooltipEl = document.getElementById('plano-floating-tooltip');
@@ -363,24 +366,59 @@
 				}
 				fueroBarEl.style.display = 'flex';
 
-				let html = '<button type="button" class="plano-fuero-chip' + (activeFuero === 'ALL' ? ' is-active' : '') + '" data-fuero="ALL">🏛️ Todos los Fueros (' + data.length + ')</button>';
+				let selectOptions = '<option value="ALL"' + (activeFuero === 'ALL' ? ' selected' : '') + '>🏛️ Todos los Fueros (' + fueros.length + ' fueros · ' + data.length + ' equipos)</option>';
 				fueros.forEach(function (entry) {
 					const name = entry[0];
 					const count = entry[1];
-					const color = colorForFuero(name);
-					html += '<button type="button" class="plano-fuero-chip' + (activeFuero === name ? ' is-active' : '') + '" data-fuero="' + esc(name) + '">'
-						+ '<span class="plano-fuero-dot" style="background:' + color + ';"></span>'
-						+ esc(name) + ' <span style="opacity:0.72;">(' + count + ')</span></button>';
+					selectOptions += '<option value="' + esc(name) + '"' + (activeFuero === name ? ' selected' : '') + '>🏛️ ' + esc(name) + ' (' + count + ' equipos)</option>';
 				});
 
-				fueroBarEl.innerHTML = html;
-				fueroBarEl.querySelectorAll('.plano-fuero-chip').forEach(function (btn) {
-					btn.addEventListener('click', function () {
-						activeFuero = btn.getAttribute('data-fuero') || 'ALL';
-						renderTopSelectors();
+				fueroBarEl.innerHTML = ''
+					+ '<div class="plano-fuero-selector-group">'
+					+ '  <label for="plano-fuero-select" class="plano-fuero-selector-label">🏛️ Fuero:</label>'
+					+ '  <select id="plano-fuero-select" class="plano-fuero-select">' + selectOptions + '</select>'
+					+ '</div>'
+					+ '<div class="plano-accordion-actions">'
+					+ '  <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Clic en cada fuero para desplegar/plegar:</span>'
+					+ '  <button type="button" id="btn-expand-all-fueros" class="plano-acc-btn" title="Desplegar todos los fueros">📂 Desplegar Todos</button>'
+					+ '  <button type="button" id="btn-collapse-all-fueros" class="plano-acc-btn" title="Plegar todos los fueros">📁 Plegar Todos</button>'
+					+ '</div>';
+
+				const selectEl = document.getElementById('plano-fuero-select');
+				if (selectEl) {
+					selectEl.addEventListener('change', function () {
+						activeFuero = selectEl.value || 'ALL';
+						if (activeFuero !== 'ALL') {
+							expandedSections.add('fuero:' + activeFuero);
+						}
 						renderCanvas();
 					});
-				});
+				}
+
+				const btnExpAll = document.getElementById('btn-expand-all-fueros');
+				if (btnExpAll) {
+					btnExpAll.addEventListener('click', function () {
+						defaultCollapseAll = false;
+						canvasEl.querySelectorAll('.plano-floor-section').forEach(function (sec) {
+							sec.classList.remove('is-collapsed');
+							const key = sec.getAttribute('data-section-key');
+							if (key) expandedSections.add(key);
+						});
+						requestAnimationFrame(drawAmbientConnections);
+					});
+				}
+
+				const btnColAll = document.getElementById('btn-collapse-all-fueros');
+				if (btnColAll) {
+					btnColAll.addEventListener('click', function () {
+						defaultCollapseAll = true;
+						expandedSections.clear();
+						canvasEl.querySelectorAll('.plano-floor-section').forEach(function (sec) {
+							sec.classList.add('is-collapsed');
+						});
+						requestAnimationFrame(drawAmbientConnections);
+					});
+				}
 			}
 		}
 
@@ -594,22 +632,56 @@
 
 			sortedFueros.forEach(function (fObj) {
 				const accent = colorForFuero(fObj.fueroPadre);
+				const sectionKey = 'fuero:' + fObj.fueroPadre;
+				const forceOpen = activeFuero !== 'ALL' || quickFilter.trim().length > 0 || sortedFueros.length === 1;
+				const isExpanded = forceOpen || !defaultCollapseAll || expandedSections.has(sectionKey);
+
 				const section = document.createElement('section');
-				section.className = 'plano-floor-section';
+				section.className = 'plano-floor-section' + (isExpanded ? '' : ' is-collapsed');
+				section.setAttribute('data-section-key', sectionKey);
 				section.style.borderColor = accent + '55';
 
 				const roomCount = fObj.rooms.size;
-				section.innerHTML = ''
-					+ '<div class="plano-floor-header" style="border-bottom-color:' + accent + '44;">'
+				const headerEl = document.createElement('div');
+				headerEl.className = 'plano-floor-header is-collapsible';
+				headerEl.style.borderBottomColor = accent + '44';
+				headerEl.setAttribute('role', 'button');
+				headerEl.setAttribute('tabindex', '0');
+				headerEl.setAttribute('title', 'Clic para desplegar o plegar este fuero');
+				headerEl.innerHTML = ''
 					+ '  <div class="plano-floor-title" style="color:' + accent + ';">'
+					+ '    <span class="plano-floor-chevron">▼</span>'
 					+ '    <span style="width:12px;height:12px;border-radius:3px;background:' + accent + ';display:inline-block;"></span>'
 					+ '    🏛️ ' + esc(fObj.fueroPadre)
 					+ '  </div>'
-					+ '  <div class="plano-floor-badge" style="border-color:' + accent + '44;color:' + accent + ';">'
-					+      roomCount + (roomCount === 1 ? ' dependencia' : ' dependencias')
-					+ '    · ' + fObj.totalEquipos + (fObj.totalEquipos === 1 ? ' equipo' : ' equipos')
-					+ '  </div>'
-					+ '</div>';
+					+ '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">'
+					+ (fObj.pcs > 0 ? '<span class="plano-floor-badge" style="border-color:' + accent + '44;color:' + accent + ';">🖥️ ' + fObj.pcs + ' PC' + (fObj.pcs === 1 ? '' : 's') + '</span>' : '')
+					+ (fObj.impresoras > 0 ? '<span class="plano-floor-badge" style="border-color:#0ea5e955;color:#0284c7;">🖨️ ' + fObj.impresoras + ' Imp.</span>' : '')
+					+ '    <div class="plano-floor-badge" style="border-color:' + accent + '44;color:' + accent + ';">'
+					+        roomCount + (roomCount === 1 ? ' dependencia' : ' dependencias')
+					+ '      · ' + fObj.totalEquipos + (fObj.totalEquipos === 1 ? ' equipo' : ' equipos')
+					+ '    </div>'
+					+ '  </div>';
+
+				function toggleFueroSection() {
+					const nowCollapsed = section.classList.toggle('is-collapsed');
+					if (nowCollapsed) {
+						expandedSections.delete(sectionKey);
+					} else {
+						expandedSections.add(sectionKey);
+					}
+					requestAnimationFrame(drawAmbientConnections);
+				}
+
+				headerEl.addEventListener('click', toggleFueroSection);
+				headerEl.addEventListener('keydown', function (ev) {
+					if (ev.key === 'Enter' || ev.key === ' ') {
+						ev.preventDefault();
+						toggleFueroSection();
+					}
+				});
+
+				section.appendChild(headerEl);
 
 				const roomsGrid = document.createElement('div');
 				roomsGrid.className = 'plano-rooms-grid';
@@ -701,15 +773,31 @@
 			const frag = document.createDocumentFragment();
 
 			sortedFloors.forEach(function (floor) {
+				const sectionKey = 'piso:' + floor.key;
+				const forceOpen = activeFloor !== 'ALL' || quickFilter.trim().length > 0 || sortedFloors.length === 1;
+				const isExpanded = forceOpen || !defaultCollapseAll || expandedSections.has(sectionKey);
+
 				const section = document.createElement('section');
-				section.className = 'plano-floor-section';
+				section.className = 'plano-floor-section' + (isExpanded ? '' : ' is-collapsed');
+				section.setAttribute('data-section-key', sectionKey);
 
 				const roomCount = floor.rooms.size;
-				section.innerHTML = ''
-					+ '<div class="plano-floor-header">'
-					+ '  <div class="plano-floor-title">' + esc(floorLabel(floor.edificio, floor.piso)) + '</div>'
-					+ '  <div class="plano-floor-badge">' + roomCount + (roomCount === 1 ? ' oficina' : ' oficinas') + ' · ' + floor.totalEquipos + (floor.totalEquipos === 1 ? ' equipo' : ' equipos') + '</div>'
-					+ '</div>';
+				const headerEl = document.createElement('div');
+				headerEl.className = 'plano-floor-header is-collapsible';
+				headerEl.setAttribute('role', 'button');
+				headerEl.setAttribute('tabindex', '0');
+				headerEl.setAttribute('title', 'Clic para desplegar o plegar este piso');
+				headerEl.innerHTML = ''
+					+ '  <div class="plano-floor-title"><span class="plano-floor-chevron">▼</span> ' + esc(floorLabel(floor.edificio, floor.piso)) + '</div>'
+					+ '  <div class="plano-floor-badge">' + roomCount + (roomCount === 1 ? ' oficina' : ' oficinas') + ' · ' + floor.totalEquipos + (floor.totalEquipos === 1 ? ' equipo' : ' equipos') + '</div>';
+
+				headerEl.addEventListener('click', function () {
+					const nowCollapsed = section.classList.toggle('is-collapsed');
+					if (nowCollapsed) expandedSections.delete(sectionKey); else expandedSections.add(sectionKey);
+					requestAnimationFrame(drawAmbientConnections);
+				});
+
+				section.appendChild(headerEl);
 
 				const roomsGrid = document.createElement('div');
 				roomsGrid.className = 'plano-rooms-grid';

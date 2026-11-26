@@ -33,7 +33,12 @@ Cuando el usuario haga clic en la opción **Equipos** (`/admin/equipos`), el mó
    - El lienzo del **Plano Físico (`#plano-stage`)** y la **Tabla Clásica (`#vista-tabla-container`)** ganan `+300px` de ancho adicional y `+140px` de alto visible inmediato.
    - Las tarjetas de equipo en el plano y las filas de la tabla aprovechan el ancho completo para mostrar sin recortes: **Fuero, Vocalía/Oficina, Nombre de Host, IP, MAC, Usuario AD, Sistema Operativo, Impresora vinculada y Estado del Gemelo Digital**.
 
-4. **Compatibilidad con Sub-modales (`<dialog>`):**
+4. **Desplegable por cada Fuero (Acordeón + Selector Compacto):**
+   - Cada bloque de **Fuero** en el lienzo funciona como un **panel desplegable (acordeón)** con indicador `▶ / ▼` y resumen de dependencias, PCs e impresoras en su cabecera.
+   - Por defecto, al ver todos los fueros, la lista se presenta plegada de forma compacta para ver todos los fueros de un vistazo; al hacer clic sobre cualquier fuero, se despliegan sus dependencias y equipos (o se expanden automáticamente al buscar texto o filtrar un fuero específico).
+   - La barra interminable de chips de fueros se reemplaza por un **selector desplegable (`<select>`)** acompañado de botones rápidos **`📂 Expandir todos`** y **`📁 Plegar todos`**.
+
+5. **Compatibilidad con Sub-modales (`<dialog>`):**
    - Los diálogos nativos existentes (`#modal-impresora`, `#modal-taller`, `#modal-editar-impresora`, `#modal-vinculados`) y el tooltip flotante (`#plano-floating-tooltip`) mantienen un `z-index` superior para abrirse limpiamente por encima del modal de pantalla completa.
    - Al redimensionar o alternar el modo pantalla completa, `plano-equipos.js` dispara `requestAnimationFrame(drawAmbientConnections)` para reajustar las líneas SVG entre PCs e impresoras.
 

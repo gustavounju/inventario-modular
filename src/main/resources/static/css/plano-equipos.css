@@ -949,3 +949,137 @@ body.equipos-fullscreen-active .plano-wrapper.is-compact .plano-desks-grid {
 	display: none;
 }
 
+/* ==========================================================================
+   ACORDEÓN DESPLEGABLE POR CADA FUERO Y SELECTOR COMPACTO (SPEC-001 v2)
+   ========================================================================== */
+
+.plano-fuero-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 14px;
+	background: var(--bg-card, #ffffff);
+	border: 1px solid var(--border-color, #e2e8f0);
+	border-radius: 10px;
+}
+
+.plano-fuero-selector-group {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	flex: 1 1 320px;
+}
+
+.plano-fuero-selector-label {
+	font-size: 0.8rem;
+	font-weight: 800;
+	color: var(--text-secondary, #334155);
+	white-space: nowrap;
+}
+
+.plano-fuero-select {
+	padding: 7px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--border-color, #cbd5e1);
+	background: var(--bg-subtle, #f8fafc);
+	color: var(--text-primary, #0f172a);
+	font-size: 0.84rem;
+	font-weight: 700;
+	min-width: 280px;
+	max-width: 100%;
+	cursor: pointer;
+}
+
+.plano-fuero-select:focus {
+	outline: none;
+	border-color: #0284c7;
+	box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+.plano-accordion-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.plano-acc-btn {
+	border: 1px solid var(--border-color, #cbd5e1);
+	background: var(--bg-subtle, #f1f5f9);
+	color: var(--text-secondary, #334155);
+	padding: 6px 12px;
+	border-radius: 8px;
+	font-size: 0.77rem;
+	font-weight: 700;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	transition: all 0.15s ease;
+}
+
+.plano-acc-btn:hover {
+	border-color: #0284c7;
+	color: #0284c7;
+	background: var(--bg-card, #ffffff);
+}
+
+/* Cabecera clicable de cada Fuero / Piso (Desplegable) */
+.plano-floor-header.is-collapsible {
+	cursor: pointer;
+	user-select: none;
+	margin-bottom: 14px;
+	padding: 6px 10px;
+	border-radius: 10px;
+	transition: background 0.15s ease;
+}
+
+.plano-floor-header.is-collapsible:hover {
+	background: rgba(2, 132, 199, 0.07);
+}
+
+:root[data-theme="dark"] .plano-floor-header.is-collapsible:hover {
+	background: rgba(56, 189, 248, 0.1);
+}
+
+.plano-floor-chevron {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 6px;
+	background: rgba(15, 23, 42, 0.07);
+	font-size: 0.74rem;
+	transition: transform 0.2s ease, background 0.15s ease;
+	flex-shrink: 0;
+}
+
+:root[data-theme="dark"] .plano-floor-chevron {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+/* Estado plegado del Fuero */
+.plano-floor-section.is-collapsed {
+	padding: 10px 14px;
+	background-image: none;
+}
+
+.plano-floor-section.is-collapsed .plano-floor-header.is-collapsible {
+	margin-bottom: 0;
+	padding-bottom: 6px;
+	border-bottom-color: transparent !important;
+}
+
+.plano-floor-section.is-collapsed .plano-floor-chevron {
+	transform: rotate(-90deg);
+}
+
+.plano-floor-section.is-collapsed .plano-rooms-grid {
+	display: none !important;
+}
+
+
