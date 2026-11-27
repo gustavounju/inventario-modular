@@ -38,13 +38,28 @@
 
 	function initPlanoEquipos() {
 		const data = Array.isArray(window.PLANO_EQUIPOS_DATA) ? window.PLANO_EQUIPOS_DATA : [];
-		const btnPlano = document.getElementById('btn-vista-plano');
 		const btnTabla = document.getElementById('btn-vista-tabla');
 		const containerPlano = document.getElementById('vista-plano-container');
 		const containerTabla = document.getElementById('vista-tabla-container');
+		const sortSelectEl = document.getElementById('select-orden-equipos');
 
-		if (!btnPlano || !btnTabla || !containerPlano || !containerTabla) {
+		if (!containerPlano || !containerTabla) {
 			return;
+		}
+
+		// Cerrar menús desplegables (+ Nuevo / ⚙️ Opciones) al hacer clic fuera
+		document.addEventListener('click', function (ev) {
+			document.querySelectorAll('details.equipos-dropdown[open]').forEach(function (dd) {
+				if (!dd.contains(ev.target)) {
+					dd.removeAttribute('open');
+				}
+			});
+		});
+
+		function closeDropdowns() {
+			document.querySelectorAll('details.equipos-dropdown[open]').forEach(function (dd) {
+				dd.removeAttribute('open');
+			});
 		}
 
 		const btnVolverMosaico = document.getElementById('btn-volver-mosaico');
@@ -54,6 +69,7 @@
 		const btnGroupPiso = document.getElementById('btn-group-piso');
 		const btnSyncAd = document.getElementById('btn-sync-ad-estructura');
 		const btnConn = document.getElementById('btn-plano-connections');
+		const lblConn = document.getElementById('lbl-plano-connections');
 		const syncBanner = document.getElementById('plano-sync-banner');
 		const mosaicoContainer = document.getElementById('plano-mosaico-container');
 		const explorerContainer = document.getElementById('plano-explorer-container');
@@ -63,13 +79,15 @@
 		const canvasEl = document.getElementById('plano-canvas');
 		const quickSearchEl = document.getElementById('plano-quick-search');
 		const btnCompact = document.getElementById('btn-plano-compact');
+		const lblCompact = document.getElementById('lbl-plano-compact');
 
+		let currentMainTab = 'fueros'; // 'fueros' | 'croquis' | 'matriz' | 'tabla'
 		let groupBy = localStorage.getItem(STORAGE_GROUP_KEY) || 'fuero';
-		let subMode = 'croquis'; // Por defecto tarjetas técnicas organizadas con conexiones SVG
-		let showMosaico = true; // Nivel 1 por defecto: Mosaico general de tarjetas de fueros
+		let subMode = 'croquis';
+		let showMosaico = true;
 		let activeFloor = 'ALL';
 		let activeFuero = 'ALL';
-		let quickFilter = '';
+		let quickFilter = quickSearchEl ? (quickSearchEl.value || '') : '';
 		let isCompact = localStorage.getItem(STORAGE_COMPACT_KEY) === 'true';
 		let showAllConnections = localStorage.getItem(STORAGE_CONN_KEY) === 'true';
 
@@ -126,25 +144,36 @@
 			return null;
 		}
 
+		function updateMainTabsUI() {
+			const isTabla = currentMainTab === 'tabla';
+			containerPlano.style.display = isTabla ? 'none' : 'flex';
+			containerTabla.style.display = isTabla ? 'block' : 'none';
+			if (sortSelectEl) {
+				sortSelectEl.style.display = isTabla ? 'inline-block' : 'none';
+			}
+			if (btnVolverMosaico) btnVolverMosaico.classList.toggle('is-active', !isTabla && showMosaico && quickFilter.trim().length === 0 && groupBy === 'fuero');
+			if (btnSubCroquis) btnSubCroquis.classList.toggle('is-active', !isTabla && (!showMosaico || quickFilter.trim().length > 0 || groupBy === 'piso') && subMode === 'croquis');
+			if (btnSubMatriz) btnSubMatriz.classList.toggle('is-active', !isTabla && (!showMosaico || quickFilter.trim().length > 0 || groupBy === 'piso') && subMode === 'matriz');
+			if (btnTabla) btnTabla.classList.toggle('is-active', isTabla);
+		}
+
 		function setViewMode(mode) {
-			const isPlano = mode === 'plano';
-			containerPlano.style.display = isPlano ? 'flex' : 'none';
-			containerTabla.style.display = isPlano ? 'none' : 'block';
-			btnPlano.classList.toggle('is-active', isPlano);
-			btnTabla.classList.toggle('is-active', !isPlano);
-			localStorage.setItem(STORAGE_VIEW_KEY, mode);
-			if (isPlano) {
-				requestAnimationFrame(refreshConnectionsAndHighlights);
+			if (mode === 'tabla') {
+				currentMainTab = 'tabla';
+				localStorage.setItem(STORAGE_VIEW_KEY, 'tabla');
+				updateMainTabsUI();
+			} else {
+				currentMainTab = showMosaico ? 'fueros' : subMode;
+				localStorage.setItem(STORAGE_VIEW_KEY, 'plano');
+				renderWorkspace();
 			}
 		}
 
 		function setSubMode(mode) {
-			subMode = mode === 'croquis' ? 'croquis' : 'matriz';
+			subMode = mode === 'matriz' ? 'matriz' : 'croquis';
+			currentMainTab = subMode;
 			localStorage.setItem(STORAGE_SUBMODE_KEY, subMode);
-			if (btnSubMatriz) btnSubMatriz.classList.toggle('is-active', subMode === 'matriz');
-			if (btnSubCroquis) btnSubCroquis.classList.toggle('is-active', subMode === 'croquis');
-			if (btnConn) btnConn.style.display = subMode === 'croquis' ? 'inline-flex' : 'none';
-			if (btnCompact) btnCompact.style.display = subMode === 'croquis' ? 'inline-flex' : 'none';
+			localStorage.setItem(STORAGE_VIEW_KEY, 'plano');
 			renderWorkspace();
 		}
 
@@ -155,15 +184,19 @@
 			if (btnGroupPiso) btnGroupPiso.classList.toggle('is-active', groupBy === 'piso');
 			if (groupBy === 'piso') {
 				showMosaico = false;
+				currentMainTab = subMode;
 			}
+			closeDropdowns();
 			renderWorkspace();
 		}
 
 		function openMosaicoView() {
 			showMosaico = true;
+			currentMainTab = 'fueros';
 			activeFuero = 'ALL';
 			pinnedPrinterItem = null;
 			groupBy = 'fuero';
+			localStorage.setItem(STORAGE_VIEW_KEY, 'plano');
 			if (btnGroupFuero) btnGroupFuero.classList.add('is-active');
 			if (btnGroupPiso) btnGroupPiso.classList.remove('is-active');
 			if (quickSearchEl && quickFilter) {
@@ -176,6 +209,7 @@
 		function selectFueroInExplorer(fueroName) {
 			activeFuero = fueroName || 'ALL';
 			showMosaico = false;
+			currentMainTab = subMode;
 			renderWorkspace();
 		}
 
@@ -191,16 +225,18 @@
 
 		function applyCompactState() {
 			containerPlano.classList.toggle('is-compact', isCompact);
-			if (btnCompact) {
-				btnCompact.textContent = isCompact ? '🔍 Detallado' : '📐 Compacto';
+			if (btnCompact) btnCompact.classList.toggle('is-active', isCompact);
+			if (lblCompact) {
+				lblCompact.textContent = isCompact ? 'Modo Compacto: ON' : 'Modo Compacto: OFF';
 			}
 			requestAnimationFrame(refreshConnectionsAndHighlights);
 		}
 
 		function applyConnButtonState() {
-			if (!btnConn) return;
-			btnConn.classList.toggle('is-active', showAllConnections);
-			btnConn.textContent = showAllConnections ? '🔗 Conexiones: ON' : '🔗 Conexiones';
+			if (btnConn) btnConn.classList.toggle('is-active', showAllConnections);
+			if (lblConn) {
+				lblConn.textContent = showAllConnections ? 'Conexiones Impresoras: ON' : 'Conexiones Impresoras: OFF';
+			}
 		}
 
 		function getFilteredItems(ignoreActiveFuero) {
@@ -472,15 +508,7 @@
 				return;
 			}
 
-			let html = ''
-				+ '<div class="fuero-mosaico-header-bar">'
-				+ '  <div class="fuero-mosaico-header-title">🏛️ Mapa General por Fueros (' + allFueros.length + ' fueros · ' + data.length + ' activos)</div>'
-				+ '  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">'
-				+ '    <span class="fuero-mosaico-header-hint">👆 Haga clic en cualquier tarjeta de Fuero para abrir su consola técnica de taller</span>'
-				+ '    <button type="button" id="btn-ver-todos-explorador" class="plano-action-all-btn" style="padding:5px 11px; border-radius:7px; border:1px solid var(--border-color); background:var(--bg-subtle); color:var(--text-primary); font-size:0.77rem; font-weight:700; cursor:pointer;">📋 Ver todos los fueros juntos</button>'
-				+ '  </div>'
-				+ '</div>'
-				+ '<div class="fuero-mosaico-grid">';
+			let html = '<div class="fuero-mosaico-grid">';
 
 			allFueros.forEach(function (fObj) {
 				const roomList = Array.from(fObj.rooms.values()).sort(function (a, b) {
@@ -1225,8 +1253,10 @@
 			const hasSearch = quickFilter.trim().length > 0;
 			const shouldShowMosaico = showMosaico && !hasSearch && groupBy === 'fuero';
 
-			if (btnVolverMosaico) {
-				btnVolverMosaico.classList.toggle('is-active', shouldShowMosaico);
+			updateMainTabsUI();
+			if (currentMainTab === 'tabla') {
+				if (svgEl) svgEl.innerHTML = '';
+				return;
 			}
 
 			if (shouldShowMosaico) {
@@ -1286,8 +1316,7 @@
 		}
 
 		// Eventos de controles
-		btnPlano.addEventListener('click', function () { setViewMode('plano'); });
-		btnTabla.addEventListener('click', function () { setViewMode('tabla'); });
+		if (btnTabla) btnTabla.addEventListener('click', function () { setViewMode('tabla'); });
 		if (btnVolverMosaico) btnVolverMosaico.addEventListener('click', openMosaicoView);
 		if (btnSubMatriz) btnSubMatriz.addEventListener('click', function () {
 			showMosaico = false;
@@ -1305,6 +1334,7 @@
 				showAllConnections = !showAllConnections;
 				localStorage.setItem(STORAGE_CONN_KEY, String(showAllConnections));
 				applyConnButtonState();
+				closeDropdowns();
 				refreshConnectionsAndHighlights();
 			});
 		}
@@ -1312,8 +1342,9 @@
 		if (quickSearchEl) {
 			quickSearchEl.addEventListener('input', function () {
 				quickFilter = quickSearchEl.value || '';
-				if (quickFilter.trim().length > 0) {
+				if (quickFilter.trim().length > 0 && currentMainTab !== 'tabla') {
 					showMosaico = false;
+					currentMainTab = subMode;
 				}
 				renderWorkspace();
 			});
@@ -1324,6 +1355,7 @@
 				isCompact = !isCompact;
 				localStorage.setItem(STORAGE_COMPACT_KEY, String(isCompact));
 				applyCompactState();
+				closeDropdowns();
 			});
 		}
 
@@ -1335,11 +1367,12 @@
 
 		// SPEC-001: Control del Modal a Pantalla Completa para Equipos
 		const btnToggleFs = document.getElementById('btn-toggle-fullscreen-equipos');
+		const lblToggleFs = document.getElementById('lbl-toggle-fullscreen');
 		function setFullscreenEquipos(enable) {
 			document.body.classList.toggle('equipos-fullscreen-active', enable);
-			if (btnToggleFs) {
-				btnToggleFs.classList.toggle('is-active', enable);
-				btnToggleFs.innerHTML = enable ? '🗗 Salir de Pantalla Completa' : '⛶ Pantalla Completa';
+			if (btnToggleFs) btnToggleFs.classList.toggle('is-active', enable);
+			if (lblToggleFs) {
+				lblToggleFs.textContent = enable ? 'Salir de Pantalla Completa' : 'Activar Pantalla Completa';
 			}
 			setTimeout(function () {
 				requestAnimationFrame(refreshConnectionsAndHighlights);
@@ -1350,6 +1383,7 @@
 			btnToggleFs.addEventListener('click', function () {
 				const isCurrentlyFs = document.body.classList.contains('equipos-fullscreen-active');
 				setFullscreenEquipos(!isCurrentlyFs);
+				closeDropdowns();
 			});
 		}
 
@@ -1371,10 +1405,14 @@
 		setFullscreenEquipos(true);
 		applyCompactState();
 		applyConnButtonState();
-		setSubMode(subMode);
 
 		const savedMode = localStorage.getItem(STORAGE_VIEW_KEY) || 'plano';
-		setViewMode(savedMode);
+		if (savedMode === 'tabla') {
+			setViewMode('tabla');
+		} else {
+			currentMainTab = 'fueros';
+			renderWorkspace();
+		}
 	}
 
 	if (document.readyState === 'loading') {
